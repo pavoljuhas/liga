@@ -1,0 +1,60 @@
+########################################################################
+# Short Title: make rules for Biosphere Genetic Algorithm
+#
+# Comments:
+#
+# $Id$
+########################################################################
+
+
+########################################################################
+# compiler flags and file lists:
+
+CC = g++
+CPPFLAGS = -g -I/u24/local/include $(CFLAGS)
+LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
+
+# PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
+PROGRAMS =
+SOURCES = BGAlib.cpp
+HEADERS = $(SOURCES:%.cpp=%.h)
+OBJECTS = $(SOURCES:%.cpp=%.o)
+
+########################################################################
+# most common targets:
+default: BGAlib.o
+all:	 $(PROGRAMS)
+lib_objects: $(OBJECTS)
+
+########################################################################
+# simulations {{{
+%.o: %.cpp %.h
+	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+#####################################################################}}}
+# test programs {{{
+ssTest: ssTest.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+#####################################################################}}}
+# utility targets {{{
+tags:	$(SOURCES) $(HEADERS) $(PROGRAMS:%=%.cpp)
+	ctags $^
+
+clean:
+	rm -f $(PROGRAMS) $(OBJECTS) $(PROGRAMS:%=%.o) \
+	    a.out \
+	    ssTest.o
+
+list:
+	@printf "%s\n" $(PROGRAMS:%=%.cpp) $(HEADERS) $(SOURCES)
+
+#}}}
+########################################################################
+# Here is what people have been up to: {{{
+#
+# $Log$
+# Revision 1.1  2005/01/24 20:24:13  juhas
+# *** empty log message ***
+#
+# vim: set foldmethod=marker: ########################################}}}
