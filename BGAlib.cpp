@@ -12,6 +12,7 @@
 #include <limits>
 #include <utility>
 #include <map>
+#include <unistd.h>
 #include <gsl/gsl_randist.h>
 #include "ioerror.hpp"
 #include "BGAlib.hpp"
@@ -1340,15 +1341,27 @@ bool Molecule::ReadXYZ(const char* file)
 
 bool write_file(const char* file, Molecule& M)
 {
-    // open file for writing
-    ofstream fid(file);
+    // test if file is writeable
+    ofstream fid(file, ios_base::out|ios_base::app );
     if (!fid)
     {
 	cerr << "E: unable to write to '" << file << "'" << endl;
 	throw IOError();
     }
+    fid.close();
+    // write via temporary file
+    int filelen = strlen(file);
+    char writefile[filelen+6+1];
+    strcpy(writefile, file);
+    memset(writefile+filelen, 'X', 6);
+    writefile[filelen+6] = '\0';
+    // mkstemp returns sets a unique name, but file descriptor
+    // cannot be used
+    close(mkstemp(writefile));
+    fid.open(writefile);
     bool result = (fid << M);
     fid.close();
+    rename(writefile, file);
     return result;
 }
 
