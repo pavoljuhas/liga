@@ -878,22 +878,18 @@ int Molecule::push_good_pyramids(
 	// pick 3 vertex distances
 	list<int> didx = random_choose_few(3, dTarget.size());
 	list<int>::iterator didxit = didx.begin();
-	double dv1 = dTarget[*(didxit++)];
-	double dv2 = dTarget[*(didxit++)];
-	double dv3 = dTarget[*(didxit++)];
-	double dvperm[6][3] = {
-	    {dv1, dv2, dv3},
-	    {dv1, dv3, dv2},
-	    {dv2, dv1, dv3},
-	    {dv2, dv3, dv1},
-	    {dv3, dv1, dv2},
-	    {dv3, dv2, dv1} };
-	for (int iperm = 0; iperm < 6; ++iperm)
+	double dvperm[3] = {
+	    dTarget[*(didxit++)],
+	    dTarget[*(didxit++)],
+	    dTarget[*(didxit++)] };
+	sort(dvperm, dvperm+3);
+	// loop over unique permutations of dvperm
+	do
 	{
 	    ++nt;
-	    double r14 = dvperm[iperm][0];
-	    double r24 = dvperm[iperm][1];
-	    double r34 = dvperm[iperm][2];
+	    double r14 = dvperm[0];
+	    double r24 = dvperm[1];
+	    double r34 = dvperm[2];
 	    // uvi is a unit vector in a1a2 direction
 	    double uvi_val[3] = { a2.rx-a1.rx, a2.ry-a1.ry, a2.rz-a1.rz };
 	    valarray<double> uvi(uvi_val, 3);
@@ -1001,7 +997,7 @@ int Molecule::push_good_pyramids(
 	    ad3bottom.IncBadness(base_badness);
 	    vta.push_back(ad3bottom);
 	    push_count++;
-	}
+	} while (next_permutation(dvperm, dvperm+3));
     }
     return push_count;
 }
