@@ -181,7 +181,7 @@ private:
     // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
     list<Pair_t*> pairs;		// list of all atom Pair_t objects
-    mutable list<int> ssdIdxFree;	// available elements in ss.dist
+    mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
     inline int NDist()  const { return pairs.size(); }
     inline int NAtoms() const { return atoms.size(); }

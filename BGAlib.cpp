@@ -257,7 +257,7 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
 	badness += BGA::min_distance_penalty;
     }
     // abbreviation
-    list<int>::iterator ii;
+    vector<int>::iterator ii;
     double *d2lo = &(owner->ss->d2lo[0]);
     double *d2hi = &(owner->ss->d2hi[0]);
     pair<double,double*> d2_d2hi(d2, d2hi);
@@ -299,7 +299,7 @@ Pair_t::~Pair_t()
     if (ssdIdxUsed >= 0)
     {
 	// return it back to owner->ssdIdxFree
-	list<int>::iterator ii;
+	vector<int>::iterator ii;
 	ii = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
 		ssdIdxUsed );
 	owner->ssdIdxFree.insert(ii, ssdIdxUsed);
@@ -416,7 +416,7 @@ void Molecule::init()
     max_abad = 0;
     badness = 0;
     // prepare ssdIdxFree
-    for (int i = 0; i < ss->NDist; ++i)
+    for (int i = 0; i < NDist(); ++i)
     {
 	ssdIdxFree.push_back(i);
     }
