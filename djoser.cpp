@@ -47,7 +47,7 @@ void print_help(ParseArgs& a)
 "  framesrate=int        number of iterations between frame saves\n"
 "Walk parameters\n"
 "  tol_dd=double         [inf] distance is not used when dd=|d-d0|>=tol_dd\n"
-"  tol_bad=double        target value of full molecule badness\n"
+"  tol_bad=double        target value of normalized molecule badness\n"
 "  seed=int        	 seed random number generator\n"
 "  logsize=int           [10] last steps used for success rate evaluation\n"
 "  eprob_max=double      high limit of evolve probability\n"
@@ -86,6 +86,24 @@ struct RunPar_t {
     int tri_trials;
     int pyr_trials;
 };
+
+double prob_evolve(RunPar_t& rp, const Molecule& mol, double impr_rate)
+{
+    double pe;
+    if (mol.NAtoms() == mol.max_NAtoms())
+    {
+	pe = 0.0;
+	rp.bustprob = false;
+    }
+    else if (mol.NAtoms() == 0)
+	pe = 1.0;
+    else if (rp.bustprob)
+	pe = 1.0;
+    else
+	pe = impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
+    return pe;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -232,52 +250,39 @@ int main(int argc, char *argv[])
     double best_largest = double_info.max();
     valarray<int> improved(1, rp.logsize);
 
-
     int maxatoms = 0;
     bool go_all_way = false;
     for (int trial = 0; ; ++trial)
     {
-	// calculate pe
-	double pe, impr_rate;
-	if (mol.NAtoms() == mol.max_NAtoms())
-	{
-	    pe = 0.0;
-	    go_all_way = false;
-	}
-	else if (mol.NAtoms() == 0)
-	    pe = 1.0;
-	else if (go_all_way)
-	{
-	    pe = 1.0;
-	    if (mol.Badness() > 2*mol.NAtoms())
-		go_all_way = false;
-	}
-	else
-	{
-	    impr_rate = 1.0*improved.sum()/improved.size();
-	    pe = impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
-	    if (impr_rate >= 0.66 && rp.bustprob > gsl_rng_uniform(BGA::rng))
-		go_all_way = true;
-	}
+	// calculate probability of evolution
+	double impr_rate = 1.0*improved.sum()/rp.logsize;
+	if (impr_rate >= 0.5 && rp.bustprob > gsl_rng_uniform(BGA::rng))
+	    rp.bustprob = true;
+	double pe = prob_evolve(rp, mol, impr_rate);
 	cout << trial;
 	if (pe > gsl_rng_uniform(BGA::rng))
 	{
 	    mol.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
-	    cout << "  Evolve()" << "  NAtoms = " << mol.NAtoms() << endl;
+	    cout << " E " << mol.NAtoms() << " " << mol.NormBadness();
 	}
 	else
 	{
-	    int Npop = 0;
-	    Npop = 1 + (int) floor(mol.Badness());
-	    Npop = min(Npop, 5);
-	    if (Npop > 1)
-		Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop-1);
+	    int Npop;
+	    if (mol.NormBadness() > rp.tol_bad)
+	    {
+		Npop = (int) ceil( mol.NAtoms()/4.0 *
+			(1.0 - rp.tol_bad/mol.NormBadness()) );
+//		would this help?
+//		Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop-1);
+	    }
+	    else
+		Npop = 1;
 	    mol.Degenerate(Npop);
-	    cout << "  Degenerate(" << Npop << ")  NAtoms = " << mol.NAtoms() <<  endl;
+	    cout << " D " << mol.NAtoms() << " " << mol.NormBadness();
 	}
-	mol.PrintBadness();
-	if (mol.NAtoms() == mol.max_NAtoms())
-	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/mol.max_NAtoms() << endl;
+	cout << endl;
+//	if (rp.show_abad)
+//	    mol.PrintBadness();
 	// update lastMBadness and improved
 	int ilog = trial % rp.logsize;
 	if (mol.Badness() < lastMBadness[mol.NAtoms()])
