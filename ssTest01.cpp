@@ -1,4 +1,4 @@
-#include "BGAlib.h"
+#include "BGAlib.hpp"
 
 int main()
 {

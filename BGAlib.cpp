@@ -17,7 +17,7 @@
 //#include <vector>
 //#include <list>
 
-#include "BGAlib.h"
+#include "BGAlib.hpp"
 
 // exceptions
 struct InvalidDistanceTable { };
@@ -399,6 +399,9 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.5  2005/01/25 16:16:19  juhas
+* BGAlib.h renamed to BGAlib.hpp
+*
 * Revision 1.4  2005/01/25 04:46:39  juhas
 * added penalty for atoms outside SandSphere
 *

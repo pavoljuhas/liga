@@ -17,7 +17,7 @@ LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS =
 SOURCES = BGAlib.cpp
-HEADERS = $(SOURCES:%.cpp=%.h)
+HEADERS = $(SOURCES:%.cpp=%.hpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
 ########################################################################
@@ -54,6 +54,9 @@ list:
 # Here is what people have been up to: {{{
 #
 # $Log$
+# Revision 1.2  2005/01/25 16:18:31  juhas
+# BGAlib.h renamed to BGAlib.hpp
+#
 # Revision 1.1  2005/01/24 20:24:13  juhas
 # *** empty log message ***
 #
