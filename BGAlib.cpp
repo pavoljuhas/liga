@@ -117,7 +117,7 @@ double Atom_t::IncBadness(double db)
 double Atom_t::DecBadness(double db)
 {
     badness -= db;
-    if (fabs(badness) < BGA::eps_badness)
+    if (badness < BGA::eps_badness)
 	badness = 0.0;
     badness_sum += badness;
     age++;
@@ -199,7 +199,7 @@ Pair_t::~Pair_t()
     atom1->DecBadness(badnesshalf);
     atom2->DecBadness(badnesshalf);
     owner->badness -= badness;
-    if (fabs(owner->badness) < BGA::eps_badness)
+    if (owner->badness < BGA::eps_badness)
 	owner->badness = 0.0;
     if (dUsed > 0.0)
 	owner->dTarget.return_back(dUsed);
@@ -730,6 +730,15 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     vta.erase(gai, vta.end());
 }
 
+struct rxa_par
+{
+    typedef list<Atom_t> LA;
+    typedef valarray<double> VAD;
+    LA *atoms;
+    VAD *ad0;
+    VAD *wt;
+};
+
 int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
@@ -738,9 +747,9 @@ int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
     ta.r[2] = gsl_vector_get(x, 2);
     typedef list<Atom_t> LA;
     typedef valarray<double> VAD;
-    pair<LA*,VAD*>& rxa_par = *( (pair<LA*,VAD*> *)params );
-    LA& atoms = *(rxa_par.first);
-    VAD& ad0 = *(rxa_par.second);
+    LA& atoms = *( ((struct rxa_par *)params)->atoms );
+    VAD& ad0 = *( ((struct rxa_par *)params)->ad0 );
+    VAD& wt = *( ((struct rxa_par *)params)->wt );
     VAD ad(ad0.size());
     typedef list<Atom_t>::iterator LAit;
     int idx = 0;
@@ -748,9 +757,11 @@ int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
     for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma, ++idx)
     {
 	ad[idx] = dist(ta, *ma);
-	gsl_vector_set(f, idx, ad[idx]-ad0[idx]);
+	double fi = wt[idx]*(ad[idx] - ad0[idx]);
+	gsl_vector_set(f, idx, fi);
 	for (int jdx = 0; ad[idx] != 0.0 && jdx < 3; ++jdx)
-	    gsl_matrix_set(J, idx, jdx, (ta.r[jdx] - ma->r[jdx])/ad[idx]);
+	    gsl_matrix_set(J, idx, jdx,
+		    wt[idx]*(ta.r[jdx] - ma->r[jdx])/ad[idx]);
     }
     return GSL_SUCCESS;
 }
@@ -763,14 +774,15 @@ int rxa_f(const gsl_vector *x, void *params, gsl_vector *f)
     ta.r[2] = gsl_vector_get(x, 2);
     typedef list<Atom_t> LA;
     typedef valarray<double> VAD;
-    pair<LA*,VAD*>& rxa_par = *( (pair<LA*,VAD*> *)params );
-    LA& atoms = *(rxa_par.first);
-    VAD& ad0 = *(rxa_par.second);
+    LA& atoms = *( ((struct rxa_par *)params)->atoms );
+    VAD& ad0 = *( ((struct rxa_par *)params)->ad0 );
+    VAD& wt = *( ((struct rxa_par *)params)->wt );
     typedef list<Atom_t>::iterator LAit;
     int idx = 0;
     for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma, ++idx)
     {
-	gsl_vector_set(f, idx, dist(ta, *ma) - ad0[idx]);
+	double fi = wt[idx]*(dist(ta, *ma) - ad0[idx]);
+	gsl_vector_set(f, idx, fi);
     }
     return GSL_SUCCESS;
 }
@@ -779,10 +791,9 @@ int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
 {
     typedef list<Atom_t> LA;
     typedef valarray<double> VAD;
-    pair<LA*,VAD*>& rxa_par = *( (pair<LA*,VAD*> *)params );
-    LA& atoms = *(rxa_par.first);
+    LA& atoms = *( ((struct rxa_par *)params)->atoms );
     // just use rxa_fdf ignoring function values
-    gsl_vector *fignore = gsl_vector_alloc(rxa_par.first->size());
+    gsl_vector *fignore = gsl_vector_alloc(atoms.size());
     int status = rxa_fdf(x, params, fignore, J);
     gsl_vector_free(fignore);
     return status;
@@ -795,9 +806,17 @@ void Molecule::relax_atom(Atom_t& ta)
     int dTsize = dTarget.size();
     bool dUsed[dTsize];
     fill(dUsed, dUsed+dTsize, false);
-    valarray<double> ad0(atoms.size());
+    // prepare valarrays for rxa_* functions
+    valarray<double> wt(1.0, NAtoms());
+    double *pd = &wt[0];
     typedef list<Atom_t>::iterator LAit;
-    typedef vector<double>::iterator VDit;
+    // first fill the array with badness
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pd)
+	*pd = ai->Badness();
+    // convert to square root of fitness
+    wt = sqrt(vdrecipw0(wt));
+    // array for target distances
+    valarray<double> ad0(atoms.size());
     // do relaxation on a copy of ta
     Atom_t rta(ta);
     // loop while badness is improved
@@ -848,11 +867,11 @@ void Molecule::relax_atom(Atom_t& ta)
 	}
 	else
 	    break;
-	cout << "original tbad = " << tbad << endl;
+//	cout << "original tbad = " << tbad << endl;
 	// parameter pair for minimizer functions
 	typedef list<Atom_t> LA;
 	typedef valarray<double> VAD;
-	pair<LA*,VAD*> rxa_par(&atoms, &ad0);
+	struct rxa_par rxap = { &atoms, &ad0, &wt };
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
 	f.f = &rxa_f;
@@ -860,13 +879,15 @@ void Molecule::relax_atom(Atom_t& ta)
 	f.fdf = &rxa_fdf;
 	f.n = NAtoms();
 	f.p = 3;
-	f.params = &rxa_par;
+	f.params = &rxap;
 	// bind rta coordinates to vector x
 	gsl_vector_view x = gsl_vector_view_array(rta.r, 3);
 	// allocate solver
 	gsl_multifit_fdfsolver *lms = gsl_multifit_fdfsolver_alloc(
 		gsl_multifit_fdfsolver_lmsder, NAtoms(), 3);
 	gsl_multifit_fdfsolver_set(lms, &f, &x.vector);
+	// allocate vector for gradient test
+	gsl_vector *G = gsl_vector_alloc(3);
 	// minimize atom badness
 	int iter = 0, status;
 	do
@@ -875,12 +896,16 @@ void Molecule::relax_atom(Atom_t& ta)
 	    status = gsl_multifit_fdfsolver_iterate(lms);
 	    if (status)
 	    {
-		cerr << "LM solver status = " << gsl_strerror(status) << endl;
+		if (status != GSL_ETOLF && status != GSL_ETOLX)
+		    cerr << "LM solver status = " <<
+			gsl_strerror(status) << endl;
 		break;
 	    }
 	    // scale f_i with atom fitness
 	    // pj: test gradient or do a simplex search?
-	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
+	    gsl_multifit_gradient(lms->J, lms->f, G);
+	    status = gsl_multifit_test_gradient(G, BGA::eps_badness/tol_r);
+//	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
 	}
 	while (status == GSL_CONTINUE && iter < max_iter);
 	for (int i = 0; i < 3; ++i)
@@ -895,7 +920,8 @@ void Molecule::relax_atom(Atom_t& ta)
 	}
 	// and update lo_abad before reassigning the distances
 //	lo_abad = min(lo_abad, tbad);
-	cout << "relaxed tbad = " << tbad << endl;
+//	cout << "relaxed tbad = " << tbad << endl;
+	gsl_vector_free(G);
 	gsl_multifit_fdfsolver_free(lms);
     }
 }
