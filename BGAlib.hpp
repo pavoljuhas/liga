@@ -28,7 +28,7 @@ class SandSphere
 public:
     // constructors
     SandSphere(int GridMax, const vector<double>& t);
-    SandSphere(int GridMax, size_t s, const double *t);
+    SandSphere(int GridMax, int s, const double *t);
     SandSphere(int GridMax, const char *file);
     // grid parameters
     double delta;		// grid step
@@ -58,10 +58,10 @@ class Molecule
 public:
     // constructors
     Molecule(SandSphere *SS);
-    Molecule(SandSphere *SS, size_t s, int *ph, int *pk);
+    Molecule(SandSphere *SS, int s, int *ph, int *pk);
     Molecule(SandSphere *SS,
 	    const vector<int>& vh, const vector<int>& vk);
-    Molecule(SandSphere *SS, size_t s, double *px, double *py);
+    Molecule(SandSphere *SS, int s, double *px, double *py);
     Molecule(SandSphere *SS,
 	    const vector<double>& vx, const vector<double>& vy);
     Molecule(const Molecule& M0);		// copy constructor
@@ -74,15 +74,31 @@ public:
     double MBadness();		// total badness
     double MFitness();		// total fitness
     double dist(const int& i, const int& j);		// d(i,j)
-    inline int dist2(const int& i, const int& j);	// squared d(i,j)
+    inline int dist2(const int& i, const int& j)	// squared d(i,j)
+    {
+	int dh = h[i] - h[j];
+	int dk = k[i] - k[j];
+	return dh*dh + dk*dk;
+    }
     // operator functions
     Molecule& Shift(int dh, int dk);	// shift all atoms
     Molecule& Center();			// center w/r to the center of mass
-    Molecule& Part(const list<int>& cidx);	// keep only specified atoms
-    Molecule& Pop(const list<int>& cidx);	// remove specified atoms
-    Molecule& Pop(const int cidx);	// remove 1 atom
+    template<class T> 
+	inline Molecule& Part(T cidx)	// keep only specified atom
+	{
+	    return Part(*this, cidx);
+	}
+    Molecule& Part(const Molecule& M, const int cidx); 		// get M.Part()
+    Molecule& Part(const Molecule& M, const list<int>& cidx);	// get M.Part()
+    template<class T> 
+	inline Molecule& Pop(T cidx)	// remove specified atom
+	{
+	    return Pop(*this, cidx);
+	}
+    Molecule& Pop(const Molecule& M, const int cidx);		// get M.Pop()
+    Molecule& Pop(const Molecule& M, const list<int>& cidx);	// get M.Pop()
     Molecule& Clear();			// remove all atoms
-    Molecule& Add(Molecule& m);		// add specified molecule
+    Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     // IO functions
