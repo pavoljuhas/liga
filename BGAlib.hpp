@@ -129,7 +129,6 @@ public:
     static double evolve_frac;
     static double (*penalty)(double);
     // fitness/badness functions
-    double AFitness(const Atom_t&) const;
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
     // operator functions
