@@ -461,7 +461,6 @@ Molecule& Molecule::operator=(const Molecule& M)
     return *this;
 }
 
-//pj: fixthis
 void Molecule::init()
 {
     max_abad = 0;
@@ -570,49 +569,6 @@ double Molecule::MaxABadness() const
     }
     return max_abad;
 }
-
-//double Molecule::MBadnessWith(const Molecule& M) const
-//{
-//    if (NAtoms+M.NAtoms > ss->NAtoms)
-//    {
-//	cerr << "E: joined molecule too large" << endl;
-//	throw InvalidMolecule();
-//    }
-//    if (!cached) calc_db();
-//    if (!M.cached) M.calc_db();
-//    valarray<int> nd2(NAtoms*M.NAtoms);
-//    for (int dh, dk, id2 = 0, i = 0; i < NAtoms; ++i)
-//    {
-//	for (int j = 0; j < M.NAtoms; ++j)
-//	{
-//	    dh = h[i] - M.h[j];
-//	    dk = k[i] - M.k[j];
-//	    nd2[id2++] = dh*dh + dk*dk;
-//	}
-//    }
-//    sort(&nd2[0], &nd2[nd2.size()]);
-//    double mbadwith = MBadness() + M.MBadness();
-//    vector<int>::iterator idif = ssdIdxFree.begin();
-//    for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
-//    {
-//	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
-//		++idif ) {};
-//	// we found a baddie if we reached the end of ssdIdxFree table
-//	// or if the current distance is smaller than d2lo
-//	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
-//	{
-//	    mbadwith += 2.0;
-//	}
-//	// otherwise it is a matching distance
-//	else
-//	{
-//	    ++idif;
-//	}
-//    }
-//    // now add penalty for being outside the SandSphere
-//    return mbad;
-//}
-
 
 //////////////////////////////////////////////////////////////////////////
 // Molecule operators
@@ -1320,127 +1276,6 @@ valarray<double> vdcross(const valarray<double>& v1, const valarray<double>& v2)
     cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
     return cross;
 }
-
-//Molecule Molecule::MateWith(const Molecule& Male, int trials)
-//{
-//    using namespace BGA_Molecule_MateWith;
-//    if (NAtoms != Male.NAtoms)
-//    {
-//	cerr << "E: mating of unequal molecules" << endl;
-//	throw InvalidMolecule();
-//    }
-//    double patom_f[NAtoms];
-//    for (int i = 0; i < NAtoms; ++i)  patom_f[i] = AFitness(i);
-//    double patom_m[Male.NAtoms];
-//    for (int i = 0; i < Male.NAtoms; ++i)  patom_m[i] = Male.AFitness(i);
-//    list<Molecule> children;
-//    for (int i = 0; i < trials; ++i)
-//    {
-//	Molecule egg(ss);
-//	list<int> egg_atoms =
-//	    random_wt_choose(NAtoms, patom_f, NAtoms/2);
-//	egg.Part(*this, egg_atoms);
-//	Molecule sperm(ss);
-//	list<int> sperm_atoms =
-//	    random_wt_choose(Male.NAtoms, patom_m, NAtoms - egg.NAtoms);
-//	sperm.Part(Male, sperm_atoms);
-//	egg.mount(sperm);
-//	children.push_back(egg);
-//	if (egg.MBadness() == 0.0)  break;
-//    }
-//    // find the best child
-//    Molecule *best;
-//    // maybe the last child is a prodigy
-//    if (children.back().MBadness() == 0.0)
-//    {
-//	best = &children.back();
-//    }
-//    else
-//    {
-//	best = &( *min_element(children.begin(), children.end(),
-//		compare_MFitness) );
-//    }
-//    best->Center();
-//    return *best;
-//}
-//
-//Molecule& Molecule::mount(Molecule& sperm)
-//{
-//    using namespace BGA_Molecule_MateWith;
-//    if (NAtoms < sperm.NAtoms)
-//    {
-//	cerr << "E: sperm molecule is larger than egg" << endl;
-//	throw InvalidMolecule();
-//    }
-//    // mounting is trivial for empty or 1-atom molecules
-//    if (NAtoms == 0 || sperm.NAtoms ==0)
-//    {
-//	return *this;
-//    }
-//    else if (NAtoms == 1)
-//    {
-//	// here sperm.NAtoms must be equal 1
-//	// make sure ssdIdxFree is updated
-//	if (!cached) calc_db();
-//	list<badness_at> ba = find_good_distances(1, ssdIdxFree);
-//	Add(ba.front().h, ba.front().k);
-//	Center();
-//	return *this;
-//    }
-//    else if (NAtoms == 2 && sperm.NAtoms == 1)
-//    {
-//	Evolve();
-//	return *this;
-//    }
-//    // here we can be sure that NAtoms >= 2, sperm.NAtoms >= 2
-//    // make sure ssdIdxFree is updated for egg and sperm
-//    if (!cached) calc_db();
-//    if (!sperm.cached) sperm.calc_db();
-//    // calculate probabilities of choosing an egg free distance,
-//    // free distances common to egg and sperm have 5 times higher probability
-//    const double common_prob = 5.0;
-//    double pidx[ssdIdxFree.size()];
-//    double *pp = pidx;
-//    for (vector<int>::iterator
-//	    eidx = ssdIdxFree.begin(), sidx = sperm.ssdIdxFree.begin();
-//	    eidx != ssdIdxFree.end(); ++eidx, ++pp)
-//    {
-//	for (; sidx != sperm.ssdIdxFree.end() && *sidx < *eidx; ++sidx) { }
-//	// no more common distances if sidx was used
-//	if (sidx != sperm.ssdIdxFree.end() && *sidx == *eidx)
-//	{
-//	    *pp = common_prob;
-//	}
-//	else
-//	{
-//	    *pp = 1.0;
-//	}
-//    }
-//    // let's start with random mount:
-//    int idf = random_wt_choose(ssdIdxFree.size(), pidx, 1).front();
-//    double e_afit[NAtoms];
-//    for (int i = 0; i < NAtoms; ++i)  e_afit[i] = AFitness(i);
-//    double s_afit[sperm.NAtoms];
-//    for (int i = 0; i < sperm.NAtoms; ++i)  s_afit[i] = sperm.AFitness(i);
-//    int ea =  random_wt_choose(NAtoms, e_afit, 1).front();
-//    int sa =  random_wt_choose(sperm.NAtoms, s_afit, 1).front();
-//    double omega = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
-//    Molecule sp1(sperm);
-//    sp1.Rotate(omega, sp1.h[sa], sp1.k[sa]);
-//    double radius = ss->d[ssdIdxFree[idf]];
-//    double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
-//    double shn = h[ea] + radius*cos(phi);
-//    double skn = k[ea] + radius*sin(phi);
-//    sp1.Shift(shn-sp1.h[sa], skn-sp1.k[sa]);
-//    double ch1_badness = MBadnessWith(sp1);
-//    // save child molecule
-//    Molecule ch1(*this); ch1.Add(sp1);
-//    // next try a sophisticated triangular mount:
-//    list<int> lidf;
-//    lidf = random_wt_choose(NAtoms, e_afit, 2);
-//
-//}
-
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions
