@@ -207,9 +207,15 @@ Molecule::Molecule(SandSphere *SS,
 
 void Molecule::init()
 {
-    UnCache();
     ss->molecules.push_back(this);
     // check coordinate sizes
+    UnCache();
+    fixsize();
+}
+
+void Molecule::fixsize()
+{
+    UnCache();
     if (h.size() != k.size())
     {
 	cerr << "E: invalide coordinate vectors\n";
@@ -346,119 +352,90 @@ inline int Molecule::dist2(const int& i, const int& j)
     return dh*dh + dk*dk;
 }
 
-///* declaration of a pdffit molecule objects */
-//class molecule
-//{
-//public:
-//    // constructors
-//    molecule(int N = 0); // build empty molecule with Natoms
-//    molecule(const char*); // build molecule from file
-//    molecule& operator=(const molecule&); // copy assignment
-//    // IO functions
-//    bool read_stru(const char*); // read molecule from file
-//    bool save_stru(const char*); // save molecule to file
-//    std::ifstream& operator>>(std::ifstream& s) {return read_stru(s);}
-//    friend std::ostream& operator<<(std::ostream& s, molecule& M)
-//    {return M.save_stru(s);}
-//    std::ostream& save_stru(std::ostream& s) // write molecule to stream
-//    {
-//	switch(out_fmt) {
-//	    case PLAIN:		save_stru_plain(s); break;
-//	    case ATOMEYE:	save_stru_aeye(s); break;
-//	}
-//	return s;
-//    }
-//    molecule& ofmt_plain() // select plain output format
-//    {out_fmt = PLAIN; return *this;} 
-//    molecule& ofmt_aeye() // select atom eye output format
-//    {out_fmt = ATOMEYE; return *this;}
-//    double compare(molecule& m1); // compare 2 molecules:
-//    // property interface functions
-//    double blen(size_t i, size_t j); // get distance between i-th and j-th atom
-//    double blen(size_t k); // get k-th element of the distance matrix
-//    double blen_max(); // find maximum distance
-//    bool   set_xyz(size_t n, double xn, double yn, double zn); // set position
-//    bool   set_all_xyz(std::valarray<double>* pxv, std::valarray<double>* pyv, std::valarray<double>* pzv);
-//    inline double get_x(size_t n) { return x[n]; }
-//    const  std::valarray<double>& get_x() { return x; };
-//    inline double get_y(size_t n) { return y[n]; }
-//    const  std::valarray<double>& get_y() { return y; };
-//    inline double get_z(size_t n) { return z[n]; }
-//    const  std::valarray<double>& get_z() { return z; };
-//    void   set_Uiso(size_t n, double Uison) // set temperature factor
-//    { Uiso[n] = Uison; }
-//    bool   set_all_Uiso(std::valarray<double>* pUisov);
-//    void   set_all_Uiso(double Uison) { Uiso = Uison; }
-//
-//    double get_Uiso(size_t n) {return Uiso[n];}
-//    const  std::valarray<double>& get_Uiso() { return Uiso; };
-//    inline size_t get_Natoms() {return Natoms;}
-//    // other
-//    void resize(int Nnew);
-//    void   set_verbose(int v) {verbose = v;} // set verbosity level
-//    const char* get_title_c_str() {return title.c_str();}
-//    mutable std::valarray<size_t> idx_pair; // index of all pairs in Mdist
-//    inline size_t ij2idx(size_t i, size_t j) // map matrix to 1D vector
-//    {
-//	assert(i < Natoms && j < Natoms);
-//	return i + j*Natoms;
-//    }
-//    inline void idx2ij(size_t idx, size_t* i, size_t* j) // map matrix to 1D vector
-//    {
-//	assert(idx < NMdist);
-//	*j = idx / Natoms;
-//	*i = idx - *j * Natoms;
-//    }
-//    std::list<size_t> idx_close_pairs(double rlow); // find joined atoms
-//    std::list<size_t> idx_stretched_pairs(double maxblen, double rng); // find lonely atoms
-//    std::list<size_t> idx_distant_pairs(double maxdist); // find distant atoms
-//    const  std::valarray<double> get_xyzLims() {
-//	std::valarray<double> xyzl(xyzLims, 6);
-//	return xyzl;
-//    }
-//private:
-//    void   defaults(); // helper constructor function
-//    void   alloc(size_t Natoms); // allocate vectors for Natoms
-//    double distance(size_t i, size_t j); // calculate distance between i,j
-//    // properties
-//    double xyzLims[6]; // { xmin, xmax, ymin, ymax, zmin, zmax }
-//    std::string title;
-//    size_t Natoms; // number of atoms in the unit cell
-//    size_t NMdist; // number of atom pairs in the molecule
-//    std::vector<std::string> atom_type; // isotope/element of atom i
-//    std::valarray<double> x; // coordinate of atom i, 0<=x<1, i<Natoms
-//    std::valarray<double> y; // coordinate of atom i, 0<=y<1
-//    std::valarray<double> z; // coordinate of atom i, 0<=z<1
-//    std::valarray<double> o; // occupancy of atom i
-//    std::valarray<double> b; // neutron scattering length for atom i
-//    std::valarray<double> Uiso; // isotropic temperature factor in A**2
-//    double bavg; // average neutron scattering length
-//    bool   orthogonal; // nonzero for orthogonal lattice
-//    std::valarray<double> Mdist; // 1D representation of distance matrix
-//    std::valarray<bool> good_Mdist; // state of cached Mdist
-//    // IO implementation
-//    std::string stru_file; // input structure file
-//    std::ifstream& read_stru(std::ifstream&); // read molecule in detected format
-//    std::ifstream& read_stru_aeye(std::ifstream&); // read structure in atomeye format
-//    std::ifstream& read_stru_plain(std::ifstream&); // read structure in plain format
-//    std::ifstream& read_stru_pdffit(std::ifstream&); // read structure in PDFFIT format
-//    std::ostream& save_stru_plain(std::ostream&); // save in plain format
-//    std::ostream& save_stru_aeye(std::ostream&); // save in atomeye CFG format
-//    int verbose;
-//    // helper functions:
-//    template <class T> void grow_shrink(std::valarray<T>& v, size_t n);
-//    inline std::string deblank(std::string& s); // removes trailing blanks
-//    inline std::string gsub_comma_space(std::string& s); // :s/,/ /g
-//    inline void token_read_error(std::ifstream&, std::iostream::pos_type, std::string);
-//    void   Error( std::string Message ); // pj: todo error handler
-//    enum file_format {PLAIN=1, ATOMEYE};
-//    file_format out_fmt;
-//};
+////////////////////////////////////////////////////////////////////////
+// Molecule operators
+////////////////////////////////////////////////////////////////////////
+Molecule& Molecule::Shift(int dh, int dk)
+{
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	h[i] += dh;
+	k[i] += dk;
+    }
+    return *this;
+}
+
+Molecule& Molecule::Center()
+{
+    double mean_h = 0.0;
+    double mean_k = 0.0;
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	mean_h += h[i];
+	mean_k += k[i];
+    }
+    mean_h /= NAtoms;
+    mean_k /= NAtoms;
+    Shift( (int) round(-mean_h), (int) round(-mean_k) );
+    return *this;
+}
+
+Molecule& Molecule::Part(const list<int>& cidx)
+{
+    vector<int> h_new, k_new;
+    for ( list<int>::const_iterator li = cidx.begin();
+	    li != cidx.end(); ++li )
+    {
+	h_new.push_back(h[*li]);
+	k_new.push_back(k[*li]);
+    }
+    h = h_new;
+    k = k_new;
+    fixsize();
+    return *this;
+}
+
+Molecule& Molecule::Pop(const list<int>& cidx)
+{
+    list<int> sidx(cidx);
+    sidx.sort();
+    sidx.push_back(NAtoms);
+    vector<int> h_new, k_new;
+    int j = 0;
+    for ( list<int>::iterator li = sidx.begin();
+	    li != sidx.end(); ++li )
+    {
+	for (; j < *li; ++j)
+	{
+	    h_new.push_back(h[j]);
+	    k_new.push_back(k[j]);
+	}
+	j = *li + 1;
+    }
+    h = h_new;
+    k = k_new;
+    fixsize();
+    return *this;
+}
+
+Molecule& Molecule::Pop(const int cidx)
+{
+    h.erase(h.begin() + cidx);
+    k.erase(k.begin() + cidx);
+    fixsize();
+    return *this;
+}
+
 
 /***********************************************************************
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.11  2005/01/26 05:41:01  juhas
+* added Molecule operations: Shift(int dx, int dy), Center(),
+*     Part(list<int>), Pop(list<int>), Pop(int)
+* Molecule resize operations grouped to fixsize()
+*
 * Revision 1.10  2005/01/25 23:19:11  juhas
 * added functions for dealing with GridTol,
 * SandSphere keeps the list of molecules using the same grid
