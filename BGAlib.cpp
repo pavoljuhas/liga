@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -264,7 +264,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 	abad = M.abad;		// individual atom badnesses
 	abadMax = M.abadMax;	// maximum atom badness
 	mbad = M.mbad;		// molecular badness
-	d2 = M.d2;		// sorted table of squared distances 
+	d2 = M.d2;		// sorted table of squared distances
 	ssdIdxFree = M.ssdIdxFree;	// available elements in ss.dist
     }
     // IO helpers
@@ -276,6 +276,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 void Molecule::init()
 {
     ss->molecules.push_back(this);
+    MaxAtoms = ss->NAtoms;
     // check coordinate sizes
     OutFmtGrid();
     UnCache();
@@ -716,10 +717,10 @@ Molecule& Molecule::Evolve(int trials)
 	// generates 2 entries in trials_log, however it may not always work
 	// pick first atom and free distance
 	int a1 = gsl_ran_discrete(BGA::rng, table);
-	int a2 = gsl_ran_discrete(BGA::rng, table); 
+	int a2 = gsl_ran_discrete(BGA::rng, table);
 	for (int i = 0; i < 5 && a1 == a2; ++i)
 	{
-	    a2 = gsl_ran_discrete(BGA::rng, table); 
+	    a2 = gsl_ran_discrete(BGA::rng, table);
 	}
 	if (a1 == a2)
 	{
@@ -760,6 +761,7 @@ Molecule& Molecule::Evolve(int trials)
     badness_at *best;
     best = min_element(trials_log, last_trial);
     Add(best->h, best->k);
+    Center();
     gsl_ran_discrete_free(table);
     return *this;
 }
@@ -785,7 +787,7 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
     // parse format
     string fmt;
     // initialize members:
-    state = 
+    state =
 	read_token("BGA molecule format", fmt) &&
 	read_token("NAtoms", NAtoms) &&
 	read_token("delta", delta);
@@ -814,8 +816,8 @@ template<class T> bool Molecule::ParseHeader::read_token(
     int ltoken = strlen(token);
     string::size_type sp;
     const string::size_type npos = string::npos;
-    if ( 
-	    npos == (sp = header.find(token)) || 
+    if (
+	    npos == (sp = header.find(token)) ||
 	    npos == (sp = header.find_first_not_of(fieldsep, sp+ltoken))
        )
     {
@@ -1052,17 +1054,23 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	case M.ATOMEYE:
 	    // this format outputs atom badnesses
 	    if (!M.cached) M.calc_df();
-	    double xyz_extremes[6] = {
-		-M.ss->dmax,
-		1.01*M.ss->delta*(*min_element(M.h.begin(), M.h.end())),
-		1.01*M.ss->delta*(*min_element(M.k.begin(), M.k.end())),
-		M.ss->dmax,
-		1.01*M.ss->delta*(*max_element(M.h.begin(), M.h.end())),
-		1.01*M.ss->delta*(*max_element(M.k.begin(), M.k.end()))
-	    };
-	    double xyz_lo = *min_element(xyz_extremes, xyz_extremes+6);
-	    double xyz_hi = *max_element(xyz_extremes, xyz_extremes+6);
+	    double xyz_lo = 0.0;
+	    double xyz_hi = 1.0;
 	    double xyz_range = xyz_hi - xyz_lo;
+	    if (M.NAtoms > 0)
+	    {
+		double xyz_extremes[6] = {
+		    -M.ss->dmax,
+		    1.01*M.ss->delta*(*min_element(M.h.begin(), M.h.end())),
+		    1.01*M.ss->delta*(*min_element(M.k.begin(), M.k.end())),
+		    M.ss->dmax,
+		    1.01*M.ss->delta*(*max_element(M.h.begin(), M.h.end())),
+		    1.01*M.ss->delta*(*max_element(M.k.begin(), M.k.end()))
+		};
+		xyz_lo = *min_element(xyz_extremes, xyz_extremes+6);
+		xyz_hi = *max_element(xyz_extremes, xyz_extremes+6);
+		xyz_range = xyz_hi - xyz_lo;
+	    }
 	    fid << "# BGA molecule format = atomeye" << endl;
 	    fid << "# NAtoms = " << M.NAtoms << endl;
 	    fid << "# delta = " << M.ss->delta << endl;
@@ -1141,7 +1149,7 @@ void Population::init()
 {
     // check whether all members use the same SandSphere
     /*
-    iterator ibad = 
+    iterator ibad =
 	adjacent_find(begin(), end(), molecule_SandSpheres_differ);
     if (ibad != end())
     {

@@ -74,7 +74,8 @@ public:
     Molecule& operator=(const Molecule&);	// assignment
     // parameters
     int NDist;    		// length of distance table
-    int NAtoms;   		// target number of atoms
+    int NAtoms;   		// current number of atoms
+    int MaxAtoms;		// target number of atoms
     double ABadness(int);	// fitness of specified atom
     double AFitness(int);	// badness of specified atom
     double MBadness();		// total badness
