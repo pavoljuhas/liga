@@ -87,7 +87,7 @@ istream& ParseArgs::ReadPars(istream& fid)
 	for (   string::iterator ii = par.begin();
 		ii != par.begin() && ispar; ++ii)
 	{
-	    ispar = isalnum(*ii);
+	    ispar = isalnum(*ii) || *ii == '_';
 	}
 	if (!ispar)
 	{
@@ -191,7 +191,7 @@ void ParseArgs::arg_or_par(const char *s)
     // here it looks like a parameter
     bool ispar = isalpha(s[0]);
     for (const char *p = s+1; ispar && p < peq; ++p)
-	ispar = isalnum(*p);
+	ispar = isalnum(*p) || *p == '_';
     if (ispar)
     {
 	string par(s, peq-s);
