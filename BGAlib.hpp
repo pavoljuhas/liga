@@ -126,7 +126,7 @@ public:
     Molecule& operator=(const Molecule&);	// assignment
     ~Molecule();		// destructor
     // fit parameters
-    static double tol_deltad;
+    static double tol_dd;
     static bool evolve_jump;
     static double evolve_frac;
     // fitness/badness functions
