@@ -62,7 +62,7 @@ inline bool read_header(istream& fid)
 }
 
 // read as many numbers as possible
-template<class T> bool read_data(istream& fid, vector<T>& v)
+template<typename T> bool read_data(istream& fid, vector<T>& v)
 {
     // prepare v
     T x;
@@ -1391,7 +1391,7 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
     }
 }
 
-template<class T> bool Molecule::ParseHeader::read_token(
+template<typename T> bool Molecule::ParseHeader::read_token(
 	const char *token, T& value
 	)
 {

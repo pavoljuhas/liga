@@ -48,8 +48,8 @@ public:
     void Dump();
     void ReadPars(const char *file);
     istream& ReadPars(istream& fid = cin);
-    template <class T> T GetPar(string par);
-    template <class T> T GetPar(string par, T defval);
+    template <typename T> T GetPar(string par);
+    template <typename T> T GetPar(string par, T defval);
     template <typename T> vector<T> GetParVec(string par);
     void ValidatePars(list<string>& validpars);
     inline bool ispar(const string& p) { return pars.count(p); }
@@ -62,7 +62,7 @@ private:
     map<string,bool> cmdl_par;
 };
 
-template<class T> T ParseArgs::GetPar(string par)
+template<typename T> T ParseArgs::GetPar(string par)
 {
     if (!pars.count(par))
     {
@@ -81,7 +81,7 @@ template<class T> T ParseArgs::GetPar(string par)
     return val;
 }
 
-template<class T> T ParseArgs::GetPar(string par, T defval)
+template<typename T> T ParseArgs::GetPar(string par, T defval)
 {
     return pars.count(par) ? GetPar<T>(par) : defval;
 }

@@ -17,7 +17,7 @@ struct IOError : public runtime_error
 // similar to mkstemp(3)
 ofstream& mktempofstream(ofstream& out, char *writefile);
 
-template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
+template<typename T> typename list<T>::iterator list_at(list<T>& lst, int n)
 {
     typename list<T>::iterator ii;
     if (n <= lst.size()/2)

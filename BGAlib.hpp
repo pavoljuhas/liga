@@ -39,7 +39,7 @@ struct InvalidPopulation { };
 using namespace std;
 
 // helper objects/functions
-template <class T>
+template <typename T>
 struct OrderedPair : pair<T,T>
 {
     OrderedPair(const T& x, const T& y) : pair<T,T>(x, y)
@@ -222,7 +222,7 @@ public:
     operator bool() {return state;}
 private:
     bool state;
-    template<class T> bool read_token(const char *token, T& value);
+    template<typename T> bool read_token(const char *token, T& value);
     const string& header;
 };
 
