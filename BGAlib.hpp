@@ -8,8 +8,8 @@
 * <license text>
 ***********************************************************************/
 
-#ifndef BGALIB_H_INCLUDED
-#define BGALIB_H_INCLUDED
+#ifndef BGALIB_HPP_INCLUDED
+#define BGALIB_HPP_INCLUDED
 #include <iostream>
 #include <string>
 #include <sstream>
