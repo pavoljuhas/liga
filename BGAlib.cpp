@@ -12,7 +12,7 @@
 #include <limits>
 #include <utility>
 #include <gsl/gsl_randist.h>
-#include "BGAlib3d.hpp"
+#include "BGAlib.hpp"
 
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);

@@ -8,8 +8,8 @@
 * <license text>
 ***********************************************************************/
 
-#ifndef BGALIB3D_H_INCLUDED
-#define BGALIB3D_H_INCLUDED
+#ifndef BGALIB_H_INCLUDED
+#define BGALIB_H_INCLUDED
 #include <iostream>
 #include <string>
 #include <sstream>

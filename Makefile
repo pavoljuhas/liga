@@ -15,13 +15,13 @@ LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS =
 TESTS   = $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
-SOURCES = BGAlib.cpp BGAlib3d.cpp
+SOURCES = BGAlib.cpp
 HEADERS = $(SOURCES:%.cpp=%.hpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
 ########################################################################
 # most common targets:
-all:	 	BGAlib3d.o
+all:	 	BGAlib.o
 # all:	 	$(PROGRAMS)
 # all:	 	tests
 lib_objects: $(OBJECTS)
