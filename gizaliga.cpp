@@ -11,16 +11,17 @@
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
-void print_version()
+string version_string(string quote = "")
 {
     using namespace std;
-    const char *ver =
-        "$Id$"
+    ostringstream oss;
+    oss << quote
+        << "$Id$" << endl
 #   if defined(__DATE__) && defined(__TIME__)
-        "\ncompiled " __DATE__ " " __TIME__
+	<< quote << "compiled " __DATE__ " " __TIME__ << endl
 #   endif
-        "\n";
-    cout << ver;
+        ;
+    return oss.str();
 }
 
 void print_help(ParseArgs& a)
@@ -195,7 +196,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     else if (a.isopt("v"))
     {
-        print_version();
+	cout << version_string();
         exit(EXIT_SUCCESS);
     }
     if (a.isopt("p"))
@@ -232,10 +233,10 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     string hashsep(72, '#');
     cout << hashsep << endl;
-    cout << "# " << a.cmd_t << ' ' <<
-        "$Id$" << endl;
     time_t cur_time = time(NULL);
     cout << "# " << ctime(&cur_time);
+    cout << "# " << a.cmd_t << endl;
+    cout << version_string("# ");
     cout << hashsep << endl;
     Molecule mol(*dtab);
     cout << "distfile=" << rp.distfile << endl;
@@ -369,7 +370,7 @@ int main(int argc, char *argv[])
     }
     cout << "Done" << endl;
     // fill higher divisions
-    cout << "Filling lower divisions" << endl;
+    cout << "Filling higher divisions" << endl;
     mol.evolve_jump = false;
     for (int level = mol.NAtoms()+1; level <= mol.max_NAtoms(); ++level)
     {
@@ -381,10 +382,12 @@ int main(int argc, char *argv[])
         liga[level].push_back(higher_team);
     }
     mol.evolve_jump = true;
+    cout << "Done" << endl;
     // find the first world champion
     PMOL world_champ = liga.back().best();
     cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
 	<< world_champ->Badness() << endl;
+    cout << endl << "Starting the game ... now." << endl;
     // let the game begin
     while ( !(world_champ->Badness() < rp.tol_bad ) )
     {
@@ -436,7 +439,7 @@ int main(int argc, char *argv[])
         save_snapshot(*world_champ, rp);
         save_frames(*world_champ, rp, rv);
     }
-    cout << "Solution found!!!" << endl;
+    cout << endl << "Solution found!!!" << endl;
     cout << "cnt_penalty_calls = " <<
 	BGA::cnt_penalty_calls << endl;
     // save last frame
