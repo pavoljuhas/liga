@@ -17,7 +17,7 @@
 
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
-double BGA::tol_deltad = 0.1;
+double BGA::eps_badness = 1.0e-10;
 
 ////////////////////////////////////////////////////////////////////////
 // common helper functions
@@ -161,10 +161,10 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = dist(*atom1, *atom2);
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = pow(dd/BGA::tol_deltad, 2);
+    badness = dd*dd;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
-    if (fabs(dd) < BGA::tol_deltad)
+    if (fabs(dd) < pM->tol_deltad)
     {
 	dUsed = *dnear;
 	owner->dTarget.erase(dnear);
@@ -379,6 +379,8 @@ void Molecule::init()
 {
     max_abad = 0;
     badness = 0;
+    numeric_limits<double> double_info;
+    tol_deltad = double_info.max();
     // default output format
     OutFmtGrid();
 }
@@ -688,8 +690,8 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	double d = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(d);
 	double dd = *dnear - d;
-	tbad += pow(dd/BGA::tol_deltad, 2);
-	if (fabs(dd) < BGA::tol_deltad)
+	tbad += dd*dd;
+	if (fabs(dd) < tol_deltad)
 	{
 	    used_distances.push_back(*dnear);
 	    erased_positions.push_back(dTarget.erase(dnear));
