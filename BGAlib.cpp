@@ -625,6 +625,7 @@ ostream& operator<<(ostream& os, Molecule& m)
 	    {
 		os << m.h[i] << '\t' << m.k[i] << endl;
 	    }
+	    break;
 	case m.XY:
 	    os << "# BGA molecule format: xy" << endl;
 	    os << "# NAtoms = " << m.NAtoms << endl;
@@ -635,6 +636,7 @@ ostream& operator<<(ostream& os, Molecule& m)
 		    m.ss->delta * m.h[i] << '\t' <<
 		    m.ss->delta * m.k[i] << endl;
 	    }
+	    break;
 	case m.AEYE:
 	    os << "# BGA molecule format: aeye" << endl;
 	    os << "# NAtoms = " << m.NAtoms << endl;
@@ -663,9 +665,10 @@ ostream& operator<<(ostream& os, Molecule& m)
 		os <<
 		    (m.h[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
 		    (m.k[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
-		    0.0 << " " <<
+		    0.5 << " " <<
 		    m.abad[i] << endl;
 	    }
+	    break;
     }
     return os;
 }
