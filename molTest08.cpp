@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     const double pemax = 0.75;
     const double pallway = 0.01;
     const double avgmb = 0.01;
-    BGA::tol_dist = 0.1;
+    BGA::tol_deltad = 0.1;
     ////////////////////////////////////////////////////////////////////////
     if (argc == 1)
     {

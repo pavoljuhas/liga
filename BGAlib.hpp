@@ -24,8 +24,8 @@
 namespace BGA
 {
     extern gsl_rng* rng;
-    extern double tol_dist;
-    const double eps_abadness = 1.0e-10;
+    extern double tol_deltad;
+    const double eps_badness = 1.0e-10;
 };
 
 // exceptions
