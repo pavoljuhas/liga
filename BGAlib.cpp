@@ -183,12 +183,7 @@ typedef struct {
 
 int d2idx_cmp(const d2idx_type& p, const d2idx_type& q)
 {
-    if (p.d2 < q.d2)
-	return -1;
-    else if (p.d2 == q.d2)
-	return 0;
-    else
-	return 1;
+    return (p.d2 < q.d2);
 }
 
 void Molecule::calc_df()
@@ -399,6 +394,9 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.6  2005/01/25 16:23:07  juhas
+* simplified comparison function d2idx_cmp
+*
 * Revision 1.5  2005/01/25 16:16:19  juhas
 * BGAlib.h renamed to BGAlib.hpp
 *
