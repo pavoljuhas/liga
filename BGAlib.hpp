@@ -21,6 +21,8 @@
 /* declaration of BGA objects */
 using namespace std;
 
+class Molecule;
+
 class SandSphere
 {
 public:
@@ -39,10 +41,15 @@ public:
     valarray<double> d2;	// sorted list of squared target distances
     valarray<double> d2lo;	// low limits for d2
     valarray<double> d2hi;	// high limits for d2
+    void setGridTol(double t);	// set grid tolerance
+    double GridTol();
 private:
-    static const double gridTol = 1.1;
+    static const double defGridTol = 1.0;
+    double vGridTol;
     // helper functions
     void init(const vector<double>& t);
+    list<Molecule *> molecules;
+    friend class Molecule;
 };
 
 // Molecule in 2 dimensions
@@ -79,6 +86,9 @@ public:
     bool Read(const char*); 	// read integer grid coordinates
     bool Save(const char*); 	// save integer grid coordinates
     bool SaveAeye(const char*); // export coordinates in AtomEye format
+    // public utility functions
+    inline void UnCache() { cached = false; }
+    ~Molecule();		// destructor
 private:
     // data storage
     SandSphere *ss;
@@ -201,8 +211,9 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
-* Revision 1.7  2005/01/25 20:12:53  juhas
-* added gridTol constant
+* Revision 1.8  2005/01/25 23:19:11  juhas
+* added functions for dealing with GridTol,
+* SandSphere keeps the list of molecules using the same grid
 *
 * Revision 1.6  2005/01/25 17:23:24  juhas
 * added Molecule constructors from real coordinates

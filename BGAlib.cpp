@@ -124,10 +124,30 @@ void SandSphere::init(const vector<double>& t)
     d2hi.resize(NDist);
     d /= delta;
     d2 = d*d;
-    d2lo = d2 - 2*gridTol*d + gridTol*gridTol;
-    d2hi = d2 + 2*gridTol*d + gridTol*gridTol;
+    // take care of grid tolerance:
+    setGridTol(defGridTol);
 }
- 
+
+void SandSphere::setGridTol(double t)
+{
+    vGridTol = t;
+    for (int i = 0; i < NDist; ++i)
+    {
+	d2lo[i] = (d[i] < vGridTol) ? 0.0 : pow(d[i] - vGridTol, 2);
+	d2hi[i] = pow(d[i] + vGridTol, 2);
+    }
+    for ( list<Molecule *>::const_iterator i = molecules.begin();
+	    i != molecules.end(); ++i )
+    {
+	(*i)->UnCache();
+    }
+}
+
+double SandSphere::GridTol()
+{
+    return vGridTol;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
@@ -187,7 +207,8 @@ Molecule::Molecule(SandSphere *SS,
 
 void Molecule::init()
 {
-    cached = false;
+    UnCache();
+    ss->molecules.push_back(this);
     // check coordinate sizes
     if (h.size() != k.size())
     {
@@ -201,6 +222,12 @@ void Molecule::init()
     d2.resize(NDist, 0);
 //    ssdIdxUsed.clear();
     ssdIdxFree.clear();
+}
+
+Molecule::~Molecule()
+{
+    ss->molecules.remove(this);
+    // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
 }
 
 typedef struct {
@@ -238,6 +265,10 @@ void Molecule::calc_df()
 	}
     }
     sort(d2idx, d2idx+NDist, d2idx_cmp);
+    for (ij = 0; ij < NDist; ++ij)
+    {
+	d2[ij] = d2idx[ij].d2;
+    }
     // evaluate abad[i]
     abad = 0.0;
     int ssdIdx = 0;
@@ -428,6 +459,10 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.10  2005/01/25 23:19:11  juhas
+* added functions for dealing with GridTol,
+* SandSphere keeps the list of molecules using the same grid
+*
 * Revision 1.9  2005/01/25 20:12:29  juhas
 * fixed evaluation of d2lo, d2hi, abadMax
 *
