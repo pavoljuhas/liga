@@ -29,6 +29,26 @@ if [[ $# == 0 || -n "${(M)*:#--help}" ]]; then
     exit
 fi
 
+# calibrated cpu times
+typeset -A bghost_cputimes
+bghost_cputimes=(
+    valentino.pa.msu.edu     1.000
+    romaioi.pa.msu.edu       0.821
+    poirot.pa.msu.edu        0.952
+    emperor.pa.msu.edu       0.984
+    donut.pa.msu.edu         0.991
+    bg.pa.msu.edu            0.991
+    kneesave.pa.msu.edu      1.024
+    wobble.pa.msu.edu        1.026
+    sunrise.pa.msu.edu       6.243
+)
+if [[ ${+bghost_cputimes[$HOST]} == 0 ]]; then
+    print -u2 "CPU time not calibrated on $HOST"
+    exit 1
+fi
+float -F3 cpu1s=${bghost_cputimes[$HOST]}
+float -F3 cpuscale=$(( 1.0 / cpu1s ))
+
 CMD=$1
 if [[ ! -x $CMD ]]; then
     print -u2 -- "cannot execute ${CMD}"
@@ -44,6 +64,8 @@ fi
 results=( DISTFILE user )
 
 exec 3<&1 4<&2
+print "#bm $HOST"
+print -P "#bm %D{%c}"
 print "#bm timing $CMD $par"
 for df in $distance_files;
 do
@@ -61,9 +83,10 @@ do
 	    )
 	) || break
     print "#bm $UT\n"
-    float -F3 AVGT=$(( ${UT%s} / REPEATS ))
-    results=( $results ${df:t} $AVGT )
+    float -F3 AVGvalentinoT=$(( cpuscale * ${UT%s} / REPEATS ))
+    results=( $results ${df:t} $AVGvalentinoT )
 done
+print "#bm scaling ${HOST%%.*} CPU times with ${cpuscale} = 1.0/${cpu1s}"
 
 print
 print "================================================================"
