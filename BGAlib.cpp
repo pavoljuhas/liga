@@ -737,13 +737,17 @@ Molecule& Molecule::Pop(list<Atom_t>::iterator ai)
     // delete all pairs that refer to *ai
     Atom_t *ap = &(*ai);
     typedef list<Pair_t*>::iterator LPPit;
-    for (LPPit ii = pairs.begin(); ii != pairs.end(); ++ii)
+    for (LPPit ii = pairs.begin(); ii != pairs.end(); )
     {
 	Pair_t* pp = *ii;
 	if (pp->atom1 == ap || pp->atom2 == ap)
 	{
 	    delete *ii;
-	    pairs.erase(ii);
+	    ii = pairs.erase(ii);
+	}
+	else
+	{
+	    ++ii;
 	}
     }
     atoms.erase(ai);
@@ -1405,15 +1409,14 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
     // initialize members:
     state =
 	read_token("BGA molecule format", fmt) &&
-	read_token("NAtoms", NAtoms) &&
-	read_token("delta", delta);
+	read_token("NAtoms", NAtoms);
     if (!state)
     {
 	return;
     }
     if (fmt == "grid")
 	format = GRID;
-    else if (fmt == "xy")
+    else if (fmt == "xyz")
 	format = XYZ;
     else if (fmt == "atomeye")
 	format = ATOMEYE;
@@ -1452,12 +1455,10 @@ istream& Molecule::ReadGrid(istream& fid)
     bool result = read_header(fid, header) && read_data(fid, vhkl);
     if (!result) return fid;
     // parse header
-    double vhkl_scale = 1.0;
     int vhkl_NAtoms = vhkl.size()/3;
     ParseHeader ph(header);
     if (ph)
     {
-	vhkl_scale = ph.delta / ss->delta;
 	if ( vhkl_NAtoms != ph.NAtoms )
 	{
 	    cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
