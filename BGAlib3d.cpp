@@ -178,12 +178,12 @@ Atom_t::Atom_t(int h0, int k0, int l0, int bad0) :
     age = 1;
 }
 
-const int Atom_t::Badness()
+int Atom_t::Badness() const
 {
     return badness;
 }
 
-const double Atom_t::AvgBadness()
+double Atom_t::AvgBadness() const
 {
     return (age != 0) ? 1.0*badness_sum/age : 0.0;
 }
@@ -257,14 +257,14 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     atom1.IncBadness(badness);
     atom2.IncBadness(badness);
     owner->badness += 2*badness;
-    int mb = max(atom1.Badness(), atom2.Badness());
-    if (mb > owner->max_abad)  owner->max_abad = mb;
+    int mab = max(atom1.Badness(), atom2.Badness());
+    if (mab > owner->max_abad)  owner->max_abad = mab;
 }
 
 Pair_t::~Pair_t()
 {
-    int mb = max(atom1.Badness(), atom2.Badness());
-    if (mb >= owner->max_abad)  owner->max_abad = -1;
+    int mab = max(atom1.Badness(), atom2.Badness());
+    if (mab >= owner->max_abad)  owner->max_abad = -1;
     atom1.DecBadness(badness);
     atom2.DecBadness(badness);
     owner->badness -= 2*badness;
@@ -536,19 +536,33 @@ void Molecule::init()
 //    return abadMax - badness_i;
 //}
 //
-//double Molecule::MBadness() const
-//{
-//    if (!cached) calc_db();
-//    return mbad;
-//}
-//
-//double Molecule::MFitness() const
-//{
-//    // this will update abadMax if necessary
-//    double mbadness = MBadness();
-//    return NAtoms*abadMax - mbadness;
-//}
-//
+int Molecule::Badness() const
+{
+    return badness;
+}
+
+int Molecule::Fitness() const
+{
+    // call to MaxABadness() will update max_abad if necessary
+    return NAtoms*MaxABadness() - badness;
+}
+
+bool compare_ABadness(const Atom_t& lhs, const Atom_t& rhs)
+{
+    return lhs.Badness() < rhs.Badness();
+}
+
+int Molecule::MaxABadness() const
+{
+    if (max_abad < 0)
+    {
+	max_abad = (NAtoms == 0) ?  0 :
+	    max_element(atoms.begin(), atoms.end(), compare_ABadness)->
+	    Badness();
+    }
+    return max_abad;
+}
+
 //double Molecule::ABadnessAt(int nh, int nk) const
 //{
 //    if (NAtoms == ss->NAtoms)
@@ -799,8 +813,14 @@ Molecule& Molecule::Add(int nh, int nk, int nl)
 
 Molecule& Molecule::Add(Atom_t atom)
 {
+    if (NAtoms == max_NAtoms)
+    {
+	cerr << "E: molecule too large" << endl;
+	throw InvalidMolecule();
+    }
     list<Atom_t>::iterator this_atom, ai;
     this_atom = atoms.insert(atoms.end(), atom);
+    NAtoms++;
     this_atom->ResetBadness();
     for (ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
