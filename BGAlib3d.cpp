@@ -238,7 +238,7 @@ int dist2(const Atom_t& a1, const Atom_t& a2)
 // Pair_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-bool compare_in_array(const int& lhs, const pair<double,double*>& rhs)
+bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
 {
     const double value = rhs.first;
     const double *a = rhs.second;
@@ -261,7 +261,7 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     double *d2hi = &(owner->ss->d2hi[0]);
     pair<double,double*> d2_d2hi(d2, d2hi);
     ii = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
-	    d2_d2hi, compare_in_array );
+	    d2_d2hi, comp_find_in_array );
     if (ii == owner->ssdIdxFree.end() || d2lo[*ii] > d2)
     {
 	ssdIdxUsed = -1;
@@ -531,9 +531,24 @@ int Molecule::Fitness() const
     return NAtoms*MaxABadness() - badness;
 }
 
-bool compare_ABadness(const Atom_t& lhs, const Atom_t& rhs)
+bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
 {
     return lhs.Badness() < rhs.Badness();
+}
+
+bool comp_Atom_h(const Atom_t& lhs, const Atom_t& rhs)
+{
+    return lhs.h < rhs.h;
+}
+
+bool comp_Atom_k(const Atom_t& lhs, const Atom_t& rhs)
+{
+    return lhs.Badness() < rhs.Badness();
+}
+
+bool comp_Atom_l(const Atom_t& lhs, const Atom_t& rhs)
+{
+    return lhs.l < rhs.l;
 }
 
 int Molecule::MaxABadness() const
@@ -541,7 +556,7 @@ int Molecule::MaxABadness() const
     if (max_abad < 0)
     {
 	max_abad = (NAtoms == 0) ?  0 :
-	    max_element(atoms.begin(), atoms.end(), compare_ABadness)->
+	    max_element(atoms.begin(), atoms.end(), comp_Atom_Badness)->
 	    Badness();
     }
     return max_abad;
@@ -629,7 +644,7 @@ int Molecule::MaxABadness() const
 
 
 //////////////////////////////////////////////////////////////////////////
-//// Molecule operators
+// Molecule operators
 //////////////////////////////////////////////////////////////////////////
 
 Molecule& Molecule::Shift(double dh, double dk, double dl)
@@ -1529,46 +1544,46 @@ bool Molecule::ReadXY(const char* file)
     return result;
 }
 
-//bool write_file(const char* file, Molecule& M)
-//{
-//    // open file for writing
-//    ofstream fid(file);
-//    if (!fid)
-//    {
-//	cerr << "E: unable to write to '" << file << "'" << endl;
-//	throw IOError();
-//    }
-//    bool result = (fid << M);
-//    fid.close();
-//    return result;
-//}
-//
-//bool Molecule::WriteGrid(const char* file)
-//{
-//    file_fmt_type org_ofmt = output_format;
-//    OutFmtGrid();
-//    bool result = write_file(file, *this);
-//    output_format = org_ofmt;
-//    return result;
-//}
-//
-//bool Molecule::WriteXY(const char* file)
-//{
-//    file_fmt_type org_ofmt = output_format;
-//    OutFmtXY();
-//    bool result = write_file(file, *this);
-//    output_format = org_ofmt;
-//    return result;
-//}
-//
-//bool Molecule::WriteAtomEye(const char* file)
-//{
-//    file_fmt_type org_ofmt = output_format;
-//    OutFmtAtomEye();
-//    bool result = write_file(file, *this);
-//    output_format = org_ofmt;
-//    return result;
-//}
+bool write_file(const char* file, Molecule& M)
+{
+    // open file for writing
+    ofstream fid(file);
+    if (!fid)
+    {
+	cerr << "E: unable to write to '" << file << "'" << endl;
+	throw IOError();
+    }
+    bool result = (fid << M);
+    fid.close();
+    return result;
+}
+
+bool Molecule::WriteGrid(const char* file)
+{
+    file_fmt_type org_ofmt = output_format;
+    OutFmtGrid();
+    bool result = write_file(file, *this);
+    output_format = org_ofmt;
+    return result;
+}
+
+bool Molecule::WriteXY(const char* file)
+{
+    file_fmt_type org_ofmt = output_format;
+    OutFmtXY();
+    bool result = write_file(file, *this);
+    output_format = org_ofmt;
+    return result;
+}
+
+bool Molecule::WriteAtomEye(const char* file)
+{
+    file_fmt_type org_ofmt = output_format;
+    OutFmtAtomEye();
+    bool result = write_file(file, *this);
+    output_format = org_ofmt;
+    return result;
+}
 
 Molecule& Molecule::OutFmtGrid()
 {
@@ -1624,85 +1639,90 @@ istream& operator>>(istream& fid, Molecule& M)
     return fid;
 }
 
-//ostream& operator<<(ostream& fid, Molecule& M)
-//{
-//    switch (M.output_format)
-//    {
-//	case M.GRID:
-//	    fid << "# BGA molecule format = grid" << endl;
-//	    fid << "# NAtoms = " << M.NAtoms << endl;
-//	    fid << "# delta = " << M.ss->delta << endl;
-//	    for (int i = 0; i < M.NAtoms; ++i)
-//	    {
-//		fid << M.h[i] << '\t' << M.k[i] << endl;
-//	    }
-//	    break;
-//	case M.XY:
-//	    fid << "# BGA molecule format = xy" << endl;
-//	    fid << "# NAtoms = " << M.NAtoms << endl;
-//	    fid << "# delta = " << M.ss->delta << endl;
-//	    for (int i = 0; i < M.NAtoms; ++i)
-//	    {
-//		fid <<
-//		    M.ss->delta * M.h[i] << '\t' <<
-//		    M.ss->delta * M.k[i] << endl;
-//	    }
-//	    break;
-//	case M.ATOMEYE:
-//	    // this format outputs atom badnesses
-//	    if (!M.cached) M.calc_db();
-//	    double xyz_lo = 0.0;
-//	    double xyz_hi = 1.0;
-//	    double xyz_range = xyz_hi - xyz_lo;
-//	    if (M.NAtoms > 0)
-//	    {
-//		double xyz_extremes[6] = {
-//		    -M.ss->dmax,
-//		    1.01*M.ss->delta*(*min_element(M.h.begin(), M.h.end())),
-//		    1.01*M.ss->delta*(*min_element(M.k.begin(), M.k.end())),
-//		    M.ss->dmax,
-//		    1.01*M.ss->delta*(*max_element(M.h.begin(), M.h.end())),
-//		    1.01*M.ss->delta*(*max_element(M.k.begin(), M.k.end()))
-//		};
-//		xyz_lo = *min_element(xyz_extremes, xyz_extremes+6);
-//		xyz_hi = *max_element(xyz_extremes, xyz_extremes+6);
-//		xyz_range = xyz_hi - xyz_lo;
-//	    }
-//	    fid << "# BGA molecule format = atomeye" << endl;
-//	    fid << "# NAtoms = " << M.NAtoms << endl;
-//	    fid << "# delta = " << M.ss->delta << endl;
-//	    fid << "Number of particles = " << M.NAtoms << endl;
-//	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
-//	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
-//	    fid << "H0(1,2) = 0 A" << endl;
-//	    fid << "H0(1,3) = 0 A" << endl;
-//	    fid << "H0(2,1) = 0 A" << endl;
-//	    fid << "H0(2,2) = " << xyz_range << " A" << endl;
-//	    fid << "H0(2,3) = 0 A" << endl;
-//	    fid << "H0(3,1) = 0 A" << endl;
-//	    fid << "H0(3,2) = 0 A" << endl;
-//	    fid << "H0(3,3) = " << xyz_range << " A" << endl;
-//	    fid << ".NO_VELOCITY." << endl;
-//	    // 4 entries: x, y, z, Uiso
-//	    fid << "entry_count = 4" << endl;
-//	    fid << "auxiliary[0] = abad [au]" << endl;
-//	    fid << endl;
-//	    // pj: now it only works for a single Carbon atom in the molecule
-//	    fid << "12.0111" << endl;
-//	    fid << "C" << endl;
-//	    for (int i = 0; i < M.NAtoms; i++)
-//	    {
-//		fid <<
-//		    (M.h[i]*M.ss->delta - xyz_lo)/xyz_range << " " <<
-//		    (M.k[i]*M.ss->delta - xyz_lo)/xyz_range << " " <<
-//		    0.5 << " " <<
-//		    M.abad[i] << endl;
-//	    }
-//	    break;
-//    }
-//    return fid;
-//}
-//
+ostream& operator<<(ostream& fid, Molecule& M)
+{
+    typedef list<Atom_t>::iterator LAit;
+		LAit afirst = M.atoms.begin();
+		LAit alast = M.atoms.end();
+    switch (M.output_format)
+    {
+	case M.GRID:
+	    fid << "# BGA molecule format = grid" << endl;
+	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# delta = " << M.ss->delta << endl;
+	    for (LAit ai = afirst; ai != alast; ++ai)
+	    {
+		fid << ai->h << '\t' << ai->k << '\t' << ai->l << endl;
+	    }
+	    break;
+	case M.XY:
+	    fid << "# BGA molecule format = xy" << endl;
+	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# delta = " << M.ss->delta << endl;
+	    for (LAit ai = afirst; ai != alast; ++ai)
+	    {
+		fid <<
+		    M.ss->delta * ai->h << '\t' <<
+		    M.ss->delta * ai->k << '\t' <<
+		    M.ss->delta * ai->l << endl;
+	    }
+	    break;
+	case M.ATOMEYE:
+	    double xyz_lo = 0.0;
+	    double xyz_hi = 1.0;
+	    double xyz_range = xyz_hi - xyz_lo;
+	    if (M.NAtoms > 0)
+	    {
+		const double scale = 1.01*M.ss->delta;
+		double xyz_extremes[8] = {
+		    -M.ss->dmax,
+		    scale * min_element(afirst, alast, comp_Atom_h)->h,
+		    scale * min_element(afirst, alast, comp_Atom_k)->k,
+		    scale * min_element(afirst, alast, comp_Atom_l)->l,
+		    M.ss->dmax,
+		    scale * max_element(afirst, alast, comp_Atom_h)->h,
+		    scale * max_element(afirst, alast, comp_Atom_k)->k,
+		    scale * max_element(afirst, alast, comp_Atom_l)->l,
+		};
+		xyz_lo = *min_element(xyz_extremes, xyz_extremes+8);
+		xyz_hi = *max_element(xyz_extremes, xyz_extremes+8);
+		xyz_range = xyz_hi - xyz_lo;
+	    }
+	    fid << "# BGA molecule format = atomeye" << endl;
+	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# delta = " << M.ss->delta << endl;
+	    fid << "Number of particles = " << M.NAtoms << endl;
+	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
+	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
+	    fid << "H0(1,2) = 0 A" << endl;
+	    fid << "H0(1,3) = 0 A" << endl;
+	    fid << "H0(2,1) = 0 A" << endl;
+	    fid << "H0(2,2) = " << xyz_range << " A" << endl;
+	    fid << "H0(2,3) = 0 A" << endl;
+	    fid << "H0(3,1) = 0 A" << endl;
+	    fid << "H0(3,2) = 0 A" << endl;
+	    fid << "H0(3,3) = " << xyz_range << " A" << endl;
+	    fid << ".NO_VELOCITY." << endl;
+	    // 4 entries: x, y, z, Uiso
+	    fid << "entry_count = 4" << endl;
+	    fid << "auxiliary[0] = abad [au]" << endl;
+	    fid << endl;
+	    // pj: now it only works for a single Carbon atom in the molecule
+	    fid << "12.0111" << endl;
+	    fid << "C" << endl;
+	    for (LAit ai = afirst; ai != alast; ++ai)
+	    {
+		fid <<
+		    (ai->h * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    (ai->k * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    (ai->l * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    ai->Badness() << endl;
+	    }
+	    break;
+    }
+    return fid;
+}
+
 //void Molecule::PrintBadness()
 //{
 //    // call to MBadness() will update abadMax if necessary
