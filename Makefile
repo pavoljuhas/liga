@@ -37,13 +37,10 @@ lib_objects: $(OBJECTS)
 
 test: $(TESTS)
 
-ssTest01: ssTest01.o $(OBJECTS)
+ssTest%: ssTest%.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
-molTest01: molTest01.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
-
-molTest02: molTest02.o $(OBJECTS)
+molTest%: molTest%.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 #####################################################################}}}
