@@ -88,22 +88,21 @@ private:
 class Atom_t
 {
 public:
-    Atom_t(int h0 = 0, int k0 = 0, int l0 = 0, int bad0 = 0);
-    Atom_t(double h0, double k0, double l0, int bad0 = 0);
-    mutable int h, k, l;
-    int Badness() const;
+    Atom_t(double h0, double k0, double l0, double bad0 = 0);
+    mutable double h, k, l;
+    double Badness() const;
     double AvgBadness() const;
-    int IncBadness(int db = 1);
-    int DecBadness(int db = 1);
-    int ResetBadness(int b = 0);
+    double IncBadness(double db = 1.0);
+    double DecBadness(double db = 1.0);
+    double ResetBadness(double b = 0.0);
 private:
-    int badness;
-    int badness_sum;
+    double badness;
+    double badness_sum;
     int age;
 };
 
 bool operator==(const Atom_t& a1, const Atom_t& a2);
-int dist2(const Atom_t& a1, const Atom_t& a2);
+double dist2(const Atom_t& a1, const Atom_t& a2);
 inline double dist(const Atom_t& a1, const Atom_t& a2)
 {
     return sqrt(1.0*dist2(a1, a2));
@@ -209,8 +208,8 @@ private:
     friend class Pair_t;
     mutable int max_NAtoms;		// target number of atoms
     // badness evaluation
-    mutable int max_abad;		// maximum atom badness
-    mutable int badness;		// molecular badness
+    mutable double max_abad;		// maximum atom badness
+    mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);

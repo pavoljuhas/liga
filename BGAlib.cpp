@@ -190,22 +190,14 @@ double SandSphere::GridTol()
 // Atom_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-Atom_t::Atom_t(int h0, int k0, int l0, int bad0) :
+Atom_t::Atom_t(double h0, double k0, double l0, double bad0) :
     h(h0), k(k0), l(l0), badness(bad0)
 {
     badness_sum = badness;
     age = 1;
 }
 
-Atom_t::Atom_t(double h0, double k0, double l0, int bad0) :
-    h((int) round(h0)), k((int) round(k0)), l((int) round(l0)),
-    badness(bad0)
-{
-    badness_sum = badness;
-    age = 1;
-}
-
-int Atom_t::Badness() const
+double Atom_t::Badness() const
 {
     return badness;
 }
@@ -215,7 +207,7 @@ double Atom_t::AvgBadness() const
     return (age != 0) ? 1.0*badness_sum/age : 0.0;
 }
 
-int Atom_t::IncBadness(int db)
+double Atom_t::IncBadness(double db)
 {
     badness += db;
     badness_sum += badness;
@@ -223,7 +215,7 @@ int Atom_t::IncBadness(int db)
     return badness;
 }
 
-int Atom_t::DecBadness(int db)
+double Atom_t::DecBadness(double db)
 {
     badness -= db;
     badness_sum += badness;
@@ -231,7 +223,7 @@ int Atom_t::DecBadness(int db)
     return badness;
 }
 
-int Atom_t::ResetBadness(int b)
+double Atom_t::ResetBadness(double b)
 {
     badness = badness_sum = b;
     age = 1;
@@ -243,9 +235,9 @@ bool operator==(const Atom_t& a1, const Atom_t& a2)
     return a1.h == a2.h && a1.k == a2.k && a1.l == a2.l;
 }
 
-int dist2(const Atom_t& a1, const Atom_t& a2)
+double dist2(const Atom_t& a1, const Atom_t& a2)
 {
-    int dr[3] = { (a1.h - a2.h), (a1.k - a2.k), (a1.l - a2.l) };
+    double dr[3] = { (a1.h - a2.h), (a1.k - a2.k), (a1.l - a2.l) };
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }
 
@@ -880,7 +872,7 @@ void Molecule::calc_test_badness(Atom_t& ta)
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	int td2 = dist2(*ai, ta);
+	double td2 = dist2(*ai, ta);
 	double td = sqrt(td2+0.0);
 	VIit inear = find_nearest_distance(td);
 	if ((td2 < ss->d2lo[*inear]) || (td2 > ss->d2hi[*inear]))
