@@ -30,7 +30,7 @@ lib_objects: $(OBJECTS)
 
 ########################################################################
 # simulations {{{
-%.o: %.cpp %.h
+%.o: %.cpp %.hpp
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 #####################################################################}}}
@@ -42,6 +42,9 @@ ssTest1: ssTest1.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 molTest1: molTest1.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+molTest2: molTest2.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 #####################################################################}}}
@@ -64,6 +67,9 @@ list:
 # Here is what people have been up to: {{{
 #
 # $Log$
+# Revision 1.5  2005/01/25 23:20:44  juhas
+# added target for molTest2
+#
 # Revision 1.4  2005/01/25 17:35:48  juhas
 # *** empty log message ***
 #
