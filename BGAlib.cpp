@@ -17,7 +17,7 @@
 
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
-double BGA::tol_dist = 0.1;
+double BGA::tol_deltad = 0.1;
 
 ////////////////////////////////////////////////////////////////////////
 // common helper functions
@@ -118,7 +118,7 @@ double Atom_t::IncBadness(double db)
 double Atom_t::DecBadness(double db)
 {
     badness -= db;
-    if (fabs(badness) < BGA::eps_abadness)
+    if (fabs(badness) < BGA::eps_badness)
 	badness = 0.0;
     badness_sum += badness;
     age++;
@@ -161,10 +161,10 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = dist(*atom1, *atom2);
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = pow(dd/BGA::tol_dist, 2);
-    if (badness < BGA::eps_abadness)
+    badness = pow(dd/BGA::tol_deltad, 2);
+    if (badness < BGA::eps_badness)
 	badness = 0.0;
-    if (fabs(dd) < BGA::tol_dist)
+    if (fabs(dd) < BGA::tol_deltad)
     {
 	dUsed = *dnear;
 	owner->dTarget.erase(dnear);
@@ -193,7 +193,7 @@ Pair_t::~Pair_t()
     atom1->DecBadness(badness);
     atom2->DecBadness(badness);
     owner->badness -= 2*badness;
-    if (fabs(owner->badness) < BGA::eps_abadness)
+    if (fabs(owner->badness) < BGA::eps_badness)
 	owner->badness = 0.0;
     if (dUsed > 0.0)
     owner->dTarget.return_back(dUsed);
@@ -432,7 +432,7 @@ double Molecule::AFitness(const Atom_t& a) const
 {
     // take care of perfect molecule
     double mb = Badness();
-    if (mb < BGA::eps_abadness)
+    if (mb < BGA::eps_badness)
 	mb = 1.0;
     // fitness is proportional to probability that other atoms will be dumped
     // i.e., summed badness of all other atoms
@@ -688,8 +688,8 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	double d = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(d);
 	double dd = *dnear - d;
-	tbad += pow(dd/BGA::tol_dist, 2);
-	if (fabs(dd) < BGA::tol_dist)
+	tbad += pow(dd/BGA::tol_deltad, 2);
+	if (fabs(dd) < BGA::tol_deltad)
 	{
 	    used_distances.push_back(*dnear);
 	    erased_positions.push_back(dTarget.erase(dnear));
