@@ -974,13 +974,13 @@ namespace BGA_Molecule_MateWith
 
 namespace BGA_Molecule_MateWith
 {
-    bool compare_MFitness(const Molecule& lhs, const Molecule&, rhs)
+    bool compare_MFitness(Molecule& lhs, Molecule& rhs)
     {
 	return lhs.MFitness() < rhs.MFitness();
     }
 }
 
-Molecule Molecule::MateWith(const Molecule& Male, int trials)
+Molecule Molecule::MateWith(Molecule& Male, int trials)
 {
     using namespace BGA_Molecule_MateWith;
     if (NAtoms != Male.NAtoms)
@@ -1005,7 +1005,7 @@ Molecule Molecule::MateWith(const Molecule& Male, int trials)
 	sperm.Part(Male, sperm_atoms);
 	egg.mount(sperm);
 	children.push_back(egg);
-	if (egg.MBadness() = 0.0)  break;
+	if (egg.MBadness() == 0.0)  break;
     }
     // find the best child
     Molecule *best;
@@ -1016,8 +1016,8 @@ Molecule Molecule::MateWith(const Molecule& Male, int trials)
     }
     else
     {
-	best = &( *min_element(children.begin(), children.end()),
-		compare_MFitness );
+	best = &( *min_element(children.begin(), children.end(),
+		compare_MFitness) );
     }
     best->Center();
     return *best;
