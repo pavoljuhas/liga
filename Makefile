@@ -9,7 +9,7 @@
 ########################################################################
 # compiler flags and file lists:
 CC = g++
-CPPFLAGS = -g $(CFLAGS)
+CPPFLAGS = -gstabs+ $(CFLAGS)
 # CPPFLAGS = -g -I/u24/local/include $(CFLAGS)
 # LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
@@ -54,7 +54,8 @@ clean:
 	    ssTest*.o \
 	    molTest*.o \
 	    ssTest[0-9][0-9] \
-	    molTest[0-9][0-9]
+	    molTest[0-9][0-9] \
+	    core.[1-9]*
 
 list:
 	@printf "PROGRAMS:\n"
