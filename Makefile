@@ -9,13 +9,17 @@
 ########################################################################
 # compiler flags and file lists:
 CC = g++
+ifdef FAST
+CPPFLAGS = -O6 -I/u24/local/include $(CFLAGS)
+else
 CPPFLAGS = -gstabs+ -I/u24/local/include $(CFLAGS)
+endif
 LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS = djoser
 TESTS   = $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
-SOURCES = BGAlib.cpp BGAutils.cpp
+SOURCES = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
 HEADERS = $(SOURCES:%.cpp=%.hpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
@@ -31,11 +35,11 @@ lib_objects: $(OBJECTS)
 %.o: %.cpp %.hpp
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
-djoser: djoser.o $(OBJECTS) $(HEADERS) ParseArgs.o ParseArgs.hpp
-	$(CC) -o $@ $@.o $(OBJECTS) ParseArgs.o $(LDFLAGS)
+djoser: djoser.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
-gizaliga: gizaliga.o $(OBJECTS) $(HEADERS) ParseArgs.o ParseArgs.hpp
-	$(CC) -o $@ $@.o $(OBJECTS) ParseArgs.o $(LDFLAGS)
+gizaliga: gizaliga.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 #####################################################################}}}
 # test programs {{{
@@ -66,7 +70,7 @@ molTest06: molTest06.o $(OBJECTS) $(HEADERS)
 molTest07: molTest07.o $(OBJECTS) $(HEADERS)
 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
-molTest08: molTest08.o $(OBJECTS) $(HEADERS)
+molTest08: molTest08.o BGAlib.o BGAutils.o $(HEADERS)
 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest09: molTest09.o $(OBJECTS) $(HEADERS)
