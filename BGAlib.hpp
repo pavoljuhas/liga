@@ -84,7 +84,7 @@ public:
     Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& m);		// add specified molecule
     Molecule& Add(int nh, int nk);	// add single atom
-    Molecule& MoveAtom(int idx, int nh, int nk);	// move 1 atom
+    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
