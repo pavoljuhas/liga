@@ -67,7 +67,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  inistru=FILE          initial structure [empty box]\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
-"  frames=FILE           save intermediate structures to FILE.liga_round\n"
+"  frames=FILE           save intermediate structures to FILE.step\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters\n"
 "  boxsize=double        [0.1] size of box of possible MC step\n"
@@ -246,3 +246,18 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     cout << hashsep << endl << endl;
     return mol;
 }
+
+
+////////////////////////////////////////////////////////////////////////
+// RunVar_t
+////////////////////////////////////////////////////////////////////////
+
+struct RunVar_t
+{
+    RunVar_t() : step(0), exiting(false)
+    { }
+    int step;
+    bool exiting;
+};
+
+
