@@ -12,11 +12,92 @@
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
+void print_version()
+{
+    using namespace std;
+    const char *ver =
+	"$Id$"
+#   if defined(__DATE__) && defined(__TIME__)
+	"\ncompiled " __DATE__ " " __TIME__
+#   endif
+	"\n";
+    cout << ver;
+}
+
+void print_help(ParseArgs& a)
+{
+	/*
+
+usage: << a.cmd_t << [-p PAR_FILE] [DISTHIST] [par1=val1 par2=val2...]
+run madwalk simulation using DISTHIST data.  Parameters can be set
+in PAR_FILE or on the command line, which overrides PAR_FILE.
+Options:
+  -p, --parfile=FILE    read parameters from FILE
+  -h, --help            display this message
+  -v, --version         show program version
+IO parameters:
+  disthist=FILE         target distance table
+  outstru=FILE          where to save the best full molecule
+  inistru=FILE          initial structure [empty box]
+  snapshot=FILE         live molecule structure
+  snaprate=int          number of iterations between snapshot updates
+  frames=FILE           save intermediate structures to FILE.iteration
+  framesrate=int        number of iterations between frame saves
+Walk parameters
+  tol_dd=double         [inf] distance is not used when dd=|d-d0|>=tol_dd
+  tol_bad=double        target value of full molecule badness
+  logsize=int           [10] last steps used for success rate evaluation
+  eprob_max=double      high limit of evolve probability
+  eprob_min=double      low limit of evolve probability
+  bustprob=double       probability of forcing the full structure built
+  evolve_jump=bool      [true] allow additions of several atoms
+  evolve_frac=double    selection badness threshold of tested atoms
+  penalty=string        dd penalty function [pow2], fabs, well
+  dist_trials=int       [10] good distance atoms to try
+  tri_trials=int        [20] godd triangle atoms to try
+  pyr_trials=int        [1000] good pyramid atoms to try
+
+
+*/
+
+}
+
 int main(int argc, char *argv[])
 {
     using namespace std;
 
-    // parameters
+    char *short_options =
+	"p:hv";
+    // parameters and options
+    option long_options[] = {
+	{"parfile", 1, 0, 'p'},
+	{"help", 0, 0, 'h'},
+	{"version", 0, 0, 'v'},
+	{0, 0, 0, 0}
+    };
+    ParseArgs a(argc, argv, short_options, long_options);
+    try {
+	a.Parse();
+    }
+    catch (ParseArgsError) {
+	return EXIT_FAILURE;
+    }
+    a.Dump();
+    if (a.opts.count("h") || argc == 1)
+    {
+	print_help(a);
+	return EXIT_SUCCESS;
+    }
+    else if (a.opts.count("v"))
+    {
+	print_version();
+	return EXIT_SUCCESS;
+    }
+
+
+
+
+
     const int logsize = 10;
     const double pemin = 0.25;
     const double pemax = 0.75;
