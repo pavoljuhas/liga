@@ -16,14 +16,16 @@ LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS =
+TESTS   = $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
 SOURCES = BGAlib.cpp
 HEADERS = $(SOURCES:%.cpp=%.hpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
 ########################################################################
 # most common targets:
-default: BGAlib.o
-all:	 $(PROGRAMS)
+all:	 	BGAlib.o
+# all:	 	$(PROGRAMS)
+# all:	 	test
 lib_objects: $(OBJECTS)
 
 ########################################################################
@@ -33,9 +35,8 @@ lib_objects: $(OBJECTS)
 
 #####################################################################}}}
 # test programs {{{
-test: $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
 
-
+test: $(TESTS)
 
 ssTest1: ssTest1.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
@@ -63,6 +64,9 @@ list:
 # Here is what people have been up to: {{{
 #
 # $Log$
+# Revision 1.4  2005/01/25 17:35:48  juhas
+# *** empty log message ***
+#
 # Revision 1.3  2005/01/25 17:32:56  juhas
 # added test program targets
 #
