@@ -65,12 +65,12 @@ void print_help(ParseArgs& a)
 struct RunPar_t
 {
     // IO parameters
-    const char *distfile;
-    const char *outstru;
-    const char *inistru;
-    const char *snapshot;
+    string distfile;
+    string outstru;
+    string inistru;
+    string snapshot;
     int snaprate;
-    const char *frames;
+    string frames;
     int framesrate;
     // Walk parameters
     double tol_dd;
@@ -107,17 +107,17 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     catch (ParseArgsError) {
 	exit(EXIT_FAILURE);
     }
-    if (a.opts.count("h") || argc == 1)
+    if (a.isopt("h") || argc == 1)
     {
 	print_help(a);
 	exit(EXIT_SUCCESS);
     }
-    else if (a.opts.count("v"))
+    else if (a.isopt("v"))
     {
 	print_version();
 	exit(EXIT_SUCCESS);
     }
-    if (a.opts.count("p"))
+    if (a.isopt("p"))
     {
 	try {
 	    a.ReadPars(a.opts["p"].c_str());
@@ -136,15 +136,15 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     // distfile
     if (a.args.size())
 	a.pars["distfile"] = a.args[0];
-    if (!a.pars.count("distfile"))
+    if (!a.ispar("distfile"))
     {
 	cerr << "Distance file not defined" << endl;
 	exit(EXIT_FAILURE);
     }
-    rp.distfile = a.pars["distfile"].c_str();
+    rp.distfile = a.pars["distfile"];
     DistanceTable* dtab;
     try {
-	dtab = new DistanceTable(rp.distfile);
+	dtab = new DistanceTable(rp.distfile.c_str());
     }
     catch (IOError) {
 	exit(EXIT_FAILURE);
@@ -158,20 +158,26 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     cout << hashsep << endl;
     Molecule mol(*dtab);
     cout << "distfile=" << rp.distfile << endl;
-    rp.outstru = a.pars.count("outstru") ? a.pars["outstru"].c_str() : NULL;
-    if (rp.outstru) cout << "outstru=" << rp.outstru << endl;
-    rp.inistru = a.pars.count("inistru") ? a.pars["inistru"].c_str() : NULL;
-    if (rp.inistru) cout << "inistru=" << rp.inistru << endl;
-    rp.snapshot = a.pars.count("snapshot") ? a.pars["snapshot"].c_str() : NULL;
-    if (rp.snapshot)
+    if (a.ispar("outstru"))
     {
+	rp.outstru = a.pars["outstru"];
+	cout << "outstru=" << rp.outstru << endl;
+    }
+    if (a.ispar("inistru"))
+    {
+	rp.inistru = a.pars["inistru"];
+	cout << "inistru=" << rp.inistru << endl;
+    }
+    if (a.ispar("snapshot"))
+    {
+	rp.snapshot = a.pars["snapshot"];
 	cout << "snapshot=" << rp.snapshot << endl;
 	rp.snaprate = a.GetPar<int>("snaprate", 100);
 	cout << "snaprate=" << rp.snaprate << endl;
     }
-    rp.frames = a.pars.count("frames") ? a.pars["frames"].c_str() : NULL;
-    if (rp.frames)
+    if (a.ispar("frames"))
     {
+	rp.frames = a.pars["frames"];
 	cout << "frames=" << rp.frames << endl;
 	rp.framesrate = a.GetPar<int>("framesrate", 100);
 	cout << "framesrate=" << rp.framesrate << endl;
@@ -271,13 +277,14 @@ void save_snapshot(Molecule& mol, RunPar_t& rp)
     static int cnt = 0;
     static int largest = 0;
     static double bestMNB = numeric_limits<double>().max();
-    if (rp.snapshot == NULL || rp.snaprate == 0 || ++cnt < rp.snaprate)
+    if (rp.snapshot.size() == 0 || rp.snaprate == 0 || ++cnt < rp.snaprate)
 	return;
-    if (mol.NAtoms() >= largest && mol.NormBadness() < bestMNB)
+    if (  mol.NAtoms() > largest ||
+	    (mol.NAtoms() == largest && mol.NormBadness() < bestMNB)  )
     {
 	largest = mol.NAtoms();
 	bestMNB = mol.NormBadness();
-	mol.WriteAtomEye(rp.snapshot);
+	mol.WriteXYZ(rp.snapshot.c_str());
 	cnt = 0;
     }
 }
@@ -286,7 +293,7 @@ void save_frames(Molecule& mol, RunPar_t& rp, int iteration)
 {
 //  numeric_limits<double> double_info;
     static int cnt = 0;
-    if (rp.frames == NULL || rp.framesrate == 0 || ++cnt < rp.framesrate)
+    if (rp.frames.size() == 0 || rp.framesrate == 0 || ++cnt < rp.framesrate)
 	return;
     ostringstream oss;
     oss << rp.frames << "." << iteration;
@@ -337,7 +344,7 @@ int main(int argc, char *argv[])
 	}
     }
     // save final structure
-    if (rp.outstru)
-	mol.WriteAtomEye(rp.outstru);
+    if (rp.outstru.size() != 0)
+	mol.WriteXYZ(rp.outstru.c_str());
     return EXIT_SUCCESS;
 }
