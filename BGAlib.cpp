@@ -409,6 +409,7 @@ void DistanceTable::init()
 	    "d[0]=" << at(0) << endl;
 	throw InvalidDistanceTable();
     }
+    max_d = *rend();
 }
 
 
@@ -1727,7 +1728,6 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	case M.GRID:
 	    fid << "# BGA molecule format = grid" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
-	    fid << "# delta = " << M.ss->delta << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid << ai->rx << '\t' << ai->ry << '\t' << ai->rz << endl;
@@ -1736,13 +1736,12 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	case M.XYZ:
 	    fid << "# BGA molecule format = xy" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
-	    fid << "# delta = " << M.ss->delta << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid <<
-		    M.ss->delta * ai->rx << '\t' <<
-		    M.ss->delta * ai->ry << '\t' <<
-		    M.ss->delta * ai->rz << endl;
+		    ai->rx << '\t' <<
+		    ai->ry << '\t' <<
+		    ai->rz << endl;
 	    }
 	    break;
 	case M.ATOMEYE:
@@ -1751,13 +1750,13 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    double xyz_range = xyz_hi - xyz_lo;
 	    if (M.NAtoms() > 0)
 	    {
-		const double scale = 1.01*M.ss->delta;
+		const double scale = 1.01;
 		double xyz_extremes[8] = {
-		    -M.ss->dmax,
+		    -M.dTarget.max_d,
 		    scale * min_element(afirst, alast, comp_Atom_rx)->rx,
 		    scale * min_element(afirst, alast, comp_Atom_ry)->ry,
 		    scale * min_element(afirst, alast, comp_Atom_rz)->rz,
-		    M.ss->dmax,
+		    +M.dTarget.max_d,
 		    scale * max_element(afirst, alast, comp_Atom_rx)->rx,
 		    scale * max_element(afirst, alast, comp_Atom_ry)->ry,
 		    scale * max_element(afirst, alast, comp_Atom_rz)->rz,
@@ -1768,7 +1767,6 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    }
 	    fid << "# BGA molecule format = atomeye" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
-	    fid << "# delta = " << M.ss->delta << endl;
 	    fid << "Number of particles = " << M.NAtoms() << endl;
 	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
 	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
@@ -1791,9 +1789,9 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid <<
-		    (ai->rx * M.ss->delta - xyz_lo) / xyz_range << " " <<
-		    (ai->ry * M.ss->delta - xyz_lo) / xyz_range << " " <<
-		    (ai->rz * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    (ai->rx - xyz_lo) / xyz_range << " " <<
+		    (ai->ry - xyz_lo) / xyz_range << " " <<
+		    (ai->rz - xyz_lo) / xyz_range << " " <<
 		    ai->Badness() << endl;
 	    }
 	    break;
