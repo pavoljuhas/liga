@@ -438,31 +438,6 @@ void Molecule::Recalculate()
     }
 }
 
-template <class ForwardIter>
-valarray<double> Molecule::rec_badness(ForwardIter first, ForwardIter last)
-{
-    const double zero_fitness_gain = 10;
-    double min_nonzero = 0.0;
-    int len = 0;
-    for (ForwardIter ai = first; ai != last; ++ai)
-    {
-	double b = ai->Badness();
-	if ( b > 0 && (!min_nonzero || b < min_nonzero))
-	    min_nonzero = b;
-	len++;
-    }
-    if (!min_nonzero)
-	min_nonzero = 1.0;
-    valarray<double> afit(len);
-    int idx = 0;
-    for (ForwardIter ai = first; ai != last; ++ai, ++idx)
-    {
-	double b = ai->Badness();
-	afit[idx] = (b != 0) ? 1.0/b : zero_fitness_gain*1.0/min_nonzero;
-    }
-    return afit;
-}
-
 double Molecule::AFitness(const Atom_t& a) const
 {
     // take care of perfect molecule
@@ -999,7 +974,14 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    return *this;
     }
     // otherwise we need to build array of atom fitnesses
-    valarray<double> vafit = rec_badness(atoms.begin(), atoms.end());
+    valarray<double> vafit(NAtoms());
+    double *pd = &vafit[0];
+    typedef list<Atom_t>::iterator LAit;
+    // first fill the array with badness
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pd)
+	*pd = ai->Badness();
+    // then get the reciprocal value
+    vafit = vdrecipw0(vafit);
     double *afit = &vafit[0];
     // and push appropriate numbers of test atoms
     // here NAtoms() >= 2
@@ -1030,7 +1012,12 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
-	vtafit = rec_badness(vta.begin(), vta.end());
+	// first fill the array with badness
+	double *pd = &vtafit[0];
+	for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pd)
+	    *pd = ai->Badness();
+	// then get the reciprocal value
+	vtafit = vdrecipw0(vtafit);
 	int idx = *(random_wt_choose(1, &vtafit[0], vtafit.size()).begin());
 	Add(vta[idx]);
 	vta.erase(vta.begin()+idx);
