@@ -107,19 +107,22 @@ class Molecule
 public:
     // constructors
     Molecule(SandSphere *SS);
-//    Molecule(SandSphere *SS, int s, int *ph, int *pk, int *pl);
-//    Molecule(SandSphere *SS,
-//	    const vector<int>& vh, const vector<int>& vk);
-//    Molecule(SandSphere *SS, int s, double *px, double *py);
-//    Molecule(SandSphere *SS,
-//	    const vector<double>& vx, const vector<double>& vy);
+    Molecule(SandSphere *SS, const int s, const int *ph, const int *pk,
+	    const int *pl);
+    Molecule(SandSphere *SS, const vector<int>& vh, const vector<int>& vk,
+	    const vector<int>& vl);
+    Molecule(SandSphere *SS, const int s, const double *px, const double *py,
+	    const double *pz);
+    Molecule(SandSphere *SS,
+	    const vector<double>& vx, const vector<double>& vy,
+	    const vector<double>& vz);
 //    Molecule(const Molecule& M);		// copy constructor
 //    Molecule& operator=(const Molecule&);	// assignment
 //    ~Molecule();		// destructor
-//    // parameters
-//    int NDist;    		// length of distance table
-//    int NAtoms;   		// current number of atoms
-//    mutable int MaxAtoms;	// target number of atoms
+    // parameters
+    int NDist;    		// length of distance table
+    int NAtoms;   		// current number of atoms
+    mutable int MaxAtoms;	// target number of atoms
 //    double ABadness(int) const;	// fitness of specified atom
 //    double AFitness(int) const;	// badness of specified atom
 //    double MBadness() const;	// total badness
@@ -145,8 +148,9 @@ public:
 //    Molecule& Pop(const Molecule& M, const int cidx);		// get M.Pop()
 //    Molecule& Pop(const Molecule& M, const list<int>& cidx);	// get M.Pop()
 //    Molecule& Clear();			// remove all atoms
-//    Molecule& Add(Molecule& M);		// add specified molecule
-//    Molecule& Add(int nh, int nk);	// add single atom
+    Molecule& Add(Molecule& M);		// add specified molecule
+    Molecule& Add(int nh, int nk, int nl);	// add single atom
+    Molecule& Add(Atom_t a);			// add single atom
 //    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
 //    Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
 //    Molecule& Degenerate(int Npop = 1);	// Pop Npop atoms with abad[i] weight
@@ -159,17 +163,17 @@ public:
 //    bool ReadXY(const char*); 		// read real coordinates
 //    bool WriteXY(const char*); 		// save real coordinates
 //    bool WriteAtomEye(const char*);	// export in AtomEye format
-//    Molecule& OutFmtGrid();		// output format for operator>>
-//    Molecule& OutFmtXY();               // output format for operator>>
-//    Molecule& OutFmtAtomEye();          // output format for operator>>
+    Molecule& OutFmtGrid();		// output format for operator>>
+    Molecule& OutFmtXY();               // output format for operator>>
+    Molecule& OutFmtAtomEye();          // output format for operator>>
 //    friend ostream& operator<<(ostream& os, Molecule& M);
 //    friend istream& operator>>(istream& is, Molecule& M);
 //    void PrintBadness();		// total and per-atomic badness
 //    void PrintFitness();		// total and per-atomic fitness
-    void Recalculate() const; 	// update everything
+    void Recalculate(); 	// update everything
 private:
 //    // constructor helper
-//    void init();
+    void init();
 //    // data storage
     SandSphere *ss;
     list<Atom_t> atom;			// list of all atoms
