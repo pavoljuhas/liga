@@ -8,21 +8,13 @@
 * <license text>
 ***********************************************************************/
 
-
-//#include <iostream>
-//#include <string>
-//#include <sstream>
-//#include <fstream>
-//#include <valarray>
-//#include <vector>
-//#include <list>
-
 #include <stdexcept>
 #include "BGAlib.hpp"
 
 // exceptions
 struct InvalidDistanceTable { };
 struct InvalidMolecule { };
+struct InvalidPopulation { };
 struct IOError { };
 
 // read lines that do not start with number
@@ -105,6 +97,7 @@ SandSphere::SandSphere(int GridMax, const char *file) :
     // check if everything was read
     if ( !result || !fid.eof() )
     {
+	fid.clear();
 	cerr << "E: " << file << ':' << fid.tellg() <<
 	    ": error reading SandSphere" << endl;
 	throw IOError();
@@ -991,4 +984,28 @@ void Molecule::PrintFitness()
 	}
     }
     cout << endl;
+}
+
+////////////////////////////////////////////////////////////////////////
+// Population definitions
+////////////////////////////////////////////////////////////////////////
+
+bool molecule_SandSpheres_differ(const Molecule& M1, const Molecule& M2)
+{
+    return M1.ss != M2.ss;
+}
+
+void Population::init()
+{
+    // check whether all members use the same SandSphere
+    /*
+    iterator ibad = 
+	adjacent_find(begin(), end(), molecule_SandSpheres_differ);
+    if (ibad != end())
+    {
+	cerr << "E: population contains molecules with different sandsphere" <<
+	    endl;
+	throw InvalidPopulation();
+    }
+    */
 }

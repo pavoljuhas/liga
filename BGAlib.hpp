@@ -143,6 +143,8 @@ private:
     istream& ReadGrid(istream& fid);
     istream& ReadXY(istream& fid);
     string opened_file;
+//    friend bool molecule_SandSpheres_differ(
+//	    const Molecule& M1, const Molecule& M2);
 };
 
 class Molecule::ParseHeader
@@ -157,6 +159,22 @@ private:
     bool state;
     template<class T> bool read_token(const char *token, T& value);
     const string& header;
+};
+
+class Population : public vector<Molecule>
+{
+public:
+    Population() : vector<Molecule>() { init(); }
+    Population(size_type n, SandSphere *SS) : vector<Molecule>(n, Molecule(SS))
+    { init(); }
+    Population(size_type n, const Molecule& M) : vector<Molecule>(n, M)
+    { init(); }
+    Population(Population &P) : vector<Molecule>(P) { init(); }
+    template <class InputIterator>
+	Population(InputIterator first, InputIterator last) :
+	    vector<Molecule>(first, last) { init(); }
+private:
+    void init();
 };
 
 #endif
