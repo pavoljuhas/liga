@@ -31,11 +31,23 @@ struct InvalidMolecule { };
 struct InvalidPopulation { };
 struct IOError { };
 
-/* declaration of BGA objects */
 using namespace std;
 
-class Molecule;
+// helper objects/functions
+template <class T>
+struct OrderedPair : pair<T,T>
+{
+    OrderedPair(const T& x, const T& y) : pair<T,T>(x, y)
+    { if (!(first<second))  swap(first, second); }
+};
+template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
+list<int> random_choose_few(int K, int Np);
+list<int> random_wt_choose(int K, const double *p, int Np);
+double vdnorm(const valarray<double>&);
+double vddot(const valarray<double>&, const valarray<double>&);
+valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
 
+/* declaration of BGA objects */
 class DistanceTable : public vector<double>
 {
 public:
@@ -77,9 +89,9 @@ private:
 bool operator==(const Atom_t& a1, const Atom_t& a2);
 double dist2(const Atom_t& a1, const Atom_t& a2);
 inline double dist(const Atom_t& a1, const Atom_t& a2)
-{
-    return sqrt(1.0*dist2(a1, a2));
-}
+{ return sqrt(1.0*dist2(a1, a2)); }
+
+class Molecule;
 
 struct Pair_t
 {
@@ -100,7 +112,6 @@ private:
     double badness;
 };
 
-// Molecule in 2 dimensions
 class Molecule
 {
 public:
@@ -205,12 +216,5 @@ private:
     const string& header;
 };
 
-
-template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
-list<int> random_choose_few(int K, int Np);
-list<int> random_wt_choose(int K, const double *p, int Np);
-double vdnorm(const valarray<double>&);
-double vddot(const valarray<double>&, const valarray<double>&);
-valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
 
 #endif
