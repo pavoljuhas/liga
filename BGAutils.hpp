@@ -31,8 +31,8 @@ template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
 
 struct Counters_t
 {
-    int penalty_calls;
-    int distance_calls;
+    long long penalty_calls;
+    long long distance_calls;
     void PrintRunStats();
 };
 // global instance of Counters_t
