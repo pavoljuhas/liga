@@ -972,19 +972,6 @@ namespace BGA_Molecule_MateWith
     }
 }
 
-struct Molecule::mount_par
-{
-    double mbad;
-    double dh, dk;
-    double phi, h0, k0;
-};
-bool operator<(
-	const Molecule::mount_par& lhs, const Molecule::mount_par& rhs
-	)
-{
-    return lhs.mbad < rhs.mbad;
-}
-
 namespace BGA_Molecule_MateWith
 {
     bool compare_MFitness(const Molecule& lhs, const Molecule&, rhs)

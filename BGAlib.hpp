@@ -159,7 +159,6 @@ private:
     void calc_db();		// update distance and fitness tables
 public:
     struct badness_at;
-    struct mount_par;
 private:
     list<badness_at> find_good_distances(int trials, const list<int>& ssdIdx);
     list<badness_at> find_good_triangles(int trials, const list<int>& ssdIdx);
