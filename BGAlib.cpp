@@ -1040,14 +1040,17 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     push_good_distances(vta, afit, ntd1);
     push_good_triangles(vta, afit, ntd2);
     if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
-    // select among the minimal elements of vta
+    // select range from min_badness
     double min_badness = min_element(vta.begin(), vta.end(),
-	    comp_Atom_Badness)-> Badness();
+	    comp_Atom_Badness) -> Badness();
+    double max_badness = max_element(vta.begin(), vta.end(),
+	    comp_Atom_Badness) -> Badness();
     typedef vector<Atom_t>::iterator VAit;
     vector<VAit> min_iterators;
     for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
     {
-	if (ai->Badness() == min_badness)
+	// pj: here should be constant
+	if (ai->Badness()-min_badness <= 0.05)
 	    min_iterators.push_back(ai);
     }
     int itidx = gsl_rng_uniform_int(BGA::rng, min_iterators.size());
