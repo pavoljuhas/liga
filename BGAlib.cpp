@@ -330,7 +330,7 @@ Molecule::Molecule(const DistanceTable& dtab,
     }
 }
 
-Molecule::Molecule(const Molecule& M)
+Molecule::Molecule(const Molecule& M) : dTarget(M.dTarget)
 {
     init();
     *this  = M;
