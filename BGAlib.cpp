@@ -316,10 +316,10 @@ void DistanceTable::init()
 // static members
 double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::tol_nbad  = 0.05*0.05;
-double Molecule::tol_r = 1.0e-8;
+double Molecule::tol_r = 1.0e-4;
 double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
-bool   Molecule::evolve_relax = true;
+bool   Molecule::evolve_relax = false;
 int    Molecule::center_size = 40;
 namespace BGA {
     double pow2(double x) {return x*x;}
@@ -878,9 +878,13 @@ void Molecule::relax_atom(Atom_t& ta)
 		cerr << "LM solver status = " << gsl_strerror(status) << endl;
 		break;
 	    }
+	    // scale f_i with atom fitness
+	    // pj: test gradient or do a simplex search?
 	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
 	}
 	while (status == GSL_CONTINUE && iter < max_iter);
+	for (int i = 0; i < 3; ++i)
+	    rta.r[i] = gsl_vector_get(lms->x, i);
 	// get relaxed value of tbad
 	// pj: this may go away later
 	tbad = 0.0;
