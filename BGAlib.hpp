@@ -183,7 +183,6 @@ private:
     map<OrderedPair<Atom_t*>,Pair_t*> pairs;  // map Atom_t* to Pair_t objects
     friend class Pair_t;
     // badness evaluation
-    mutable double max_abad;		// maximum atom badness
     mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);

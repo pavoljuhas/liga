@@ -363,7 +363,6 @@ Molecule& Molecule::operator=(const Molecule& M)
 
 void Molecule::init()
 {
-    max_abad = 0;
     badness = 0;
     // default output format
     OutFmtXYZ();
@@ -395,7 +394,6 @@ void Molecule::Recalculate()
     }
     pairs.clear();
     // molecule parameters
-    max_abad = -1;
     badness = 0;
     // reset all atoms
     typedef list<Atom_t>::iterator LAit;
@@ -558,8 +556,6 @@ Molecule& Molecule::Pop(list<Atom_t>::iterator api)
 	pairs.erase(key);
     }
     atoms.erase(api);
-    // uncache max atom badness
-    max_abad = -1;
     return *this;
 }
 
@@ -608,8 +604,6 @@ Molecule& Molecule::Clear()
     }
     pairs.clear();
     atoms.clear();
-    // uncache max atom badness
-    max_abad = -1;
     badness = 0;
     return *this;
 }
@@ -640,11 +634,9 @@ Molecule& Molecule::Add(Atom_t atom)
     list<Atom_t>::iterator this_atom, ai;
     this_atom = atoms.insert(atoms.end(), atom);
     this_atom->ResetBadness();
-    // uncache max atom badness
-    max_abad = -1;
-    for (ai = atoms.begin(); ai != atoms.end(); ++ai)
+    // this_atom is at the end of the list
+    for (ai = atoms.begin(); ai != this_atom; ++ai)
     {
-	if (ai == this_atom)  continue;
 	OrderedPair<Atom_t*> key(&(*ai), &(*this_atom));
 	pairs[key] = new Pair_t(this, &(*ai), &(*this_atom));
     }
