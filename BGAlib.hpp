@@ -40,6 +40,7 @@ public:
     valarray<double> d2lo;	// low limits for d2
     valarray<double> d2hi;	// high limits for d2
 private:
+    static const double gridTol = 1.1;
     // helper functions
     void init(const vector<double>& t);
 };
@@ -200,6 +201,9 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.7  2005/01/25 20:12:53  juhas
+* added gridTol constant
+*
 * Revision 1.6  2005/01/25 17:23:24  juhas
 * added Molecule constructors from real coordinates
 *
