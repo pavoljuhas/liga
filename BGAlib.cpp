@@ -428,11 +428,15 @@ void Molecule::Recalculate()
     }
 }
 
-double Molecule::AFitness(int i) const
+double Molecule::AFitness(const Atom_t& a) const
 {
-    list<Atom_t>::const_iterator ai = atoms.begin();
-    advance(ai, i);
-    return MaxABadness() - ai->Badness();
+    // take care of perfect molecule
+    double mb = Badness();
+    if (mb < BGA::eps_abadness)
+	mb = 1.0;
+    // fitness is proportional to probability that other atoms will be dumped
+    // i.e., summed badness of all other atoms
+    return mb-a.Badness();
 }
 
 double Molecule::Badness() const
@@ -997,7 +1001,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pf)
     {
-	*pf = MaxABadness() - ai->Badness();
+	*pf = AFitness(*ai);
     }
     // and push appropriate numbers of test atoms
     // here NAtoms() >= 2
@@ -1542,7 +1546,7 @@ void Molecule::PrintFitness()
 	    cout << '+';
 	    marked = true;
 	}
-	cout << MaxABadness() - ai->Badness();
+	cout << AFitness(*ai);
     }
     cout << endl;
 }
