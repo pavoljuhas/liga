@@ -394,7 +394,13 @@ void Molecule::Set_max_NAtoms(int s)
 {
     if (s > dTarget.NAtoms)
     {
-	cerr << "E: molecule too large for distance table" << endl;
+	cerr << "E: max_NAtoms = " << s <<
+	    " is too large for distance table" << endl;
+	throw InvalidMolecule();
+    }
+    else if (s < 1)
+    {
+	cerr << "E: invalid value of max_NAtoms = " << s << endl;
 	throw InvalidMolecule();
     }
     val_max_NAtoms = s;
