@@ -8,11 +8,8 @@
 * <license text>
 ***********************************************************************/
 
-#include <stdexcept>
+#include <sstream>
 #include <limits>
-#include <utility>
-#include <map>
-#include <unistd.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>

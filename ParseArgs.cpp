@@ -8,7 +8,6 @@
 * <license text>
 ***********************************************************************/
 
-#include <iostream>
 #include "ParseArgs.hpp"
 
 ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
