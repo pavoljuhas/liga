@@ -55,7 +55,7 @@ int main()
 
     for (int igt = 0; igt < NGridTolerances; ++igt)
     {
-	ssRand.setGridTol(GridTolerances[igt]);
+	ssRand.SetGridTol(GridTolerances[igt]);
     // evaluate and print fitness for mol1
     cout << "mol1:  GridTol() = " << ssRand.GridTol() << '\t';
     cout << "MBadness() = " << mol1.MBadness() << endl;
