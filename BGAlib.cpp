@@ -484,9 +484,9 @@ Molecule::~Molecule()
 // recalculate everything from scratch
 void Molecule::Recalculate()
 {
-    if (NAtoms() > ss->NAtoms)
+    if (NAtoms() > max_NAtoms())
     {
-	cerr << "E: molecule too large" << endl;
+	cerr << "E: molecule too large in Recalculate()" << endl;
 	throw InvalidMolecule();
     }
     // destroy all pairs
@@ -809,7 +809,7 @@ Molecule& Molecule::Add(Atom_t atom)
 {
     if (NAtoms() == max_NAtoms())
     {
-	cerr << "E: molecule too large" << endl;
+	cerr << "E: molecule too large in Add()" << endl;
 	throw InvalidMolecule();
     }
     list<Atom_t>::iterator this_atom, ai;
@@ -829,7 +829,7 @@ void Molecule::calc_test_badness(Atom_t& ta)
 {
     if (NAtoms() == max_NAtoms())
     {
-	cerr << "E: too many atoms in Molecule::calc_test_badness()" << endl;
+	cerr << "E: Molecule too large in calc_test_badness()" << endl;
 	throw InvalidMolecule();
     }
     double tbad = 0;
@@ -873,8 +873,8 @@ int Molecule::push_good_distances(
 	rdir[2] = z;
 	// pick one atom and free distance
 	int aidx = gsl_ran_discrete(BGA::rng, table);
-	int didx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	double radius = ss->d[ssdIdxFree[didx]];
+	int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
+	double radius = dTarget[didx];
 	Atom_t& a1 = *list_at(atoms, aidx);
 	double nrx = a1.rx + rdir[0]*radius;
 	double nry = a1.ry + rdir[1]*radius;
@@ -912,11 +912,11 @@ int Molecule::push_good_triangles(
 	list<int>::iterator aidxit = aidx.begin();
 	Atom_t& a1 = *list_at(atoms, *(aidxit++)); 
 	Atom_t& a2 = *list_at(atoms, *(aidxit++)); 
-	int idf1 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	int idf2 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size()-1) + 1;
-	idf2 = (idf2 + idf1) % ssdIdxFree.size();
-	double r13 = ss->d[ssdIdxFree[idf1]];
-	double r23 = ss->d[ssdIdxFree[idf2]];
+	int idf1 = gsl_rng_uniform_int(BGA::rng, dTarget.size());
+	int idf2 = gsl_rng_uniform_int(BGA::rng, dTarget.size()-1) + 1;
+	idf2 = (idf2 + idf1) % dTarget.size();
+	double r13 = dTarget[idf1];
+	double r23 = dTarget[idf2];
 	double r12 = dist(a1, a2);
 	// is triangle base reasonably large?
 	if (r12 < 1.0)
@@ -995,11 +995,11 @@ int Molecule::push_good_pyramids(
 	Atom_t& a3 = *list_at(atoms, *(aidxit++)); 
 	double base_badness = a1.Badness()+a2.Badness()+a3.Badness();
 	// pick 3 vertex distances
-	list<int> didx = random_choose_few(3, ssdIdxFree.size());
+	list<int> didx = random_choose_few(3, dTarget.size());
 	list<int>::iterator didxit = didx.begin();
-	double dv1 = ss->d[ssdIdxFree[*(didxit++)]];
-	double dv2 = ss->d[ssdIdxFree[*(didxit++)]];
-	double dv3 = ss->d[ssdIdxFree[*(didxit++)]];
+	double dv1 = dTarget[*(didxit++)];
+	double dv2 = dTarget[*(didxit++)];
+	double dv3 = dTarget[*(didxit++)];
 	double dvperm[6][3] = {
 	    {dv1, dv2, dv3},
 	    {dv1, dv3, dv2},
