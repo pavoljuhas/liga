@@ -20,8 +20,8 @@ int main(int argc, char *argv[])
     const double pemin = 0.25;
     const double pemax = 0.75;
     const double pallway = 0.01;
-    const double avgmb = 0.01;
-    BGA::tol_deltad = 0.1;
+    const double avgmb = 0.01*0.01;
+    const double tol_deltad = 0.1;
     ////////////////////////////////////////////////////////////////////////
     if (argc == 1)
     {
@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
     valarray<int> improved(1, logsize);
 
     Molecule mol(*dtab);
+    mol.tol_deltad = tol_deltad;
     int fileno = 0;
 
     int maxatoms = 0;
