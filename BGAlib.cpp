@@ -18,6 +18,10 @@
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 
+////////////////////////////////////////////////////////////////////////
+// common helper functions
+////////////////////////////////////////////////////////////////////////
+
 // read lines that do not start with number
 bool read_header(istream& fid, string& header)
 {
@@ -81,111 +85,6 @@ template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
 }
 
 
-
-////////////////////////////////////////////////////////////////////////
-// SandSphere definitions
-////////////////////////////////////////////////////////////////////////
-
-SandSphere::SandSphere(int GridMax, const vector<double>& vt) :
-    gridmax(GridMax)
-{
-    init(vt);
-}
-
-SandSphere::SandSphere(int GridMax, int s, const double *pt) :
-    gridmax(GridMax)
-{
-    vector<double> vt(s);
-    for (int i = 0; i < s; ++i) { vt[i] = pt[i]; }
-    init(vt);
-}
-
-SandSphere::SandSphere(int GridMax, const char *file) :
-    gridmax(GridMax)
-{
-    // open file for reading
-    ifstream fid(file);
-    if (!fid)
-    {
-	cerr << "E: unable to read '" << file << "'" << endl;
-	throw IOError();
-    }
-    // read values to vt
-    vector<double> vt;
-    bool result = read_header(fid) && read_data(fid, vt);
-    // check if everything was read
-    if ( !result || !fid.eof() )
-    {
-	fid.clear();
-	cerr << "E: " << file << ':' << fid.tellg() <<
-	    ": error reading SandSphere" << endl;
-	throw IOError();
-    }
-    fid.close();
-    init(vt);
-}
-
-void SandSphere::init(const vector<double>& t)
-{
-    NDist = t.size();
-    if (NDist == 0)
-    {
-	cerr << "E: target distance table is empty" << endl;
-	throw InvalidDistanceTable();
-    }
-    // calculate and check NAtoms
-    double xNAtoms = 0.5 + sqrt(1 + 8.0*NDist)/2.0;
-    NAtoms = int(xNAtoms);
-    if (double(NAtoms) != xNAtoms)
-    {
-	cerr << "E: incorrect length of target distance table, NAtoms=" <<
-		xNAtoms << '\n';
-	throw InvalidDistanceTable();
-    }
-    // fill in and check distance valarray d
-    d.resize(NDist);
-    copy(t.begin(), t.end(), &d[0]);
-    sort(&d[0], &d[d.size()]);
-    if (d[0] <= 0)
-    {
-	cerr << "E: non-positive entry in target distance table, " <<
-	    "d[0]=" << d[0] << '\n';
-	throw InvalidDistanceTable();
-    }
-    // calculate grid parameters
-    dmax = d[d.size()-1];
-    delta = dmax/gridmax;
-    // calculate d2, d2lo, d2hi
-    d2.resize(NDist);
-    d2lo.resize(NDist);
-    d2hi.resize(NDist);
-    d /= delta;
-    d2 = d*d;
-    // take care of grid tolerance:
-    SetGridTol(defGridTol);
-}
-
-void SandSphere::SetGridTol(double t)
-{
-    vGridTol = t;
-    for (int i = 0; i < NDist; ++i)
-    {
-	d2lo[i] = (d[i] < vGridTol) ? 0.0 : pow(d[i] - vGridTol, 2);
-	d2hi[i] = pow(d[i] + vGridTol, 2);
-    }
-    for ( list<Molecule *>::const_iterator i = molecules.begin();
-	    i != molecules.end(); ++i )
-    {
-	(*i)->Recalculate();
-    }
-}
-
-double SandSphere::GridTol()
-{
-    return vGridTol;
-}
-
-
 ////////////////////////////////////////////////////////////////////////
 // Atom_t definitions
 ////////////////////////////////////////////////////////////////////////
@@ -240,6 +139,7 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
     double dr[3] = { (a1.rx - a2.rx), (a1.ry - a2.ry), (a1.rz - a2.rz) };
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Pair_t definitions
@@ -480,7 +380,6 @@ Molecule::~Molecule()
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
 
-// recalculate everything from scratch
 void Molecule::Recalculate()
 {
     if (NAtoms() > max_NAtoms())
@@ -523,7 +422,6 @@ double Molecule::ABadness(list<Atom_t>::iterator ai) const
 {
     return ai->Badness();
 }
-
 
 double Molecule::AFitness(int i) const
 {
@@ -577,6 +475,7 @@ double Molecule::MaxABadness() const
     }
     return max_abad;
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // Molecule operators
@@ -1089,7 +988,6 @@ int Molecule::push_good_pyramids(
     return push_count;
 }
 
-
 Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 {
     if (NAtoms() == max_NAtoms())
@@ -1284,6 +1182,7 @@ valarray<double> vdcross(const valarray<double>& v1, const valarray<double>& v2)
     cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
     return cross;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions

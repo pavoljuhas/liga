@@ -58,35 +58,6 @@ private:
     void init();
 };
 
-class SandSphere
-{
-public:
-    // constructors
-    SandSphere(int GridMax, const vector<double>& t);
-    SandSphere(int GridMax, int s, const double *t);
-    SandSphere(int GridMax, const char *file);
-    // grid parameters
-    double delta;		// grid step
-    double dmax;		// maximum target distance
-    int gridmax;		// maximum grid coordinate
-    // target distance table
-    int NDist;    		// length of distance table
-    int NAtoms;   		// target number of atoms
-    valarray<double> d;		// sorted list of target distances
-    valarray<double> d2;	// sorted list of squared target distances
-    valarray<double> d2lo;	// low limits for d2
-    valarray<double> d2hi;	// high limits for d2
-    void SetGridTol(double t);	// set grid tolerance
-    double GridTol();
-private:
-    static const double defGridTol = 1.0;
-    double vGridTol;
-    // helper functions
-    void init(const vector<double>& t);
-    list<Molecule *> molecules;
-    friend class Molecule;
-};
-
 class Atom_t
 {
 public:
