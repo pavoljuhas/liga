@@ -4,23 +4,18 @@
 #include <sys/times.h>
 #include "BGAutils.hpp"
 
-void Counters_t::PrintCounters()
-{
-    cout << "Counters:" << endl;
-    cout << "  penalty_calls = " << penalty_calls << endl;
-    cout << "  distance_calls = " << penalty_calls << endl;
-    void Dump();
-}
-
-void Counters_t::PrintCPUtime()
+void Counters_t::PrintRunStats()
 {
     tms tbuf;
     times(&tbuf);
-    clock_t clk_tck = sysconf(_SC_CLK_TCK);
-    double cputime = 1.0*tbuf.tms_utime/clk_tck;
+    double cputime = 1.0*tbuf.tms_utime/sysconf(_SC_CLK_TCK);
     char hostname[255];
     gethostname(hostname, 255);
-    cout << "UserCPUtime = " << cputime << "s  on " << hostname << endl;
+    cout << "Run statistics:" << endl;
+    cout << "penalty_calls = " << penalty_calls << endl;
+    cout << "distance_calls = " << distance_calls << endl;
+    cout << "UserCPUtime = " << cputime << 's' << endl;
+    cout << "Host = " << hostname << endl;
 }
 
 // define global instance of Counters_t
