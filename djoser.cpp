@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 //	    mol.PrintBadness();
 	// update bestMNBadness and improved
 	int ilog = iteration % rp.logsize;
-	if (mol.NormBadness() < bestMNBadness[mol.NAtoms()])
+	if (mol.NormBadness() <= bestMNBadness[mol.NAtoms()])
 	{
 	    bestMNBadness[mol.NAtoms()] = mol.NormBadness();
 	    improved[ilog] = 1;
