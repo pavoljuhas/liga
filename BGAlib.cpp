@@ -1045,7 +1045,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    comp_Atom_Badness) -> Badness();
     double max_badness = max_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness) -> Badness();
-    double hi_badness = 0.05*(max_badness-min_badness)+min_badness;
+    double hi_badness = 0.05*min(max_badness-min_badness, 1.0)+min_badness;
     typedef vector<Atom_t>::iterator VAit;
     // try to Add as many atoms as possible
     while (true)
