@@ -260,4 +260,18 @@ struct RunVar_t
     bool exiting;
 };
 
+////////////////////////////////////////////////////////////////////////
+// SIGHUP handling
+////////////////////////////////////////////////////////////////////////
+
+int SIGHUP_received = 0;
+void SIGHUP_handler(int signum)
+{
+    // die on 2nd call
+    if (SIGHUP_received)
+	exit(128 + signum);
+    SIGHUP_received = signum;
+}
+
+
 
