@@ -216,6 +216,9 @@ private:
 //    const string& header;
 //};
 //
+
+template<class T> T list_at(const list<T>& lst, int n);
+
 //struct Couple
 //{
 //    Molecule *Male, *Female;

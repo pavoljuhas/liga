@@ -62,6 +62,24 @@ template<class T> bool read_data(istream& fid, vector<T>& v)
     return !(fid.rdstate() & ios::badbit);
 }
 
+// read as many numbers as possible
+template<class T> T list_at(const list<T>& lst, int n)
+{
+    typename list<T>::iterator ii;
+    if (n <= lst.size()/2)
+    {
+	ii = lst.begin();
+	advance(ii, n);
+    }
+    else
+    {
+	ii = lst.end();
+	advance(ii, n-lst.size());
+    }
+    return *ii;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // SandSphere definitions
