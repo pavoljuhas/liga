@@ -20,33 +20,29 @@ int main()
     // build correct square molecule
     double px1[4] = {-.5,  .5,  .5, -.5};
     double py1[4] = {-.5, -.5,  .5,  .5};
-    Molecule mol1(&ssSquare, 4, px1, py1);
+    double pz1[4] = { .0,  .0,  .0,  .0};
+    Molecule mol1(&ssSquare, 4, px1, py1, pz1);
 
     // build defective square molecule
     double px2[4] = {-.5,  .5,  .5, -.5};
     double py2[4] = {-.5, -.5,  .5,  .0};
-    Molecule mol2(&ssSquare, 4, px2, py2);
+    double pz2[4] = { .0,  .0,  .0,  .0};
+    Molecule mol2(&ssSquare, 4, px2, py2, pz2);
 
     // evaluate and print fitness for mol1
     cout << "mol1:\n";
-    cout << "MBadness() = " << mol1.MBadness() << endl;
-    cout << "MFitness() = " << mol1.MFitness() << endl;
-    for (int i = 0; i < mol1.NAtoms; ++i)
-    {
-	cout << "ABadness(" << i << ") = " << mol1.ABadness(i) << "  ";
-	cout << "AFitness(" << i << ") = " << mol1.AFitness(i) << '\n';
-    }
+    cout << "Badness() = " << mol1.Badness() << endl;
+    cout << "Fitness() = " << mol1.Fitness() << endl;
+    mol1.PrintBadness();
+    mol1.PrintFitness();
     cout << endl;
 
     // evaluate and print fitness for mol2
     cout << "mol2:\n";
-    cout << "MBadness() = " << mol2.MBadness() << endl;
-    cout << "MFitness() = " << mol2.MFitness() << endl;
-    for (int i = 0; i < mol2.NAtoms; ++i)
-    {
-	cout << "ABadness(" << i << ") = " << mol2.ABadness(i) << '\t';
-	cout << "AFitness(" << i << ") = " << mol2.AFitness(i) << '\n';
-    }
+    cout << "Badness() = " << mol2.Badness() << endl;
+    cout << "Fitness() = " << mol2.Fitness() << endl;
+    mol2.PrintBadness();
+    mol2.PrintFitness();
     cout << endl;
 
     return EXIT_SUCCESS;
