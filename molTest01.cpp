@@ -24,6 +24,7 @@ int main()
     // evaluate and print fitness for line
     cout << "line:\n";
     cout << line;
+    cout << "NormBadness() = " << line.NormBadness() << endl;
     line.PrintBadness();
     line.PrintFitness();
     cout << endl;
@@ -44,12 +45,14 @@ int main()
     // evaluate and print fitness for square1
     cout << "square1:\n";
     cout << square1;
+    cout << "NormBadness() = " << square1.NormBadness() << endl;
     square1.PrintBadness();
     square1.PrintFitness();
     cout << endl;
     // evaluate and print fitness for square2
     cout << "square2:\n";
     cout << square2;
+    cout << "NormBadness() = " << square2.NormBadness() << endl;
     square2.PrintBadness();
     square2.PrintFitness();
     cout << endl;
