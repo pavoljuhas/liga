@@ -6,15 +6,15 @@ setopt extendedglob
 : ${REPEATS:=50}
 TIMEFMT="%U"
 distance_files=(
-    solids/tetrahedron.dss
-    solids/octahedron.dss
-    solids/cube.dss
-    solids/icosahedron.dss
-    solids/dodecahedron.dss
-    solids/prism12.dss
-    solids/prismL16.dss
-    solids/prism18.dss
-#   solids/grid27.dss
+    solids/tetrahedron.dst
+    solids/octahedron.dst
+    solids/cube.dst
+    solids/icosahedron.dst
+    solids/dodecahedron.dst
+    solids/prism12.dst
+    solids/prismL16.dst
+    solids/prism18.dst
+#   solids/grid27.dst
 )
 
 if [[ $# == 0 || -n "${(M)*:#--help}" ]]; then
