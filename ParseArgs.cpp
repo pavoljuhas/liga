@@ -95,6 +95,8 @@ istream& ParseArgs::ReadPars(istream& fid)
 	    oss << nr << ": invalid parameter name '" << par << "'";
 	    throw ParseArgsError(oss.str());
 	}
+	if (cmdl_par.count(par))
+	    continue;
 	vb = line.find_first_not_of(blank, eq+1);
 	pars[par] = (vb == string::npos) ? "" : line.substr(vb);
     }
@@ -191,7 +193,11 @@ void ParseArgs::arg_or_par(const char *s)
     for (const char *p = s+1; ispar && p < peq; ++p)
 	ispar = isalnum(*p);
     if (ispar)
-	pars[string(s, peq-s)] = string(peq+1);
+    {
+	string par(s, peq-s);
+	pars[par] = string(peq+1);
+	cmdl_par[par] = true;
+    }
     else
 	args.push_back(s);
 }

@@ -56,6 +56,7 @@ private:
     void do_getopt();
     void do_getopt_long();
     void arg_or_par(const char *s);
+    map<string,bool> cmdl_par;
 };
 
 template<class T> T ParseArgs::GetPar(string par)
