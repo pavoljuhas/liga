@@ -25,6 +25,8 @@ namespace BGA
 {
     extern gsl_rng* rng;
     extern double eps_badness;
+    double pow2(double x);
+    double well(double x);
 };
 
 // exceptions
