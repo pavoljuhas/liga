@@ -307,6 +307,11 @@ Molecule::~Molecule()
     ss->molecules.remove(this);
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// Molecule badness/fitness evaluation
+////////////////////////////////////////////////////////////////////////
+
 double Molecule::dist(const int& i, const int& j)
 {
     return sqrt(1.0*dist2(i, j));
@@ -417,6 +422,45 @@ double Molecule::MFitness()
     // this will update abadMax if necessary
     double mbadness = MBadness();
     return NAtoms*abadMax - mbadness;
+}
+
+double Molecule::ABadnessAt(int nh, int nk)
+{
+    if (NAtoms == ss->NAtoms)
+    {
+	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
+	throw InvalidMolecule();
+    }
+    if (!cached) calc_df();
+    valarray<int> nd2(NAtoms);
+    for (int dhi, dki, i = 0; i < NAtoms; ++i)
+    {
+	dhi = h[i] - nh;
+	dki = k[i] - nk;
+	nd2[i] = dhi*dhi + dki*dki;
+    }
+    sort(&nd2[0], &nd2[nd2.size()]);
+    double nbad = 0.0;
+    list<int>::iterator idif = ssdIdxFree.begin();
+    for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
+    {
+	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
+		++idif ) {};
+	// we found a baddie if we reached the end of ssdIdxFree table
+	// or if the current distance is smaller than d2lo
+	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
+	{
+	    nbad++;
+	}
+	// otherwise it is a matching distance
+	else
+	{
+	    ++idif;
+	}
+    }
+    // now add penalty for being outside the SandSphere
+    nbad += out_penalty(nh, nk);
+    return nbad;
 }
 
 
@@ -560,12 +604,12 @@ Molecule& Molecule::Clear()
     return *this;
 }
 
-Molecule& Molecule::Add(Molecule& m)
+Molecule& Molecule::Add(Molecule& M)
 {
-    for (int i = 0; i < m.NAtoms; ++i)
+    for (int i = 0; i < M.NAtoms; ++i)
     {
-	h.push_back(m.h[i]);
-	k.push_back(m.k[i]);
+	h.push_back(M.h[i]);
+	k.push_back(M.k[i]);
     }
     fix_size();
     return *this;
@@ -589,45 +633,6 @@ Molecule& Molecule::MoveAtomTo(int idx, int nh, int nk)
     h[idx] = nh;
     k[idx] = nk;
     return *this;
-}
-
-double Molecule::ABadnessAt(int nh, int nk)
-{
-    if (NAtoms == ss->NAtoms)
-    {
-	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
-	throw InvalidMolecule();
-    }
-    if (!cached) calc_df();
-    valarray<int> nd2(NAtoms);
-    for (int dhi, dki, i = 0; i < NAtoms; ++i)
-    {
-	dhi = h[i] - nh;
-	dki = k[i] - nk;
-	nd2[i] = dhi*dhi + dki*dki;
-    }
-    sort(&nd2[0], &nd2[nd2.size()]);
-    double nbad = 0.0;
-    list<int>::iterator idif = ssdIdxFree.begin();
-    for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
-    {
-	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
-		++idif ) {};
-	// we found a baddie if we reached the end of ssdIdxFree table
-	// or if the current distance is smaller than d2lo
-	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
-	{
-	    nbad++;
-	}
-	// otherwise it is a matching distance
-	else
-	{
-	    ++idif;
-	}
-    }
-    // now add penalty for being outside the SandSphere
-    nbad += out_penalty(nh, nk);
-    return nbad;
 }
 
 
@@ -785,7 +790,7 @@ bool Molecule::ReadXY(const char* file)
     return result;
 }
 
-bool write_file(const char* file, Molecule& m)
+bool write_file(const char* file, Molecule& M)
 {
     // open file for writing
     ofstream fid(file);
@@ -794,7 +799,7 @@ bool write_file(const char* file, Molecule& m)
 	cerr << "E: unable to write to '" << file << "'" << endl;
 	throw IOError();
     }
-    bool result = (fid << m);
+    bool result = (fid << M);
     fid.close();
     return result;
 }
@@ -844,7 +849,7 @@ Molecule& Molecule::OutFmtAtomEye()
     return *this;
 }
 
-istream& operator>>(istream& fid, Molecule& m)
+istream& operator>>(istream& fid, Molecule& M)
 {
     string header;
     istream::pos_type p = fid.tellg();
@@ -863,13 +868,13 @@ istream& operator>>(istream& fid, Molecule& m)
     bool result;
     switch (ph.format)
     {
-	case m.GRID:
-	    result = m.ReadGrid(fid);
+	case M.GRID:
+	    result = M.ReadGrid(fid);
 	    break;
-	case m.XY:
-	    result = m.ReadXY(fid);
+	case M.XY:
+	    result = M.ReadXY(fid);
 	    break;
-	case m.ATOMEYE:
+	case M.ATOMEYE:
 	    throw runtime_error("reading of atomeye files not implemented");
 	    break;
     }
@@ -880,45 +885,53 @@ istream& operator>>(istream& fid, Molecule& m)
     return fid;
 }
 
-ostream& operator<<(ostream& fid, Molecule& m)
+ostream& operator<<(ostream& fid, Molecule& M)
 {
-    switch (m.output_format)
+    switch (M.output_format)
     {
-	case m.GRID:
+	case M.GRID:
 	    fid << "# BGA molecule format = grid" << endl;
-	    fid << "# NAtoms = " << m.NAtoms << endl;
-	    fid << "# delta = " << m.ss->delta << endl;
-	    for (int i = 0; i < m.NAtoms; ++i)
+	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# delta = " << M.ss->delta << endl;
+	    for (int i = 0; i < M.NAtoms; ++i)
 	    {
-		fid << m.h[i] << '\t' << m.k[i] << endl;
+		fid << M.h[i] << '\t' << M.k[i] << endl;
 	    }
 	    break;
-	case m.XY:
+	case M.XY:
 	    fid << "# BGA molecule format = xy" << endl;
-	    fid << "# NAtoms = " << m.NAtoms << endl;
-	    fid << "# delta = " << m.ss->delta << endl;
-	    for (int i = 0; i < m.NAtoms; ++i)
+	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# delta = " << M.ss->delta << endl;
+	    for (int i = 0; i < M.NAtoms; ++i)
 	    {
 		fid <<
-		    m.ss->delta * m.h[i] << '\t' <<
-		    m.ss->delta * m.k[i] << endl;
+		    M.ss->delta * M.h[i] << '\t' <<
+		    M.ss->delta * M.k[i] << endl;
 	    }
 	    break;
-	case m.ATOMEYE:
+	case M.ATOMEYE:
+	    // this format outputs atom badnesses
+	    if (!M.cached) M.calc_df();
+	    valarray<int> hk_all(2*M.NAtoms);
+	    copy(M.h.begin(), M.h.end(), &(hk_all[0]));
+	    copy(M.k.begin(), M.k.end(), &(hk_all[M.NAtoms]));
+	    double xyz_lo = min(-M.ss->dmax, 1.01*M.ss->delta*hk_all.min());
+	    double xyz_hi = max(+M.ss->dmax, 1.01*M.ss->delta*hk_all.max());
+	    double xyz_rng = xyz_hi - xyz_lo;
 	    fid << "# BGA molecule format = atomeye" << endl;
-	    fid << "# NAtoms = " << m.NAtoms << endl;
-	    fid << "# delta = " << m.ss->delta << endl;
-	    fid << "Number of particles = " << m.NAtoms << endl;
+	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# delta = " << M.ss->delta << endl;
+	    fid << "Number of particles = " << M.NAtoms << endl;
 	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
-	    fid << "H0(1,1) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    fid << "H0(1,1) = " << xyz_rng << " A" << endl;
 	    fid << "H0(1,2) = 0 A" << endl;
 	    fid << "H0(1,3) = 0 A" << endl;
 	    fid << "H0(2,1) = 0 A" << endl;
-	    fid << "H0(2,2) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    fid << "H0(2,2) = " << xyz_rng << " A" << endl;
 	    fid << "H0(2,3) = 0 A" << endl;
 	    fid << "H0(3,1) = 0 A" << endl;
 	    fid << "H0(3,2) = 0 A" << endl;
-	    fid << "H0(3,3) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    fid << "H0(3,3) = " << xyz_rng << " A" << endl;
 	    fid << ".NO_VELOCITY." << endl;
 	    // 4 entries: x, y, z, Uiso
 	    fid << "entry_count = 4" << endl;
@@ -927,13 +940,13 @@ ostream& operator<<(ostream& fid, Molecule& m)
 	    // pj: now it only works for a single Carbon atom in the molecule
 	    fid << "12.0111" << endl;
 	    fid << "C" << endl;
-	    for (int i = 0; i < m.NAtoms; i++)
+	    for (int i = 0; i < M.NAtoms; i++)
 	    {
 		fid <<
-		    (m.h[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
-		    (m.k[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
+		    (M.h[i]*M.ss->delta - xyz_lo)/xyz_rng << " " <<
+		    (M.k[i]*M.ss->delta - xyz_lo)/xyz_rng << " " <<
 		    0.5 << " " <<
-		    m.abad[i] << endl;
+		    M.abad[i] << endl;
 	    }
 	    break;
     }
