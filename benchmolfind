@@ -5,23 +5,27 @@ setopt extendedglob
 # setup:
 : ${REPEATS:=50}
 TIMEFMT="%U"
-distance_files=(
-    solids/tetrahedron.dst
-    solids/octahedron.dst
-    solids/cube.dst
-    solids/icosahedron.dst
-    solids/dodecahedron.dst
-    solids/prism12.dst
-    solids/prismL16.dst
-    solids/prism18.dst
-#   solids/grid27.dst
-)
+typeset -TU DISTANCE_FILES distance_files
+if [[ ${#distance_files} == 0 ]]; then
+    distance_files=(
+        solids/tetrahedron.dst
+        solids/octahedron.dst
+        solids/cube.dst
+        solids/icosahedron.dst
+        solids/dodecahedron.dst
+        solids/prism12.dst
+        solids/prismL16.dst
+        solids/prism18.dst
+    #   solids/grid27.dst
+    )
+fi
 
 if [[ $# == 0 || -n "${(M)*:#--help}" ]]; then
     print "usage: $0:t CmdToBench [SEED] DISTFILE arg1 arg2 ..."
     print "where SEED will be replaced with RANDOM integer and"
     print "DISTFILE will be replaced with following distance table files"
     print -c '  '${^distance_files}
+    print "this list can be changed by exporting DISTANCE_FILES variable"
     exit
 fi
 
@@ -34,6 +38,7 @@ fi
 par=( "${(@)argv[2,-1]}" )
 if [[ -z ${(M)par:#DISTFILE} ]]; then
     print -u2 -- "warning: no DISTFILE among arguments"
+    exit 1
 fi
 
 results=( DISTFILE user )
