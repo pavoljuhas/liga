@@ -119,7 +119,6 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     ParseArgs a(argc, argv, short_options, long_options);
     try {
         a.Parse();
-//      a.Dump();
     }
     catch (ParseArgsError) {
         exit(EXIT_FAILURE);
@@ -131,7 +130,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     else if (a.isopt("v"))
     {
-        cout << version_string();
+	cout << version_string();
         exit(EXIT_SUCCESS);
     }
     if (a.isopt("p"))
@@ -168,10 +167,13 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     string hashsep(72, '#');
     cout << hashsep << endl;
-    time_t cur_time = time(NULL);
-    cout << "# " << ctime(&cur_time);
     cout << "# " << a.cmd_t << endl;
     cout << version_string("# ");
+    char hostname[255];
+    gethostname(hostname, 255);
+    cout << "# " << hostname << endl;
+    time_t cur_time = time(NULL);
+    cout << "# " << ctime(&cur_time);
     cout << hashsep << endl;
     Molecule mol(*dtab);
     cout << "distfile=" << rp.distfile << endl;
@@ -375,9 +377,8 @@ int main(int argc, char *argv[])
         save_frames(mol, rp, rv);
         if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
         {
-            cout << endl << "Solution found!!!" << endl;
-	    cout << "cnt_penalty_calls = " <<
-		BGA::cnt_penalty_calls << endl;
+            cout << endl << "Solution found!!!" << endl << endl;
+	    BGA::cnt.PrintRunStats();
             break;
         }
     }
