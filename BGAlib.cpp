@@ -17,6 +17,7 @@
 //#include <vector>
 //#include <list>
 
+#include <stdexcept>
 #include "BGAlib.hpp"
 
 // exceptions
@@ -439,11 +440,46 @@ Molecule& Molecule::Pop(const int cidx)
     return *this;
 }
 
+Molecule& Molecule::Add(Molecule& m)
+{
+    for (int i = 0; i < m.NAtoms; ++i)
+    {
+	h.push_back(m.h[i]);
+	k.push_back(m.k[i]);
+    }
+    fix_size();
+    return *this;
+}
+
+Molecule& Molecule::Add(int nh, int nk)
+{
+    h.push_back(nh);
+    k.push_back(nk);
+    fix_size();
+    return *this;
+}
+
+Molecule& Molecule::MoveAtom(int idx, int nh, int nk)
+{
+    if (idx > NAtoms)
+    {
+	throw range_error("in Molecule::MoveAtom()");
+    }
+    UnCache();
+    h[idx] = nh;
+    k[idx] = nk;
+    return *this;
+}
+
 
 /***********************************************************************
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.13  2005/01/26 16:45:06  juhas
+* defined Molecule member functions Add(Molecule& m), Add(int nh, int nk),
+*     MoveAtom(int idx, int nh, int nk)
+*
 * Revision 1.12  2005/01/26 15:53:08  juhas
 * Molecule::fixsize() renamed to fix_size()
 * MBadness cached in double Molecule.mbad
