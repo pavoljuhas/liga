@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <limits>
 #include <gsl/gsl_randist.h>
-#include "BGAlib.hpp"
+#include "BGAlib3d.hpp"
 
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
@@ -156,7 +156,7 @@ void SandSphere::SetGridTol(double t)
     for ( list<Molecule *>::const_iterator i = molecules.begin();
 	    i != molecules.end(); ++i )
     {
-	(*i)->UnCache();
+	(*i)->calc_db();
     }
 }
 
@@ -165,6 +165,46 @@ double SandSphere::GridTol()
     return vGridTol;
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// Atom_t definitions
+////////////////////////////////////////////////////////////////////////
+
+Atom_t::Atom_t(int h0, int k0, int l0, int bad0) :
+    h(h0), k(k0), l(l0), bad(bad0)
+{
+    abad_sum = bad;
+    age = 1;
+}
+
+const int Atom_t::Badness()
+{
+    return bad;
+}
+
+const double Atom_t::AvgBadness()
+{
+    return (age != 0) ? 1.0*abad_sum/age : 0.0;
+}
+
+void Atom_t::IncBadness()
+{
+    bad++;
+    abad_sum += bad;
+    age++;
+}
+
+void Atom_t::DecBadness()
+{
+    bad--;
+    abad_sum += bad;
+    age++;
+}
+
+void Atom_t::ResetBadness()
+{
+    bad = abad_sum = age = 0;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
@@ -176,14 +216,11 @@ Molecule::Molecule(SandSphere *SS) : ss(SS)
 }
 
 Molecule::Molecule(SandSphere *SS,
-	int s, int *ph, int *pk) : ss(SS)
+	int s, int *ph, int *pk, int *pl) : ss(SS)
 {
-    h.resize(s);
-    k.resize(s);
     for (int i = 0; i < s; ++i)
     {
-	h[i] = ph[i];
-	k[i] = pk[i];
+	Add(ph[i], pk[i], pl[i]);
     }
     init();
 }
@@ -240,22 +277,22 @@ Molecule& Molecule::operator=(const Molecule& M)
 	ss->molecules.push_back(this);
     }
     // h, k assignment must preceed fix_size()
-    h = M.h;			// x-coordinates
-    k = M.k;			// y-coordinates
+//    h = M.h;			// x-coordinates
+//    k = M.k;			// y-coordinates
     // parameters
     if (NAtoms != M.NAtoms)
     {
 	// this sets NAtoms, NDist, resizes all valarray's
-	fix_size();
+//	fix_size();
     }
     // badness evaluation
-    cached = M.cached;
-    if (M.cached)
+//    cached = M.cached;
+//    if (M.cached)
     {
-	abad = M.abad;		// individual atom badnesses
+//	abad = M.abad;		// individual atom badnesses
 	abadMax = M.abadMax;	// maximum atom badness
 	mbad = M.mbad;		// molecular badness
-	d2 = M.d2;		// sorted table of squared distances
+//	d2 = M.d2;		// sorted table of squared distances
 	ssdIdxFree = M.ssdIdxFree;	// available elements in ss.dist
     }
     // IO helpers
@@ -274,27 +311,27 @@ void Molecule::init()
     fix_size();
 }
 
-void Molecule::fix_size()
-{
-    UnCache();
-    if (h.size() != k.size())
-    {
-	cerr << "E: invalide coordinate vectors" << endl;
-	throw InvalidMolecule();
-    }
-    NAtoms = h.size();
-    NDist  = NAtoms*(NAtoms-1)/2;
-    if (NAtoms > ss->NAtoms)
-    {
-	cerr << "E: molecule too large" << endl;
-	throw InvalidMolecule();
-    }
-    abad.resize(NAtoms, 0.0);
-    abadMax = 0.0;
-    d2.resize(NDist, 0);
-//    ssdIdxUsed.clear();
-    ssdIdxFree.clear();
-}
+//void Molecule::fix_size()
+//{
+//    UnCache();
+//    if (h.size() != k.size())
+//    {
+//	cerr << "E: invalide coordinate vectors" << endl;
+//	throw InvalidMolecule();
+//    }
+//    NAtoms = h.size();
+//    NDist  = NAtoms*(NAtoms-1)/2;
+//    if (NAtoms > ss->NAtoms)
+//    {
+//	cerr << "E: molecule too large" << endl;
+//	throw InvalidMolecule();
+//    }
+//    abad.resize(NAtoms, 0.0);
+//    abadMax = 0.0;
+//    d2.resize(NDist, 0);
+////    ssdIdxUsed.clear();
+//    ssdIdxFree.clear();
+//}
 
 Molecule::~Molecule()
 {
@@ -309,7 +346,8 @@ Molecule::~Molecule()
 
 double Molecule::dist(const int& i, const int& j) const
 {
-    return sqrt(1.0*dist2(i, j));
+//    return sqrt(1.0*dist2(i, j));
+    return 0;
 }
 
 namespace BGA_Molecule_calc_df
@@ -437,7 +475,7 @@ double Molecule::ABadnessAt(int nh, int nk) const
     }
     sort(&nd2[0], &nd2[nd2.size()]);
     double nbad = 0.0;
-    vector<int>::iterator idif = ssdIdxFree.begin();
+    vector<list>::iterator idif = ssdIdxFree.begin();
     for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
     {
 	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
