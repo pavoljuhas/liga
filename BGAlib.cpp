@@ -253,13 +253,6 @@ DistanceTable::DistanceTable(const vector<double>& v) : vector<double>(v)
     init();
 }
 
-DistanceTable& DistanceTable::operator= (const DistanceTable& DT)
-{
-    *this = vector<double>(DT);
-    NAtoms = DT.NAtoms;
-    max_d = DT.max_d;
-}
-
 DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
     *this = v;
