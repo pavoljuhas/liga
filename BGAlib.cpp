@@ -420,13 +420,13 @@ void DistanceTable::init()
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
 
-Molecule::Molecule(SandSphere *SS) : ss(SS)
+Molecule::Molecule(const DistanceTable& dtab) : dFree(dtab)
 {
     init();
 }
 
-Molecule::Molecule(SandSphere *SS,
-	const int s, const int *ph, const int *pk, const int *pl) : ss(SS)
+Molecule::Molecule(const DistanceTable& dtab,
+	const int s, const int *ph, const int *pk, const int *pl) : dFree(dtab)
 {
     init();
     for (int i = 0; i < s; ++i)
@@ -435,9 +435,9 @@ Molecule::Molecule(SandSphere *SS,
     }
 }
 
-Molecule::Molecule(SandSphere *SS,
+Molecule::Molecule(const DistanceTable& dtab,
 	const vector<int>& vh, const vector<int>& vk, const vector<int>& vl
-	) : ss(SS)
+	) : dFree(dtab)
 {
     init();
     if (vh.size() != vk.size() || vh.size() != vl.size())
@@ -451,9 +451,9 @@ Molecule::Molecule(SandSphere *SS,
     }
 }
 
-Molecule::Molecule(SandSphere *SS,
+Molecule::Molecule(const DistanceTable& dtab,
 	const int s, const double *px, const double *py, const double *pz
-	) : ss(SS)
+	) : dFree(dtab)
 {
     init();
     int h, k, l;
@@ -466,10 +466,10 @@ Molecule::Molecule(SandSphere *SS,
     }
 }
 
-Molecule::Molecule(SandSphere *SS,
+Molecule::Molecule(const DistanceTable& dtab,
 	const vector<double>& vx, const vector<double>& vy,
 	const vector<double>& vz
-	) : ss(SS)
+	) : dFree(dtab)
 {
     init();
     if (vx.size() != vy.size() || vx.size() != vz.size())
