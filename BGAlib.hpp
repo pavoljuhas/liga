@@ -17,6 +17,12 @@
 #include <valarray>
 #include <vector>
 #include <list>
+#include <gsl/gsl_rng.h>
+
+// global random number generator
+namespace BGA {
+    extern gsl_rng* rng;
+};
 
 /* declaration of BGA objects */
 using namespace std;
@@ -159,6 +165,11 @@ private:
     const string& header;
 };
 
+struct Couple
+{
+    Molecule *Male, *Female;
+};
+
 class Population : public vector<Molecule>
 {
 public:
@@ -171,6 +182,8 @@ public:
     template <class InputIterator>
 	Population(InputIterator first, InputIterator last) :
 	    vector<Molecule>(first, last) { init(); }
+public:
+    vector<Couple> FindCouples(int NCouples = 1);
 private:
     void init();
 };

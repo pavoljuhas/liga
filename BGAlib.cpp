@@ -9,6 +9,7 @@
 ***********************************************************************/
 
 #include <stdexcept>
+#include <gsl/gsl_randist.h>
 #include "BGAlib.hpp"
 
 // exceptions
@@ -16,6 +17,9 @@ struct InvalidDistanceTable { };
 struct InvalidMolecule { };
 struct InvalidPopulation { };
 struct IOError { };
+
+// random number generator
+gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 
 // read lines that do not start with number
 bool read_header(istream& fid, string& header)
@@ -915,21 +919,21 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    };
 	    double xyz_lo = *min_element(xyz_extremes, xyz_extremes+6);
 	    double xyz_hi = *max_element(xyz_extremes, xyz_extremes+6);
-	    double xyz_rng = xyz_hi - xyz_lo;
+	    double xyz_range = xyz_hi - xyz_lo;
 	    fid << "# BGA molecule format = atomeye" << endl;
 	    fid << "# NAtoms = " << M.NAtoms << endl;
 	    fid << "# delta = " << M.ss->delta << endl;
 	    fid << "Number of particles = " << M.NAtoms << endl;
 	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
-	    fid << "H0(1,1) = " << xyz_rng << " A" << endl;
+	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
 	    fid << "H0(1,2) = 0 A" << endl;
 	    fid << "H0(1,3) = 0 A" << endl;
 	    fid << "H0(2,1) = 0 A" << endl;
-	    fid << "H0(2,2) = " << xyz_rng << " A" << endl;
+	    fid << "H0(2,2) = " << xyz_range << " A" << endl;
 	    fid << "H0(2,3) = 0 A" << endl;
 	    fid << "H0(3,1) = 0 A" << endl;
 	    fid << "H0(3,2) = 0 A" << endl;
-	    fid << "H0(3,3) = " << xyz_rng << " A" << endl;
+	    fid << "H0(3,3) = " << xyz_range << " A" << endl;
 	    fid << ".NO_VELOCITY." << endl;
 	    // 4 entries: x, y, z, Uiso
 	    fid << "entry_count = 4" << endl;
@@ -941,8 +945,8 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    for (int i = 0; i < M.NAtoms; i++)
 	    {
 		fid <<
-		    (M.h[i]*M.ss->delta - xyz_lo)/xyz_rng << " " <<
-		    (M.k[i]*M.ss->delta - xyz_lo)/xyz_rng << " " <<
+		    (M.h[i]*M.ss->delta - xyz_lo)/xyz_range << " " <<
+		    (M.k[i]*M.ss->delta - xyz_lo)/xyz_range << " " <<
 		    0.5 << " " <<
 		    M.abad[i] << endl;
 	    }
@@ -1003,4 +1007,24 @@ void Population::init()
 	throw InvalidPopulation();
     }
     */
+}
+
+vector<Couple> Population::FindCouples(int NCouples)
+{
+    double fitness[size()];
+    double *pf = fitness;
+    for (iterator i = begin(); i != end(); ++i)
+    {
+	*(pf++) = i->MFitness();
+    }
+    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(size(), fitness);
+    vector<Couple> v(NCouples);
+    typedef vector<Couple>::iterator Cit;
+    for (Cit i = v.begin(); i != v.end(); ++i)
+    {
+	i->Male = &at( gsl_ran_discrete(BGA::rng, table) );
+	i->Female = &at( gsl_ran_discrete(BGA::rng, table) );
+    }
+    gsl_ran_discrete_free(table);
+    return v;
 }
