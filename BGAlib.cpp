@@ -714,7 +714,7 @@ void Molecule::calc_test_badness(Atom_t& ta)
     {
 	double td = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(td);
-	if (fabs(*dnear - d) < BGA::tol_dist)
+	if (fabs(*dnear - td) < BGA::tol_dist)
 	{
 	    tbad += pow(td - *dnear, 2);
 	    used_distances.push_back(*dnear);
