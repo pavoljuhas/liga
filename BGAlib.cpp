@@ -308,9 +308,9 @@ double Molecule::dist(const int& i, const int& j)
     return sqrt(1.0*dist2(i, j));
 }
 
-double Molecule::out_penalty(int i)
+double Molecule::out_penalty(int nh, int nk)
 {
-    double Rout = sqrt(h[i]*h[i] + k[i]*k[i] + 0.0) - ss->gridmax;
+    double Rout = sqrt(nh*nh + nk*nk + 0.0) - ss->gridmax;
     return (Rout > 0.0) ? Rout : 0.0;
 }
 
@@ -358,12 +358,14 @@ void Molecule::calc_df()
     int ssdIdx = 0;
     for (ij = 0; ij < NDist; ++ij)
     {
-	for(; ss->d2hi[ssdIdx] < d2idx[ij].d2 && ssdIdx < ss->NDist; ++ssdIdx)
+	for(;  ssdIdx < ss->NDist && ss->d2hi[ssdIdx] < d2idx[ij].d2; ++ssdIdx)
 	{
 	    ssdIdxFree.push_back(ssdIdx);
 	}
+	// jump out if there are no more target distances
+	if (! (ssdIdx < ss->NDist) ) break;
 	// did we find a baddie?
-	if (ssdIdx < ss->NDist  &&  ss->d2lo[ssdIdx] > d2idx[ij].d2)
+	if (ss->d2lo[ssdIdx] > d2idx[ij].d2)
 	{
 	    abad[d2idx[ij].i]++;
 	    abad[d2idx[ij].j]++;
@@ -377,7 +379,7 @@ void Molecule::calc_df()
     // now add penalty for being outside the SandSphere
     for (int i = 0; i < NAtoms; ++i)
     {
-	abad[i] += out_penalty(i);
+	abad[i] += out_penalty(h[i], k[i]);
     }
     mbad = abad.sum();
     abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
@@ -385,10 +387,7 @@ void Molecule::calc_df()
 
 double Molecule::ABadness(int i)
 {
-    if (!cached)
-    {
-	calc_df();
-    }
+    if (!cached) calc_df();
     return abad[i];
 }
 
@@ -401,10 +400,7 @@ double Molecule::AFitness(int i)
 
 double Molecule::MBadness()
 {
-    if (!cached)
-    {
-	calc_df();
-    }
+    if (!cached) calc_df();
     return mbad;
 }
 
@@ -424,13 +420,13 @@ Molecule& Molecule::Shift(int dh, int dk)
     {
 	if (cached)
 	{
-	    abad[i] -= out_penalty(i);
+	    abad[i] -= out_penalty(h[i], k[i]);
 	}
 	h[i] += dh;
 	k[i] += dk;
 	if (cached)
 	{
-	    abad[i] += out_penalty(i);
+	    abad[i] += out_penalty(h[i], k[i]);
 	}
     }
     if (cached)
@@ -583,6 +579,46 @@ Molecule& Molecule::MoveAtomTo(int idx, int nh, int nk)
     h[idx] = nh;
     k[idx] = nk;
     return *this;
+}
+
+double Molecule::ABadnessAt(int nh, int nk)
+{
+    if (NAtoms == ss->NAtoms)
+    {
+	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
+	throw InvalidMolecule();
+    }
+    if (!cached) calc_df();
+    valarray<int> nd2(NAtoms);
+    for (int dhi, dki, i = 0; i < NAtoms; ++i)
+    {
+	dhi = h[i] - nh;
+	dki = k[i] - nk;
+	nd2[i] = dhi*dhi + dki*dki;
+    }
+    sort(&nd2[0], &nd2[nd2.size()]);
+    double nbad = 0.0;
+    list<int>::iterator idif = ssdIdxFree.begin();
+    for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
+    {
+	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
+		++idif ) {};
+	// jump out if there are no more target distances
+	if (idif == ssdIdxFree.end()) break;
+	// did we find a baddie?
+	if (ss->d2lo[*idif] > *pnd2)
+	{
+	    nbad++;
+	}
+	// otherwise it is a matching distance
+	else
+	{
+	    ++idif;
+	}
+    }
+    // now add penalty for being outside the SandSphere
+    nbad += out_penalty(nh, nk);
+    return nbad;
 }
 
 ////////////////////////////////////////////////////////////////////////

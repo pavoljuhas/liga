@@ -101,6 +101,7 @@ public:
     Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
+    double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
@@ -128,7 +129,7 @@ private:
     double abadMax;		// maximum atom badness
     double mbad;		// molecular badness
     valarray<int> d2;		// sorted table of squared distances 
-    double out_penalty(int i);	// penalty for being outside SandSphere
+    double out_penalty(int nh, int nk);	// penalty for being outside SandSphere
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
     list<int> ssdIdxFree;	// available elements in ss.dist
     // helper functions
