@@ -70,9 +70,11 @@ template<class T> bool read_data(istream& fid, vector<T>& v)
     return !(fid.rdstate() & ios::badbit);
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // SandSphere definitions
 ////////////////////////////////////////////////////////////////////////
+
 SandSphere::SandSphere(int GridMax, const vector<double>& vt) :
     gridmax(GridMax)
 {
@@ -174,9 +176,11 @@ double SandSphere::GridTol()
     return vGridTol;
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
+
 Molecule::Molecule(SandSphere *SS) : ss(SS)
 {
     init();
@@ -415,9 +419,11 @@ double Molecule::MFitness()
     return NAtoms*abadMax - mbadness;
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // Molecule operators
 ////////////////////////////////////////////////////////////////////////
+
 Molecule& Molecule::Shift(int dh, int dk)
 {
     for (int i = 0; i < NAtoms; ++i)
@@ -623,6 +629,7 @@ double Molecule::ABadnessAt(int nh, int nk)
     nbad += out_penalty(nh, nk);
     return nbad;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions
