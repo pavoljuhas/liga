@@ -127,6 +127,8 @@ public:
     ~Molecule();		// destructor
     // fit parameters
     static double tol_deltad;
+    static bool evolve_jump;
+    static double evolve_frac;
     // fitness/badness functions
     double AFitness(const Atom_t&) const;
     double Badness() const;	// total badness
