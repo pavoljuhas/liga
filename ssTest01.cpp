@@ -1,3 +1,11 @@
+/***********************************************************************
+* Short Title: test of BGAlib.cpp
+*
+* Comments: create SandSphere object using 3 different constructors
+*
+* $Id$
+***********************************************************************/
+
 #include "BGAlib.hpp"
 
 int main()
@@ -23,4 +31,3 @@ int main()
     delete ss1, ss2, ss3;
     return EXIT_SUCCESS;
 }
-
