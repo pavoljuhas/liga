@@ -74,7 +74,7 @@ template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
     else
     {
 	ii = lst.end();
-	advance(ii, n-lst.size());
+	advance(ii, n-(int)lst.size());
     }
     return ii;
 }
@@ -257,21 +257,36 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
 	badness += BGA::min_distance_penalty;
     }
     // abbreviation
-    vector<int>::iterator ii;
-    double *d2lo = &(owner->ss->d2lo[0]);
-    double *d2hi = &(owner->ss->d2hi[0]);
-    pair<double,double*> d2_d2hi(d2, d2hi);
-    ii = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
-	    d2_d2hi, comp_find_in_array );
-    if (ii == owner->ssdIdxFree.end() || d2lo[*ii] > d2)
+    double *ssd = &(owner->ss->d[0]);
+    double *ssd2lo = &(owner->ss->d2lo[0]);
+    double *ssd2hi = &(owner->ss->d2hi[0]);
+    pair<double,double*> d_ssd(d, ssd);
+    vector<int>::iterator ilo, ihi, inear;
+    ihi = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
+	    d_ssd, comp_find_in_array );
+    inear = ihi;
+    if (ihi == owner->ssdIdxFree.end())
+    {
+	--inear;
+    }
+    else if (ihi != owner->ssdIdxFree.begin())
+    {
+	ilo = ihi;
+	--ilo;
+	if ( (d - ssd[*ilo]) < (ssd[*ihi] - d) )
+	{
+	    inear = ihi;
+	}
+    }
+    if ((d2 < ssd2lo[*inear]) || (d2 > ssd2hi[*inear]))
     {
 	ssdIdxUsed = -1;
 	badness++;
     }
     else
     {
-	ssdIdxUsed = *ii;
-	owner->ssdIdxFree.erase(ii);
+	ssdIdxUsed = *inear;
+	owner->ssdIdxFree.erase(inear);
     }
     atom1->IncBadness(badness);
     atom2->IncBadness(badness);
@@ -292,7 +307,6 @@ Pair_t& Pair_t::operator=(const Pair_t&)
 
 Pair_t::~Pair_t()
 {
-    int mab = max(atom1->Badness(), atom2->Badness());
     atom1->DecBadness(badness);
     atom2->DecBadness(badness);
     owner->badness -= 2*badness;
@@ -416,7 +430,7 @@ void Molecule::init()
     max_abad = 0;
     badness = 0;
     // prepare ssdIdxFree
-    for (int i = 0; i < NDist(); ++i)
+    for (int i = 0; i < ss->NDist; ++i)
     {
 	ssdIdxFree.push_back(i);
     }
@@ -1731,7 +1745,8 @@ void Molecule::PrintBadness()
     // call to MBadness() will update abadMax if necessary
     cout << "MBadness() = " << Badness() << endl;
     cout << "ABadness() =";
-    double mab = MaxABadness();
+    double mab = max_element(atoms.begin(), atoms.end(),
+		    comp_Atom_Badness) -> Badness();
     bool marked = false;
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
@@ -1750,7 +1765,8 @@ void Molecule::PrintFitness()
 {
     cout << "MFitness() = " << Fitness() << endl;
     cout << "AFitness() =";
-    double mab = MaxABadness();
+    double mab = max_element(atoms.begin(), atoms.end(),
+		    comp_Atom_Badness) -> Badness();
     bool marked = false;
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
