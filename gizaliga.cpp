@@ -80,15 +80,21 @@ struct RunPar_t
 struct RunVar_t
 {
     int iteration;
+    bool full_liga;
     bool lastframe;
 };
 
-class DivisionTeams_t : public vector< auto_ptr<Molecule> >
+class Division_t
 {
 public:
     // constructors
-    DivisionTeams_t() : vector< auto_ptr<Molecule> >() { }
-    inline reference team(size_type n) { return at(n); }
+    Division_t(int s) : max_size(s) { };
+    const int max_size;
+    vector< auto_ptr<Molecule> > teams;
+    vector< auto_ptr<Molecule> >::iterator champion();
+    vector< auto_ptr<Molecule> >::iterator looser();
+    inline int size() { return teams.size(); }
+    inline bool full() { return !(size() < max_size); }
 };
 
 
@@ -106,7 +112,6 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     ParseArgs a(argc, argv, short_options, long_options);
     try {
         a.Parse();
-//      a.Dump();
     }
     catch (ParseArgsError) {
         exit(EXIT_FAILURE);
@@ -268,15 +273,54 @@ int main(int argc, char *argv[])
     RunVar_t rv;
     rv.lastframe = false;
 
-    typedef auto_ptr<Molecule> apmol;
-    vector<DivisionTeams_t> LigaDivision(mol.max_NAtoms()+1);
-    LigaDivision[mol.NAtoms()].push_back(apmol(new Molecule(mol)));
-    if (mol.NAtoms() != 0)
+    // initialize liga divisions, primitive divisions have only 1 team
+    vector<Division_t> LigaDivision;
+    for (int i = 0; i <= mol.maxNAtoms(); ++i)
+    {
+        int divteams = (i < 2) ? 1 : rp.teams;
+        LigaDivision.push_back(Division_t(divteams));
+    }
+    // put initial molecule to its division
+    typedef auto_ptr<Molecule> APmol;
+    APmol first_team(new Molecule(mol));
+    LigaDivision[mol.NAtoms()].teams.push_back(first_team);
+    // fill higher divisions
+    mol.evolve_jump = false;
+    for (int ldidx = mol.NAtoms()+1; ldidx <= mol.maxNAtoms(); ++ldidx)
+    {
+        APmol parent_team = LigaDivision[ldidx-1].teams[0];
+        APmol higher_team(new Molecule(*parent_team));
+        higher_team->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
+        LigaDivision[ldidx].teams.push_back(higher_team);
+    }
+    mol.evolve_jump = true;
+    // fill lower divisions
+    for (int ldidx = mol.NAtoms()-1; ldidx >= 0; --ldidx)
+    {
+        APmol parent_team = LigaDivision[ldidx+1].teams[0];
+        APmol lower_team(new Molecule(*parent_team));
+        lower_team->Degenerate(1);
+        LigaDivision[ldidx].teams.push_back(lower_team);
+    }
 
     rv.iteration = 0;
-    while (true)
+    rv.full_liga = false;
+    while (!(LigaDivision.back().champion->Badness() < rp.tol_bad))
     {
         ++rv.iteration;
+        // it is a bit painful when liga is not filled
+        if (!rv.full_liga)
+        {
+	bool fullcheck = true;
+	for (vector<Division_t>::iteration dvi = LigaDivision.begin();
+	        dvi != LigaDivision.end() && fullcheck; ++dvi)
+	{
+	    fullcheck = fullcheck && dvi->full();
+	}
+	rv.full_liga = fullcheck;
+        }
+
+        //
         // calculate probability of evolution
         cout << rv.iteration;
         // update bestMNBadness and improved
