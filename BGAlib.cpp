@@ -151,9 +151,10 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     }
     else
 	dUsed = -1.0;
-    atom1->IncBadness(badness);
-    atom2->IncBadness(badness);
-    owner->badness += 2*badness;
+    double badnesshalf = badness/2.0;
+    atom1->IncBadness(badnesshalf);
+    atom2->IncBadness(badnesshalf);
+    owner->badness += badness;
 }
 
 // this constructor should be used only in Molecule operator=()
