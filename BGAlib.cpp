@@ -161,10 +161,11 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = sqrt(d2);
     badness = 0;
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
-    if (fabs(*dnear - d) < BGA::tol_dist)
+    double dd = *dnear - d;
+    if (fabs(dd) < BGA::tol_dist)
     {
 	dUsed = *dnear;
-	badness += pow(d-dUsed, 2);
+	badness += pow(dd/BGA::tol_dist, 2);
 	owner->dTarget.erase(dnear);
     }
     else
@@ -485,7 +486,7 @@ double Molecule::MaxABadness() const
 	{
 	    double mab = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness) -> Badness();
-	    max_abad = max(BGA::tol_abadness, mab);
+	    max_abad = max(1.0, mab);
 	}
     }
     return max_abad;
@@ -712,11 +713,12 @@ void Molecule::calc_test_badness(Atom_t& ta)
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	double td = dist(*ai, ta);
-	VDit dnear = dTarget.find_nearest(td);
-	if (fabs(*dnear - td) < BGA::tol_dist)
+	double d = dist(*ai, ta);
+	VDit dnear = dTarget.find_nearest(d);
+	double dd = *dnear - d;
+	if (fabs(dd) < BGA::tol_dist)
 	{
-	    tbad += pow(td - *dnear, 2);
+	    tbad += pow(dd/BGA::tol_dist, 2);
 	    used_distances.push_back(*dnear);
 	    erased_positions.push_back(dTarget.erase(dnear));
 	}
