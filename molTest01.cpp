@@ -29,7 +29,7 @@ int main()
     cout << endl;
 
     // square distance table
-    double pdSquare[6] = {1.0, 1.0, 1.4142, 1.4142, 1.0, 1.0};
+    double pdSquare[6] = {1.0, 1.0, sqrt(2.0), sqrt(2.0), 1.0, 1.0};
     DistanceTable dtSquare(pdSquare, 6);
     // build correct square molecule
     double px1[4] = {-.5,  .5,  .5, -.5};
