@@ -161,7 +161,7 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = dist(*atom1, *atom2);
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = dd*dd;
+    badness = owner->penalty(dd);
     if (badness < BGA::eps_badness)
 	badness = 0.0;
     if (fabs(dd) < owner->tol_dd)
@@ -317,6 +317,13 @@ void DistanceTable::init()
 double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::evolve_frac = 0.0001;
 bool   Molecule::evolve_jump = true;
+namespace BGA {
+    double pow2(double x) {return x*x;}
+    double well(double x) {return fabs(x)<Molecule::tol_dd ? 0.0 : 1.0;}
+}
+//double (*Molecule::penalty)(double) = BGA::well;
+//double (*Molecule::penalty)(double) = fabs;
+double (*Molecule::penalty)(double) = BGA::pow2;
 
 Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 {
@@ -695,7 +702,7 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	double d = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(d);
 	double dd = *dnear - d;
-	tbad += dd*dd;
+	tbad += penalty(dd);
 	if (fabs(dd) < tol_dd)
 	{
 	    used_distances.push_back(*dnear);

@@ -129,6 +129,7 @@ public:
     static double tol_dd;
     static bool evolve_jump;
     static double evolve_frac;
+    static double (*penalty)(double);
     // fitness/badness functions
     double AFitness(const Atom_t&) const;
     double Badness() const;	// total badness
