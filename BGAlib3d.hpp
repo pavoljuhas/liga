@@ -65,13 +65,46 @@ private:
     friend class Molecule;
 };
 
+class Atom_t
+{
+public:
+    Atom_t(int h0 = 0, int k0 = 0, int l0 = 0, int bad0 = 0);
+    mutable int h, k, l;
+    const int Badness();
+    const double AvgBadness();
+    void IncBadness();
+    void DecBadness();
+    void ResetBadness();
+private:
+    int bad;
+    int abad_sum;
+    int age;
+};
+
+struct Pair_t
+{
+public:
+    Pair_t(Molecule *M, Atom_t& atom1, Atom_t& atom2);
+    ~Pair_t();
+    // do not allow copying or assignment
+    Pair_t(const Pair_t& M) {};
+    Pair_t& operator=(const Pair_t&) {};
+    //
+    Atom_t *pAtom1, *pAtom2;
+    mutable int d2;
+    mutable double d;
+private:
+    int ssdIdxUsed;
+    double near_penalty;
+};
+
 // Molecule in 2 dimensions
 class Molecule
 {
 public:
     // constructors
     Molecule(SandSphere *SS);
-    Molecule(SandSphere *SS, int s, int *ph, int *pk);
+    Molecule(SandSphere *SS, int s, int *ph, int *pk, int *pl);
     Molecule(SandSphere *SS,
 	    const vector<int>& vh, const vector<int>& vk);
     Molecule(SandSphere *SS, int s, double *px, double *py);
@@ -83,18 +116,12 @@ public:
     // parameters
     int NDist;    		// length of distance table
     int NAtoms;   		// current number of atoms
-    int MaxAtoms;		// target number of atoms
+    mutable int MaxAtoms;	// target number of atoms
     double ABadness(int) const;	// fitness of specified atom
     double AFitness(int) const;	// badness of specified atom
     double MBadness() const;	// total badness
     double MFitness() const;	// total fitness
     double dist(const int& i, const int& j) const;	// d(i,j)
-    inline int dist2(const int& i, const int& j) const	// squared d(i,j)
-    {
-	int dh = h[i] - h[j];
-	int dk = k[i] - k[j];
-	return dh*dh + dk*dk;
-    }
     // operator functions
     Molecule& Shift(double dh, double dk);	// shift all atoms
     Molecule& Center();			// center w/r to the center of mass
@@ -136,25 +163,17 @@ public:
     friend istream& operator>>(istream& is, Molecule& M);
     void PrintBadness();		// total and per-atomic badness
     void PrintFitness();		// total and per-atomic fitness
-    // public utility functions
-    inline void UnCache() { cached = false; }
 private:
     // constructor helper
     void init();
     // data storage
     SandSphere *ss;
-    vector<int> h;			// x-coordinates
-    vector<int> k;			// y-coordinates
+    list<Atom_t> atom;			// list of all atoms
+    list<Pair_t> pair;			// list of all atom pairs
+    mutable list<int> ssdIdxFree;	// available elements in ss.dist
     // badness evaluation
-    mutable bool cached;
-    mutable valarray<double> abad;	// individual atom badnesses
     mutable double abadMax;		// maximum atom badness
-    mutable double mbad;		// molecular badness
-    mutable valarray<int> d2;		// sorted table of squared distances 
-//    vector<int> ssdIdxUsed;	// used elements from ss.dist
-    mutable vector<int> ssdIdxFree;	// available elements in ss.dist
-    // operator helper functions
-    void fix_size();		// set all sizes consistently with h.size()
+    mutable double mbadness;		// molecular badness
     void calc_db() const;	// update distance and fitness tables
 public:
     struct badness_at;
