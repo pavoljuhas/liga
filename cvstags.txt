@@ -50,7 +50,7 @@ three-dim-1j                1.129       2005-02-26
     calc_test_badness() is now using a local copy of dTarget
     otherwise it is the same as three-dim-1i
 
-three-dim-2                 1.142       2005-02-28
+three-dim-2, djoser-1       1.142       2005-02-28
     nice working version of djoser, common utility functions moved
     to BGAutils.cpp
 
