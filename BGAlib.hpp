@@ -120,8 +120,9 @@ public:
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
     Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
-    Molecule  MateWith(const Molecule& M, int trials = 500);
+    Molecule MateWith(Molecule Male, int trials = 500);
     double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
+    double MBadnessWith(const Molecule& M);  // badness estimate for merging
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
@@ -159,23 +160,11 @@ private:
 public:
     struct badness_at;
 private:
-    list<badness_at> find_good_distances(int trials=100);
-    list<badness_at> find_good_triangles(int trials=100);
-    inline void subtract_out_penalty()
-    {
-	for (int i = 0; cached && i < NAtoms; ++i)
-	    abad[i] -= out_penalty(h[i], k[i]);
-    }
-    inline void add_out_penalty()
-    {
-	for (int i = 0; cached && i < NAtoms; ++i)
-	    abad[i] += out_penalty(h[i], k[i]);
-    }
-    inline void set_mbad_abadMax()
-    {
-	mbad = abad.sum();
-	abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
-    }
+    list<badness_at> find_good_distances(int trials, const list<int>& ssdIdx);
+    list<badness_at> find_good_triangles(int trials, const list<int>& ssdIdx);
+    void subtract_out_penalty();
+    void add_out_penalty();
+    void set_mbad_abadMax();
     // MateWith helpers:
     Molecule& mount(Molecule& Male);
     // IO helpers

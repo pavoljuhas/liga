@@ -284,7 +284,7 @@ void Molecule::fix_size()
     }
     NAtoms = h.size();
     NDist  = NAtoms*(NAtoms-1)/2;
-    if (NDist > ss->NDist)
+    if (NAtoms > ss->NAtoms)
     {
 	cerr << "E: molecule too large" << endl;
 	throw InvalidMolecule();
@@ -330,6 +330,24 @@ namespace BGA_Molecule_calc_df
     {
 	return lhs.d2 < rhs.d2;
     }
+}
+
+void Molecule::subtract_out_penalty()
+{
+    for (int i = 0; cached && i < NAtoms; ++i)
+	abad[i] -= out_penalty(h[i], k[i]);
+}
+
+void Molecule::add_out_penalty()
+{
+    for (int i = 0; cached && i < NAtoms; ++i)
+	abad[i] += out_penalty(h[i], k[i]);
+}
+
+void Molecule::set_mbad_abadMax()
+{
+    mbad = abad.sum();
+    abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
 }
 
 // calculate all distances and atom/molecule badness 
@@ -460,6 +478,47 @@ double Molecule::ABadnessAt(int nh, int nk)
     return nbad;
 }
 
+double Molecule::MBadnessWith(const Molecule& M)
+{
+    if (NAtoms+M.NAtoms > ss->NAtoms)
+    {
+	cerr << "E: joined molecule too large" << endl;
+	throw InvalidMolecule();
+    }
+    if (!cached) calc_db();
+    if (!M.cached) M.calc_db();
+    valarray<int> nd2(NAtoms*M.NAtoms);
+    for (int dh, dk, id2 = 0, i = 0; i < NAtoms; ++i)
+    {
+	for (int j = 0; j < M.NAtoms; ++j)
+	{
+	    dh = h[i] - M.h[j];
+	    dk = k[i] - M.k[j];
+	    nd2[id2++] = dh*dh + dk*dk;
+	}
+    }
+    sort(&nd2[0], &nd2[nd2.size()]);
+    double mbadwith = MBadness() + M.MBadness();
+    list<int>::iterator idif = ssdIdxFree.begin();
+    for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
+    {
+	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
+		++idif ) {};
+	// we found a baddie if we reached the end of ssdIdxFree table
+	// or if the current distance is smaller than d2lo
+	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
+	{
+	    mbadwith += 2.0;
+	}
+	// otherwise it is a matching distance
+	else
+	{
+	    ++idif;
+	}
+    }
+    // now add penalty for being outside the SandSphere
+    return mbad;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule operators
@@ -660,12 +719,16 @@ struct Molecule::badness_at
     int h, k;
     double abad;
 };
-bool operator<(const Molecule::badness_at& lhs, const Molecule::badness_at rhs)
+bool operator<(
+	const Molecule::badness_at& lhs, const Molecule::badness_at& rhs
+	)
 {
     return lhs.abad < rhs.abad;
 }
 
-list<Molecule::badness_at> Molecule::find_good_distances(int trials)
+list<Molecule::badness_at> Molecule::find_good_distances(
+	int trials, const list<int>& ssdIdx
+	)
 {
     if (NAtoms > ss->NDist)
     {
@@ -688,7 +751,9 @@ list<Molecule::badness_at> Molecule::find_good_distances(int trials)
     return retlist;
 }
 
-list<Molecule::badness_at> Molecule::find_good_triangles(int trials)
+list<Molecule::badness_at> Molecule::find_good_triangles(
+	int trials, const list<int>& ssdIdx
+	)
 {
     // try to generate 2 triangles with good distances, this may not always
     // work, so this returns a list, which is either empty, or has 2 entries
@@ -795,17 +860,18 @@ Molecule& Molecule::Evolve(int trials)
 	    Add(0, 0);
 	    return *this;
 	case 1:
-	    list<badness_at> ba = find_good_distances(1);
+	    list<badness_at> ba = find_good_distances(1, ssdIdxFree);
 	    Add(ba.front().h, ba.front().k);
 	    Center();
 	    return *this;
     }
     // here we can be sure that NAtoms >= 2
-    list<badness_at> trials_log = find_good_distances(trials/3);
+    list<badness_at> trials_log = find_good_distances(trials/3, ssdIdxFree);
     // if we did not find a good place, let's try triangulation
     if (trials_log.back().abad != 0.0)
     {
-	list<badness_at> fgt = find_good_triangles(trials - trials_log.size());
+	list<badness_at> fgt =
+	    find_good_triangles(trials-trials_log.size(), ssdIdxFree);
 	trials_log.insert(trials_log.end(), fgt.begin(), fgt.end());
     }
     // find the best trial and Add atom to that place
@@ -907,13 +973,22 @@ namespace BGA_Molecule_MateWith
 }
 
 
-Molecule Molecule::MateWith(const Molecule& M, int trials)
+Molecule Molecule::MateWith(Molecule Male, int trials)
 {
+    // pj: urob
+    /*
+    for (int i = 0; i < trials; ++i)
+    {
+	mount(Male);
+
+    }
+    */
 }
 
 Molecule& mount(Molecule& Male)
 {
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions
