@@ -529,8 +529,8 @@ Molecule& Molecule::Shift(double dh, double dk)
     subtract_out_penalty();
     for (int i = 0; i < NAtoms; ++i)
     {
-	h[i] += (int) round(h[i] + dh);
-	k[i] += (int) round(k[i] + dk);
+	h[i] += (int) round(dh);
+	k[i] += (int) round(dk);
     }
     add_out_penalty();
     set_mbad_abadMax();
@@ -796,7 +796,7 @@ list<Molecule::badness_at> Molecule::find_good_triangles(
 	double r23 = ss->d[ssd_idx[idf2]];
 	double r12 = dist(a1, a2);
 	// is triangle [a1 a2 a3] possible?
-	if (r13 + r23 < r12 || fabs(r13 - r23) > r12) continue;
+	if (r12 < 1.0 || r13 + r23 < r12 || fabs(r13 - r23) > r12) continue;
 	// here we can construct 2 triangles
 	double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
 	double perpdir[2] = { -longdir[1], 	  longdir[0] };
