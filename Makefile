@@ -34,6 +34,9 @@ lib_objects: $(OBJECTS)
 djoser: djoser.o $(OBJECTS) $(HEADERS) ParseArgs.o ParseArgs.hpp
 	$(CC) -o $@ $@.o $(OBJECTS) ParseArgs.o $(LDFLAGS)
 
+gizaliga: gizaliga.o $(OBJECTS) $(HEADERS) ParseArgs.o ParseArgs.hpp
+	$(CC) -o $@ $@.o $(OBJECTS) ParseArgs.o $(LDFLAGS)
+
 #####################################################################}}}
 # test programs {{{
 
