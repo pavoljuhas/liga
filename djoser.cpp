@@ -42,7 +42,7 @@ void print_help(ParseArgs& a)
 "  outstru=FILE          where to save the best full molecule\n"
 "  inistru=FILE          initial structure [empty box]\n"
 "  snapshot=FILE         live molecule structure\n"
-"  snaprate=int          number of iterations between snapshot updates\n"
+"  snaprate=int          [100] number of iterations between snapshot updates\n"
 "  frames=FILE           save intermediate structures to FILE.iteration\n"
 "  framesrate=int        number of iterations between frame saves\n"
 "Walk parameters\n"
@@ -62,7 +62,8 @@ void print_help(ParseArgs& a)
 ;
 }
 
-struct RunPar_t {
+struct RunPar_t
+{
     // IO parameters
     const char *distfile;
     const char *outstru;
@@ -86,23 +87,6 @@ struct RunPar_t {
     int tri_trials;
     int pyr_trials;
 };
-
-double prob_evolve(RunPar_t& rp, const Molecule& mol, double impr_rate)
-{
-    double pe;
-    if (mol.NAtoms() == mol.max_NAtoms())
-    {
-	pe = 0.0;
-	rp.bustprob = false;
-    }
-    else if (mol.NAtoms() == 0)
-	pe = 1.0;
-    else if (rp.bustprob)
-	pe = 1.0;
-    else
-	pe = impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
-    return pe;
-}
 
 Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 {
@@ -241,93 +225,119 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     return mol;
 }
 
+double prob_evolve(const Molecule& mol, RunPar_t& rp, double impr_rate)
+{
+    double pe;
+    if (mol.NAtoms() == mol.max_NAtoms())
+    {
+	pe = 0.0;
+	rp.bustprob = false;
+    }
+    else if (mol.NAtoms() <= 1)
+	pe = 1.0;
+    else if (rp.bustprob)
+	pe = 1.0;
+    else
+	pe = impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
+    return pe;
+}
+
+void evolve_or_degenerate(Molecule& mol, RunPar_t& rp, double pe)
+{
+    if (pe > gsl_rng_uniform(BGA::rng))
+    {
+	mol.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
+	cout << " E " << mol.NAtoms() << " " << mol.NormBadness();
+    }
+    else
+    {
+	int Npop = 1;
+	if (mol.NormBadness() > rp.tol_bad)
+	{
+	    Npop = (int) ceil( mol.NAtoms()/4.0 *
+		    (1.0 - rp.tol_bad/mol.NormBadness()) );
+	    //		would this help?
+	    Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop);
+	}
+	mol.Degenerate(Npop);
+	cout << " D " << mol.NAtoms() << " " << mol.NormBadness();
+    }
+    cout << endl;
+}
+
+void save_snapshot(Molecule& mol, RunPar_t& rp)
+{
+//  numeric_limits<double> double_info;
+    static int cnt = 0;
+    static int largest = 0;
+    static double bestMNB = numeric_limits<double>().max();
+    if (rp.snapshot == NULL || rp.snaprate == 0 || ++cnt < rp.snaprate)
+	return;
+    if (mol.NAtoms() >= largest && mol.NormBadness() < bestMNB)
+    {
+	largest = mol.NAtoms();
+	bestMNB = mol.NormBadness();
+	mol.WriteAtomEye(rp.snapshot);
+	cnt = 0;
+    }
+}
+
+void save_frames(Molecule& mol, RunPar_t& rp, int iteration)
+{
+//  numeric_limits<double> double_info;
+    static int cnt = 0;
+    if (rp.frames == NULL || rp.framesrate == 0 || ++cnt < rp.framesrate)
+	return;
+    ostringstream oss;
+    oss << rp.frames << "." << iteration;
+    mol.WriteAtomEye(oss.str().c_str());
+    cnt = 0;
+}
+
 int main(int argc, char *argv[])
 {
     RunPar_t rp;
     Molecule mol = process_arguments(rp, argc, argv);
-    // set lastNMBadness to a maximum double
+    // set bestMNBadness to a maximum double
     numeric_limits<double> double_info;
-    valarray<double> lastNMBadness(double_info.max(), 1+mol.max_NAtoms());
-    double best_largest = double_info.max();
+    valarray<double> bestMNBadness(double_info.max(), 1+mol.max_NAtoms());
     valarray<int> improved(1, rp.logsize);
+    bool bust_now = false;
 
-    int maxatoms = 0;
-    bool go_all_way = false;
-    for (int trial = 0; ; ++trial)
+    for (int iteration = 0; ; ++iteration)
     {
 	// calculate probability of evolution
 	double impr_rate = 1.0*improved.sum()/rp.logsize;
 	if (impr_rate >= 0.5 && rp.bustprob > gsl_rng_uniform(BGA::rng))
-	    rp.bustprob = true;
-	double pe = prob_evolve(rp, mol, impr_rate);
-	cout << trial;
-	if (pe > gsl_rng_uniform(BGA::rng))
-	{
-	    mol.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
-	    cout << " E " << mol.NAtoms() << " " << mol.NormBadness();
-	}
-	else
-	{
-	    int Npop;
-	    if (mol.NormBadness() > rp.tol_bad)
-	    {
-		Npop = (int) ceil( mol.NAtoms()/4.0 *
-			(1.0 - rp.tol_bad/mol.NormBadness()) );
-//		would this help?
-//		Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop-1);
-	    }
-	    else
-		Npop = 1;
-	    mol.Degenerate(Npop);
-	    cout << " D " << mol.NAtoms() << " " << mol.NormBadness();
-	}
-	cout << endl;
+	    bust_now = true;
+	double pe = prob_evolve(mol, rp, impr_rate);
+	cout << iteration;
+	evolve_or_degenerate(mol, rp, pe);
 //	if (rp.show_abad)
 //	    mol.PrintBadness();
-	// update lastNMBadness and improved
-	int ilog = trial % rp.logsize;
-	if (mol.Badness() < lastNMBadness[mol.NAtoms()])
+	// update bestMNBadness and improved
+	int ilog = iteration % rp.logsize;
+	if (mol.NormBadness() < bestMNBadness[mol.NAtoms()])
 	{
-	    if (mol.NAtoms() > maxatoms)
-	    {
-		best_largest = lastNMBadness[mol.NAtoms()];
-		maxatoms = mol.NAtoms();
-	    }
-	    lastNMBadness[mol.NAtoms()] = mol.Badness();
+	    bestMNBadness[mol.NAtoms()] = mol.NormBadness();
 	    improved[ilog] = 1;
-	    /*
-	    if (snapshot_file != NULL && mol.NAtoms() == maxatoms &&
-		    best_largest >= mol.Badness())
-	    {
-		best_largest = mol.Badness();
-		cout << "saving best molecule" << endl;
-		mol.WriteXYZ(snapshot_file);
-	    }
-	    */
-	    if (rp.snapshot != NULL && improved[ilog])
-	    {
-		cout << "saving best molecule" << endl;
-		char fname[255];
-		sprintf(fname, "%s%04i", rp.snapshot, fileno);
-		sprintf(fname, "%s", rp.snapshot);
-		mol.WriteAtomEye(fname);
-	    }
-	    if (mol.NAtoms() == mol.max_NAtoms())
-	    {
-		if (mol.Badness() < rp.tol_bad*mol.max_NAtoms())
-		{
-		    cout << "that is solution!" << endl;
-		    break;
-		}
-	    }
 	}
 	else
 	{
 	    improved[ilog] = 0;
-	    if (lastNMBadness[mol.NAtoms()] < 1e-4)
-		lastNMBadness[mol.NAtoms()] = 1e-4;
+	    if (bestMNBadness[mol.NAtoms()] < rp.tol_bad)
+		bestMNBadness[mol.NAtoms()] = rp.tol_bad;
 	}
-	cout << endl;
+	save_snapshot(mol, rp);
+	save_frames(mol, rp, iteration);
+	if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
+	{
+	    cout << "Solution found!!!" << endl;
+	    break;
+	}
     }
+    // save final structure
+    if (rp.outstru)
+	mol.WriteAtomEye(rp.outstru);
     return EXIT_SUCCESS;
 }
