@@ -80,7 +80,7 @@ SandSphere::SandSphere(int GridMax, const char *file) :
     // open file for reading
     ifstream fid(file);
     if (!fid) {
-	cerr << "E: unable to read `" << file << "'\n";
+	cerr << "E: unable to read `" << file << "'" << endl;
 	throw IOError();
     }
     // read values to vt
@@ -89,7 +89,8 @@ SandSphere::SandSphere(int GridMax, const char *file) :
     // check if everything was read
     if (!fid.eof())
     {
-	cerr << "E: " << file << ':' << fid.tellg() << ": invalid number\n";
+	cerr << "E: " << file << ':' << fid.tellg() <<
+	    ": invalid number" << endl;
 	throw IOError();
     }
     fid.close();
@@ -101,7 +102,7 @@ void SandSphere::init(const vector<double>& t)
     NDist = t.size();
     if (NDist == 0)
     {
-	cerr << "E: target distance table is empty\n";
+	cerr << "E: target distance table is empty" << endl;
 	throw InvalidDistanceTable();
     }
     // calculate and check NAtoms
@@ -220,6 +221,7 @@ void Molecule::init()
 {
     ss->molecules.push_back(this);
     // check coordinate sizes
+    OutFmtGrid();
     UnCache();
     fix_size();
 }
@@ -229,7 +231,7 @@ void Molecule::fix_size()
     UnCache();
     if (h.size() != k.size())
     {
-	cerr << "E: invalide coordinate vectors\n";
+	cerr << "E: invalide coordinate vectors" << endl;
 	throw InvalidMolecule();
     }
     NAtoms = h.size();
@@ -285,7 +287,7 @@ void Molecule::calc_df()
     // check if molecule is not too large
     if (NDist > ss->NDist)
     {
-	cerr << "E: molecule too large\n";
+	cerr << "E: molecule too large" << endl;
 	throw InvalidMolecule();
     }
     // calculate and store distances
@@ -493,12 +495,12 @@ Molecule& Molecule::MoveAtom(int idx, int nh, int nk)
 // Molecule IO functions
 ////////////////////////////////////////////////////////////////////////
 
-bool Molecule::Read(const char* file)
+bool Molecule::ReadGrid(const char* file)
 {
     // open file for reading
     ifstream fid(file);
     if (!fid) {
-	cerr << "E: unable to read `" << file << "'\n";
+	cerr << "E: unable to read `" << file << "'" << endl;
 	throw IOError();
     }
     // read values to integer vector vhk
@@ -508,7 +510,7 @@ bool Molecule::Read(const char* file)
     // check how many numbers were read
     if ( vhk.size() % 2 )
     {
-	cerr << "E: " << file << ": incomplete data\n";
+	cerr << "E: " << file << ": incomplete data" << endl;
 	throw IOError();
     }
     Clear();
@@ -528,7 +530,7 @@ bool Molecule::ReadXY(const char* file)
     // open file for reading
     ifstream fid(file);
     if (!fid) {
-	cerr << "E: unable to read `" << file << "'\n";
+	cerr << "E: unable to read `" << file << "'" << endl;
 	throw IOError();
     }
     // read values to integer vector vxy
@@ -538,7 +540,7 @@ bool Molecule::ReadXY(const char* file)
     // check how many numbers were read
     if ( vxy.size() % 2 )
     {
-	cerr << "E: " << file << ": incomplete data\n";
+	cerr << "E: " << file << ": incomplete data" << endl;
 	throw IOError();
     }
     Clear();
@@ -553,82 +555,117 @@ bool Molecule::ReadXY(const char* file)
     return result;
 }
 
-bool Molecule::Write(const char* file)
+bool write_file(const char* file, Molecule& m)
 {
     // open file for writing
     ofstream fid(file);
     if (!fid) {
-	cerr << "E: unable to write to `" << file << "'\n";
+	cerr << "E: unable to write to `" << file << "'" << endl;
 	throw IOError();
     }
-    fid << "# BGA molecule in grid coordinates\n";
-    fid << "# NAtoms = " << NAtoms << endl;
-    fid << "# delta = " << ss->delta << endl;
-    for (int i = 0; i < NAtoms; ++i)
-    {
-	fid << h[i] << '\t' << k[i] << endl;
-    }
+    bool result = (fid << m);
     fid.close();
-    bool result = fid;
+    return result;
+}
+
+bool Molecule::WriteGrid(const char* file)
+{
+    out_fmt_type org_ofmt = output_format;
+    OutFmtGrid();
+    bool result = write_file(file, *this);
+    output_format = org_ofmt;
     return result;
 }
 
 bool Molecule::WriteXY(const char* file)
 {
-    // open file for writing
-    ofstream fid(file);
-    if (!fid) {
-	cerr << "E: unable to write to `" << file << "'\n";
-	throw IOError();
-    }
-    fid << "# BGA molecule in real coordinates\n";
-    fid << "# NAtoms = " << NAtoms << endl;
-    fid << "# delta = " << ss->delta << endl;
-    for (int i = 0; i < NAtoms; ++i)
-    {
-	fid << ss->delta * h[i] << '\t' << ss->delta * k[i] << endl;
-    }
-    fid.close();
-    bool result = fid;
+    out_fmt_type org_ofmt = output_format;
+    OutFmtXY();
+    bool result = write_file(file, *this);
+    output_format = org_ofmt;
     return result;
 }
 
 bool Molecule::WriteAeye(const char* file)
 {
-    // open file for writing
-    ofstream fid(file);
-    if (!fid) {
-	cerr << "E: unable to write to `" << file << "'\n";
-	throw IOError();
-    }
-    fid << "# BGA molecule in atomeye format\n";
-    fid << "Number of particles = " << NAtoms << '\n';
-    fid << "A = 1.0 Angstrom (basic length-scale)\n";
-    fid << "H0(1,1) = " << 2.0 * ss->dmax << " A\n";
-    fid << "H0(1,2) = 0 A\n";
-    fid << "H0(1,3) = 0 A\n";
-    fid << "H0(2,1) = 0 A\n";
-    fid << "H0(2,2) = " << 2.0 * ss->dmax << " A\n";
-    fid << "H0(2,3) = 0 A\n";
-    fid << "H0(3,1) = 0 A\n";
-    fid << "H0(3,2) = 0 A\n";
-    fid << "H0(3,3) = " << 2.0 * ss->dmax << " A\n";
-    fid << ".NO_VELOCITY.\n";
-    // 4 entries: x, y, z, Uiso
-    fid << "entry_count = 4\n";
-    fid << "auxiliary[0] = abad [au]\n";
-    fid << '\n';
-    // pj: now it only works for a single Carbon atom in the molecule
-    fid << "12.0111\n";
-    fid << "C\n";
-    for (size_t i = 0; i < NAtoms; i++) {
-	fid <<
-	    (h[i] * ss->delta + ss->dmax) / (2.0 * ss->dmax) << " " <<
-	    (k[i] * ss->delta + ss->dmax) / (2.0 * ss->dmax) << " " <<
-	    0.0 << " " <<
-	    abad[i] << endl;
-    }
-    fid.close();
-    bool result = fid;
+    out_fmt_type org_ofmt = output_format;
+    OutFmtAeye();
+    bool result = write_file(file, *this);
+    output_format = org_ofmt;
     return result;
+}
+
+Molecule& Molecule::OutFmtGrid()
+{
+    output_format = GRID;
+    return *this;
+}
+
+Molecule& Molecule::OutFmtXY()
+{
+    output_format = XY;
+    return *this;
+}
+
+Molecule& Molecule::OutFmtAeye()
+{
+    output_format = AEYE;
+    return *this;
+}
+
+ostream& operator<<(ostream& os, Molecule& m)
+{
+    switch (m.output_format)
+    {
+	case m.GRID:
+	    os << "# BGA molecule format: grid" << endl;
+	    os << "# NAtoms = " << m.NAtoms << endl;
+	    os << "# delta = " << m.ss->delta << endl;
+	    for (int i = 0; i < m.NAtoms; ++i)
+	    {
+		os << m.h[i] << '\t' << m.k[i] << endl;
+	    }
+	case m.XY:
+	    os << "# BGA molecule format: xy" << endl;
+	    os << "# NAtoms = " << m.NAtoms << endl;
+	    os << "# delta = " << m.ss->delta << endl;
+	    for (int i = 0; i < m.NAtoms; ++i)
+	    {
+		os <<
+		    m.ss->delta * m.h[i] << '\t' <<
+		    m.ss->delta * m.k[i] << endl;
+	    }
+	case m.AEYE:
+	    os << "# BGA molecule format: aeye" << endl;
+	    os << "# NAtoms = " << m.NAtoms << endl;
+	    os << "# delta = " << m.ss->delta << endl;
+	    os << "Number of particles = " << m.NAtoms << endl;
+	    os << "A = 1.0 Angstrom (basic length-scale)" << endl;
+	    os << "H0(1,1) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    os << "H0(1,2) = 0 A" << endl;
+	    os << "H0(1,3) = 0 A" << endl;
+	    os << "H0(2,1) = 0 A" << endl;
+	    os << "H0(2,2) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    os << "H0(2,3) = 0 A" << endl;
+	    os << "H0(3,1) = 0 A" << endl;
+	    os << "H0(3,2) = 0 A" << endl;
+	    os << "H0(3,3) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    os << ".NO_VELOCITY." << endl;
+	    // 4 entries: x, y, z, Uiso
+	    os << "entry_count = 4" << endl;
+	    os << "auxiliary[0] = abad [au]" << endl;
+	    os << endl;
+	    // pj: now it only works for a single Carbon atom in the molecule
+	    os << "12.0111" << endl;
+	    os << "C" << endl;
+	    for (int i = 0; i < m.NAtoms; i++)
+	    {
+		os <<
+		    (m.h[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
+		    (m.k[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
+		    0.0 << " " <<
+		    m.abad[i] << endl;
+	    }
+    }
+    return os;
 }
