@@ -5,7 +5,11 @@ if nargin < 2
     plotstyle = 'b*';
 end
 
-xy = rhead(filename);
+if exist(filename, 'file')
+    xy = rhead(filename);
+else
+    xy = [];
+end
 x = []; y = [];
 if ~isempty(xy)
     x = xy(:,1); y = xy(:,2);
