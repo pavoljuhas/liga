@@ -54,5 +54,9 @@ three-dim-2                 1.142       2005-02-28
     nice working version of djoser, common utility functions moved
     to BGAutils.cpp
 
-gizaliga-1                  1.148       2005-03-02
+gizaliga-1      1.8         1.148       2005-03-02
     first working version of gizaliga
+
+gizaliga-1a     1.11        1.148       2005-03-02
+    when evolved winner is better than looser, he will be cloned
+    to descing looser
