@@ -13,7 +13,22 @@ struct IOError : public runtime_error
 	runtime_error(what_arg) { }
 };
 
-template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
+template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
+{
+    typename list<T>::iterator ii;
+    if (n <= lst.size()/2)
+    {
+	ii = lst.begin();
+	advance(ii, n);
+    }
+    else
+    {
+	ii = lst.end();
+	advance(ii, n-(int)lst.size());
+    }
+    return ii;
+}
+
 double vdnorm(const valarray<double>&);
 double vddot(const valarray<double>&, const valarray<double>&);
 valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
