@@ -315,6 +315,7 @@ void DistanceTable::init()
 // static members
 double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::tol_nbad  = 0.05*0.05;
+double Molecule::tol_r = 1.0e-8;
 double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
 int    Molecule::center_size = 40;
@@ -787,6 +788,7 @@ int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
 
 void Molecule::relax_atom(Atom_t& ta)
 {
+    const int max_iter = 500;
     // dTarget is not changed in this function
     int dTsize = dTarget.size();
     bool dUsed[dTsize];
@@ -794,15 +796,18 @@ void Molecule::relax_atom(Atom_t& ta)
     valarray<double> ad0(atoms.size());
     typedef list<Atom_t>::iterator LAit;
     typedef vector<double>::iterator VDit;
+    // do relaxation on a copy of ta
+    Atom_t rta(ta);
     // loop while badness is improved
     double lo_abad = numeric_limits<double>().max();
     while (true)
     {
 	list<int> dUsedIdx;
 	double *pad0 = &ad0[0];
+	double tbad = 0.0;
 	for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma)
 	{
-	    double d = dist(*ma, ta);
+	    double d = dist(*ma, rta);
 	    int idx = dTarget.find_nearest(d) - dTarget.begin();
 	    if (dUsed[idx])
 	    {
@@ -817,6 +822,8 @@ void Molecule::relax_atom(Atom_t& ta)
 	    }
 	    *(pad0++) = dTarget[idx];
 	    double dd = dTarget[idx] - d;
+	    tbad += penalty(dd);
+	    BGA::cnt.penalty_calls++;
 	    if (fabs(dd) < tol_dd)
 	    {
 		dUsed[idx] = true;
@@ -829,6 +836,21 @@ void Molecule::relax_atom(Atom_t& ta)
 	{
 	    dUsed[*ii] = false;
 	}
+	// get out if lo_abad did not improve
+	if (tbad < lo_abad)
+	{
+	    lo_abad = tbad;
+	    ta = rta;
+	    if (lo_abad < BGA::eps_badness)
+		break;
+	}
+	else
+	    break;
+	cout << "original tbad = " << tbad << endl;
+	// parameter pair for minimizer functions
+	typedef list<Atom_t> LA;
+	typedef valarray<double> VAD;
+	pair<LA*,VAD*> rxa_par(&atoms, &ad0);
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
 	f.f = &rxa_f;
@@ -836,17 +858,39 @@ void Molecule::relax_atom(Atom_t& ta)
 	f.fdf = &rxa_fdf;
 	f.n = NAtoms();
 	f.p = 3;
-	typedef list<Atom_t> LA;
-	typedef valarray<double> VAD;
-	pair<LA*,VAD*> rxa_par(&atoms, &ad0);
 	f.params = &rxa_par;
-	// starting position
+	// bind rta coordinates to vector x
+	gsl_vector_view x = gsl_vector_view_array(rta.r, 3);
 	// allocate solver
 	gsl_multifit_fdfsolver *lms = gsl_multifit_fdfsolver_alloc(
 		gsl_multifit_fdfsolver_lmsder, NAtoms(), 3);
-	gsl_vector_view x = gsl_vector_view_array(ta.r, 3);
 	gsl_multifit_fdfsolver_set(lms, &f, &x.vector);
-	// pj: needs to be finished
+	// minimize atom badness
+	int iter = 0, status;
+	do
+	{
+	    ++iter;
+	    status = gsl_multifit_fdfsolver_iterate(lms);
+	    if (status)
+	    {
+		cerr << "LM solver status = " << gsl_strerror(status) << endl;
+		break;
+	    }
+	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
+	}
+	while (status == GSL_CONTINUE && iter < max_iter);
+	// get relaxed value of tbad
+	// pj: this may go away later
+	tbad = 0.0;
+	for (int i = 0; i < NAtoms(); ++i)
+	{
+	    tbad += penalty(gsl_vector_get(lms->f, i));
+	    BGA::cnt.penalty_calls++;
+	}
+	// and update lo_abad before reassigning the distances
+//	lo_abad = min(lo_abad, tbad);
+	cout << "relaxed tbad = " << tbad << endl;
+	gsl_multifit_fdfsolver_free(lms);
     }
 }
 
