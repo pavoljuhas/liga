@@ -87,6 +87,17 @@ struct RunPar_t
     int pyr_trials;
 };
 
+
+struct RunVar_t
+{
+    int iteration;
+    double pe;
+    valarray<int> improved;
+    double impr_rate;
+    bool bust_now;
+    bool lastframe;
+};
+
 Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 {
     char *short_options =
@@ -230,26 +241,26 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     return mol;
 }
 
-double prob_evolve(const Molecule& mol, RunPar_t& rp, double impr_rate)
+double prob_evolve(const Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
     double pe;
     if (mol.NAtoms() == mol.max_NAtoms())
     {
         pe = 0.0;
-        rp.bustprob = false;
+        rv.bust_now = false;
     }
     else if (mol.NAtoms() <= 1)
         pe = 1.0;
-    else if (rp.bustprob)
+    else if (rv.bust_now)
         pe = 1.0;
     else
-        pe = impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
+        pe = rv.impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
     return pe;
 }
 
-void evolve_or_degenerate(Molecule& mol, RunPar_t& rp, double pe)
+void evolve_or_degenerate(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
-    if (pe > gsl_rng_uniform(BGA::rng))
+    if (rv.pe > gsl_rng_uniform(BGA::rng))
     {
         mol.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
         cout << " E " << mol.NAtoms() << " " << mol.NormBadness();
@@ -288,16 +299,15 @@ void save_snapshot(Molecule& mol, RunPar_t& rp)
     }
 }
 
-void save_frames(Molecule& mol, RunPar_t& rp, int iteration,
-        bool lastframe = false)
+void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
 //  numeric_limits<double> double_info;
     static int cnt = 0;
     if (  rp.frames.size() == 0 || rp.framesrate == 0 ||
-            (++cnt < rp.framesrate && !lastframe) )
+            (++cnt < rp.framesrate && !rv.lastframe) )
         return;
     ostringstream oss;
-    oss << rp.frames << "." << iteration;
+    oss << rp.frames << "." << rv.iteration;
     mol.WriteAtomEye(oss.str().c_str());
     cnt = 0;
 }
@@ -309,37 +319,38 @@ int main(int argc, char *argv[])
     // set bestMNBadness to a maximum double
     numeric_limits<double> double_info;
     valarray<double> bestMNBadness(double_info.max(), 1+mol.max_NAtoms());
-    valarray<int> improved(1, rp.logsize);
-    bool bust_now = false;
+    RunVar_t rv;
+    rv.bust_now = rv.lastframe = false;
+    rv.improved.resize(rp.logsize, 1);
 
-    int iteration = 0;
+    rv.iteration = 0;
     while (true)
     {
-        ++iteration;
+        ++rv.iteration;
         // calculate probability of evolution
-        double impr_rate = 1.0*improved.sum()/rp.logsize;
-        if (impr_rate >= 0.5 && rp.bustprob > gsl_rng_uniform(BGA::rng))
-            bust_now = true;
-        double pe = prob_evolve(mol, rp, impr_rate);
-        cout << iteration;
-        evolve_or_degenerate(mol, rp, pe);
+        rv.impr_rate = 1.0*rv.improved.sum()/rp.logsize;
+        if (rv.impr_rate >= 0.5 && rp.bustprob > gsl_rng_uniform(BGA::rng))
+            rv.bust_now = true;
+        rv.pe = prob_evolve(mol, rp, rv);
+        cout << rv.iteration;
+        evolve_or_degenerate(mol, rp, rv);
 //      if (rp.show_abad)
 //          mol.PrintBadness();
         // update bestMNBadness and improved
-        int ilog = iteration % rp.logsize;
+        int ilog = rv.iteration % rp.logsize;
         if (mol.NormBadness() <= bestMNBadness[mol.NAtoms()])
         {
             bestMNBadness[mol.NAtoms()] = mol.NormBadness();
-            improved[ilog] = 1;
+            rv.improved[ilog] = 1;
         }
         else
         {
-            improved[ilog] = 0;
+            rv.improved[ilog] = 0;
             if (bestMNBadness[mol.NAtoms()] < rp.tol_bad)
                 bestMNBadness[mol.NAtoms()] = rp.tol_bad;
         }
         save_snapshot(mol, rp);
-        save_frames(mol, rp, iteration);
+        save_frames(mol, rp, rv);
         if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
         {
             cout << "Solution found!!!" << endl;
@@ -347,7 +358,7 @@ int main(int argc, char *argv[])
         }
     }
     // save last frame
-    save_frames(mol, rp, iteration, true);
+    save_frames(mol, rp, rv);
     // save final structure
     if (rp.outstru.size() != 0)
         mol.WriteAtomEye(rp.outstru.c_str());
