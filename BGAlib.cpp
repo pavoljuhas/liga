@@ -219,13 +219,6 @@ DistanceTable::DistanceTable(const double* v, size_t s) : vector<double>()
     init();
 }
 
-template <class InputIterator>
-DistanceTable::DistanceTable(InputIterator first, InputIterator last) :
-    vector<double>(first, last)
-{
-    init();
-}
-
 DistanceTable::DistanceTable(const char* file) : vector<double>()
 {
     // open file for reading

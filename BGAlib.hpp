@@ -61,8 +61,6 @@ public:
     // constructors
     DistanceTable();
     DistanceTable(const double*, size_t);
-    template <class InputIterator>
-	DistanceTable(InputIterator first, InputIterator last);
     DistanceTable(const char*);
     DistanceTable(const vector<double>&);
     DistanceTable& operator= (const vector<double>&);
