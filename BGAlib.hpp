@@ -20,9 +20,16 @@
 #include <gsl/gsl_rng.h>
 
 // global random number generator
-namespace BGA {
+namespace BGA
+{
     extern gsl_rng* rng;
 };
+
+// exceptions
+struct InvalidDistanceTable { };
+struct InvalidMolecule { };
+struct InvalidPopulation { };
+struct IOError { };
 
 /* declaration of BGA objects */
 using namespace std;
@@ -72,6 +79,7 @@ public:
 	    const vector<double>& vx, const vector<double>& vy);
     Molecule(const Molecule& M);		// copy constructor
     Molecule& operator=(const Molecule&);	// assignment
+    ~Molecule();		// destructor
     // parameters
     int NDist;    		// length of distance table
     int NAtoms;   		// current number of atoms
@@ -126,7 +134,6 @@ public:
     void PrintFitness();		// total and per-atomic fitness
     // public utility functions
     inline void UnCache() { cached = false; }
-    ~Molecule();		// destructor
 private:
     // data storage
     SandSphere *ss;
@@ -141,10 +148,15 @@ private:
     double out_penalty(int nh, int nk);	// penalty for being outside SandSphere
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
     list<int> ssdIdxFree;	// available elements in ss.dist
-    // helper functions
+    // operator helper functions
     void init();		// constructor helper
     void fix_size();		// set all sizes consistently with h.size()
     void calc_df();		// update distance and fitness tables
+public:
+    struct badness_at;
+private:
+    list<badness_at> find_good_distance(int trials=100);
+    list<badness_at> find_good_triangles(int trials=100);
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
     file_fmt_type output_format;
