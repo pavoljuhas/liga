@@ -33,7 +33,14 @@ lib_objects: $(OBJECTS)
 
 #####################################################################}}}
 # test programs {{{
-ssTest: ssTest.o $(OBJECTS)
+test: $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
+
+
+
+ssTest1: ssTest1.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+molTest1: molTest1.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 #####################################################################}}}
@@ -44,7 +51,9 @@ tags:	$(SOURCES) $(HEADERS) $(PROGRAMS:%=%.cpp)
 clean:
 	rm -f $(PROGRAMS) $(OBJECTS) $(PROGRAMS:%=%.o) \
 	    a.out \
-	    ssTest.o
+	    ssTest*.o \
+	    molTest*.o
+
 
 list:
 	@printf "%s\n" $(PROGRAMS:%=%.cpp) $(HEADERS) $(SOURCES)
@@ -54,6 +63,9 @@ list:
 # Here is what people have been up to: {{{
 #
 # $Log$
+# Revision 1.3  2005/01/25 17:32:56  juhas
+# added test program targets
+#
 # Revision 1.2  2005/01/25 16:18:31  juhas
 # BGAlib.h renamed to BGAlib.hpp
 #

@@ -5,4 +5,5 @@
 .nbattrs
 core.*
 a.out
-ssTest
+ssTest[0-9]
+molTest[0-9]
