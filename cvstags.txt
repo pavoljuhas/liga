@@ -79,6 +79,4 @@ gizaliga-1e	1.23        1.161	2005-03-11
 
 gizaliga-1f	1.26        1.171	2005-03-14
     new atoms can be relaxed if relax_evolve=true
-    
-    allowing for loose distance tables, added parameter natoms to gizaliga
 
