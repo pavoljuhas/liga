@@ -864,6 +864,9 @@ int Molecule::push_good_pyramids(
 	cerr << "E: molecule too small, cannot construct pyramid" << endl;
 	throw InvalidMolecule();
     }
+    // (N over 3)*6 distance permutations
+    int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2);
+    ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
     {
