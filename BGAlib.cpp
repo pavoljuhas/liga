@@ -1022,6 +1022,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     push_good_distances(vta, afit, ntd1);
     push_good_triangles(vta, afit, ntd2);
     if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
+    if (!vta.size())   return *this;
     // select range from min_badness
     double min_badness = min_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness) -> Badness();
