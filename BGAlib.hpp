@@ -153,15 +153,15 @@ private:
     mutable valarray<int> d2;		// sorted table of squared distances 
     double out_penalty(int nh, int nk) const;	// penalty for run-away atoms
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
-    mutable list<int> ssdIdxFree;	// available elements in ss.dist
+    mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     // operator helper functions
     void fix_size();		// set all sizes consistently with h.size()
     void calc_db() const;	// update distance and fitness tables
 public:
     struct badness_at;
 private:
-    list<badness_at> find_good_distances(int trials, const list<int>& d_idx);
-    list<badness_at> find_good_triangles(int trials, const list<int>& d_idx);
+    list<badness_at> find_good_distances(int trials, const vector<int>& didx);
+    list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
     void subtract_out_penalty() const;
     void add_out_penalty() const;
     void set_mbad_abadMax() const;

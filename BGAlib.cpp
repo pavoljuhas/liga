@@ -456,7 +456,7 @@ double Molecule::ABadnessAt(int nh, int nk) const
     }
     sort(&nd2[0], &nd2[nd2.size()]);
     double nbad = 0.0;
-    list<int>::iterator idif = ssdIdxFree.begin();
+    vector<int>::iterator idif = ssdIdxFree.begin();
     for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
     {
 	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
@@ -499,7 +499,7 @@ double Molecule::MBadnessWith(const Molecule& M) const
     }
     sort(&nd2[0], &nd2[nd2.size()]);
     double mbadwith = MBadness() + M.MBadness();
-    list<int>::iterator idif = ssdIdxFree.begin();
+    vector<int>::iterator idif = ssdIdxFree.begin();
     for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
     {
 	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
@@ -727,7 +727,7 @@ bool operator<(
 }
 
 list<Molecule::badness_at> Molecule::find_good_distances(
-	int trials, const list<int>& ssd_idx
+	int trials, const vector<int>& ssd_idx
 	)
 {
     if (NAtoms > ss->NDist)
@@ -740,9 +740,7 @@ list<Molecule::badness_at> Molecule::find_good_distances(
     for (int i = 0; i < trials; ++i)
     {
 	int idx = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
-	list<int>::const_iterator lit = ssd_idx.begin();
-	advance(lit, idx);
-	double radius = ss->d[*lit];
+	double radius = ss->d[ssd_idx[idx]];
 	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
 	int nh = h[0] + (int)round(radius * cos(phi));
 	int nk = k[0] + (int)round(radius * sin(phi));
@@ -752,7 +750,7 @@ list<Molecule::badness_at> Molecule::find_good_distances(
 }
 
 list<Molecule::badness_at> Molecule::find_good_triangles(
-	int trials, const list<int>& ssd_idx
+	int trials, const vector<int>& ssd_idx
 	)
 {
     // try to generate 2 triangles with good distances, this may not always
@@ -794,11 +792,8 @@ list<Molecule::badness_at> Molecule::find_good_triangles(
 	int idf2 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size()-1) + 1;
 	idf2 = (idf2 + idf1) % ssd_idx.size();
 	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
-	list<int>::const_iterator lit;
-	lit = ssd_idx.begin(); advance(lit, idf1);
-	double r13 = ss->d[*lit];
-	lit = ssd_idx.begin(); advance(lit, idf2);
-	double r23 = ss->d[*lit];
+	double r13 = ss->d[ssd_idx[idf1]];
+	double r23 = ss->d[ssd_idx[idf2]];
 	double r12 = dist(a1, a2);
 	// is triangle [a1 a2 a3] possible?
 	if (r13 + r23 < r12 || fabs(r13 - r23) > r12) continue;
@@ -848,7 +843,6 @@ list<Molecule::badness_at> Molecule::find_good_triangles(
 
 Molecule& Molecule::Evolve(int trials)
 {
-    list<int>::iterator lit;
     if (NAtoms == ss->NAtoms)
     {
 	cerr << "E: full-sized molecule cannot Evolve()" << endl;
@@ -1056,7 +1050,7 @@ Molecule& Molecule::mount(Molecule& sperm)
     const double common_prob = 5.0;
     double peggidx[ssdIdxFree.size()];
     double *pp = peggidx;
-    for (list<int>::iterator
+    for (vector<int>::iterator
 	    eidx = ssdIdxFree.begin(), sidx = sperm.ssdIdxFree.begin();
 	    eidx != ssdIdxFree.end(); ++eidx, ++pp)
     {
