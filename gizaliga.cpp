@@ -233,10 +233,13 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     string hashsep(72, '#');
     cout << hashsep << endl;
-    time_t cur_time = time(NULL);
-    cout << "# " << ctime(&cur_time);
     cout << "# " << a.cmd_t << endl;
     cout << version_string("# ");
+    char hostname[255];
+    gethostname(hostname, 255);
+    cout << "# " << hostname << endl;
+    time_t cur_time = time(NULL);
+    cout << "# " << ctime(&cur_time);
     cout << hashsep << endl;
     Molecule mol(*dtab);
     cout << "distfile=" << rp.distfile << endl;
