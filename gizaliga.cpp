@@ -81,6 +81,12 @@ struct RunPar_t
     int pyr_trials;
 };
 
+char *pnames[] = { "distfile", "outstru", "inistru",
+    "snapshot", "snaprate", "frames", "framesrate",
+    "tol_dd", "tol_bad", "seed", "evolve_frac", "ligasize", "stopgame",
+    "penalty", "dist_trials", "tri_trials", "pyr_trials" };
+list<string> validpars(pnames, pnames+sizeof(pnames)/sizeof(char*));
+
 struct RunVar_t
 {
     RunVar_t() : liga_round(0), full_liga(false), lastframe(false)
@@ -171,8 +177,6 @@ PMOL& Division_t::best()
     return *pm;
 }
 
-
-
 Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 {
     char *short_options =
@@ -215,6 +219,13 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
             cerr << e.what() << endl;
             exit(EXIT_FAILURE);
         }
+    }
+    try {
+	a.ValidatePars(validpars);
+    }
+    catch (ParseArgsError(e)) {
+	cerr << e.what() << endl;
+	exit(EXIT_FAILURE);
     }
     // assign run parameters
     // distfile
@@ -321,12 +332,13 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 void save_snapshot(Molecule& mol, RunPar_t& rp)
 {
     static int cnt = 0;
-    static double bestMNB = numeric_limits<double>().max();
+    double dbmax = numeric_limits<double>().max();
+    static valarray<double> bestMNB(dbmax, mol.max_NAtoms()+1);
     if (rp.snapshot.size() == 0 || rp.snaprate == 0 || ++cnt < rp.snaprate)
 	return;
-    if (mol.NormBadness() < bestMNB)
+    if (mol.NormBadness() < bestMNB[mol.NAtoms()])
     {
-	bestMNB = mol.NormBadness();
+	bestMNB[mol.NAtoms()] = mol.NormBadness();
 	mol.WriteAtomEye(rp.snapshot.c_str());
 	cnt = 0;
     }
@@ -380,6 +392,8 @@ int main(int argc, char *argv[])
     PMOL world_champ = first_team;
     cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
 	<< world_champ->NormBadness() << endl;
+    // save the best team ever:
+    Molecule best_champ(*world_champ);
     cout << endl << "Starting the game ... now." << endl;
     // let the game begin
     while ( !(world_champ->Full() && world_champ->NormBadness() < rp.tol_bad) )
@@ -456,14 +470,18 @@ int main(int argc, char *argv[])
 	    << world_champ->NormBadness() << endl;
         save_snapshot(*world_champ, rp);
         save_frames(*world_champ, rp, rv);
+	if (    world_champ->NAtoms() > best_champ.NAtoms() ||
+		world_champ->NormBadness() < best_champ.NormBadness()
+	   )
+	    best_champ = *world_champ;
     }
     cout << endl << "Solution found!!!" << endl << endl;
     BGA::cnt.PrintRunStats();
     // save last frame
     rv.lastframe = true;
-    save_frames(*world_champ, rp, rv);
+    save_frames(best_champ, rp, rv);
     // save final structure
     if (rp.outstru.size() != 0)
-        world_champ->WriteAtomEye(rp.outstru.c_str());
+        best_champ.WriteAtomEye(rp.outstru.c_str());
     return EXIT_SUCCESS;
 }
