@@ -445,6 +445,31 @@ void Molecule::Recalculate()
     }
 }
 
+template <class ForwardIter>
+valarray<double> Molecule::rec_badness(ForwardIter first, ForwardIter last)
+{
+    const double zero_fitness_gain = 10;
+    double min_nonzero = 0.0;
+    int len = 0;
+    for (ForwardIter ai = first; ai != last; ++ai)
+    {
+	double b = ai->Badness();
+	if ( b > 0 && (!min_nonzero || b < min_nonzero))
+	    min_nonzero = b;
+	len++;
+    }
+    if (!min_nonzero)
+	min_nonzero = 1.0;
+    valarray<double> afit(len);
+    int idx = 0;
+    for (ForwardIter ai = first; ai != last; ++ai, ++idx)
+    {
+	double b = ai->Badness();
+	afit[idx] = (b != 0) ? 1.0/b : zero_fitness_gain*1.0/min_nonzero;
+    }
+    return afit;
+}
+
 double Molecule::AFitness(const Atom_t& a) const
 {
     // take care of perfect molecule
