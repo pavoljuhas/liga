@@ -1187,6 +1187,25 @@ valarray<double> vdcross(const valarray<double>& v1, const valarray<double>& v2)
     return cross;
 }
 
+valarray<double> vdrecipw0(const valarray<double>& v)
+{
+    // calculate reciprocal value, with checking for zeros
+    const double zero_recip_gain = 10;
+    double min_positive = 0.0;
+    for (const double *p = &v[0]; p != &v[v.size()]; ++p)
+    {
+	if (*p > 0 && (!min_positive || *p < min_positive))
+	    min_positive = *p;
+    }
+    if (!min_positive)
+	min_positive = 1.0;
+    valarray<double> recip(v.size());
+    double *r = &recip[0];
+    for (const double *p = &v[0]; p != &v[v.size()]; ++p, ++r)
+	*r = (*p != 0) ? 1.0/(*p) : zero_recip_gain*1.0/min_positive;
+    return recip;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions

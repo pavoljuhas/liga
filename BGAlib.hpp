@@ -52,6 +52,7 @@ list<int> random_wt_choose(int K, const double *p, int Np);
 double vdnorm(const valarray<double>&);
 double vddot(const valarray<double>&, const valarray<double>&);
 valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
+valarray<double> vdrecipw0(const valarray<double>&);
 
 /* declaration of BGA objects */
 class DistanceTable : public vector<double>
