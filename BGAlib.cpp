@@ -239,6 +239,13 @@ DistanceTable& DistanceTable::operator= (const vector<double>& v)
     init();
 }
 
+DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
+{
+    *this = vector<double>(d0);
+    NAtoms = d0.NAtoms;
+    max_d = d0.max_d;
+}
+
 vector<double>::iterator DistanceTable::find_nearest(const double& dfind)
 {
     iterator ii = lower_bound(begin(), end(), dfind);
