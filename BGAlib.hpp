@@ -64,7 +64,6 @@ public:
 	DistanceTable(InputIterator first, InputIterator last);
     DistanceTable(const char*);
     DistanceTable(const vector<double>&);
-    DistanceTable& operator= (const DistanceTable&);
     DistanceTable& operator= (const vector<double>&);
     // member functions
     vector<double>::iterator find_nearest(const double&);
