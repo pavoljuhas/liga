@@ -233,6 +233,11 @@ DistanceTable::DistanceTable(const vector<double>& v) : vector<double>(v)
     init();
 }
 
+DistanceTable::DistanceTable(const DistanceTable& d0)
+{
+    *this = d0;
+}
+
 DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
     *this = v;
@@ -272,8 +277,6 @@ void DistanceTable::init()
 	NAtoms = 1;
 	max_d = 1.0;
 	return;
-//	cerr << "E: target distance table is empty" << endl;
-//	throw InvalidDistanceTable();
     }
     // calculate NAtoms
     double xNAtoms = 0.5 + sqrt(1 + 8.0*size())/2.0;

@@ -57,6 +57,7 @@ public:
     DistanceTable(const double*, size_t);
     DistanceTable(const char*);
     DistanceTable(const vector<double>&);
+    DistanceTable(const DistanceTable&);
     DistanceTable& operator= (const vector<double>&);
     DistanceTable& operator= (const DistanceTable&);
     // member functions
