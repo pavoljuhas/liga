@@ -224,7 +224,8 @@ int Atom_t::DecBadness(int b)
 
 int Atom_t::ResetBadness()
 {
-    badness = badness_sum = age = 0;
+    badness = badness_sum = 0;
+    age = 1;
     return badness;
 }
 
@@ -279,8 +280,21 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     if (mab > owner->max_abad)  owner->max_abad = mab;
 }
 
+Pair_t::Pair_t(const Pair_t& pair0)
+{
+    cerr << "call to Pair_t() copy constructor" << endl;
+    throw runtime_error("call to Pair_t() copy constructor");
+}
+
+Pair_t& Pair_t::operator=(const Pair_t&)
+{
+    cerr << "call to Pair_t operator=()" << endl;
+    throw runtime_error("call to Pair_t operator=()");
+}
+
 Pair_t::~Pair_t()
 {
+cout << "in Pair_t::~Pair_t()\n";
     int mab = max(atom1->Badness(), atom2->Badness());
     if (mab >= owner->max_abad)  owner->max_abad = -1;
     atom1->DecBadness(badness);
@@ -417,6 +431,7 @@ void Molecule::init()
 Molecule::~Molecule()
 {
     // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
+    Clear();
     ss->molecules.remove(this);
 }
 
