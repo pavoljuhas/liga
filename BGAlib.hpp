@@ -83,9 +83,11 @@ public:
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtom(int idx, int nh, int nk);	// move 1 atom
     // IO functions
-    bool Read(const char*); 	// read integer grid coordinates
-    bool Save(const char*); 	// save integer grid coordinates
-    bool SaveAeye(const char*); // export coordinates in AtomEye format
+    bool Read(const char*); 		// read integer grid coordinates
+    bool Write(const char*); 		// save integer grid coordinates
+    bool ReadXY(const char*); 		// read real coordinates
+    bool WriteXY(const char*); 		// save real coordinates
+    bool WriteAeye(const char*);	// export in AtomEye format
     // public utility functions
     inline void UnCache() { cached = false; }
     ~Molecule();		// destructor
@@ -214,6 +216,10 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.11  2005/01/26 16:48:52  juhas
+* added Molecule declarations for bool ReadXY(), bool WriteXY()
+* Molecule::Save() renamed to Write()
+*
 * Revision 1.10  2005/01/26 15:53:31  juhas
 * Molecule::fixsize() renamed to fix_size()
 * MBadness cached in double Molecule.mbad
