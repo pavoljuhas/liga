@@ -489,6 +489,8 @@ int main(int argc, char *argv[])
 	<< world_champ->NormBadness() << endl;
     // save the best team ever:
     Molecule best_champ(*world_champ);
+    cout << rv.liga_round << " BC " << best_champ.NAtoms() << ' '
+	<< best_champ.NormBadness() << endl;
     cout << endl << "Starting the game ... now." << endl;
     // watch for HUP
     signal(SIGHUP, SIGHUP_handler);
@@ -574,7 +576,11 @@ int main(int argc, char *argv[])
 	if (    world_champ->NAtoms() > best_champ.NAtoms() ||
 		world_champ->NormBadness() < best_champ.NormBadness()
 	   )
+	{
 	    best_champ = *world_champ;
+	    cout << rv.liga_round << " BC " << best_champ.NAtoms() << ' '
+		<< best_champ.NormBadness() << endl;
+	}
     }
     cout << endl;
     if (SIGHUP_received)
