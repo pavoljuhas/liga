@@ -332,7 +332,8 @@ namespace BGA_Molecule_calc_df
     }
 }
 
-void Molecule::calc_df()
+// calculate all distances and atom/molecule badness 
+void Molecule::calc_db()
 {
     using namespace BGA_Molecule_calc_df;
     cached = true;
@@ -366,7 +367,7 @@ void Molecule::calc_df()
     int ssdIdx = 0;
     for (ij = 0; ij < NDist; ++ij)
     {
-	for(;  ssdIdx < ss->NDist && ss->d2hi[ssdIdx] < d2idx[ij].d2; ++ssdIdx)
+	for(; ssdIdx < ss->NDist && ss->d2hi[ssdIdx] < d2idx[ij].d2; ++ssdIdx)
 	{
 	    ssdIdxFree.push_back(ssdIdx);
 	}
@@ -389,17 +390,14 @@ void Molecule::calc_df()
 	ssdIdxFree.push_back(ssdIdx);
     }
     // now add penalty for being outside the SandSphere
-    for (int i = 0; i < NAtoms; ++i)
-    {
-	abad[i] += out_penalty(h[i], k[i]);
-    }
-    mbad = abad.sum();
-    abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
+    // this works only when cached == true
+    add_out_penalty();
+    set_mbad_abadMax();
 }
 
 double Molecule::ABadness(int i)
 {
-    if (!cached) calc_df();
+    if (!cached) calc_db();
     return abad[i];
 }
 
@@ -412,7 +410,7 @@ double Molecule::AFitness(int i)
 
 double Molecule::MBadness()
 {
-    if (!cached) calc_df();
+    if (!cached) calc_db();
     return mbad;
 }
 
@@ -430,7 +428,7 @@ double Molecule::ABadnessAt(int nh, int nk)
 	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
 	throw InvalidMolecule();
     }
-    if (!cached) calc_df();
+    if (!cached) calc_db();
     valarray<int> nd2(NAtoms);
     for (int dhi, dki, i = 0; i < NAtoms; ++i)
     {
@@ -469,24 +467,14 @@ double Molecule::ABadnessAt(int nh, int nk)
 
 Molecule& Molecule::Shift(int dh, int dk)
 {
+    subtract_out_penalty();
     for (int i = 0; i < NAtoms; ++i)
     {
-	if (cached)
-	{
-	    abad[i] -= out_penalty(h[i], k[i]);
-	}
 	h[i] += dh;
 	k[i] += dk;
-	if (cached)
-	{
-	    abad[i] += out_penalty(h[i], k[i]);
-	}
     }
-    if (cached)
-    {
-	abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
-	mbad = abad.sum();
-    }
+    add_out_penalty();
+    set_mbad_abadMax();
     return *this;
 }
 
@@ -502,6 +490,32 @@ Molecule& Molecule::Center()
     mean_h /= NAtoms;
     mean_k /= NAtoms;
     Shift( (int) round(-mean_h), (int) round(-mean_k) );
+    return *this;
+}
+
+Molecule& Molecule::Rotate(double phi, double h0, double k0)
+{
+    subtract_out_penalty();
+    // define rotation matrix
+    double Rz[2][2] = {
+	{ cos(phi),	-sin(phi)  },
+	{ sin(phi), 	 cos(phi)  }
+    };
+    double hshift, kshift;
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	// shift coordinates origin to the center of rotation
+	double hshift = h[i] - h0;
+	double kshift = k[i] - k0;
+	// rotate
+	double hrot = Rz[0][0]*hshift + Rz[0][1]*kshift;
+	double krot = Rz[1][0]*hshift + Rz[1][1]*kshift;
+	// shift back
+	h[i] = (int) round(hrot + h0);
+	k[i] = (int) round(krot + k0);
+    }
+    add_out_penalty();
+    set_mbad_abadMax();
     return *this;
 }
 
@@ -736,7 +750,8 @@ list<Molecule::badness_at> Molecule::find_good_triangles(int trials)
 	/* debug:
 	   cout << nt << " a1 = " << a1 << " a2 = " << a2 << endl;
 	   cout << nt << " res1.abad = " << res1.abad << endl;
-	   cout << nt << " res1.h = " << res1.h << " res1.k = " << res1.k << endl;
+	   cout << nt << " res1.h = " << res1.h <<
+	       " res1.k = " << res1.k << endl;
 	   */
 	if (res1.abad == 0.0 || ++nt == trials)  break;
 	// 2nd triangle:
@@ -747,7 +762,8 @@ list<Molecule::badness_at> Molecule::find_good_triangles(int trials)
 	retlist.push_back(res2);
 	/* debug:
 	   cout << nt << " res2.abad = " << res2.abad << endl;
-	   cout << nt << " res2.h = " << res2.h << " res2.k = " << res2.k << endl;
+	   cout << nt << " res2.h = " << res2.h <<
+	       " res2.k = " << res2.k << endl;
 	   cout << nt <<
 	   " longdir=[" << longdir[0] << ' ' << longdir[1] << "]," <<
 	   " perpdir=[" << perpdir[0] << ' ' << perpdir[1] << "]," <<
@@ -811,7 +827,7 @@ Molecule& Molecule::Evolve(int trials)
 Molecule& Molecule::Degenerate()
 {
     // make sure valarray abad is updated
-    if (!cached) calc_df();
+    if (!cached) calc_db();
     gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, &(abad[0]));
     int idx = gsl_ran_discrete(BGA::rng, table);
     gsl_ran_discrete_free(table);
@@ -1095,7 +1111,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    break;
 	case M.ATOMEYE:
 	    // this format outputs atom badnesses
-	    if (!M.cached) M.calc_df();
+	    if (!M.cached) M.calc_db();
 	    double xyz_lo = 0.0;
 	    double xyz_hi = 1.0;
 	    double xyz_range = xyz_hi - xyz_lo;

@@ -98,13 +98,15 @@ public:
     // operator functions
     Molecule& Shift(int dh, int dk);	// shift all atoms
     Molecule& Center();			// center w/r to the center of mass
+    Molecule& Rotate(double phi, double h0 = 0.0, double k0 = 0.0);
     template<class T> 
 	inline Molecule& Part(T cidx)	// keep only specified atom
 	{
 	    return Part(*this, cidx);
 	}
-    Molecule& Part(const Molecule& M, const int cidx); 		// get M.Part()
-    Molecule& Part(const Molecule& M, const list<int>& cidx);	// get M.Part()
+    // set this Molecule to a Part of M
+    Molecule& Part(const Molecule& M, const int cidx); 	
+    Molecule& Part(const Molecule& M, const list<int>& cidx);
     template<class T> 
 	inline Molecule& Pop(T cidx)	// remove specified atom(s)
 	{
@@ -135,6 +137,8 @@ public:
     // public utility functions
     inline void UnCache() { cached = false; }
 private:
+    // constructor helper
+    void init();
     // data storage
     SandSphere *ss;
     vector<int> h;		// x-coordinates
@@ -145,18 +149,32 @@ private:
     double abadMax;		// maximum atom badness
     double mbad;		// molecular badness
     valarray<int> d2;		// sorted table of squared distances 
-    double out_penalty(int nh, int nk);	// penalty for being outside SandSphere
+    double out_penalty(int nh, int nk);	// penalty for run-away atoms
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
     list<int> ssdIdxFree;	// available elements in ss.dist
     // operator helper functions
-    void init();		// constructor helper
     void fix_size();		// set all sizes consistently with h.size()
-    void calc_df();		// update distance and fitness tables
+    void calc_db();		// update distance and fitness tables
 public:
     struct badness_at;
 private:
     list<badness_at> find_good_distances(int trials=100);
     list<badness_at> find_good_triangles(int trials=100);
+    inline void subtract_out_penalty()
+    {
+	for (int i = 0; cached && i < NAtoms; ++i)
+	    abad[i] -= out_penalty(h[i], k[i]);
+    }
+    inline void add_out_penalty()
+    {
+	for (int i = 0; cached && i < NAtoms; ++i)
+	    abad[i] += out_penalty(h[i], k[i]);
+    }
+    inline void set_mbad_abadMax()
+    {
+	mbad = abad.sum();
+	abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
+    }
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
     file_fmt_type output_format;
@@ -189,9 +207,11 @@ class Population : public vector<Molecule>
 {
 public:
     Population() : vector<Molecule>() { init(); }
-    Population(size_type n, SandSphere *SS) : vector<Molecule>(n, Molecule(SS))
+    Population(size_type n, SandSphere *SS) :
+	vector<Molecule>(n, Molecule(SS))
     { init(); }
-    Population(size_type n, const Molecule& M) : vector<Molecule>(n, M)
+    Population(size_type n, const Molecule& M) :
+	vector<Molecule>(n, M)
     { init(); }
     Population(Population &P) : vector<Molecule>(P) { init(); }
     template <class InputIterator>
