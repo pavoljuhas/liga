@@ -323,7 +323,7 @@ Molecule::Molecule(SandSphere *SS,
     init();
     if (vh.size() != vk.size() || vh.size() != vl.size())
     {
-	cerr << "E: invalide coordinate vectors" << endl;
+	cerr << "E: invalid coordinate vectors" << endl;
 	throw InvalidMolecule();
     }
     for (int i = 0; i < vh.size(); ++i)
@@ -355,7 +355,7 @@ Molecule::Molecule(SandSphere *SS,
     init();
     if (vx.size() != vy.size() || vx.size() != vz.size())
     {
-	cerr << "E: invalide coordinate vectors" << endl;
+	cerr << "E: invalid coordinate vectors" << endl;
 	throw InvalidMolecule();
     }
     int h, k, l;
@@ -425,7 +425,7 @@ void Molecule::init()
 ////    UnCache();
 ////    if (h.size() != k.size())
 ////    {
-////	cerr << "E: invalide coordinate vectors" << endl;
+////	cerr << "E: invalid coordinate vectors" << endl;
 ////	throw InvalidMolecule();
 ////    }
 ////    NAtoms = h.size();
@@ -478,69 +478,35 @@ void Molecule::init()
 //    mbad = abad.sum();
 //    abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
 //}
-//
-//// calculate all distances and atom/molecule badness 
-//void Molecule::calc_db() const
-//{
-//    using namespace BGA_Molecule_calc_df;
-//    cached = true;
-////    ssdIdxUsed.clear();
-//    ssdIdxFree.clear();
-//    d2idx_type d2idx[NDist];
-//    // check if molecule is not too large
-//    if (NDist > ss->NDist)
-//    {
-//	cerr << "E: molecule too large" << endl;
-//	throw InvalidMolecule();
-//    }
-//    // calculate and store distances
-//    int ij = 0;
-//    for (int i = 0; i < NAtoms; ++i)
-//    {
-//	for (int j = i + 1; j < NAtoms; ++j, ++ij)
-//	{
-//	    d2idx[ij].d2 = dist2(i, j);
-//	    d2idx[ij].i = i;
-//	    d2idx[ij].j = j;
-//	}
-//    }
-//    sort(d2idx, d2idx+NDist);
-//    for (ij = 0; ij < NDist; ++ij)
-//    {
-//	d2[ij] = d2idx[ij].d2;
-//    }
-//    // evaluate abad[i]
-//    abad = 0.0;
-//    int d_idx = 0;
-//    for (ij = 0; ij < NDist; ++ij)
-//    {
-//	for(; d_idx < ss->NDist && ss->d2hi[d_idx] < d2idx[ij].d2; ++d_idx)
-//	{
-//	    ssdIdxFree.push_back(d_idx);
-//	}
-//	// we found a baddie if we reached the end of ss->d2 table
-//	// or if the current distance is smaller than d2lo
-//	if (!(d_idx < ss->NDist) || d2idx[ij].d2 < ss->d2lo[d_idx])
-//	{
-//	    abad[d2idx[ij].i]++;
-//	    abad[d2idx[ij].j]++;
-//	}
-//	// otherwise it is a matching distance
-//	else
-//	{
-//	    d_idx++;
-//	}
-//    }
-//    // all unused distances from the table are free:
-//    for(;  d_idx < ss->NDist; ++d_idx)
-//    {
-//	ssdIdxFree.push_back(d_idx);
-//    }
-//    // now add penalty for being outside the SandSphere
-//    // this works only when cached == true
-//    set_mbad_abadMax();
-//}
-//
+
+// recalculate everything from scratch
+void Molecule::Recalculate()
+{
+    if (NAtoms != atoms.size())
+    {
+	cerr << "E: invalid NAtoms in Molecule::Recalculate()" << endl;
+	throw runtime_error("invalid NAtoms");
+    }
+    pairs.clear();
+    // molecule parameters
+    max_abad = 0;
+    badness = 0;
+    // reset all atoms
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	ai->ResetBadness();
+    }
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	LAit aj = ai;
+	for (++aj; aj != atoms.end(); ++aj)
+	{
+	    pairs.push_back(Pair_t(this, *ai, *aj));
+	}
+    }
+}
+
 //double Molecule::ABadness(int i) const
 //{
 //    if (!cached) calc_db();
@@ -660,36 +626,40 @@ int Molecule::MaxABadness() const
 //    // now add penalty for being outside the SandSphere
 //    return mbad;
 //}
-//
+
+
 //////////////////////////////////////////////////////////////////////////
 //// Molecule operators
 //////////////////////////////////////////////////////////////////////////
-//
-//Molecule& Molecule::Shift(double dh, double dk)
-//{
-//    for (int i = 0; i < NAtoms; ++i)
-//    {
-//	h[i] += (int) round(dh);
-//	k[i] += (int) round(dk);
-//    }
-//    return *this;
-//}
-//
-//Molecule& Molecule::Center()
-//{
-//    double mean_h = 0.0;
-//    double mean_k = 0.0;
-//    for (int i = 0; i < NAtoms; ++i)
-//    {
-//	mean_h += h[i];
-//	mean_k += k[i];
-//    }
-//    mean_h /= NAtoms;
-//    mean_k /= NAtoms;
-//    Shift(-mean_h, -mean_k);
-//    return *this;
-//}
-//
+
+Molecule& Molecule::Shift(double dh, double dk, double dl)
+{
+    for (list<Atom_t>::iterator ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	ai->h += (int) round(dh);
+	ai->k += (int) round(dk);
+	ai->l += (int) round(dl);
+    }
+    return *this;
+}
+
+Molecule& Molecule::Center()
+{
+    double avg_h = 0.0, avg_k = 0.0, avg_l = 0.0;
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	avg_h += ai->h;
+	avg_k += ai->k;
+	avg_l += ai->l;
+    }
+    avg_h /= NAtoms;
+    avg_k /= NAtoms;
+    avg_l /= NAtoms;
+    Shift(-avg_h, -avg_k, -avg_l);
+    return *this;
+}
+
 //Molecule& Molecule::Rotate(double phi, double h0, double k0)
 //{
 //    // define rotation matrix
