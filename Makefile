@@ -9,8 +9,9 @@
 ########################################################################
 # compiler flags and file lists:
 CC = g++
-CPPFLAGS = -g -I/u24/local/include $(CFLAGS)
-LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
+CPPFLAGS = -g $(CFLAGS)
+# CPPFLAGS = -g -I/u24/local/include $(CFLAGS)
+# LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS =
@@ -54,11 +55,19 @@ clean:
 	rm -f $(PROGRAMS) $(OBJECTS) $(PROGRAMS:%=%.o) \
 	    a.out \
 	    ssTest*.o \
-	    molTest*.o
-
+	    molTest*.o \
+	    ssTest[0-9][0-9] \
+	    molTest[0-9][0-9]
 
 list:
-	@printf "%s\n" $(PROGRAMS:%=%.cpp) $(HEADERS) $(SOURCES)
+	@printf "PROGRAMS:\n"
+	@printf "  %s\n" $(PROGRAMS)
+	@printf "HEADERS:\n"
+	@printf "  %s\n" $(HEADERS)
+	@printf "SOURCES:\n"
+	@printf "  %s\n" $(SOURCES)
+	@printf "TESTS:\n"
+	@printf "  %s\n" $(TESTS:%=%.cpp)
 
 #}}}
 
