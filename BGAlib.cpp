@@ -168,31 +168,112 @@ void Molecule::init()
     }
     NAtoms = h.size();
     NDist  = NAtoms*(NAtoms-1)/2;
-    afit.resize(NAtoms);
-    ssdIdxUsed.clear();
+    abad.resize(NAtoms, 0.0);
+    abadMax = 0.0;
+    d2.resize(NDist, 0);
+//    ssdIdxUsed.clear();
     ssdIdxFree.clear();
+}
+
+typedef struct {
+    int d2;
+    int i;
+    int j;
+} d2idx_type;
+
+int d2idx_cmp(const d2idx_type& p, const d2idx_type& q)
+{
+    if (p.d2 < q.d2)
+	return -1;
+    else if (p.d2 == q.d2)
+	return 0;
+    else
+	return 1;
+}
+
+void Molecule::calc_df()
+{
+    cached = true;
+//    ssdIdxUsed.clear();
+    ssdIdxFree.clear();
+    d2idx_type d2idx[NDist];
+    // calculate and store distances
+    int ij = 0;
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	for (int j = i + 1; j < NAtoms; ++j, ++ij)
+	{
+	    d2idx[ij].d2 = dist2(i, j);
+	    d2idx[ij].i = i;
+	    d2idx[ij].j = j;
+	}
+    }
+    sort(d2idx, d2idx+NDist, d2idx_cmp);
+    // evaluate abad[i]
+    int ssdIdx = 0;
+    for (ij = 0; ij < NDist; ++ij)
+    {
+	for(; ss->d2hi[ssdIdx] < d2idx[ij].d2 && ssdIdx < ss->NDist; ++ssdIdx)
+	{
+	    ssdIdxFree.push_back(ssdIdx);
+	}
+	// did we find a baddie?
+	if (ssdIdx < ss->NDist  &&  ss->d2lo[ssdIdx] > d2idx[ij].d2)
+	{
+	    abad[d2idx[ij].i]++;
+	    abad[d2idx[ij].j]++;
+	}
+	// otherwise it is a matching distance
+	ssdIdx++;
+    }
+
 }
 
 double Molecule::ABadness(int i)
 {
-    return afitMax - AFitness(i);
+    if (!cached)
+    {
+	calc_df();
+    }
+    return abad[i];
 }
 
 double Molecule::AFitness(int i)
 {
-    if (!cached)
-    {
-	recalc();
-    }
-    return afit[i];
+    // this will update abadMax if necessary
+    double badness_i = ABadness(i);
+    return abadMax - badness_i;
 }
 
-/*
-    double Molecule::MBadness();		// total fitness
-    double Molecule::MFitness();		// total badness
-    double Molecule::dist(const int& i, const int& j);		// d(i,j)
-    inline int Molecule::dist2(const int& i, const int& j);	// squared d(i,j)
-    */
+double Molecule::MBadness()
+{
+    static double mbadCache;
+    if (!cached)
+    {
+	calc_df();
+	mbadCache = abad.sum();
+    }
+    return mbadCache;
+}
+
+double Molecule::MFitness()
+{
+    // this will update abadMax if necessary
+    double mbadness = MBadness();
+    return NAtoms*abadMax - mbadness;
+}
+
+double Molecule::dist(const int& i, const int& j)
+{
+    return sqrt(1.0*dist2(i, j));
+}
+
+inline int Molecule::dist2(const int& i, const int& j)
+{
+    int dh = h[i] - h[j];
+    int dk = k[i] - k[j];
+    return dh*dh + dk*dk;
+}
 
 ///* declaration of a pdffit molecule objects */
 //class molecule
@@ -307,6 +388,12 @@ double Molecule::AFitness(int i)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.3  2005/01/25 04:38:15  juhas
+* afit renamed to abad, afitMax renamed to abadMax
+* added Molecule definitions for
+*     calc_df(),  ABadness(),  AFitness(),  MBadness(),
+*     MFitness(),  dist(),  dist2()
+*
 * Revision 1.2  2005/01/19 21:19:38  juhas
 * init_dist() renamed to init()
 * list "dist" renamed to "d"
