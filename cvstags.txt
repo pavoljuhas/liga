@@ -22,3 +22,6 @@ three-dim-1b                1.107       2005-02-20
 three-dim-1c                1.108       2005-02-22
     removed checking for duplicate atoms in
     push_good_triangles, push_good_pyramids
+
+three-dim-1d                1.109       2005-02-22
+    maximum trials in push_good_pyramids() restricted to N*(N-1)*(N-2
