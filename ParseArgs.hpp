@@ -10,12 +10,8 @@
 
 #ifndef PARSEARGS_HPP_INCLUDED
 #define PARSEARGS_HPP_INCLUDED
-#include <iostream>
 #include <string>
-#include <sstream>
-#include <fstream>
 #include <vector>
-#include <list>
 #include <map>
 #include <getopt.h>
 
