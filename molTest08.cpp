@@ -30,16 +30,15 @@ int main(int argc, char *argv[])
     }
     // here argc > 1
     char *distance_file = argv[1];
-    SandSphere* ss;
+    DistanceTable *dtab;
     try
     {
-	ss = new SandSphere(512, distance_file);
+	dtab = new DistanceTable(distance_file);
     }
     catch (IOError)
     {
 	return EXIT_FAILURE;
     }
-    ss->SetGridTol(1.1);
     char *snapshot_file = NULL;
     if (argc > 2 && strlen(argv[2]) > 0)
     {
@@ -56,11 +55,11 @@ int main(int argc, char *argv[])
 
     // set lastMBadness to a maximum double
     numeric_limits<double> double_info;
-    valarray<double> lastMBadness(double_info.max(), ss->NAtoms);
+    valarray<double> lastMBadness(double_info.max(), dtab->NAtoms);
     double best_largest = double_info.max();
     valarray<int> improved(1, logsize);
 
-    Molecule mol(ss);
+    Molecule mol(*dtab);
     int fileno = 0;
 
     int maxatoms = 0;
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
     {
 	// calculate pe
 	double pe, impr_rate;
-	if (mol.NAtoms() == ss->NAtoms || mol.Badness() > 10*mol.NAtoms())
+	if (mol.NAtoms() == mol.max_NAtoms() || mol.Badness() > 10*mol.NAtoms())
 	{
 	    pe = 0.0;
 	    go_all_way = false;
@@ -104,8 +103,8 @@ int main(int argc, char *argv[])
 	    cout << "  Degenerate(" << Npop << ")  NAtoms = " << mol.NAtoms() <<  endl;
 	}
 	mol.PrintBadness();
-	if (mol.NAtoms() == ss->NAtoms)
-	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/ss->NAtoms << endl;
+	if (mol.NAtoms() == mol.max_NAtoms())
+	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/mol.max_NAtoms() << endl;
 	// update lastMBadness and improved
 	int ilog = trial % logsize;
 	if (mol.Badness()<=lastMBadness[mol.NAtoms()-1] || mol.Badness() == 0.0)
@@ -131,11 +130,12 @@ int main(int argc, char *argv[])
 		cout << "saving best molecule" << endl;
 		char fname[255];
 		sprintf(fname, "%s%04i", snapshot_file, fileno);
+		sprintf(fname, "%s", snapshot_file);
 		mol.WriteAtomEye(fname);
 	    }
-	    if (mol.NAtoms() == ss->NAtoms)
+	    if (mol.NAtoms() == mol.max_NAtoms())
 	    {
-		if (mol.Badness() < avgmb*ss->NAtoms)
+		if (mol.Badness() < avgmb*mol.max_NAtoms())
 		{
 		    cout << "that is solution!" << endl;
 		    break;
