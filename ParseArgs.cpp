@@ -9,7 +9,6 @@
 ***********************************************************************/
 
 #include <iostream>
-#include <iostream>
 #include "ParseArgs.hpp"
 
 ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
@@ -49,9 +48,60 @@ void ParseArgs::Parse()
 
 void ParseArgs::ReadPars(const char *file)
 {
+    // open file for reading
+    ifstream fid(file);
+    if (!fid)
+    {
+	ostringstream oss;
+	oss << "Unable to read '" << file << "'";
+	throw IOError(oss.str());
+    }
+    ReadPars(fid);
+    fid.close();
 }
 
-void ParseArgs::List()
+istream& ParseArgs::ReadPars(istream& fid)
+{
+    const char *blank = " \t\n";
+    string line;
+    for (int nr = 1; !fid.eof() && getline(fid, line); ++nr)
+    {
+	string::size_type lb, le;
+	lb = line.find_first_not_of(blank);
+	le = line.find_last_not_of(blank)+1;
+	line = (lb == string::npos) ? "" : line.substr(lb, le-lb);
+	if (line.length() == 0 || line[0] == '#')
+	    continue;
+	string::size_type eq, pe, vb;
+	eq = line.find('=');
+	if (eq == string::npos)
+	{
+	    ostringstream oss;
+	    oss << nr << ": missing equal symbol";
+	    throw ParseArgsError(oss.str());
+	}
+	pe = line.find_last_not_of(string(blank) + "=", eq);
+	pe = (pe == string::npos) ? eq : pe+1;
+	string par = line.substr(0, pe);
+	bool ispar = isalpha(par[0]);
+	for (   string::iterator ii = par.begin();
+		ii != par.begin() && ispar; ++ii)
+	{
+	    ispar = isalnum(*ii);
+	}
+	if (!ispar)
+	{
+	    ostringstream oss;
+	    oss << nr << ": invalid argument name '" << par << "'";
+	    throw ParseArgsError(oss.str());
+	}
+	vb = line.find_first_not_of(blank, eq+1);
+	pars[par] = (vb == string::npos) ? "" : line.substr(vb);
+    }
+    return fid;
+}
+
+void ParseArgs::Dump()
 {
     cout << "cmd_h = '" << cmd_h << "'" << endl;
     cout << "cmd_t = '" << cmd_t << "'" << endl;
@@ -79,7 +129,7 @@ void ParseArgs::init()
 
 void ParseArgs::do_getopt()
 {
-    while (1)
+    while (true)
     {
 	int this_option_optind = optind ? optind : 1;
 	int option_index = 0;
@@ -87,7 +137,7 @@ void ParseArgs::do_getopt()
 	if (c == -1)
 	    break;
 	else if (c == '?')
-	    throw InvalidOption();
+	    throw ParseArgsError();
 	else
 	    opts[string(1,c)] = (optarg) ? optarg : "";
     }
@@ -99,7 +149,7 @@ void ParseArgs::do_getopt()
 
 void ParseArgs::do_getopt_long()
 {
-    while (1)
+    while (true)
     {
 	int this_option_optind = optind ? optind : 1;
 	int option_index = 0;
@@ -111,7 +161,7 @@ void ParseArgs::do_getopt_long()
 	switch (c)
 	{
 	    case '?':
-		throw InvalidOption();
+		throw ParseArgsError();
 		break;
 	    case 0:
 		o = longopts[option_index].name;
