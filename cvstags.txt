@@ -33,3 +33,7 @@ three-dim-1e                1.110       2005-02-22
 three-dim-1f                1.111       2005-02-22
     nearest distance is not used when |dd| >= BGA::tol_dist, but
     there is no plateau for penalty function
+
+three-dim-1g                1.114       2005-02-22
+    atom fitness is now proportional to the probability that other atoms
+    are bad and will be dumped
