@@ -132,6 +132,7 @@ public:
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
+    inline bool Full() const { return !(NAtoms() < max_NAtoms()); }
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
