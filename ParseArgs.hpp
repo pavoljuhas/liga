@@ -18,15 +18,9 @@
 #include <map>
 #include <stdexcept>
 #include <getopt.h>
+#include "ioerror.hpp"
 
 using namespace std;
-
-// exceptions
-struct IOError : public runtime_error
-{
-    IOError (const string& what_arg) :
-	runtime_error(what_arg) { }
-};
 
 struct ParseArgsError : public runtime_error
 {

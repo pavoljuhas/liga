@@ -19,6 +19,7 @@
 #include <list>
 #include <map>
 #include <gsl/gsl_rng.h>
+#include "ioerror.hpp"
 
 // global random number generator
 namespace BGA
@@ -35,7 +36,6 @@ namespace BGA
 struct InvalidDistanceTable { };
 struct InvalidMolecule { };
 struct InvalidPopulation { };
-struct IOError { };
 
 using namespace std;
 

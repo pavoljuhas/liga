@@ -1,14 +1,15 @@
 /***********************************************************************
-* Short Title: test of BGAlib.cpp
+* Short Title: molecule reconstruction from distance table
 *
-* Comments: test Molecule::Evolve(), Molecule::Degenerate(),
-*     automatic search for good configuration
+* Comments: not particularly inteligent search for molecular configuration
 *
 * $Id$
 ***********************************************************************/
 
 #include <limits>
 #include <unistd.h>
+#include "ioerror.hpp"
+#include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
 int main(int argc, char *argv[])

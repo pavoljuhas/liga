@@ -13,6 +13,7 @@
 #include <utility>
 #include <map>
 #include <gsl/gsl_randist.h>
+#include "ioerror.hpp"
 #include "BGAlib.hpp"
 
 // random number generator
