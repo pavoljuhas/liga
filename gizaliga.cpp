@@ -435,6 +435,10 @@ int main(int argc, char *argv[])
 	    cout << " D " <<
 		hi_level << ' ' << desc_bad0 << ' ' <<
 		lo_level << ' ' << descending->Badness() << endl;
+	    // no need to finish round if we found champion
+	    if (hi_level == advancing->max_NAtoms() &&
+		    advancing->Badness() < rp.tol_bad  )
+		break;
 	}
 	world_champ = liga.back().best();
 	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
