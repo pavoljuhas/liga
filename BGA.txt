@@ -32,3 +32,6 @@ Molecule {
     Molecule& Add(int nh, int nk)
     Molecule& MoveAtom(int idx, int nh, int nk)
 }
+
+2005-03-01
+make Pair_t clone constructor, speed up Molecule assignment
