@@ -287,9 +287,8 @@ void DistanceTable::init()
 ////////////////////////////////////////////////////////////////////////
 
 // static members
-//numeric_limits<double> double_info;
-//    tol_dd = double_info.max();
 double Molecule::tol_dd  = numeric_limits<double>().max();
+double Molecule::tol_nbad  = 0.05*0.05;
 double Molecule::evolve_frac = 0.0001;
 bool   Molecule::evolve_jump = true;
 namespace BGA {
@@ -678,6 +677,78 @@ void Molecule::calc_test_badness(Atom_t& ta)
     ta.ResetBadness(tbad);
 }
 
+void Molecule::filter_good_atoms(vector<Atom_t>& vta, double evolve_range)
+{
+    if (NAtoms() == max_NAtoms())
+    {
+	cerr << "E: Molecule too large in filter_good_atoms()" << endl;
+	throw InvalidMolecule();
+    }
+    // local copy of dTarget
+    DistanceTable ldTarget(dTarget);
+    int ldTsize = ldTarget.size();
+    bool ldUsed[ldTsize];
+    fill(ldUsed, ldUsed+ldTsize, false);
+    double lo_badness = numeric_limits<double>().max();
+    double hi_badness = numeric_limits<double>().max();
+    typedef vector<Atom_t>::iterator VAit;
+    typedef list<Atom_t>::iterator LAit;
+    typedef vector<double>::iterator VDit;
+    // loop over all test atoms
+    for (VAit ta = vta.begin(); ta != vta.end(); ++ta)
+    {
+	double tbad = ta->Badness();
+	list<int> ldUsedIdx;
+	// fast, possibly incomplete badness evaluation
+	for (   LAit ma = atoms.begin();
+		ma != atoms.end() && tbad <= hi_badness; ++ma )
+	{
+	    double d = dist(*ma, *ta);
+	    int idx = ldTarget.find_nearest(d) - ldTarget.begin();
+	    if (ldUsed[idx])
+	    {
+		int hi, lo, nidx = -1;
+		for (hi = idx; hi != ldTsize && ldUsed[hi]; ++hi) { };
+		if (hi != ldTsize)
+		    nidx = hi;
+		for (lo = idx; lo >= 0 && ldUsed[lo]; --lo) { };
+		if (lo >= 0  && (nidx < 0 || d-ldTarget[lo] < ldTarget[nidx]-d))
+		    nidx = lo;
+		idx = nidx;
+	    }
+	    double dd = ldTarget[idx] - d;
+	    tbad += penalty(dd);
+	    BGA::cnt.penalty_calls++;
+	    if (fabs(dd) < tol_dd)
+	    {
+		ldUsed[idx] = true;
+		ldUsedIdx.push_back(idx);
+	    }
+	}
+	ta->ResetBadness(tbad);
+	if (tbad < lo_badness)
+	{
+	    lo_badness = tbad;
+	    hi_badness = tbad + evolve_range;
+	}
+	// restore ldUsed
+	for (   list<int>::iterator ii = ldUsedIdx.begin();
+		ii != ldUsedIdx.end(); ++ii  )
+	{
+	    ldUsed[*ii] = false;
+	}
+    }
+    // now keep only good atoms
+    VAit gai = vta.begin();
+    for (VAit ta = vta.begin(); ta != vta.end(); ++ta)
+    {
+	if (ta->Badness() <= hi_badness)
+	    *(gai++) = *ta;
+    }
+    vta.erase(gai, vta.end());
+}
+
+
 int Molecule::push_good_distances(
 	vector<Atom_t>& vta, double *afit, int ntrials
 	)
@@ -966,8 +1037,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    comp_Atom_Badness) -> Badness();
     double max_badness = max_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness) -> Badness();
-//  pj: how about
-//  double hi_badness = evolve_frac*min(max_badness-min_badness, penalty(tol_dd)+min_badness;
+//  pj: this will be updated
+    max_badness = min(max_badness, min_badness+tol_nbad*NAtoms());
     double hi_badness = evolve_frac*(max_badness-min_badness)+min_badness;
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
