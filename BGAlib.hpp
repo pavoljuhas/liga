@@ -200,7 +200,7 @@ private:
     // constructor helper
     void init();
     // data storage
-    DistanceTable dFree;
+    DistanceTable dTarget;
     //pj:remove ss
     SandSphere *ss;
     // atoms must precede pairs

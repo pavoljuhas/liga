@@ -432,7 +432,7 @@ void DistanceTable::init()
     if (at(0) <= 0)
     {
 	cerr << "E: non-positive entry in DistanceTable, " <<
-	    "dFree[0]=" << at(0) << endl;
+	    "d[0]=" << at(0) << endl;
 	throw InvalidDistanceTable();
     }
 }
@@ -442,14 +442,14 @@ void DistanceTable::init()
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
 
-Molecule::Molecule(const DistanceTable& dtab) : dFree(dtab)
+Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 {
     init();
 }
 
 Molecule::Molecule(const DistanceTable& dtab,
 	const int s, const double *px, const double *py, const double *pz
-	) : dFree(dtab)
+	) : dTarget(dtab)
 {
     init();
     int h, k, l;
@@ -465,7 +465,7 @@ Molecule::Molecule(const DistanceTable& dtab,
 Molecule::Molecule(const DistanceTable& dtab,
 	const vector<double>& vx, const vector<double>& vy,
 	const vector<double>& vz
-	) : dFree(dtab)
+	) : dTarget(dtab)
 {
     init();
     if (vx.size() != vy.size() || vx.size() != vz.size())
