@@ -8,6 +8,7 @@
 
 #include <limits>
 #include <unistd.h>
+#include <iomanip>
 #include "ioerror.hpp"
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
@@ -26,41 +27,65 @@ void print_version()
 
 void print_help(ParseArgs& a)
 {
-	/*
-
-usage: << a.cmd_t << [-p PAR_FILE] [DISTHIST] [par1=val1 par2=val2...]
-run drunkwalk simulation using DISTHIST data.  Parameters can be set
-in PAR_FILE or on the command line, which overrides PAR_FILE.
-Options:
-  -p, --parfile=FILE    read parameters from FILE
-  -h, --help            display this message
-  -v, --version         show program version
-IO parameters:
-  disthist=FILE         target distance table
-  outstru=FILE          where to save the best full molecule
-  inistru=FILE          initial structure [empty box]
-  snapshot=FILE         live molecule structure
-  snaprate=int          number of iterations between snapshot updates
-  frames=FILE           save intermediate structures to FILE.iteration
-  framesrate=int        number of iterations between frame saves
-Walk parameters
-  tol_dd=double         [inf] distance is not used when dd=|d-d0|>=tol_dd
-  tol_bad=double        target value of full molecule badness
-  logsize=int           [10] last steps used for success rate evaluation
-  eprob_max=double      high limit of evolve probability
-  eprob_min=double      low limit of evolve probability
-  bustprob=double       probability of forcing the full structure built
-  evolve_jump=bool      [true] allow additions of several atoms
-  evolve_frac=double    selection badness threshold of tested atoms
-  penalty=string        dd penalty function [pow2], fabs, well
-  dist_trials=int       [10] good distance atoms to try
-  tri_trials=int        [20] godd triangle atoms to try
-  pyr_trials=int        [1000] good pyramid atoms to try
-
-
-*/
-
+    // /usage:/;/;/-s/.*/"&\\n"/
+    // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
+    cout << 
+"usage: " << a.cmd_t << "[-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
+"run drunkwalk simulation using distances from DISTFILE.  Parameters can\n"
+"be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
+"Options:\n"
+"  -p, --parfile=FILE    read parameters from FILE\n"
+"  -h, --help            display this message\n"
+"  -v, --version         show program version\n"
+"IO parameters:\n"
+"  distfile=FILE         target distance table\n"
+"  outstru=FILE          where to save the best full molecule\n"
+"  inistru=FILE          initial structure [empty box]\n"
+"  snapshot=FILE         live molecule structure\n"
+"  snaprate=int          number of iterations between snapshot updates\n"
+"  frames=FILE           save intermediate structures to FILE.iteration\n"
+"  framesrate=int        number of iterations between frame saves\n"
+"Walk parameters\n"
+"  tol_dd=double         [inf] distance is not used when dd=|d-d0|>=tol_dd\n"
+"  tol_bad=double        target value of full molecule badness\n"
+"  seed=int        	 seed random number generator\n"
+"  logsize=int           [10] last steps used for success rate evaluation\n"
+"  eprob_max=double      high limit of evolve probability\n"
+"  eprob_min=double      low limit of evolve probability\n"
+"  bustprob=double       probability of forcing the full structure built\n"
+"  evolve_jump=bool      [true] allow additions of several atoms\n"
+"  evolve_frac=double    selection badness threshold of tested atoms\n"
+"  penalty=string        dd penalty function [pow2], fabs, well\n"
+"  dist_trials=int       [10] good distance atoms to try\n"
+"  tri_trials=int        [20] godd triangle atoms to try\n"
+"  pyr_trials=int        [1000] good pyramid atoms to try\n"
+;
 }
+
+struct RunPar_t {
+    // IO parameters
+    const char *distfile;
+    const char *outstru;
+    const char *inistru;
+    const char *snapshot;
+    int snaprate;
+    const char *frames;
+    int framesrate;
+    // Walk parameters
+    double tol_dd;
+    double tol_bad;
+    int seed;
+    int logsize;
+    double eprob_max;
+    double eprob_min;
+    double bustprob;
+    bool evolve_jump;
+    double evolve_frac;
+    string penalty;
+    int dist_trials;
+    int tri_trials;
+    int pyr_trials;
+};
 
 int main(int argc, char *argv[])
 {
@@ -78,11 +103,11 @@ int main(int argc, char *argv[])
     ParseArgs a(argc, argv, short_options, long_options);
     try {
 	a.Parse();
+//	a.Dump();
     }
     catch (ParseArgsError) {
 	return EXIT_FAILURE;
     }
-    a.Dump();
     if (a.opts.count("h") || argc == 1)
     {
 	print_help(a);
@@ -93,58 +118,115 @@ int main(int argc, char *argv[])
 	print_version();
 	return EXIT_SUCCESS;
     }
-
-
-
-
-
-    const int logsize = 10;
-    const double pemin = 0.25;
-    const double pemax = 0.75;
-    const double pallway = 0.01;
-    const double avgmb = 0.01*0.01;
-    const double tol_dd = 0.1;
-    ////////////////////////////////////////////////////////////////////////
-    if (argc == 1)
+    if (a.opts.count("p"))
     {
-	cerr << "usage: " <<
-	    "molTest08 distance_file.dss [seed] [snapshot_file.xyz]" << endl;
-	return EXIT_SUCCESS;
+	try {
+	    a.ReadPars(a.opts["p"].c_str());
+	}
+	catch (IOError(e)) {
+	    cerr << e.what() << endl;
+	    return EXIT_FAILURE;
+	}
     }
-    // here argc > 1
-    char *distance_file = argv[1];
+    // assign run parameters
+    RunPar_t rp;
+    // distfile
     DistanceTable *dtab;
-    try
+    if (a.args.size())
+	a.pars["distfile"] = a.args[0];
+    if (!a.pars.count("distfile"))
     {
-	dtab = new DistanceTable(distance_file);
-    }
-    catch (IOError)
-    {
+	cerr << "Distance file not defined" << endl;
 	return EXIT_FAILURE;
     }
-    char *snapshot_file = NULL;
-    if (argc > 2 && strlen(argv[2]) > 0)
-    {
-	unsigned long int seed;
-	seed = atoi(argv[2]);
-	cout << "setting seed to " << seed << endl;
-	gsl_rng_set(BGA::rng, seed);
+    rp.distfile = a.pars["distfile"].c_str();
+    try {
+	dtab = new DistanceTable(rp.distfile);
     }
-    if (argc > 3 && strlen(argv[3]) > 0)
-    {
-	snapshot_file = argv[3];
-	cout << "molecule snapshots go to " << snapshot_file << endl;
+    catch (IOError) {
+	return EXIT_FAILURE;
     }
+    string hashsep(72, '#');
+    cout << hashsep << endl;
+    cout << "# " << a.cmd_t << ' ' <<
+	"$Id$" << endl;
+    time_t cur_time = time(NULL);
+    cout << "# " << ctime(&cur_time);
+    cout << hashsep << endl;
+    Molecule mol(*dtab);
+    cout << "distfile=" << rp.distfile << endl;
+    rp.outstru = a.pars.count("outstru") ? a.pars["outstru"].c_str() : NULL;
+    if (rp.outstru) cout << "outstru=" << rp.outstru << endl;
+    rp.inistru = a.pars.count("inistru") ? a.pars["inistru"].c_str() : NULL;
+    if (rp.inistru) cout << "inistru=" << rp.inistru << endl;
+    rp.snapshot = a.pars.count("snapshot") ? a.pars["snapshot"].c_str() : NULL;
+    if (rp.snapshot)
+    {
+	cout << "snapshot=" << rp.snapshot << endl;
+	rp.snaprate = a.GetPar<int>("snaprate", 100);
+	cout << "snaprate=" << rp.snaprate << endl;
+    }
+    rp.frames = a.pars.count("frames") ? a.pars["frames"].c_str() : NULL;
+    if (rp.frames)
+    {
+	cout << "frames=" << rp.frames << endl;
+	rp.framesrate = a.GetPar<int>("framesrate", 100);
+	cout << "framesrate=" << rp.framesrate << endl;
+    }
+    // Walk parameters
+    rp.tol_dd = a.GetPar<double>("tol_dd", 0.1);
+    cout << "tol_dd=" << rp.tol_dd << endl;
+    mol.tol_dd = rp.tol_dd;
+    rp.tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
+    cout << "tol_bad=" << rp.tol_bad << endl;
+    rp.seed = a.GetPar<int>("seed", 0);
+    if (rp.seed)
+    {
+	gsl_rng_set(BGA::rng, rp.seed);
+	cout << "seed=" << rp.seed << endl;
+    }
+    rp.logsize = a.GetPar<int>("logsize", 10);
+    cout << "logsize=" << rp.logsize << endl;
+    rp.eprob_max = a.GetPar<double>("eprob_max", 0.75);
+    cout << "eprob_max=" << rp.eprob_max << endl;
+    rp.eprob_min = a.GetPar<double>("eprob_min", 0.25);
+    cout << "eprob_min=" << rp.eprob_min << endl;
+    rp.bustprob = a.GetPar<double>("bustprob", 0.01);
+    cout << "bustprob=" << rp.bustprob << endl;
+    rp.evolve_jump = a.GetPar<bool>("evolve_jump", true);
+    cout << "evolve_jump=" << rp.evolve_jump << endl;
+    mol.evolve_jump = rp.evolve_jump;
+    rp.evolve_frac = a.GetPar<double>("evolve_frac", 1.0e-4);
+    cout << "evolve_frac=" << rp.evolve_frac << endl;
+    mol.evolve_frac = rp.evolve_frac;
+    rp.penalty = a.GetPar<string>("penalty", "pow2");
+    if (rp.penalty == "pow2")
+	mol.penalty = BGA::pow2;
+    else if (rp.penalty == "well")
+	mol.penalty = BGA::well;
+    else if (rp.penalty == "fabs")
+	mol.penalty = fabs;
+    else
+    {
+	cerr << "Invalid value of penalty parameter" << endl;
+	return EXIT_FAILURE;
+    }
+    cout << "penalty=" << rp.penalty << endl;
+    rp.dist_trials = a.GetPar("dist_trials", 10);
+    cout << "dist_trials=" << rp.dist_trials << endl;
+    rp.tri_trials = a.GetPar("tri_trials", 20);
+    cout << "tri_trials=" << rp.tri_trials << endl;
+    rp.pyr_trials = a.GetPar("pyr_trials", 1000);
+    cout << "pyr_trials=" << rp.pyr_trials << endl;
+    cout << hashsep << endl << endl;
 
+    ////////////////////////////////////////////////////////////////////////
     // set lastMBadness to a maximum double
     numeric_limits<double> double_info;
     valarray<double> lastMBadness(double_info.max(), dtab->NAtoms+1);
     double best_largest = double_info.max();
-    valarray<int> improved(1, logsize);
+    valarray<int> improved(1, rp.logsize);
 
-    Molecule mol(*dtab);
-    mol.tol_dd = tol_dd;
-    int fileno = 0;
 
     int maxatoms = 0;
     bool go_all_way = false;
@@ -168,14 +250,14 @@ int main(int argc, char *argv[])
 	else
 	{
 	    impr_rate = 1.0*improved.sum()/improved.size();
-	    pe = impr_rate*(pemax-pemin)+pemin;
-	    if (impr_rate >= 0.66 && pallway > gsl_rng_uniform(BGA::rng))
+	    pe = impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
+	    if (impr_rate >= 0.66 && rp.bustprob > gsl_rng_uniform(BGA::rng))
 		go_all_way = true;
 	}
 	cout << trial;
 	if (pe > gsl_rng_uniform(BGA::rng))
 	{
-	    mol.Evolve(10,20,1000);
+	    mol.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
 	    cout << "  Evolve()" << "  NAtoms = " << mol.NAtoms() << endl;
 	}
 	else
@@ -192,7 +274,7 @@ int main(int argc, char *argv[])
 	if (mol.NAtoms() == mol.max_NAtoms())
 	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/mol.max_NAtoms() << endl;
 	// update lastMBadness and improved
-	int ilog = trial % logsize;
+	int ilog = trial % rp.logsize;
 	if (mol.Badness() < lastMBadness[mol.NAtoms()])
 	{
 	    if (mol.NAtoms() > maxatoms)
@@ -211,17 +293,17 @@ int main(int argc, char *argv[])
 		mol.WriteXYZ(snapshot_file);
 	    }
 	    */
-	    if (snapshot_file != NULL && improved[ilog])
+	    if (rp.snapshot != NULL && improved[ilog])
 	    {
 		cout << "saving best molecule" << endl;
 		char fname[255];
-		sprintf(fname, "%s%04i", snapshot_file, fileno);
-		sprintf(fname, "%s", snapshot_file);
+		sprintf(fname, "%s%04i", rp.snapshot, fileno);
+		sprintf(fname, "%s", rp.snapshot);
 		mol.WriteAtomEye(fname);
 	    }
 	    if (mol.NAtoms() == mol.max_NAtoms())
 	    {
-		if (mol.Badness() < avgmb*mol.max_NAtoms())
+		if (mol.Badness() < rp.tol_bad*mol.max_NAtoms())
 		{
 		    cout << "that is solution!" << endl;
 		    break;
