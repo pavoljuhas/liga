@@ -990,11 +990,6 @@ void Molecule::PrintFitness()
 // Population definitions
 ////////////////////////////////////////////////////////////////////////
 
-bool molecule_SandSpheres_differ(const Molecule& M1, const Molecule& M2)
-{
-    return M1.ss != M2.ss;
-}
-
 void Population::init()
 {
     // check whether all members use the same SandSphere

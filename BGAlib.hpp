@@ -143,8 +143,6 @@ private:
     istream& ReadGrid(istream& fid);
     istream& ReadXY(istream& fid);
     string opened_file;
-//    friend bool molecule_SandSpheres_differ(
-//	    const Molecule& M1, const Molecule& M2);
 };
 
 class Molecule::ParseHeader
