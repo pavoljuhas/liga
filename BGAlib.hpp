@@ -52,6 +52,7 @@ public:
     vector<double>::iterator return_back(const double&);
     // data members
     mutable int NAtoms;   	// target number of atoms
+    mutable double max_d;
 private:
     void init();
 };
