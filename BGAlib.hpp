@@ -51,6 +51,7 @@ public:
     DistanceTable& operator= (const vector<double>&);
     // member functions
     vector<double>::iterator find_nearest(const double&);
+    vector<double>::iterator return_back(const double&);
 private:
     void init();
 };
