@@ -1,14 +1,14 @@
 /***********************************************************************
 * Short Title: molecule reconstruction from distance table
 *
-* Comments: not particularly inteligent search for molecular configuration
+* Comments: self-tuning competition search for molecular configuration
 *
 * $Id$
 ***********************************************************************/
 
 #include <limits>
 #include <unistd.h>
-#include <iomanip>
+#include <memory>
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
@@ -30,7 +30,7 @@ void print_help(ParseArgs& a)
     // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
     cout << 
 "usage: " << a.cmd_t << "[-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
-"run djoser simulation using distances from DISTFILE.  Parameters can\n"
+"run gizaliga simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
@@ -48,15 +48,7 @@ void print_help(ParseArgs& a)
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
-"  logsize=int           [10] last steps used for success rate evaluation\n"
-"  eprob_max=double      [0.75] high limit of evolve probability\n"
-"  eprob_min=double      [0.25] low limit of evolve probability\n"
-"  bustprob=double       [0.01] probability of forced full structure built\n"
-"  buststop=double       [10.0] stop busting when (bad/tod_bad)>buststop\n"
-"  evolve_jump=bool      [true] allow additions of several atoms\n"
-"  evolve_frac=double    [1E-4] selection badness threshold of tested atoms\n"
-"  pop_max=int           [5] maximum number of removed atoms\n"
-"  pop_rand=bool         [false] randomize number of removed atoms\n"
+"  teams=int             [10] number of teams per division\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
@@ -78,31 +70,27 @@ struct RunPar_t
     double tol_dd;
     double tol_bad;
     int seed;
-    int logsize;
-    double eprob_max;
-    double eprob_min;
-    double bustprob;
-    double buststop;
-    bool evolve_jump;
-    double evolve_frac;
-    int pop_max;
-    bool pop_rand;
+    int teams;
     string penalty;
     int dist_trials;
     int tri_trials;
     int pyr_trials;
 };
 
-
 struct RunVar_t
 {
     int iteration;
-    double pe;
-    valarray<int> improved;
-    double impr_rate;
-    bool bust_now;
     bool lastframe;
 };
+
+class DivisionTeams_t : public vector< auto_ptr<Molecule> >
+{
+public:
+    // constructors
+    DivisionTeams_t() : vector< auto_ptr<Molecule> >() { }
+    inline reference team(size_type n) { return at(n); }
+};
+
 
 Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 {
@@ -183,6 +171,13 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     {
         rp.inistru = a.pars["inistru"];
         cout << "inistru=" << rp.inistru << endl;
+        try {
+            mol.ReadXYZ(rp.inistru.c_str());
+        }
+        catch (IOError) {
+            exit(EXIT_FAILURE);
+        }
+    }
     }
     if (a.ispar("snapshot"))
     {
@@ -210,26 +205,8 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
         gsl_rng_set(BGA::rng, rp.seed);
         cout << "seed=" << rp.seed << endl;
     }
-    rp.logsize = a.GetPar<int>("logsize", 10);
-    cout << "logsize=" << rp.logsize << endl;
-    rp.eprob_max = a.GetPar<double>("eprob_max", 0.75);
-    cout << "eprob_max=" << rp.eprob_max << endl;
-    rp.eprob_min = a.GetPar<double>("eprob_min", 0.25);
-    cout << "eprob_min=" << rp.eprob_min << endl;
-    rp.bustprob = a.GetPar<double>("bustprob", 0.01);
-    cout << "bustprob=" << rp.bustprob << endl;
-    rp.buststop = a.GetPar<double>("buststop", 10.0);
-    cout << "buststop=" << rp.buststop << endl;
-    rp.evolve_jump = a.GetPar<bool>("evolve_jump", true);
-    cout << "evolve_jump=" << rp.evolve_jump << endl;
-    mol.evolve_jump = rp.evolve_jump;
-    rp.evolve_frac = a.GetPar<double>("evolve_frac", 1.0e-4);
-    cout << "evolve_frac=" << rp.evolve_frac << endl;
-    mol.evolve_frac = rp.evolve_frac;
-    rp.pop_max = a.GetPar<int>("pop_max", 5);
-    cout << "pop_max=" << rp.pop_max << endl;
-    rp.pop_rand = a.GetPar<bool>("pop_rand", false);
-    cout << "pop_rand=" << rp.pop_rand << endl;
+    rp.teams = a.GetPar<int>("teams", 10);
+    cout << "teams=" << rp.teams << endl;
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
         mol.penalty = BGA::pow2;
@@ -251,49 +228,6 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     cout << "pyr_trials=" << rp.pyr_trials << endl;
     cout << hashsep << endl << endl;
     return mol;
-}
-
-double prob_evolve(const Molecule& mol, RunPar_t& rp, RunVar_t& rv)
-{
-    double pe;
-    if (rv.bust_now && mol.NormBadness() > rp.buststop*rp.tol_bad)
-        rv.bust_now = false;
-    if (mol.NAtoms() == mol.max_NAtoms())
-    {
-        pe = 0.0;
-        rv.bust_now = false;
-    }
-    else if (mol.NAtoms() <= 1)
-        pe = 1.0;
-    else if (rv.bust_now )
-        pe = 1.0;
-    else
-        pe = rv.impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
-    return pe;
-}
-
-void evolve_or_degenerate(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
-{
-    if (rv.pe > gsl_rng_uniform(BGA::rng))
-    {
-        mol.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
-        cout << " E " << mol.NAtoms() << " " << mol.NormBadness();
-    }
-    else
-    {
-        int Npop = 1;
-        if (mol.NormBadness() > rp.tol_bad)
-        {
-            Npop = (int) ceil( mol.NAtoms()/4.0 *
-                    (1.0 - rp.tol_bad/mol.NormBadness()) );
-            Npop = min(Npop, rp.pop_max);
-            if (rp.pop_rand)
-                Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop);
-        }
-        mol.Degenerate(Npop);
-        cout << " D " << mol.NAtoms() << " " << mol.NormBadness();
-    }
-    cout << endl;
 }
 
 void save_snapshot(Molecule& mol, RunPar_t& rp)
@@ -331,39 +265,21 @@ int main(int argc, char *argv[])
 {
     RunPar_t rp;
     Molecule mol = process_arguments(rp, argc, argv);
-    // set bestMNBadness to a maximum double
-    numeric_limits<double> double_info;
-    valarray<double> bestMNBadness(double_info.max(), 1+mol.max_NAtoms());
     RunVar_t rv;
-    rv.bust_now = rv.lastframe = false;
-    rv.improved.resize(rp.logsize, 1);
+    rv.lastframe = false;
+
+    typedef auto_ptr<Molecule> apmol;
+    vector<DivisionTeams_t> LigaDivision(mol.max_NAtoms()+1);
+    LigaDivision[mol.NAtoms()].push_back(apmol(new Molecule(mol)));
+    if (mol.NAtoms() != 0)
 
     rv.iteration = 0;
     while (true)
     {
         ++rv.iteration;
         // calculate probability of evolution
-        rv.impr_rate = 1.0*rv.improved.sum()/rp.logsize;
-        if (rv.impr_rate >= 0.5 && rp.bustprob > gsl_rng_uniform(BGA::rng))
-            rv.bust_now = true;
-        rv.pe = prob_evolve(mol, rp, rv);
         cout << rv.iteration;
-        evolve_or_degenerate(mol, rp, rv);
-//      if (rp.show_abad)
-//          mol.PrintBadness();
         // update bestMNBadness and improved
-        int ilog = rv.iteration % rp.logsize;
-        if (mol.NormBadness() <= bestMNBadness[mol.NAtoms()])
-        {
-            bestMNBadness[mol.NAtoms()] = mol.NormBadness();
-            rv.improved[ilog] = 1;
-        }
-        else
-        {
-            rv.improved[ilog] = 0;
-            if (bestMNBadness[mol.NAtoms()] < rp.tol_bad)
-                bestMNBadness[mol.NAtoms()] = rp.tol_bad;
-        }
         save_snapshot(mol, rp);
         save_frames(mol, rp, rv);
         if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
