@@ -6,10 +6,8 @@
 # $Id$
 ########################################################################
 
-
 ########################################################################
 # compiler flags and file lists:
-
 CC = g++
 CPPFLAGS = -g -I/u24/local/include $(CFLAGS)
 LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
@@ -38,13 +36,13 @@ lib_objects: $(OBJECTS)
 
 test: $(TESTS)
 
-ssTest1: ssTest1.o $(OBJECTS)
+ssTest01: ssTest01.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
-molTest1: molTest1.o $(OBJECTS)
+molTest01: molTest01.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
-molTest2: molTest2.o $(OBJECTS)
+molTest02: molTest02.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 #####################################################################}}}
@@ -63,23 +61,5 @@ list:
 	@printf "%s\n" $(PROGRAMS:%=%.cpp) $(HEADERS) $(SOURCES)
 
 #}}}
-########################################################################
-# Here is what people have been up to: {{{
-#
-# $Log$
-# Revision 1.5  2005/01/25 23:20:44  juhas
-# added target for molTest2
-#
-# Revision 1.4  2005/01/25 17:35:48  juhas
-# *** empty log message ***
-#
-# Revision 1.3  2005/01/25 17:32:56  juhas
-# added test program targets
-#
-# Revision 1.2  2005/01/25 16:18:31  juhas
-# BGAlib.h renamed to BGAlib.hpp
-#
-# Revision 1.1  2005/01/24 20:24:13  juhas
-# *** empty log message ***
-#
-# vim: set foldmethod=marker: ########################################}}}
+
+# vim: set foldmethod=marker: 
