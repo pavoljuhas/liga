@@ -17,6 +17,7 @@
 
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
+double BGA::tol_dist = 0.1;
 
 ////////////////////////////////////////////////////////////////////////
 // common helper functions

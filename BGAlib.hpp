@@ -24,7 +24,7 @@
 namespace BGA
 {
     extern gsl_rng* rng;
-    const double tol_dist = 0.1;
+    extern double tol_dist;
     const double eps_abadness = 1.0e-10;
 };
 
