@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	
     Molecule mol(ss);
 
-    cout << "use (e) to evolve, (d) to degenerate, (q) to quit\n\n";
+    cout << "use (e) to evolve, (d) to degenerate, (t) change tolerance, (q) to quit\n\n";
     cout << "mol:" << endl << mol; mol.PrintBadness();
     if (snapshot_file != NULL)
     {
@@ -70,6 +70,14 @@ int main(int argc, char *argv[])
 		    mol.Degenerate();
 		    mol_changed = true;
 		}
+		break;
+	    case 't':
+		cout << "current grid tolerance = " << ss->GridTol() << endl;
+		cout << "new tolerance = ";
+		double x;
+		if ( cin >> x )
+		    ss->SetGridTol(x);
+		cout << ss->GridTol() << endl;
 		break;
 	}
 	if (mol_changed)
