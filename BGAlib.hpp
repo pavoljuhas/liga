@@ -120,6 +120,7 @@ public:
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
     Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
+    Molecule  MateWith(const Molecule& M, int trials = 500);
     double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
@@ -175,6 +176,8 @@ private:
 	mbad = abad.sum();
 	abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
     }
+    // MateWith helpers:
+    Molecule& mount(Molecule& Male);
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
     file_fmt_type output_format;

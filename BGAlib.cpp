@@ -836,6 +836,85 @@ Molecule& Molecule::Degenerate()
     return *this;
 }
 
+namespace BGA_Molecule_MateWith
+{
+    list<int> random_wt_choose(int N, const double *p, int Np)
+    {
+	list<int> retlst;
+	if (N > Np)
+	{
+	    throw(runtime_error("too many items to choose"));
+	}
+	// check trivial cases
+	else if (N == 0)
+	{
+	    return retlst;
+	}
+	else if (N == Np)
+	{
+	    for (int i = 0; i < Np; ++i)
+	    {
+		retlst.push_back(i);
+	    }
+	    return retlst;
+	}
+	if ( p+Np != find_if(p, p+Np, bind2nd(less<double>(),0.0)) )
+	{
+	    throw(runtime_error("negative choice probability"));
+	}
+	// now we need to do some real work
+	double prob[Np];
+	copy(p, p+Np, prob);
+	// integer encoding
+	int val[Np];
+	for (int i = 0; i != Np; ++i)  val[i] = i;
+	// cumulative probability
+	double cumprob[Np];
+	int Nprob = Np;
+	// main loop
+	for (int i = 0, Nprob = Np; i != N; ++i, --Nprob)
+	{
+	    // calculate cumulative probability
+	    partial_sum(prob, prob+Nprob, cumprob);
+	    // if all probabilities are 0.0, set them to equal value
+	    if (cumprob[Nprob-1] == 0.0)
+	    {
+		for (int j = 0; j != Nprob; ++j)
+		{
+		    prob[j] = 1.0;
+		    cumprob[j] = (j+1.0)/Nprob;
+		}
+	    }
+	    // otherwise we can normalize cumprob
+	    else
+	    {
+		for (double *pcp = cumprob; pcp != cumprob+Nprob; ++pcp)
+		{
+		    *pcp /= cumprob[Nprob-1];
+		}
+	    }
+	    // now let's do binary search on cumprob:
+	    double r = gsl_rng_uniform(BGA::rng);
+	    double *pcp = upper_bound(cumprob, cumprob+Nprob, r);
+	    int idx = pcp - cumprob;
+	    retlst.push_back(val[idx]);
+	    // overwrite this element with the last number
+	    prob[idx] = prob[Nprob-1];
+	    val[idx] = val[Nprob-1];
+	}
+	return retlst;
+    }
+}
+
+
+Molecule Molecule::MateWith(const Molecule& M, int trials)
+{
+}
+
+Molecule& mount(Molecule& Male)
+{
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions
 ////////////////////////////////////////////////////////////////////////
