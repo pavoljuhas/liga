@@ -120,7 +120,7 @@ public:
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
     Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
-    Molecule MateWith(Molecule Male, int trials = 500);
+    Molecule MateWith(const Molecule& Male, int trials = 500);
     double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
     double MBadnessWith(Molecule& M);	// badness estimate for merging
     // IO functions
@@ -167,7 +167,7 @@ private:
     void add_out_penalty();
     void set_mbad_abadMax();
     // MateWith helpers:
-    Molecule::mount_par Molecule::mount(Molecule Male);
+    Molecule& Molecule::mount(Molecule Male);
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
     file_fmt_type output_format;
