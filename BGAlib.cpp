@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <limits>
 #include <utility>
+#include <map>
 #include <gsl/gsl_randist.h>
 #include "BGAlib.hpp"
 
@@ -196,6 +197,14 @@ Atom_t::Atom_t(int h0, int k0, int l0, int bad0) :
     age = 1;
 }
 
+Atom_t::Atom_t(double h0, double k0, double l0, int bad0) :
+    h((int) round(h0)), k((int) round(k0)), l((int) round(l0)),
+    badness(bad0)
+{
+    badness_sum = badness;
+    age = 1;
+}
+
 int Atom_t::Badness() const
 {
     return badness;
@@ -206,27 +215,32 @@ double Atom_t::AvgBadness() const
     return (age != 0) ? 1.0*badness_sum/age : 0.0;
 }
 
-int Atom_t::IncBadness(int b)
+int Atom_t::IncBadness(int db)
 {
-    badness += b;
+    badness += db;
     badness_sum += badness;
     age++;
     return badness;
 }
 
-int Atom_t::DecBadness(int b)
+int Atom_t::DecBadness(int db)
 {
-    badness -= b;
+    badness -= db;
     badness_sum += badness;
     age++;
     return badness;
 }
 
-int Atom_t::ResetBadness()
+int Atom_t::ResetBadness(int b)
 {
-    badness = badness_sum = 0;
+    badness = badness_sum = b;
     age = 1;
     return badness;
+}
+
+bool operator==(const Atom_t& a1, const Atom_t& a2)
+{
+    return a1.h == a2.h && a1.k == a2.k && a1.l == a2.l;
 }
 
 int dist2(const Atom_t& a1, const Atom_t& a2)
@@ -246,39 +260,43 @@ bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
     return a[lhs] < value;
 }
 
+vector<int>::iterator Molecule::find_nearest_distance(const double& dfind)
+{
+    // abbreviations
+    double *ssd = &(ss->d[0]);
+    pair<double,double*> d_ssd(dfind, ssd);
+    vector<int>::iterator ilo, ihi, inear;
+    ihi = lower_bound( ssdIdxFree.begin(), ssdIdxFree.end(),
+	    d_ssd, comp_find_in_array );
+    inear = ihi;
+    if (ihi == ssdIdxFree.end())
+    {
+	--inear;
+    }
+    else if (ihi != ssdIdxFree.begin())
+    {
+	ilo = ihi;
+	--ilo;
+	if ( (dfind - ssd[*ilo]) < (ssd[*ihi] - dfind) )
+	{
+	    inear = ilo;
+	}
+    }
+    return inear;
+}
+
 Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     owner(pM), atom1(&a1), atom2(&a2)
 {
     d2 = dist2(*atom1, *atom2);
     d = sqrt(1.0*d2);
     badness = 0;
-    if (d < BGA::min_distance)
+    if (d < BGA::min_distance/owner->ss->delta)
     {
 	badness += BGA::min_distance_penalty;
     }
-    // abbreviation
-    double *ssd = &(owner->ss->d[0]);
-    double *ssd2lo = &(owner->ss->d2lo[0]);
-    double *ssd2hi = &(owner->ss->d2hi[0]);
-    pair<double,double*> d_ssd(d, ssd);
-    vector<int>::iterator ilo, ihi, inear;
-    ihi = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
-	    d_ssd, comp_find_in_array );
-    inear = ihi;
-    if (ihi == owner->ssdIdxFree.end())
-    {
-	--inear;
-    }
-    else if (ihi != owner->ssdIdxFree.begin())
-    {
-	ilo = ihi;
-	--ilo;
-	if ( (d - ssd[*ilo]) < (ssd[*ihi] - d) )
-	{
-	    inear = ihi;
-	}
-    }
-    if ((d2 < ssd2lo[*inear]) || (d2 > ssd2hi[*inear]))
+    vector<int>::iterator inear = owner->find_nearest_distance(d);
+    if ((d2 < owner->ss->d2lo[*inear]) || (d2 > owner->ss->d2hi[*inear]))
     {
 	ssdIdxUsed = -1;
 	badness++;
@@ -449,32 +467,6 @@ Molecule::~Molecule()
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
-//
-//double Molecule::dist(const int& i, const int& j) const
-//{
-////    return sqrt(1.0*dist2(i, j));
-//    return 0;
-//}
-//
-//namespace BGA_Molecule_calc_df
-//{
-//    struct d2idx_type
-//    {
-//	d2idx_type() : d2(0), i(0), j(0) { }
-//	d2idx_type(int nd2, int ni, int nj) : d2(nd2), i(ni), j(nj) { }
-//	int d2, i, j;
-//    };
-//    bool operator<(const d2idx_type& lhs, const d2idx_type& rhs)
-//    {
-//	return lhs.d2 < rhs.d2;
-//    }
-//}
-//
-//void Molecule::set_mbad_abadMax() const
-//{
-//    mbad = abad.sum();
-//    abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
-//}
 
 // recalculate everything from scratch
 void Molecule::Recalculate()
@@ -522,7 +514,7 @@ void Molecule::Recalculate()
 //    double badness_i = ABadness(i);
 //    return abadMax - badness_i;
 //}
-//
+
 int Molecule::Badness() const
 {
     return badness;
@@ -565,44 +557,6 @@ int Molecule::MaxABadness() const
     return max_abad;
 }
 
-//double Molecule::ABadnessAt(int nh, int nk) const
-//{
-//    if (NAtoms == ss->NAtoms)
-//    {
-//	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
-//	throw InvalidMolecule();
-//    }
-//    if (!cached) calc_db();
-//    valarray<int> nd2(NAtoms);
-//    for (int dhi, dki, i = 0; i < NAtoms; ++i)
-//    {
-//	dhi = h[i] - nh;
-//	dki = k[i] - nk;
-//	nd2[i] = dhi*dhi + dki*dki;
-//    }
-//    sort(&nd2[0], &nd2[nd2.size()]);
-//    double nbad = 0.0;
-//    vector<list>::iterator idif = ssdIdxFree.begin();
-//    for (int *pnd2 = &(nd2[0]); pnd2 != &(nd2[nd2.size()]); ++pnd2)
-//    {
-//	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
-//		++idif ) {};
-//	// we found a baddie if we reached the end of ssdIdxFree table
-//	// or if the current distance is smaller than d2lo
-//	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
-//	{
-//	    nbad++;
-//	    if (*pnd2 < ss->d2lo[0])  nbad += NAtoms;
-//	}
-//	// otherwise it is a matching distance
-//	else
-//	{
-//	    ++idif;
-//	}
-//    }
-//    return nbad;
-//}
-//
 //double Molecule::MBadnessWith(const Molecule& M) const
 //{
 //    if (NAtoms+M.NAtoms > ss->NAtoms)
@@ -783,7 +737,6 @@ Molecule& Molecule::Pop(const int cidx)
 
 Molecule& Molecule::Pop(const list<int>& cidx)
 {
-
     typedef list<Atom_t>::iterator LAit;
     list<LAit> atoms2pop;
     // build a list of iterators to atoms to be popped
@@ -805,51 +758,6 @@ Molecule& Molecule::Pop(const list<int>& cidx)
     }
     return *this;
 }
-
-//Molecule& Molecule::Pop(const Molecule& M, const int cidx)
-//{
-//    if (cidx < 0 || cidx >= M.NAtoms)
-//    {
-//	throw range_error("in Molecule::Pop(list<int>)");
-//    }
-//    if (this != &M)  *this = M;
-//    h.erase(h.begin() + cidx);
-//    k.erase(k.begin() + cidx);
-//    fix_size();
-//    return *this;
-//}
-//
-//Molecule& Molecule::Pop(const Molecule& M, const list<int>& cidx)
-//{
-//    if (cidx.size() == 0)
-//    {
-//	if (this != &M)  *this = M;
-//	return *this;
-//    }
-//    list<int> sidx(cidx);
-//    sidx.sort();
-//    if (sidx.front() < 0 || sidx.back() >= M.NAtoms)
-//    {
-//	throw range_error("in Molecule::Pop(list<int>)");
-//    }
-//    sidx.push_back(M.NAtoms);
-//    vector<int> h_new, k_new;
-//    int j = 0;
-//    for ( list<int>::iterator li = sidx.begin();
-//	    li != sidx.end(); ++li )
-//    {
-//	for (; j < *li; ++j)
-//	{
-//	    h_new.push_back(M.h[j]);
-//	    k_new.push_back(M.k[j]);
-//	}
-//	j = *li + 1;
-//    }
-//    h = h_new;
-//    k = k_new;
-//    fix_size();
-//    return *this;
-//}
 
 Molecule& Molecule::Clear()
 {
@@ -903,394 +811,513 @@ Molecule& Molecule::Add(Atom_t atom)
     return *this;
 }
 
-//Molecule& Molecule::Add(Molecule& M)
-//{
-//    for (int i = 0; i < M.NAtoms; ++i)
-//    {
-//	h.push_back(M.h[i]);
-//	k.push_back(M.k[i]);
-//    }
-//    fix_size();
-//    return *this;
-//}
-//
-//Molecule& Molecule::Add(int nh, int nk)
-//{
-//    h.push_back(nh);
-//    k.push_back(nk);
-//    fix_size();
-//    return *this;
-//}
-//
-//Molecule& Molecule::MoveAtomTo(int idx, int nh, int nk)
-//{
-//    if (idx >= NAtoms)
-//    {
-//	throw range_error("in Molecule::MoveAtomTo()");
-//    }
-//    UnCache();
-//    h[idx] = nh;
-//    k[idx] = nk;
-//    return *this;
-//}
-//
-//struct Molecule::badness_at
-//{
-//    badness_at() : h(0), k(0)
-//    {
-//	numeric_limits<double> double_info;
-//	abad = double_info.max();
-//    }
-//    badness_at(int nh, int nk, double nbad) :
-//	h(nh), k(nk), abad(nbad) { }
-//    int h, k;
-//    double abad;
-//};
-//bool operator<(
-//	const Molecule::badness_at& lhs, const Molecule::badness_at& rhs
-//	)
-//{
-//    return lhs.abad < rhs.abad;
-//}
-//
-//list<Molecule::badness_at> Molecule::find_good_distances(
-//	int trials, const vector<int>& ssd_idx
-//	)
-//{
-//    if (NAtoms > ss->NDist)
-//    {
-//	cerr << "E: molecule too large for finding a new position" << endl;
-//	throw InvalidMolecule();
-//    }
-//    // prepare a return list:
-//    list<badness_at> retlist;
-//    // prepare discrete RNG
-//    double afit[NAtoms];
-//    for (int i = 0; i != NAtoms; ++i)
-//    {
-//	afit[i] = AFitness(i);
-//    }
-//    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, afit);
-//    for (int i = 0; i < trials; ++i)
-//    {
-//	// pick one atom and free distance
-//	int a1 = gsl_ran_discrete(BGA::rng, table);
-//	int idx = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
-//	double radius = ss->d[ssd_idx[idx]];
-//	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
-//	int nh = h[a1] + (int)round(radius * cos(phi));
-//	int nk = k[a1] + (int)round(radius * sin(phi));
-//	retlist.push_back( badness_at(nh, nk, ABadnessAt(nh, nk)) );
-//    }
-//    gsl_ran_discrete_free(table);
-//    return retlist;
-//}
-//
-//list<Molecule::badness_at> Molecule::find_good_triangles(
-//	int trials, const vector<int>& ssd_idx
-//	)
-//{
-//    // try to generate 2 triangles with good distances, this may not always
-//    // work, so this returns a list, which is either empty, or has even
-//    // number of entries
-//    if (NAtoms > ss->NDist)
-//    {
-//	cerr << "E: molecule too large for finding a new position" << endl;
-//	throw InvalidMolecule();
-//    }
-//    else if (NAtoms < 2)
-//    {
-//	cerr << "E: molecule too small, triangulation not possible" << endl;
-//	throw InvalidMolecule();
-//    }
-//    // prepare a return list:
-//    list<badness_at> retlist;
-//    // prepare discrete RNG
-//    double afit[NAtoms];
-//    for (int i = 0; i != NAtoms; ++i)
-//    {
-//	afit[i] = AFitness(i);
-//    }
-//    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, afit);
-//    for (int nt = 0; nt < trials; ++nt)
-//    {
-//	// pick first atom and free distance
-//	int a1 = gsl_ran_discrete(BGA::rng, table);
-//	int a2 = gsl_ran_discrete(BGA::rng, table);
-//	for (int i = 0; i < 5 && a1 == a2; ++i)
-//	{
-//	    a2 = gsl_ran_discrete(BGA::rng, table);
-//	}
-//	if (a1 == a2)
-//	{
-//	    a2 = (a1 + 1) % NAtoms;
-//	}
-//	int idf1 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
-//	int idf2 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size()-1) + 1;
-//	idf2 = (idf2 + idf1) % ssd_idx.size();
-//	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
-//	double r13 = ss->d[ssd_idx[idf1]];
-//	double r23 = ss->d[ssd_idx[idf2]];
-//	double r12 = dist(a1, a2);
-//	// is triangle [a1 a2 a3] possible?
-//	if (r12 < 1.0 || r13 + r23 < r12 || fabs(r13 - r23) > r12) continue;
-//	// here we can construct 2 triangles
-//	double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
-//	double perpdir[2] = { -longdir[1], 	  longdir[0] };
-//	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
-//	double xperp = sqrt(r13*r13 - xlong*xlong);
-//	int nh1 = h[a1] + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
-//	int nk1 = k[a1] + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
-//	// store the result
-//	badness_at res1(nh1, nk1, ABadnessAt(nh1, nk1));
-//	retlist.push_back(res1);
-//	// jump out if it is a good location or if we did enough trials
-//	/* debug:
-//	   cout << nt << " a1 = " << a1 << " a2 = " << a2 << endl;
-//	   cout << nt << " res1.abad = " << res1.abad << endl;
-//	   cout << nt << " res1.h = " << res1.h <<
-//	       " res1.k = " << res1.k << endl;
-//	   */
-//	if (res1.abad == 0.0 || ++nt == trials)  break;
-//	// 2nd triangle:
-//	int nh2 = h[a1] + (int) round(xlong*longdir[0] - xperp*perpdir[0]);
-//	int nk2 = k[a1] + (int) round(xlong*longdir[1] - xperp*perpdir[1]);
-//	// store the result
-//	badness_at res2(nh2, nk2, ABadnessAt(nh2, nk2));
-//	retlist.push_back(res2);
-//	/* debug:
-//	   cout << nt << " res2.abad = " << res2.abad << endl;
-//	   cout << nt << " res2.h = " << res2.h <<
-//	       " res2.k = " << res2.k << endl;
-//	   cout << nt <<
-//	   " longdir=[" << longdir[0] << ' ' << longdir[1] << "]," <<
-//	   " perpdir=[" << perpdir[0] << ' ' << perpdir[1] << "]," <<
-//	   " xlong=" << xlong << "," <<
-//	   " xperp=" << xperp << "," <<
-//	   " r12=" << r12 << "," <<
-//	   " r13=" << r13 << "," <<
-//	   " r23=" << r23 << "," <<
-//	   endl;
-//	   */
-//	if (res2.abad == 0.0 || ++nt == trials)  break;
-//    }
-//    gsl_ran_discrete_free(table);
-//    return retlist;
-//}
-//
-//list<Molecule::badness_at> Molecule::find_good_triangles2(
-//	int trials, const vector<int>& ssd_idx
-//	)
-//{
-//    // try to generate 2 triangles with good distances, this may not always
-//    // work, so this returns a list, which is either empty, or has even
-//    // number of entries
-//    if (NAtoms > ss->NDist)
-//    {
-//	cerr << "E: molecule too large for finding a new position" << endl;
-//	throw InvalidMolecule();
-//    }
-//    else if (NAtoms < 2)
-//    {
-//	cerr << "E: molecule too small, triangulation not possible" << endl;
-//	throw InvalidMolecule();
-//    }
-//    // prepare a return list:
-//    list<badness_at> retlist;
-//    for (int nt = 0; nt < trials; ++nt)
-//    {
-//	// choose 2 free indices
-//	int idf1 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
-//	int idf2 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size()-1) + 1;
-//	idf2 = (idf2 + idf1) % ssd_idx.size();
-//	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
-//	double r13 = ss->d[ssd_idx[idf1]];
-//	double r23 = ss->d[ssd_idx[idf2]];
-//	// loop over all atom pairs
-//	for (int a1 = 0; a1 < NAtoms; ++a1)
-//	{
-//	    for (int a2 = a1+1; a2 < NAtoms; ++a2)
-//	    {
-//		double r12 = dist(a1, a2);
-//		// is triangle [a1 a2 a3] possible?
-//		if (r12 < 1.0 || r13 + r23+0.5 < r12 || fabs(r13 - r23) > r12+0.5)
-//		    continue;
-//		// here we can construct 2 triangles
-//		double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
-//		double perpdir[2] = { -longdir[1], 	  longdir[0] };
-//		double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
-//		double xperp2 = r13*r13 - xlong*xlong;
-//		double xperp = (xperp2 > 0.0) ? sqrt(r13*r13 - xlong*xlong) : 0;
-//		int nh1 = h[a1] + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
-//		int nk1 = k[a1] + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
-//		// store the result
-//		badness_at res1(nh1, nk1, abad[a1]+abad[a2]+ABadnessAt(nh1, nk1));
-//		retlist.push_back(res1);
-//		// jump out if it is a good location or if we did enough trials
-//		/* debug:
-//		   cout << nt << " a1 = " << a1 << " a2 = " << a2 << endl;
-//		   cout << nt << " res1.abad = " << res1.abad << endl;
-//		   cout << nt << " res1.h = " << res1.h <<
-//		   " res1.k = " << res1.k << endl;
-//		   */
-//		// 2nd triangle:
-//		int nh2 = h[a1] + (int) round(xlong*longdir[0] - xperp*perpdir[0]);
-//		int nk2 = k[a1] + (int) round(xlong*longdir[1] - xperp*perpdir[1]);
-//		// store the result
-//		badness_at res2(nh2, nk2, abad[a1]+abad[a2]+ABadnessAt(nh2, nk2));
-//		retlist.push_back(res2);
-//		/* debug:
-//		   cout << nt << " res2.abad = " << res2.abad << endl;
-//		   cout << nt << " res2.h = " << res2.h <<
-//		   " res2.k = " << res2.k << endl;
-//		   cout << nt <<
-//		   " longdir=[" << longdir[0] << ' ' << longdir[1] << "]," <<
-//		   " perpdir=[" << perpdir[0] << ' ' << perpdir[1] << "]," <<
-//		   " xlong=" << xlong << "," <<
-//		   " xperp=" << xperp << "," <<
-//		   " r12=" << r12 << "," <<
-//		   " r13=" << r13 << "," <<
-//		   " r23=" << r23 << "," <<
-//		   endl;
-//		   */
-//	    }
-//	}
-//    }
-//    return retlist;
-//}
-//
-//Molecule& Molecule::Evolve(int trials)
-//{
-//    if (NAtoms == ss->NAtoms)
-//    {
-//	cerr << "E: full-sized molecule cannot Evolve()" << endl;
-//	throw InvalidMolecule();
-//    }
-//    // evolution is trivial for empty or 1-atom molecule
-//    switch (NAtoms)
-//    {
-//	case 0:
-//	    Add(0, 0);
-//	    return *this;
-//	case 1:
-//	    // make sure ssdIdxFree is updated
-//	    if (!cached) calc_db();
-//	    list<badness_at> ba = find_good_distances(1, ssdIdxFree);
-//	    Add(ba.front().h, ba.front().k);
-//	    Center();
-//	    return *this;
-//    }
-//    // make sure ssdIdxFree is updated
-//    if (!cached) calc_db();
-//    // here we can be sure that NAtoms >= 2
-//    list<badness_at> trials_log = find_good_distances(trials/3, ssdIdxFree);
-//    // if we did not find a good place, let's try triangulation
-//    if (trials_log.back().abad != 0.0)
-//    {
-//	list<badness_at> fgt =
-//	    find_good_triangles2(1, ssdIdxFree);
-////	    find_good_triangles(trials-trials_log.size(), ssdIdxFree);
-//	trials_log.insert(trials_log.end(), fgt.begin(), fgt.end());
-//    }
-//    // purge trials_log to minimal elements
-//    badness_at best = *min_element(trials_log.begin(), trials_log.end());
-//    trials_log.remove_if( bind1st(less<badness_at>(),best) );
-//    int idx = gsl_rng_uniform_int(BGA::rng, trials_log.size());
-//    list<badness_at>::iterator lbi = trials_log.begin(); advance(lbi, idx);
-//    best = *lbi;
-//    Add(best.h, best.k);
-//    Center();
-//    return *this;
-//}
-//
-//namespace BGA_Molecule_MateWith
-//{
-//    list<int> random_wt_choose(int N, const double *p, int Np)
-//    {
-//	list<int> retlst;
-//	if (N > Np)
-//	{
-//	    throw(range_error("too many items to choose"));
-//	}
-//	// check trivial cases
-//	else if (N == 0)
-//	{
-//	    return retlst;
-//	}
-//	else if (N == Np)
-//	{
-//	    for (int i = 0; i < Np; ++i)
-//	    {
-//		retlst.push_back(i);
-//	    }
-//	    return retlst;
-//	}
-//	if ( p+Np != find_if(p, p+Np, bind2nd(less<double>(),0.0)) )
-//	{
-//	    throw(runtime_error("negative choice probability"));
-//	}
-//	// now we need to do some real work
-//	double prob[Np];
-//	copy(p, p+Np, prob);
-//	// integer encoding
-//	int val[Np];
-//	for (int i = 0; i != Np; ++i)  val[i] = i;
-//	// cumulative probability
-//	double cumprob[Np];
-//	int Nprob = Np;
-//	// main loop
-//	for (int i = 0, Nprob = Np; i != N; ++i, --Nprob)
-//	{
-//	    // calculate cumulative probability
-//	    partial_sum(prob, prob+Nprob, cumprob);
-//	    // if all probabilities are 0.0, set them to equal value
-//	    if (cumprob[Nprob-1] == 0.0)
-//	    {
-//		for (int j = 0; j != Nprob; ++j)
-//		{
-//		    prob[j] = 1.0;
-//		    cumprob[j] = (j+1.0)/Nprob;
-//		}
-//	    }
-//	    // otherwise we can normalize cumprob
-//	    else
-//	    {
-//		for (double *pcp = cumprob; pcp != cumprob+Nprob; ++pcp)
-//		{
-//		    *pcp /= cumprob[Nprob-1];
-//		}
-//	    }
-//	    // now let's do binary search on cumprob:
-//	    double r = gsl_rng_uniform(BGA::rng);
-//	    double *pcp = upper_bound(cumprob, cumprob+Nprob, r);
-//	    int idx = pcp - cumprob;
-//	    retlst.push_back(val[idx]);
-//	    // overwrite this element with the last number
-//	    prob[idx] = prob[Nprob-1];
-//	    val[idx] = val[Nprob-1];
-//	}
-//	return retlst;
-//    }
-//
-//    bool compare_MFitness(Molecule& lhs, Molecule& rhs)
-//    {
-//	return lhs.MFitness() < rhs.MFitness();
-//    }
-//}
-//
-//Molecule& Molecule::Degenerate(int Npop)
-//{
-//    using namespace BGA_Molecule_MateWith;
-//    Npop = min(NAtoms, Npop);
-//    if (Npop == 0)  return *this;
-//    // make sure valarray abad is updated
-//    if (!cached) calc_db();
-//    list<int> ipop = random_wt_choose(Npop, &(abad[0]), NAtoms);
-//    Pop(ipop);
-//    Center();
-//    return *this;
-//}
-//
+void Molecule::calc_test_badness(Atom_t& ta)
+{
+    if (NAtoms() == max_NAtoms)
+    {
+	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
+	throw InvalidMolecule();
+    }
+    int tbad = 0;
+    typedef vector<int>::iterator VIit;
+    list<int> used_indices;
+    list<VIit> erased_positions;
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	int td2 = dist2(*ai, ta);
+	double td = sqrt(td2+0.0);
+	if (td < BGA::min_distance/ss->delta)
+	{
+	    tbad += BGA::min_distance_penalty;
+	}
+	VIit inear = find_nearest_distance(td);
+	if ((td2 < ss->d2lo[*inear]) || (td2 > ss->d2hi[*inear]))
+	{
+	    tbad++;
+	}
+	else
+	{
+	    used_indices.push_back(*inear);
+	    erased_positions.push_back(ssdIdxFree.erase(inear));
+	}
+    }
+    // now restore ssdIdxFree to its original state:
+    list<int>::reverse_iterator ridx = used_indices.rbegin();
+    list<VIit>::reverse_iterator rpos = erased_positions.rbegin();
+    for (; ridx != used_indices.rend(); ++ridx, ++rpos)
+    {
+	ssdIdxFree.insert(*rpos, *ridx);
+    }
+    ta.ResetBadness(tbad);
+}
+
+int Molecule::push_good_distances(
+	vector<Atom_t>& vta, double *afit, int ntrials
+	)
+{
+    // prepare discrete generator
+    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms(), afit);
+    for (int nt = 0; nt < ntrials; ++nt)
+    {
+	// pick a random direction
+	double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
+	double z = 2*gsl_rng_uniform(BGA::rng) - 1.0;
+	double w = sqrt(1 - z*z);
+	double rdir[3];
+	rdir[0] = w*cos(phi);
+	rdir[1] = w*sin(phi);
+	rdir[2] = z;
+	// pick one atom and free distance
+	int aidx = gsl_ran_discrete(BGA::rng, table);
+	int didx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
+	double radius = ss->d[ssdIdxFree[didx]];
+	Atom_t& a1 = *list_at(atoms, aidx);
+	int nh = a1.h + (int)round(rdir[0]*radius);
+	int nk = a1.k + (int)round(rdir[1]*radius);
+	int nl = a1.l + (int)round(rdir[2]*radius);
+	Atom_t ad1(nh, nk, nl);
+	calc_test_badness(ad1);
+	ad1.IncBadness(a1.Badness());
+	vta.push_back(ad1);
+    }
+    gsl_ran_discrete_free(table);
+    return ntrials;
+}
+
+int Molecule::push_good_triangles(
+	vector<Atom_t>& vta, double *afit, int ntrials
+	)
+{
+    // generate randomly oriented triangles
+    if (NAtoms() == max_NAtoms)
+    {
+	cerr << "E: molecule too large for finding a new position" << endl;
+	throw InvalidMolecule();
+    }
+    else if (NAtoms() < 2)
+    {
+	cerr << "E: molecule too small, triangulation not possible" << endl;
+	throw InvalidMolecule();
+    }
+    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms(), afit);
+    int push_count = 0;
+    for (int nt = 0; nt < ntrials; ++nt)
+    {
+	// pick first atom and free distance
+	list<int> aidx = random_wt_choose(2, afit, NAtoms());
+	list<int>::iterator aidxit = aidx.begin();
+	Atom_t& a1 = *list_at(atoms, *(aidxit++)); 
+	Atom_t& a2 = *list_at(atoms, *(aidxit++)); 
+	int idf1 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
+	int idf2 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size()-1) + 1;
+	idf2 = (idf2 + idf1) % ssdIdxFree.size();
+	double r13 = ss->d[ssdIdxFree[idf1]];
+	double r23 = ss->d[ssdIdxFree[idf2]];
+	double r12 = dist(a1, a2);
+	// is triangle base reasonably large?
+	if (r12 < 1.0)
+	    continue;
+	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
+	double xperp2 = r13*r13 - xlong*xlong;
+	double xperp;
+	if (xperp2 > 0.0)
+	    xperp = sqrt(xperp2);
+	else if (xperp2 > -0.25)
+	    xperp = 0.0;
+	else
+	    continue;
+	// direction along triangle base:
+	double longdir[3] = {
+	    (a2.h-a1.h)/r12,
+	    (a2.k-a1.k)/r12,
+	    (a2.l-a1.l)/r12 };
+	// generate random direction in the plane perpendicular to longdir
+	double pdir1[3] = { -longdir[1],  longdir[0],  0.0 };
+	if (pdir1[0] == 0 && pdir1[1] == 0)
+	    pdir1[0] = 1.0;
+	double norm_pdir1 =
+	    sqrt(pdir1[0]*pdir1[0] + pdir1[1]*pdir1[1] + pdir1[2]*pdir1[2]);
+	pdir1[0] /= norm_pdir1; pdir1[1] /= norm_pdir1; pdir1[2] /= norm_pdir1;
+	double pdir2[3] = {
+	    longdir[1]*pdir1[2]-longdir[2]*pdir1[1],
+	    longdir[2]*pdir1[0]-longdir[0]*pdir1[2],
+	    longdir[0]*pdir1[1]-longdir[1]*pdir1[0] };
+	double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
+	double perpdir[3] = {
+	    cos(phi)*pdir1[0]+sin(phi)*pdir2[0],
+	    cos(phi)*pdir1[1]+sin(phi)*pdir2[1],
+	    cos(phi)*pdir1[2]+sin(phi)*pdir2[2] };
+	// prepare new atom
+	int nh = a1.h + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
+	int nk = a1.k + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
+	int nl = a1.l + (int) round(xlong*longdir[2] + xperp*perpdir[2]);
+	Atom_t ad2(nh, nk, nl);
+	// is ad2 already in vta?
+	vector<Atom_t>::reverse_iterator rvtadupend = 
+	    vta.rbegin()+min((int)vta.size(), 100);
+	if (find(vta.rbegin(), rvtadupend, ad2) != rvtadupend)
+	    continue;
+	calc_test_badness(ad2);
+	ad2.IncBadness(a1.Badness() + a2.Badness());
+	vta.push_back(ad2);
+	push_count++;
+    }
+    gsl_ran_discrete_free(table);
+    return push_count;
+}
+
+int Molecule::push_good_pyramids(
+	vector<Atom_t>& vta, double *afit, int ntrials
+	)
+{
+    if (NAtoms() == max_NAtoms)
+    {
+	cerr << "E: molecule too large for finding a new position" << endl;
+	throw InvalidMolecule();
+    }
+    else if (NAtoms() < 3)
+    {
+	cerr << "E: molecule too small, cannot construct pyramid" << endl;
+	throw InvalidMolecule();
+    }
+    int push_count = 0;
+    for (int nt = 0; nt < ntrials;)
+    {
+	// pick 3 base atoms
+	list<int> aidx = random_wt_choose(3, afit, NAtoms());
+	list<int>::iterator aidxit = aidx.begin();
+	Atom_t& a1 = *list_at(atoms, *(aidxit++)); 
+	Atom_t& a2 = *list_at(atoms, *(aidxit++)); 
+	Atom_t& a3 = *list_at(atoms, *(aidxit++)); 
+	int base_badness = a1.Badness()+a2.Badness()+a3.Badness();
+	// pick 3 vertex distances
+	list<int> didx = random_choose_few(3, ssdIdxFree.size());
+	list<int>::iterator didxit = didx.begin();
+	double dv1 = ss->d[ssdIdxFree[*(didxit++)]];
+	double dv2 = ss->d[ssdIdxFree[*(didxit++)]];
+	double dv3 = ss->d[ssdIdxFree[*(didxit++)]];
+	double dvperm[6][3] = {
+	    {dv1, dv2, dv3},
+	    {dv1, dv3, dv2},
+	    {dv2, dv1, dv3},
+	    {dv2, dv3, dv1},
+	    {dv3, dv1, dv2},
+	    {dv3, dv2, dv1} };
+	for (int iperm = 0; iperm < 6; ++iperm)
+	{
+	    ++nt;
+	    double r14 = dvperm[iperm][0];
+	    double r24 = dvperm[iperm][1];
+	    double r34 = dvperm[iperm][2];
+	    // uvi is a unit vector in a1a2 direction
+	    double uvi_val[3] = { a2.h-a1.h, a2.k-a1.k, a2.l-a1.l };
+	    valarray<double> uvi(uvi_val, 3);
+	    double r12 = vdnorm(uvi);
+	    if (r12 < 1.0)
+		continue;
+	    uvi /= r12;
+	    // v13 is a1a3 vector
+	    double v13_val[3] = { a3.h-a1.h, a3.k-a1.k, a3.l-a1.l };
+	    valarray<double> v13(v13_val, 3);
+	    // uvj lies in a1a2a3 plane and is perpendicular to uvi
+	    valarray<double> uvj = v13;
+	    uvj -= uvi*vddot(uvi, uvj);
+	    double nm_uvj = vdnorm(uvj);
+	    if (nm_uvj < 1.0)
+		continue;
+	    uvj /= nm_uvj;
+	    // uvk is a unit vector perpendicular to a1a2a3 plane
+	    valarray<double> uvk = vdcross(uvi, uvj);
+	    double xP1 = -0.5/(r12)*(r12*r12 + r14*r14 - r24*r24);
+	    // Pn are coordinates in pyramid coordinate system
+	    valarray<double> P1(3);
+	    P1[0] = xP1; P1[1] = P1[2] = 0.0;
+	    // vT is translation from pyramid to normal system
+	    valarray<double> vT(3);
+	    vT[0] = a1.h - xP1*uvi[0];
+	    vT[1] = a1.k - xP1*uvi[1];
+	    vT[2] = a1.l - xP1*uvi[2];
+	    // obtain coordinates of P3
+	    valarray<double> P3 = P1;
+	    P3[0] += vddot(uvi, v13);
+	    P3[1] += vddot(uvj, v13);
+	    P3[2] = 0.0;
+	    double xP3 = P3[0];
+	    double yP3 = P3[1];
+	    // find pyramid vertices
+	    valarray<double> P4(0.0, 3);
+	    double h2 = r14*r14 - xP1*xP1;
+	    // prepare stop marker for duplicate search
+	    vector<Atom_t>::reverse_iterator rvtadupend;
+	    // does P4 belong to a1a2 line?
+	    if (fabs(h2) < 0.25)
+	    {
+		// is vertex on a1a2
+		if (fabs(vdnorm(P3)) - r14 > 0.25)
+		    continue;
+		P4 = vT;
+		Atom_t ad3(P4[0], P4[1], P4[2]);
+		// is ad3 already in vta?
+		rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
+		if (find(vta.rbegin(), rvtadupend, ad3) != rvtadupend)
+		    continue;
+		calc_test_badness(ad3);
+		ad3.IncBadness(base_badness);
+		vta.push_back(ad3);
+		push_count++;
+		continue;
+	    }
+	    else if (h2 < 0)
+	    {
+		continue;
+	    }
+	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r34*r34);
+	    double z2P4 = h2 - yP4*yP4;
+	    // does P4 belong to a1a2a3 plane?
+	    if (fabs(z2P4) < 0.25)
+	    {
+		P4 = yP4*uvj + vT;
+		Atom_t ad3(P4[0], P4[1], P4[2]);
+		// is ad3 already in vta?
+		rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
+		if (find(vta.rbegin(), rvtadupend, ad3) != rvtadupend)
+		    continue;
+		calc_test_badness(ad3);
+		ad3.IncBadness(base_badness);
+		vta.push_back(ad3);
+		push_count++;
+		continue;
+	    }
+	    else if (z2P4 < 0)
+	    {
+		continue;
+	    }
+	    // here we can construct 2 pyramids
+	    double zP4 = sqrt(z2P4);
+	    // top one
+	    P4 = yP4*uvj + zP4*uvk + vT;
+	    Atom_t ad3top(P4[0], P4[1], P4[2]);
+	    // is ad3top already in vta?
+	    rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
+	    if (find(vta.rbegin(), rvtadupend, ad3top) != rvtadupend)
+		continue;
+	    calc_test_badness(ad3top);
+	    ad3top.IncBadness(base_badness);
+	    vta.push_back(ad3top);
+	    push_count++;
+	    // and bottom one
+	    P4 = yP4*uvj - zP4*uvk + vT;
+	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
+	    // is ad3bottom already in vta?
+	    rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
+	    if (find(vta.rbegin(), rvtadupend, ad3bottom) != rvtadupend)
+		continue;
+	    calc_test_badness(ad3bottom);
+	    ad3bottom.IncBadness(base_badness);
+	    vta.push_back(ad3bottom);
+	    push_count++;
+	}
+    }
+    return push_count;
+}
+
+
+Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
+{
+    if (NAtoms() == max_NAtoms)
+    {
+	cerr << "E: full-sized molecule cannot Evolve()" << endl;
+	throw InvalidMolecule();
+    }
+    vector<Atom_t> vta;
+    // evolution is trivial for empty or 1-atom molecule
+    switch (NAtoms())
+    {
+	case 0:
+	    Add(0, 0, 0);
+	    return *this;
+	case 1:
+	    double afit1 = 1.0;
+	    push_good_distances(vta, &afit1, 1);
+	    Add(vta[0]);
+	    Center();
+	    return *this;
+    }
+    // otherwise we need to build array of atom fitnesses
+    double afit[NAtoms()];
+    double *pf = afit;
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pf)
+    {
+	*pf = MaxABadness() - ai->Badness();
+    }
+    // and push appropriate numbers of test atoms
+    // here NAtoms() >= 2
+    push_good_distances(vta, afit, ntd1);
+    push_good_triangles(vta, afit, ntd2);
+    if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
+    // select among the minimal elements of vta
+    int min_badness = min_element(vta.begin(), vta.end(),
+	    comp_Atom_Badness)-> Badness();
+    typedef vector<Atom_t>::iterator VAit;
+    vector<VAit> min_iterators;
+    for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
+    {
+	if (ai->Badness() == min_badness)
+	    min_iterators.push_back(ai);
+    }
+    int itidx = gsl_rng_uniform_int(BGA::rng, min_iterators.size());
+    Atom_t& best = *min_iterators[itidx];
+    Add(best);
+    if (NAtoms() < 40)    Center();
+    return *this;
+}
+
+Molecule& Molecule::Degenerate(int Npop)
+{
+    Npop = min(NAtoms(), Npop);
+    if (Npop == 0)  return *this;
+    // build array of atom badnesses
+    double abad[NAtoms()];
+    double *pb = abad;
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pb)
+    {
+	*pb = ai->Badness();
+    }
+    // generate list of atoms to pop
+    list<int> ipop = random_wt_choose(Npop, abad, NAtoms());
+    Pop(ipop);
+    if (NAtoms() < 40)    Center();
+    return *this;
+}
+
+list<int> random_choose_few(int K, int Np)
+{
+    list<int> lst;
+    if (K > Np)
+    {
+	cerr << "random_wt_choose(): too many items to choose" << endl;
+	throw range_error("too many items to choose");
+    }
+    // check trivial case
+    else if (K == 0)
+    {
+	return lst;
+    }
+    int N = Np;
+    map<int,int> tr;
+    for (int i = 0; i < K; ++i, --N)
+    {
+	int k = gsl_rng_uniform_int(BGA::rng, N);
+	for (int c = 0;  tr.count(k) == 1;  k = tr[k], ++c)
+	{
+	    if (!(c < Np))
+	    {
+		cerr << "random_choose_few(): too many translations" << endl;
+		throw runtime_error("too many translations");
+	    }
+	}
+	lst.push_back(k);
+	tr[k] = N-1;
+    }
+    return lst;
+}
+
+list<int> random_wt_choose(int K, const double *p, int Np)
+{
+    list<int> lst;
+    if (K > Np)
+    {
+	cerr << "random_wt_choose(): too many items to choose" << endl;
+	throw range_error("too many items to choose");
+    }
+    // check trivial case
+    else if (K == 0)
+    {
+	return lst;
+    }
+    if ( p+Np != find_if(p, p+Np, bind2nd(less<double>(),0.0)) )
+    {
+	cerr << "random_wt_choose(): negative choice probability" << endl;
+	throw runtime_error("negative choice probability");
+    }
+    // now we need to do some real work
+    double prob[Np];
+    copy(p, p+Np, prob);
+    // integer encoding
+    int val[Np];
+    for (int i = 0; i != Np; ++i)  val[i] = i;
+    // cumulative probability
+    double cumprob[Np];
+    int Nprob = Np;
+    // main loop
+    for (int i = 0, Nprob = Np; i != K; ++i, --Nprob)
+    {
+	// calculate cumulative probability
+	partial_sum(prob, prob+Nprob, cumprob);
+	// if all probabilities are 0.0, set them to equal value
+	if (cumprob[Nprob-1] == 0.0)
+	{
+	    for (int j = 0; j != Nprob; ++j)
+	    {
+		prob[j] = 1.0;
+		cumprob[j] = (j+1.0)/Nprob;
+	    }
+	}
+	// otherwise we can normalize cumprob
+	else
+	{
+	    for (double *pcp = cumprob; pcp != cumprob+Nprob; ++pcp)
+	    {
+		*pcp /= cumprob[Nprob-1];
+	    }
+	}
+	// now let's do binary search on cumprob:
+	double r = gsl_rng_uniform(BGA::rng);
+	double *pcp = upper_bound(cumprob, cumprob+Nprob, r);
+	int idx = pcp - cumprob;
+	lst.push_back(val[idx]);
+	// overwrite this element with the last number
+	prob[idx] = prob[Nprob-1];
+	val[idx] = val[Nprob-1];
+    }
+    return lst;
+}
+
+double vdnorm(const valarray<double>& v)
+{
+    double s2 = 0.0;
+    for (const double *pv = &v[0]; pv != &v[v.size()]; ++pv)
+	s2 += (*pv)*(*pv);
+    return sqrt(s2);
+}
+
+double vddot(const valarray<double>& v1, const valarray<double>& v2)
+{
+    // assuming v1.size() == v2.size()
+    double dotprod = 0.0;
+    const double *pv1 = &v1[0], *pv2 = &v2[0];
+    for (; pv1 != &v1[v1.size()]; ++pv1, ++pv2)
+	dotprod += (*pv1)*(*pv2);
+    return dotprod;
+}
+
+valarray<double> vdcross(const valarray<double>& v1, const valarray<double>& v2)
+{
+    if (v1.size() != 3 || v2.size() != 3)
+    {
+	cerr << "vdcross(): invalid valarray size" << endl;
+	throw runtime_error("vdcross(): invalid valarray size");
+    }
+    valarray<double> cross(3);
+    cross[0] = v1[1]*v2[2] - v1[2]*v2[1];
+    cross[1] = v1[2]*v2[0] - v1[0]*v2[2];
+    cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
+    return cross;
+}
+
 //Molecule Molecule::MateWith(const Molecule& Male, int trials)
 //{
 //    using namespace BGA_Molecule_MateWith;
@@ -1771,7 +1798,7 @@ void Molecule::PrintFitness()
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	cout << ' ' << mab - ai->Badness();
+	cout << ' ' << MaxABadness() - ai->Badness();
 	if (!marked && ai->Badness() == mab)
 	{
 	    cout << '*';

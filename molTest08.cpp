@@ -18,14 +18,14 @@ int main(int argc, char *argv[])
     // parameters
     const int logsize = 10;
     const double pemin = 0.25;
-    const double pemax = 0.95;
+    const double pemax = 0.9;
     const double pallway = 0.01;
     const double avgmb = 0.05;
     ////////////////////////////////////////////////////////////////////////
     if (argc == 1)
     {
 	cerr << "usage: " <<
-	    "molTest08 distance_file.dss [snapshot_file.dxy]" << endl;
+	    "molTest08 distance_file.dss [seed] [snapshot_file.xyz]" << endl;
 	return EXIT_SUCCESS;
     }
     // here argc > 1
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     SandSphere* ss;
     try
     {
-	ss = new SandSphere(500, distance_file);
+	ss = new SandSphere(512, distance_file);
     }
     catch (IOError)
     {
@@ -43,7 +43,14 @@ int main(int argc, char *argv[])
     char *snapshot_file = NULL;
     if (argc > 2 && strlen(argv[2]) > 0)
     {
-	snapshot_file = argv[2];
+	unsigned long int seed;
+	seed = atoi(argv[2]);
+	cout << "setting seed to " << seed << endl;
+	gsl_rng_set(BGA::rng, seed);
+    }
+    if (argc > 3 && strlen(argv[3]) > 0)
+    {
+	snapshot_file = argv[3];
 	cout << "molecule snapshots go to " << snapshot_file << endl;
     }
 
@@ -54,7 +61,7 @@ int main(int argc, char *argv[])
     valarray<int> improved(1, logsize);
 
     Molecule mol(ss);
-
+    int fileno = 0;
 
     int maxatoms = 0;
     bool go_all_way = false;
@@ -62,12 +69,12 @@ int main(int argc, char *argv[])
     {
 	// calculate pe
 	double pe, impr_rate;
-	if (mol.NAtoms == ss->NAtoms || mol.MBadness() > 10*mol.NAtoms)
+	if (mol.NAtoms() == ss->NAtoms || mol.Badness() > 10*mol.NAtoms())
 	{
 	    pe = 0.0;
 	    go_all_way = false;
 	}
-	else if (mol.NAtoms == 0 || go_all_way)
+	else if (mol.NAtoms() == 0 || go_all_way)
 	{
 	    pe = 1.0;
 	}
@@ -75,51 +82,60 @@ int main(int argc, char *argv[])
 	{
 	    impr_rate = 1.0*improved.sum()/improved.size();
 	    pe = impr_rate*(pemax-pemin)+pemin;
-	    if (impr_rate <= 0.2 && pallway > gsl_rng_uniform(BGA::rng))
+	    if (impr_rate >= 0.66 && pallway > gsl_rng_uniform(BGA::rng))
 		go_all_way = true;
+	    if (mol.Badness() == 0)
+		pe = pemax;
 	}
 	cout << trial;
 	if (pe > gsl_rng_uniform(BGA::rng))
 	{
-	    mol.Evolve();
-	    cout << "  Evolve()" << "  NAtoms = " << mol.NAtoms << endl;
+	    mol.Evolve(10,20,1000);
+	    cout << "  Evolve()" << "  NAtoms = " << mol.NAtoms() << endl;
 	}
 	else
 	{
 	    int Npop = 0;
-	    for (int i = 0; i < mol.NAtoms; ++i) Npop += (mol.ABadness(i)>0);
-	    Npop = (int) ceil( (mol.MBadness()/mol.NAtoms + Npop)/2.0 );
+	    Npop = (int) ceil(1.0*mol.Badness() / mol.NAtoms());
 	    Npop = min(Npop, 5);
 	    if (Npop > 1)
 		Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop-1);
 	    mol.Degenerate(Npop);
-	    cout << "  Degenerate(" << Npop << ")  NAtoms = " << mol.NAtoms <<  endl;
+	    cout << "  Degenerate(" << Npop << ")  NAtoms = " << mol.NAtoms() <<  endl;
 	}
 	mol.PrintBadness();
-	if (mol.NAtoms == ss->NAtoms)
-	    cout << "mol.MBadness()/NAtoms = " << mol.MBadness()/ss->NAtoms << endl;
+	if (mol.NAtoms() == ss->NAtoms)
+	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/ss->NAtoms << endl;
 	// update lastMBadness and improved
 	int ilog = trial % logsize;
-	if (mol.MBadness()<=lastMBadness[mol.NAtoms-1] || mol.MBadness() == 0.0)
+	if (mol.Badness()<=lastMBadness[mol.NAtoms()-1] || mol.Badness() == 0.0)
 	{
-	    if (mol.NAtoms > maxatoms)
+	    if (mol.NAtoms() > maxatoms)
 	    {
-		best_largest = lastMBadness[mol.NAtoms-1];
-		maxatoms = mol.NAtoms;
+		best_largest = lastMBadness[mol.NAtoms()-1];
+		maxatoms = mol.NAtoms();
 	    }
-	    lastMBadness[mol.NAtoms-1] = mol.MBadness();
+	    lastMBadness[mol.NAtoms()-1] = mol.Badness();
 	    improved[ilog] = 1;
-	    if (snapshot_file != NULL && mol.NAtoms == maxatoms &&
-		    best_largest >= mol.MBadness())
+	    /*
+	    if (snapshot_file != NULL && mol.NAtoms() == maxatoms &&
+		    best_largest >= mol.Badness())
 	    {
-		maxatoms = mol.NAtoms;
-		best_largest = mol.MBadness();
+		best_largest = mol.Badness();
 		cout << "saving best molecule" << endl;
-		mol.WriteXY(snapshot_file);
+		mol.WriteXYZ(snapshot_file);
 	    }
-	    if (mol.NAtoms == ss->NAtoms)
+	    */
+	    if (snapshot_file != NULL && improved[ilog])
 	    {
-		if (mol.MBadness() < avgmb*ss->NAtoms)
+		cout << "saving best molecule" << endl;
+		char fname[255];
+		sprintf(fname, "%s%04i", snapshot_file, fileno);
+		mol.WriteAtomEye(fname);
+	    }
+	    if (mol.NAtoms() == ss->NAtoms)
+	    {
+		if (mol.Badness() < avgmb*ss->NAtoms)
 		{
 		    cout << "that is solution!" << endl;
 		    break;
@@ -129,7 +145,7 @@ int main(int argc, char *argv[])
 	else
 	{
 	    improved[ilog] = 0;
-	    lastMBadness[mol.NAtoms-1] = mol.MBadness();
+	    lastMBadness[mol.NAtoms()-1] = mol.Badness();
 	}
 	cout << endl;
     }

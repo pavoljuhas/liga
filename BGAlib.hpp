@@ -23,7 +23,7 @@
 namespace BGA
 {
     extern gsl_rng* rng;
-    const double min_distance = 1.0;
+    const double min_distance = 0.5;
     const int min_distance_penalty = 10;
 };
 
@@ -71,19 +71,25 @@ class Atom_t
 {
 public:
     Atom_t(int h0 = 0, int k0 = 0, int l0 = 0, int bad0 = 0);
+    Atom_t(double h0, double k0, double l0, int bad0 = 0);
     mutable int h, k, l;
     int Badness() const;
     double AvgBadness() const;
-    int IncBadness(int b = 1);
-    int DecBadness(int b = 1);
-    int ResetBadness();
+    int IncBadness(int db = 1);
+    int DecBadness(int db = 1);
+    int ResetBadness(int b = 0);
 private:
     int badness;
     int badness_sum;
     int age;
 };
 
-//typedef list<Atom_t>::iterator LAit;
+bool operator==(const Atom_t& a1, const Atom_t& a2);
+int dist2(const Atom_t& a1, const Atom_t& a2);
+inline double dist(const Atom_t& a1, const Atom_t& a2)
+{
+    return sqrt(1.0*dist2(a1, a2));
+}
 
 struct Pair_t
 {
@@ -154,8 +160,8 @@ public:
     Molecule& Add(int nh, int nk, int nl);	// add single atom
     Molecule& Add(Atom_t a);			// add single atom
 //    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
-//    Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
-//    Molecule& Degenerate(int Npop = 1);	// Pop Npop atoms with abad[i] weight
+    Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
+    Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
 //    Molecule MateWith(const Molecule& Male, int trials = 500);
 //    double ABadnessAt(int nh, int nk) const;  // badness for new atom
 //    double MBadnessWith(const Molecule& M) const;   // badness for merging
@@ -173,6 +179,8 @@ public:
     void PrintBadness();		// total and per-atomic badness
     void PrintFitness();		// total and per-atomic fitness
     void Recalculate(); 	// update everything
+    inline int NDist()  const { return pairs.size(); }
+    inline int NAtoms() const { return atoms.size(); }
 private:
     // constructor helper
     void init();
@@ -183,15 +191,15 @@ private:
     list<Pair_t*> pairs;		// list of all atom Pair_t objects
     mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
-    inline int NDist()  const { return pairs.size(); }
-    inline int NAtoms() const { return atoms.size(); }
     mutable int max_NAtoms;		// target number of atoms
     // badness evaluation
     mutable int max_abad;		// maximum atom badness
     mutable int badness;		// molecular badness
-//public:
-//    struct badness_at;
-//private:
+    int push_good_distances(vector<Atom_t>& vta, double *afit, int ntrials);
+    int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);
+    int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);
+    vector<int>::iterator find_nearest_distance(const double&);
+    void calc_test_badness(Atom_t& a);
 //    list<badness_at> find_good_distances(int trials, const vector<int>& didx);
 //    list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
 //    list<badness_at> find_good_triangles2(int trials, const vector<int>& didx);
@@ -222,5 +230,10 @@ private:
 
 
 template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
+list<int> random_choose_few(int K, int Np);
+list<int> random_wt_choose(int K, const double *p, int Np);
+double vdnorm(const valarray<double>&);
+double vddot(const valarray<double>&, const valarray<double>&);
+valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
 
 #endif

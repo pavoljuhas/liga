@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     cout << "mol:" << endl << mol; mol.PrintBadness();
     if (snapshot_file != NULL)
     {
-	mol.WriteXY(snapshot_file);
+	mol.WriteAtomEye(snapshot_file);
     }
     char c = '0';
     while (c != 'q')
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	switch (c)
 	{
 	    case 'e':
-		if (mol.NAtoms == mol.MaxAtoms)
+		if (mol.NAtoms() == ss->NAtoms)
 		    cout << "full size molecule, Evolve() ignored...\n";
 		else
 		{
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 		}
 		break;
 	    case 'd':
-		if (mol.NAtoms == 0)
+		if (mol.NAtoms() == 0)
 		    cout << "empty size molecule, Degenerate() ignored...\n";
 		else
 		{
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 	    cout << "mol:" << endl << mol; mol.PrintBadness();
 	    if (snapshot_file != NULL)
 	    {
-		mol.WriteXY(snapshot_file);
+		mol.WriteAtomEye(snapshot_file);
 	    }
 	}
     }
