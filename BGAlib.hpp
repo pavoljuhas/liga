@@ -64,7 +64,7 @@ public:
     Molecule(SandSphere *SS, int s, double *px, double *py);
     Molecule(SandSphere *SS,
 	    const vector<double>& vx, const vector<double>& vy);
-    Molecule(const Molecule& M0);		// copy constructor
+    Molecule(const Molecule& M);		// copy constructor
     Molecule& operator=(const Molecule&);	// assignment
     // parameters
     int NDist;    		// length of distance table

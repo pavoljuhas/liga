@@ -229,45 +229,45 @@ Molecule::Molecule(SandSphere *SS,
     init();
 }
 
-Molecule::Molecule(const Molecule& M0) :
-    ss(M0.ss)
+Molecule::Molecule(const Molecule& M) :
+    ss(M.ss)
 {
     init();
-    *this  = M0;
+    *this  = M;
 }
 
-Molecule& Molecule::operator=(const Molecule& M0)
+Molecule& Molecule::operator=(const Molecule& M)
 {
-    if (this == &M0) return *this;
+    if (this == &M) return *this;
     // data storage
-    if (ss != M0.ss)
+    if (ss != M.ss)
     {
 	ss->molecules.remove(this);
-	ss = M0.ss;
+	ss = M.ss;
 	ss->molecules.push_back(this);
     }
     // h, k assignment must preceed fix_size()
-    h = M0.h;			// x-coordinates
-    k = M0.k;			// y-coordinates
+    h = M.h;			// x-coordinates
+    k = M.k;			// y-coordinates
     // parameters
-    if (NAtoms != M0.NAtoms)
+    if (NAtoms != M.NAtoms)
     {
 	// this sets NAtoms, NDist, resizes all valarray's
 	fix_size();
     }
     // badness evaluation
-    cached = M0.cached;
-    if (M0.cached)
+    cached = M.cached;
+    if (M.cached)
     {
-	abad = M0.abad;		// individual atom badnesses
-	abadMax = M0.abadMax;	// maximum atom badness
-	mbad = M0.mbad;		// molecular badness
-	d2 = M0.d2;		// sorted table of squared distances 
-	ssdIdxFree = M0.ssdIdxFree;	// available elements in ss.dist
+	abad = M.abad;		// individual atom badnesses
+	abadMax = M.abadMax;	// maximum atom badness
+	mbad = M.mbad;		// molecular badness
+	d2 = M.d2;		// sorted table of squared distances 
+	ssdIdxFree = M.ssdIdxFree;	// available elements in ss.dist
     }
     // IO helpers
-    output_format = M0.output_format;
-    opened_file = M0.opened_file;
+    output_format = M.output_format;
+    opened_file = M.opened_file;
     return *this;
 }
 
@@ -456,18 +456,18 @@ Molecule& Molecule::Center()
     return *this;
 }
 
-Molecule& Molecule::Part(const Molecule& M0, const int cidx)
+Molecule& Molecule::Part(const Molecule& M, const int cidx)
 {
-    h.resize(1, M0.h[cidx]);
-    k.resize(1, M0.k[cidx]);
+    h.resize(1, M.h[cidx]);
+    k.resize(1, M.k[cidx]);
     fix_size();
     return *this;
 }
 
-Molecule& Molecule::Part(const Molecule& M0, const list<int>& cidx)
+Molecule& Molecule::Part(const Molecule& M, const list<int>& cidx)
 {
     vector<int> *h_new, *k_new;
-    if (&M0 == this)
+    if (&M == this)
     {
 	h_new = new vector<int>;
 	k_new = new vector<int>;
@@ -483,15 +483,15 @@ Molecule& Molecule::Part(const Molecule& M0, const list<int>& cidx)
     for ( list<int>::const_iterator li = cidx.begin();
 	    li != cidx.end(); ++li )
     {
-	if (*li < 0 || *li >= M0.NAtoms)
+	if (*li < 0 || *li >= M.NAtoms)
 	{
 	    throw range_error("in Molecule::Part()");
 	}
-	(*h_new)[idx] = M0.h[*li];
-	(*k_new)[idx] = M0.k[*li];
+	(*h_new)[idx] = M.h[*li];
+	(*k_new)[idx] = M.k[*li];
 	++idx;
     }
-    if (&M0 == this)
+    if (&M == this)
     {
 	h = *h_new;
 	k = *k_new;
@@ -501,33 +501,33 @@ Molecule& Molecule::Part(const Molecule& M0, const list<int>& cidx)
     return *this;
 }
 
-Molecule& Molecule::Pop(const Molecule& M0, const int cidx)
+Molecule& Molecule::Pop(const Molecule& M, const int cidx)
 {
-    if (cidx < 0 || cidx >= M0.NAtoms)
+    if (cidx < 0 || cidx >= M.NAtoms)
     {
 	throw range_error("in Molecule::Pop(list<int>)");
     }
-    if (this != &M0)  *this = M0;
+    if (this != &M)  *this = M;
     h.erase(h.begin() + cidx);
     k.erase(k.begin() + cidx);
     fix_size();
     return *this;
 }
 
-Molecule& Molecule::Pop(const Molecule& M0, const list<int>& cidx)
+Molecule& Molecule::Pop(const Molecule& M, const list<int>& cidx)
 {
     if (cidx.size() == 0)
     {
-	if (this != &M0)  *this = M0;
+	if (this != &M)  *this = M;
 	return *this;
     }
     list<int> sidx(cidx);
     sidx.sort();
-    if (sidx.front() < 0 || sidx.back() >= M0.NAtoms)
+    if (sidx.front() < 0 || sidx.back() >= M.NAtoms)
     {
 	throw range_error("in Molecule::Pop(list<int>)");
     }
-    sidx.push_back(M0.NAtoms);
+    sidx.push_back(M.NAtoms);
     vector<int> h_new, k_new;
     int j = 0;
     for ( list<int>::iterator li = sidx.begin();
@@ -535,8 +535,8 @@ Molecule& Molecule::Pop(const Molecule& M0, const list<int>& cidx)
     {
 	for (; j < *li; ++j)
 	{
-	    h_new.push_back(M0.h[j]);
-	    k_new.push_back(M0.k[j]);
+	    h_new.push_back(M.h[j]);
+	    k_new.push_back(M.k[j]);
 	}
 	j = *li + 1;
     }
