@@ -261,15 +261,9 @@ void DistanceTable::init()
 	cerr << "E: target distance table is empty" << endl;
 	throw InvalidDistanceTable();
     }
-    // calculate and check NAtoms
+    // calculate NAtoms
     double xNAtoms = 0.5 + sqrt(1 + 8.0*size())/2.0;
     NAtoms = int(xNAtoms);
-    if (double(NAtoms) != xNAtoms)
-    {
-	cerr << "E: incorrect length of target distance table, NAtoms=" <<
-		xNAtoms << '\n';
-	throw InvalidDistanceTable();
-    }
     // sort and check values
     sort(begin(), end());
     if (at(0) <= 0)
