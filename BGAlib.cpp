@@ -655,7 +655,7 @@ list<Molecule::badness_at> Molecule::find_good_distances(int trials)
 {
     if (NAtoms > ss->NDist)
     {
-	cerr << "E: molecule too large for finding new position" << endl;
+	cerr << "E: molecule too large for finding a new position" << endl;
 	throw InvalidMolecule();
     }
     // prepare a return list:
@@ -680,7 +680,12 @@ list<Molecule::badness_at> Molecule::find_good_triangles(int trials)
     // work, so this returns a list, which is either empty, or has 2 entries
     if (NAtoms > ss->NDist)
     {
-	cerr << "E: molecule too large for finding new position" << endl;
+	cerr << "E: molecule too large for finding a new position" << endl;
+	throw InvalidMolecule();
+    }
+    else if (NAtoms < 2)
+    {
+	cerr << "E: molecule too small, triangulation not possible" << endl;
 	throw InvalidMolecule();
     }
     // prepare a return list:
@@ -756,95 +761,32 @@ Molecule& Molecule::Evolve(int trials)
 	    Add(0, 0);
 	    return *this;
 	case 1:
-	    int idx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	    lit = ssdIdxFree.begin(); advance(lit, idx);
-	    double radius = ss->d[*lit];
-	    double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
-	    int nh = h[0] + (int)round(radius * cos(phi));
-	    int nk = k[0] + (int)round(radius * sin(phi));
-	    Add(nh, nk);
+	    list<badness_at> ba = find_good_distances(1);
+	    Add(ba.front().h, ba.front().k);
 	    Center();
 	    return *this;
     }
     // here we can be sure that NAtoms >= 2
-    double afit[NAtoms];
-    for (int i = 0; i != NAtoms; ++i)
+    list<badness_at> trials_log = find_good_distances(trials/3);
+    // if we did not find a good place, let's try triangulation
+    if (trials_log.back().abad != 0.0)
     {
-	afit[i] = AFitness(i);
-    }
-    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, afit);
-    badness_at trials_log[trials];
-    badness_at *last_trial = trials_log;
-    while (last_trial != trials_log+trials)
-    {
-	// we try to place new atom in 2 ways
-	//
-	// 1st way is to put atom to a free distance from an existing one
-	// this is guaranteed to generate trials_log entry
-	// pick one atom and a free distance
-	int a = gsl_ran_discrete(BGA::rng, table);
-	int idf = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	lit = ssdIdxFree.begin(); advance(lit, idf);
-	double radius = ss->d[*lit];
-	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
-	int nh = h[a] + (int)round(radius * cos(phi));
-	int nk = k[a] + (int)round(radius * sin(phi));
-	// store the result
-	badness_at res(nh, nk, ABadnessAt(nh, nk));
-	*last_trial++ = res;
-	// jump out if it is a good location or if trials_log is filled
-	if (res.abad == 0.0 || last_trial == trials_log+trials)  break;
-	//
-	// 2nd way is to use triangulation, this is more intelligent and
-	// generates 2 entries in trials_log, however it may not always work
-	// pick first atom and free distance
-	int a1 = gsl_ran_discrete(BGA::rng, table);
-	int a2 = gsl_ran_discrete(BGA::rng, table);
-	for (int i = 0; i < 5 && a1 == a2; ++i)
-	{
-	    a2 = gsl_ran_discrete(BGA::rng, table);
-	}
-	if (a1 == a2)
-	{
-	    a2 = (a1 + 1) % NAtoms;
-	}
-	int idf1 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	int idf2 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size()-1) + 1;
-	idf2 = (idf2 + idf1) % ssdIdxFree.size();
-	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
-	lit = ssdIdxFree.begin(); advance(lit, idf1);
-	double r13 = ss->d[*lit];
-	lit = ssdIdxFree.begin(); advance(lit, idf2);
-	double r23 = ss->d[*lit];
-	double r12 = dist(a1, a2);
-	// is triangle [a1 a2 a3] possible?
-	if (r13 + r23 < r12 || fabs(r13 - r23) > r12) continue;
-	// here we can construct 2 triangles
-	double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
-	double perpdir[2] = { -longdir[1], 	  longdir[0] };
-	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
-	double xperp = sqrt(r13*r13 - xlong*xlong);
-	int nh1 = (int) round(xlong*longdir[0] + xperp*perpdir[0]);
-	int nk1 = (int) round(xlong*longdir[1] + xperp*perpdir[1]);
-	// store the result
-	badness_at res1(nh1, nk1, ABadnessAt(nh1, nk1));
-	*last_trial++ = res1;
-	// jump out if it is a good location or if trials_log is filled
-	if (res1.abad == 0.0 || last_trial == trials_log+trials)  break;
-	// 2nd triangle:
-	int nh2 = (int) round(xlong*longdir[0] - xperp*perpdir[0]);
-	int nk2 = (int) round(xlong*longdir[1] - xperp*perpdir[1]);
-	badness_at res2(nh2, nk2, ABadnessAt(nh2, nk2));
-	*last_trial++ = res2;
-	// jump out if it is a good location or if trials_log is filled
-	if (res2.abad == 0.0 || last_trial == trials_log+trials)  break;
+	list<badness_at> fgt = find_good_triangles(trials - trials_log.size());
+	trials_log.insert(trials_log.end(), fgt.begin(), fgt.end());
     }
     // find the best trial and Add atom to that place
-    badness_at *best;
-    best = min_element(trials_log, last_trial);
+    list<badness_at>::iterator best;
+    // maybe the last one is good:
+    if (trials_log.back().abad == 0.0)
+    {
+	best = trials_log.end();
+    }
+    else
+    {
+	best = min_element(trials_log.begin(), trials_log.end());
+    }
     Add(best->h, best->k);
     Center();
-    gsl_ran_discrete_free(table);
     return *this;
 }
 
