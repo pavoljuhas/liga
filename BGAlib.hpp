@@ -23,8 +23,6 @@
 namespace BGA
 {
     extern gsl_rng* rng;
-    const double min_distance = 0.5;
-    const int min_distance_penalty = 10;
 };
 
 // exceptions

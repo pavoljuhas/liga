@@ -291,12 +291,6 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     d2 = dist2(*atom1, *atom2);
     d = sqrt(d2);
     badness = 0;
-// pj:remove 4 lines
-    if (d < BGA::min_distance/owner->ss->delta)
-    {
-	badness += BGA::min_distance_penalty;
-    }
-// pj: to here
     vector<double>::iterator dit = owner->dTarget.find_nearest(d);
     dUsed = *dit;
     badness += pow(d-dUsed, 2);
@@ -888,10 +882,6 @@ void Molecule::calc_test_badness(Atom_t& ta)
     {
 	int td2 = dist2(*ai, ta);
 	double td = sqrt(td2+0.0);
-	if (td < BGA::min_distance/ss->delta)
-	{
-	    tbad += BGA::min_distance_penalty;
-	}
 	VIit inear = find_nearest_distance(td);
 	if ((td2 < ss->d2lo[*inear]) || (td2 > ss->d2hi[*inear]))
 	{
