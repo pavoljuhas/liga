@@ -20,8 +20,6 @@
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 double BGA::eps_badness = 1.0e-10;
-// counters
-int BGA::cnt_penalty_calls = 0;
 
 ////////////////////////////////////////////////////////////////////////
 // common helper functions
@@ -140,7 +138,8 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = dist(*atom1, *atom2);
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = owner->penalty(dd); BGA::cnt_penalty_calls++;
+    badness = owner->penalty(dd);
+    BGA::cnt.penalty_calls++;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
     if (fabs(dd) < owner->tol_dd)
@@ -595,7 +594,7 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 	atoms2pop.push_back( list_at(atoms, *ii) );
     }
     // now pop those atoms
-    for ( list<LAit>::iterator ii = atoms2pop.begin(); 
+    for ( list<LAit>::iterator ii = atoms2pop.begin();
 	    ii != atoms2pop.end(); ++ii )
     {
 	Pop(*ii);
@@ -668,7 +667,8 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	double d = dist(*ai, ta);
 	VDit dnear = local_dTarget.find_nearest(d);
 	double dd = *dnear - d;
-	tbad += penalty(dd);  BGA::cnt_penalty_calls++;
+	tbad += penalty(dd);
+	BGA::cnt.penalty_calls++;
 	if (fabs(dd) < tol_dd)
 	{
 	    local_dTarget.erase(dnear);
@@ -732,8 +732,8 @@ int Molecule::push_good_triangles(
 	// pick first atom and free distance
 	list<int> aidx = random_wt_choose(2, afit, NAtoms());
 	list<int>::iterator aidxit = aidx.begin();
-	Atom_t& a1 = *list_at(atoms, *(aidxit++)); 
-	Atom_t& a2 = *list_at(atoms, *(aidxit++)); 
+	Atom_t& a1 = *list_at(atoms, *(aidxit++));
+	Atom_t& a2 = *list_at(atoms, *(aidxit++));
 	int idf1 = gsl_rng_uniform_int(BGA::rng, dTarget.size());
 	int idf2 = gsl_rng_uniform_int(BGA::rng, dTarget.size()-1) + 1;
 	idf2 = (idf2 + idf1) % dTarget.size();
@@ -810,9 +810,9 @@ int Molecule::push_good_pyramids(
 	// pick 3 base atoms
 	list<int> aidx = random_wt_choose(3, afit, NAtoms());
 	list<int>::iterator aidxit = aidx.begin();
-	Atom_t& a1 = *list_at(atoms, *(aidxit++)); 
-	Atom_t& a2 = *list_at(atoms, *(aidxit++)); 
-	Atom_t& a3 = *list_at(atoms, *(aidxit++)); 
+	Atom_t& a1 = *list_at(atoms, *(aidxit++));
+	Atom_t& a2 = *list_at(atoms, *(aidxit++));
+	Atom_t& a3 = *list_at(atoms, *(aidxit++));
 	double base_badness = a1.Badness()+a2.Badness()+a3.Badness();
 	// pick 3 vertex distances
 	list<int> didx = random_choose_few(3, dTarget.size());
@@ -971,7 +971,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
     while (true)
-    { 
+    {
 	VAit gai = vta.begin();
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
 	{
