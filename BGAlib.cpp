@@ -1549,12 +1549,13 @@ void Molecule::PrintBadness()
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	cout << ' ' << ai->Badness();
+	cout << ' ';
 	if (!marked && ai->Badness() == mab)
 	{
-	    cout << '*';
+	    cout << '+';
 	    marked = true;
 	}
+	cout << ai->Badness();
     }
     cout << endl;
 }
@@ -1569,12 +1570,13 @@ void Molecule::PrintFitness()
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	cout << ' ' << MaxABadness() - ai->Badness();
+	cout << ' ';
 	if (!marked && ai->Badness() == mab)
 	{
-	    cout << '*';
+	    cout << '+';
 	    marked = true;
 	}
+	cout << MaxABadness() - ai->Badness();
     }
     cout << endl;
 }
