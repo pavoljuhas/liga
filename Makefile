@@ -9,9 +9,8 @@
 ########################################################################
 # compiler flags and file lists:
 CC = g++
-CPPFLAGS = -gstabs+ $(CFLAGS)
-# CPPFLAGS = -g -I/u24/local/include $(CFLAGS)
-# LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
+CPPFLAGS = -gstabs+ -I/u24/local/include $(CFLAGS)
+LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS =
@@ -55,9 +54,9 @@ molTest04: molTest04.o $(OBJECTS) $(HEADERS)
 molTest05: molTest05.o $(OBJECTS) $(HEADERS)
 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-# molTest06: molTest06.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
-# 
+molTest06: molTest06.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+
 # molTest07: molTest07.o $(OBJECTS) $(HEADERS)
 # 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 # 
