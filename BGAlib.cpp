@@ -857,35 +857,28 @@ void Molecule::calc_test_badness(Atom_t& ta)
 {
     if (NAtoms() == max_NAtoms)
     {
-	cerr << "E: molecule too large, in Molecule::ABadnessAt()" << endl;
+	cerr << "E: too many atoms in Molecule::calc_test_badness()" << endl;
 	throw InvalidMolecule();
     }
-    int tbad = 0;
-    typedef vector<int>::iterator VIit;
-    list<int> used_indices;
-    list<VIit> erased_positions;
+    double tbad = 0;
+    typedef vector<double>::iterator VDit;
+    list<double> used_distances;
+    list<VDit> erased_positions;
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	double td2 = dist2(*ai, ta);
-	double td = sqrt(td2+0.0);
-	VIit inear = find_nearest_distance(td);
-	if ((td2 < ss->d2lo[*inear]) || (td2 > ss->d2hi[*inear]))
-	{
-	    tbad++;
-	}
-	else
-	{
-	    used_indices.push_back(*inear);
-	    erased_positions.push_back(ssdIdxFree.erase(inear));
-	}
+	double td = dist(*ai, ta);
+	VDit dnear = dTarget.find_nearest(td);
+	tbad += pow(td - *dnear, 2);
+	used_distances.push_back(*dnear);
+	erased_positions.push_back(dTarget.erase(dnear));
     }
-    // now restore ssdIdxFree to its original state:
-    list<int>::reverse_iterator ridx = used_indices.rbegin();
-    list<VIit>::reverse_iterator rpos = erased_positions.rbegin();
-    for (; ridx != used_indices.rend(); ++ridx, ++rpos)
+    // restore dTarget to the original state
+    list<double>::reverse_iterator rud = used_distances.rbegin();
+    list<VDit>::reverse_iterator rpos = erased_positions.rbegin();
+    for (; rud != used_distances.rend(); ++rud, ++rpos)
     {
-	ssdIdxFree.insert(*rpos, *ridx);
+	dTarget.insert(*rpos, *rud);
     }
     ta.ResetBadness(tbad);
 }
