@@ -157,8 +157,7 @@ bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
 Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     owner(pM), atom1(a1), atom2(a2)
 {
-    d2 = dist2(*atom1, *atom2);
-    d = sqrt(d2);
+    d = dist(*atom1, *atom2);
     badness = 0;
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;

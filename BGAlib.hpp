@@ -24,8 +24,7 @@
 namespace BGA
 {
     extern gsl_rng* rng;
-    const double tol_dist = 0.05;
-    const double tol_abadness = 0.05*0.05;
+    const double tol_dist = 0.1;
     const double eps_abadness = 1.0e-10;
 };
 
@@ -106,7 +105,6 @@ public:
     Pair_t(const Pair_t& pair0);
     Pair_t& operator=(const Pair_t&);
     //
-    mutable double d2;
     mutable double d;
 private:
     friend class Molecule;
