@@ -17,6 +17,7 @@
 #include <valarray>
 #include <vector>
 #include <list>
+#include <map>
 #include <gsl/gsl_rng.h>
 
 // global random number generator
@@ -96,7 +97,7 @@ class Molecule;
 struct Pair_t
 {
 public:
-    Pair_t(Molecule *M, Atom_t& a1, Atom_t& a2);
+    Pair_t(Molecule *M, Atom_t *a1, Atom_t *a2);
     ~Pair_t();
     // do not allow copying or assignment
     Pair_t(const Pair_t& pair0);
@@ -185,7 +186,7 @@ private:
     DistanceTable dTarget;
     // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
-    list<Pair_t*> pairs;		// list of all atom Pair_t objects
+    map<OrderedPair<Atom_t*>,Pair_t*> pairs;  // map Atom_t* to Pair_t objects
     friend class Pair_t;
     // badness evaluation
     mutable double max_abad;		// maximum atom badness
