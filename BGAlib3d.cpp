@@ -1570,25 +1570,25 @@ Molecule& Molecule::Add(Atom_t atom)
 //    output_format = org_ofmt;
 //    return result;
 //}
-//
-//Molecule& Molecule::OutFmtGrid()
-//{
-//    output_format = GRID;
-//    return *this;
-//}
-//
-//Molecule& Molecule::OutFmtXY()
-//{
-//    output_format = XY;
-//    return *this;
-//}
-//
-//Molecule& Molecule::OutFmtAtomEye()
-//{
-//    output_format = ATOMEYE;
-//    return *this;
-//}
-//
+
+Molecule& Molecule::OutFmtGrid()
+{
+    output_format = GRID;
+    return *this;
+}
+
+Molecule& Molecule::OutFmtXY()
+{
+    output_format = XY;
+    return *this;
+}
+
+Molecule& Molecule::OutFmtAtomEye()
+{
+    output_format = ATOMEYE;
+    return *this;
+}
+
 //istream& operator>>(istream& fid, Molecule& M)
 //{
 //    string header;

@@ -197,9 +197,9 @@ private:
 //    void set_mbad_abadMax() const;
 //    // MateWith helpers:
 //    Molecule& Molecule::mount(Molecule& Male);
-//    // IO helpers
-//    enum file_fmt_type {GRID = 1, XY, ATOMEYE};
-//    file_fmt_type output_format;
+    // IO helpers
+    enum file_fmt_type {GRID = 1, XY, ATOMEYE};
+    file_fmt_type output_format;
 //    class ParseHeader;
 //    istream& ReadGrid(istream& fid);
 //    istream& ReadXY(istream& fid);
