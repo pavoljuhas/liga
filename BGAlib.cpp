@@ -1222,11 +1222,18 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	// then get the reciprocal value
 	vtafit = vdrecipw0(vtafit);
 	int idx = *(random_wt_choose(1, &vtafit[0], vtafit.size()).begin());
-	if (evolve_relax)
-	    relax_atom(vta[idx]);
 	Add(vta[idx]);
 	lo_abad = vta[idx].Badness();
 	vta.erase(vta.begin()+idx);
+	if (evolve_relax)
+	{
+	    LAit worst = max_element(atoms.begin(), atoms.end(),
+		    comp_Atom_Badness);
+	    Atom_t wa = *worst;
+	    Pop(worst);
+	    relax_atom(wa);
+	    Add(wa);
+	}
 	if (NAtoms() == max_NAtoms() || !evolve_jump)
 	    break;
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
