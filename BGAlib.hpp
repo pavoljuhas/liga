@@ -52,6 +52,8 @@ public:
     // member functions
     vector<double>::iterator find_nearest(const double&);
     vector<double>::iterator return_back(const double&);
+    // data members
+    mutable int NAtoms;   	// target number of atoms
 private:
     void init();
 };
