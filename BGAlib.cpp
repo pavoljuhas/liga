@@ -160,10 +160,19 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d2 = dist2(*atom1, *atom2);
     d = sqrt(d2);
     badness = 0;
-    vector<double>::iterator dit = owner->dTarget.find_nearest(d);
-    dUsed = *dit;
-    badness += pow(d-dUsed, 2);
-    owner->dTarget.erase(dit);
+    vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
+    if (fabs(*dnear - d) < BGA::tol_dist)
+    {
+	dUsed = *dnear;
+	badness += pow(d-dUsed, 2);
+	owner->dTarget.erase(dnear);
+    }
+    else
+    {
+	dUsed = -1.0;
+	// pj: here should go some constant
+	badness += 1.0;
+    }
     atom1->IncBadness(badness);
     atom2->IncBadness(badness);
     owner->badness += 2*badness;
@@ -188,6 +197,7 @@ Pair_t::~Pair_t()
     owner->badness -= 2*badness;
     if (fabs(owner->badness) < BGA::eps_abadness)
 	owner->badness = 0.0;
+    if (dUsed > 0.0)
     owner->dTarget.return_back(dUsed);
 }
 
@@ -354,7 +364,9 @@ Molecule& Molecule::operator=(const Molecule& M)
     typedef map<OrderedPair<Atom_t*>,Pair_t*>::const_iterator MAPcit;
     for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
     {
-	dTarget.push_back(ii->second->dUsed);
+	double d = ii->second->dUsed;
+	if (d > 0.0)
+	    dTarget.push_back(d);
     }
     sort(dTarget.begin(), dTarget.end());
     // and calculate everything from scratch
@@ -702,9 +714,17 @@ void Molecule::calc_test_badness(Atom_t& ta)
     {
 	double td = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(td);
-	tbad += pow(td - *dnear, 2);
-	used_distances.push_back(*dnear);
-	erased_positions.push_back(dTarget.erase(dnear));
+	if (fabs(*dnear - d) < BGA::tol_dist)
+	{
+	    tbad += pow(td - *dnear, 2);
+	    used_distances.push_back(*dnear);
+	    erased_positions.push_back(dTarget.erase(dnear));
+	}
+	else
+	{
+	    // pj: here should go some constant
+	    tbad += 1.0;
+	}
     }
     // restore dTarget to the original state
     list<double>::reverse_iterator rud = used_distances.rbegin();
