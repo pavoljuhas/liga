@@ -1015,13 +1015,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    return *this;
     }
     // otherwise we need to build array of atom fitnesses
-    double afit[NAtoms()];
-    double *pf = afit;
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pf)
-    {
-	*pf = AFitness(*ai);
-    }
+    valarray<double> vafit = rec_badness(atoms.begin(), atoms.end());
+    double *afit = &vafit[0];
     // and push appropriate numbers of test atoms
     // here NAtoms() >= 2
     push_good_distances(vta, afit, ntd1);
@@ -1035,8 +1030,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 //  pj: how about
 //  double hi_badness = evolve_frac*min(max_badness-min_badness, penalty(tol_dd)+min_badness;
     double hi_badness = evolve_frac*(max_badness-min_badness)+min_badness;
-    typedef vector<Atom_t>::iterator VAit;
     // try to add as many atoms as possible
+    typedef vector<Atom_t>::iterator VAit;
     while (true)
     { 
 	VAit gai = vta.begin();
@@ -1048,11 +1043,14 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	vta.erase(gai, vta.end());
 	if (vta.size() == 0)
 	    break;
-	int idx = gsl_rng_uniform_int(BGA::rng, vta.size());
+	// calculate fitness of test atoms
+	valarray<double> vtafit(vta.size());
+	vtafit = rec_badness(vta.begin(), vta.end());
+	int idx = *(random_wt_choose(1, &vtafit[0], vtafit.size()).begin());
 	Add(vta[idx]);
-	if (NAtoms() == max_NAtoms() | !evolve_jump)
-	    break;
 	vta.erase(vta.begin()+idx);
+	if (NAtoms() == max_NAtoms() || !evolve_jump)
+	    break;
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
 	    calc_test_badness(*ai);
     }
