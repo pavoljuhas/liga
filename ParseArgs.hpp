@@ -86,7 +86,7 @@ template<class T> T ParseArgs::GetPar(string par, T defval)
     return pars.count(par) ? GetPar<T>(par) : defval;
 }
 
-template <typename T> vector<T> GetParVec(string par)
+template <typename T> vector<T> ParseArgs::GetParVec(string par)
 {
     if (!pars.count(par))
     {
