@@ -46,6 +46,7 @@ public:
 	DistanceTable(InputIterator first, InputIterator last);
     DistanceTable(const char*);
     DistanceTable(const vector<double>&);
+    DistanceTable& operator= (const DistanceTable&);
     DistanceTable& operator= (const vector<double>&);
     // member functions
     vector<double>::iterator find_nearest(const double&);
@@ -120,8 +121,9 @@ public:
     //
     mutable double d2;
     mutable double d;
-    Atom_t *atom1, *atom2;
 private:
+    friend class Molecule;
+    Atom_t *atom1, *atom2;
     Molecule *owner;
     double dUsed;
     double badness;
@@ -193,6 +195,7 @@ public:
     void Recalculate(); 	// update everything
     inline int NDist()  const { return pairs.size(); }
     inline int NAtoms() const { return atoms.size(); }
+    inline int max_NAtoms() const { return dTarget.NAtoms; }
 private:
     // constructor helper
     void init();
@@ -206,7 +209,6 @@ private:
     //pj: remove ssdIdxFree
     mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
-    mutable int max_NAtoms;		// target number of atoms
     // badness evaluation
     mutable double max_abad;		// maximum atom badness
     mutable double badness;		// molecular badness
