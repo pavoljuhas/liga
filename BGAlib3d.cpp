@@ -368,47 +368,36 @@ Molecule::Molecule(SandSphere *SS,
     }
 }
 
-//Molecule::Molecule(const Molecule& M) :
-//    ss(M.ss)
-//{
-//    init();
-//    *this  = M;
-//}
-//
-//Molecule& Molecule::operator=(const Molecule& M)
-//{
-//    if (this == &M) return *this;
-//    // data storage
-//    if (ss != M.ss)
-//    {
-//	ss->molecules.remove(this);
-//	ss = M.ss;
-//	ss->molecules.push_back(this);
-//    }
-//    // h, k assignment must preceed fix_size()
-////    h = M.h;			// x-coordinates
-////    k = M.k;			// y-coordinates
-//    // parameters
-//    if (NAtoms != M.NAtoms)
-//    {
-//	// this sets NAtoms, NDist, resizes all valarray's
-////	fix_size();
-//    }
-//    // badness evaluation
-////    cached = M.cached;
-////    if (M.cached)
-//    {
-////	abad = M.abad;		// individual atom badnesses
-//	abadMax = M.abadMax;	// maximum atom badness
-//	mbad = M.mbad;		// molecular badness
-////	d2 = M.d2;		// sorted table of squared distances
-//	ssdIdxFree = M.ssdIdxFree;	// available elements in ss.dist
-//    }
-//    // IO helpers
-//    output_format = M.output_format;
-//    opened_file = M.opened_file;
-//    return *this;
-//}
+Molecule::Molecule(const Molecule& M) :
+    ss(M.ss)
+{
+    init();
+    *this  = M;
+}
+
+Molecule& Molecule::operator=(const Molecule& M)
+{
+    if (this == &M) return *this;
+    // Clear() must be the first statement
+    Clear();
+    if (ss != M.ss)
+    {
+	ss->molecules.remove(this);
+	ss = M.ss;
+	ss->molecules.push_back(this);
+	ssdIdxFree.clear();
+	for (int i = 0; i < ss->NDist; ++i)
+	{
+	    ssdIdxFree.push_back(i);
+	}
+    }
+    atoms = M.atoms;
+    Recalculate();
+    // IO helpers
+    output_format = M.output_format;
+    opened_file = M.opened_file;
+    return *this;
+}
 
 void Molecule::init()
 {
@@ -416,39 +405,22 @@ void Molecule::init()
     max_NAtoms = ss->NAtoms;
     max_abad = 0;
     badness = 0;
-    // check coordinate sizes
+    // prepare ssdIdxFree
+    for (int i = 0; i < ss->NDist; ++i)
+    {
+	ssdIdxFree.push_back(i);
+    }
+    // default output format
     OutFmtGrid();
 }
 
-////void Molecule::fix_size()
-////{
-////    UnCache();
-////    if (h.size() != k.size())
-////    {
-////	cerr << "E: invalid coordinate vectors" << endl;
-////	throw InvalidMolecule();
-////    }
-////    NAtoms = h.size();
-////    NDist  = NAtoms*(NAtoms-1)/2;
-////    if (NAtoms > ss->NAtoms)
-////    {
-////	cerr << "E: molecule too large" << endl;
-////	throw InvalidMolecule();
-////    }
-////    abad.resize(NAtoms, 0.0);
-////    abadMax = 0.0;
-////    d2.resize(NDist, 0);
-//////    ssdIdxUsed.clear();
-////    ssdIdxFree.clear();
-////}
-//
-//Molecule::~Molecule()
-//{
-//    // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
-//    ss->molecules.remove(this);
-//}
-//
-//
+Molecule::~Molecule()
+{
+    // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
+    ss->molecules.remove(this);
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
@@ -482,10 +454,10 @@ void Molecule::init()
 // recalculate everything from scratch
 void Molecule::Recalculate()
 {
-    if (NAtoms != atoms.size())
+    if (NAtoms() >= ss->NDist)
     {
-	cerr << "E: invalid NAtoms in Molecule::Recalculate()" << endl;
-	throw runtime_error("invalid NAtoms");
+	cerr << "E: molecule too large" << endl;
+	throw InvalidMolecule();
     }
     pairs.clear();
     // molecule parameters
@@ -528,7 +500,7 @@ int Molecule::Badness() const
 int Molecule::Fitness() const
 {
     // call to MaxABadness() will update max_abad if necessary
-    return NAtoms*MaxABadness() - badness;
+    return NAtoms()*MaxABadness() - Badness();
 }
 
 bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
@@ -555,7 +527,7 @@ int Molecule::MaxABadness() const
 {
     if (max_abad < 0)
     {
-	max_abad = (NAtoms == 0) ?  0 :
+	max_abad = (NAtoms() == 0) ?  0 :
 	    max_element(atoms.begin(), atoms.end(), comp_Atom_Badness)->
 	    Badness();
     }
@@ -668,9 +640,9 @@ Molecule& Molecule::Center()
 	avg_k += ai->k;
 	avg_l += ai->l;
     }
-    avg_h /= NAtoms;
-    avg_k /= NAtoms;
-    avg_l /= NAtoms;
+    avg_h /= NAtoms();
+    avg_k /= NAtoms();
+    avg_l /= NAtoms();
     Shift(-avg_h, -avg_k, -avg_l);
     return *this;
 }
@@ -752,13 +724,12 @@ Molecule& Molecule::Pop(list<Atom_t>::iterator ai)
 	if (ii->atom1 == pai || ii->atom2 == pai)  pairs.erase(ii);
     }
     atoms.erase(ai);
-    NAtoms--;
     return *this;
 }
 
 Molecule& Molecule::Pop(const int cidx)
 {
-    if (cidx < 0 || cidx >= NAtoms)
+    if (cidx < 0 || cidx >= NAtoms())
     {
 	throw range_error("in Molecule::Pop(list<int>)");
     }
@@ -776,7 +747,7 @@ Molecule& Molecule::Pop(const list<int>& cidx)
     for ( list<int>::const_iterator ii = cidx.begin();
 	    ii != cidx.end(); ++ii )
     {
-	if (*ii < 0 || *ii >= NAtoms)
+	if (*ii < 0 || *ii >= NAtoms())
 	{
 	    cerr << "index out of range in Molecule::Pop(list<int>)" << endl;
 	    throw range_error("in Molecule::Pop(list<int>)");
@@ -844,7 +815,6 @@ Molecule& Molecule::Clear()
     atoms.clear();
     max_abad = 0;
     badness = 0;
-    NAtoms = 0;
     return *this;
 }
 
@@ -866,14 +836,13 @@ Molecule& Molecule::Add(int nh, int nk, int nl)
 
 Molecule& Molecule::Add(Atom_t atom)
 {
-    if (NAtoms == max_NAtoms)
+    if (NAtoms() == max_NAtoms)
     {
 	cerr << "E: molecule too large" << endl;
 	throw InvalidMolecule();
     }
     list<Atom_t>::iterator this_atom, ai;
     this_atom = atoms.insert(atoms.end(), atom);
-    NAtoms++;
     this_atom->ResetBadness();
     for (ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
@@ -1412,7 +1381,7 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
     if (fmt == "grid")
 	format = GRID;
     else if (fmt == "xy")
-	format = XY;
+	format = XYZ;
     else if (fmt == "atomeye")
 	format = ATOMEYE;
     else
@@ -1496,7 +1465,7 @@ bool Molecule::ReadGrid(const char* file)
     return result;
 }
 
-istream& Molecule::ReadXY(istream& fid)
+istream& Molecule::ReadXYZ(istream& fid)
 {
     // read values to integer vector vxyz
     string header;
@@ -1528,7 +1497,7 @@ istream& Molecule::ReadXY(istream& fid)
     return fid;
 }
 
-bool Molecule::ReadXY(const char* file)
+bool Molecule::ReadXYZ(const char* file)
 {
     // open file for reading
     ifstream fid(file);
@@ -1538,7 +1507,7 @@ bool Molecule::ReadXY(const char* file)
 	throw IOError();
     }
     opened_file = file;
-    bool result = ReadXY(fid);
+    bool result = ReadXYZ(fid);
     opened_file.clear();
     fid.close();
     return result;
@@ -1567,10 +1536,10 @@ bool Molecule::WriteGrid(const char* file)
     return result;
 }
 
-bool Molecule::WriteXY(const char* file)
+bool Molecule::WriteXYZ(const char* file)
 {
     file_fmt_type org_ofmt = output_format;
-    OutFmtXY();
+    OutFmtXYZ();
     bool result = write_file(file, *this);
     output_format = org_ofmt;
     return result;
@@ -1591,9 +1560,9 @@ Molecule& Molecule::OutFmtGrid()
     return *this;
 }
 
-Molecule& Molecule::OutFmtXY()
+Molecule& Molecule::OutFmtXYZ()
 {
-    output_format = XY;
+    output_format = XYZ;
     return *this;
 }
 
@@ -1625,8 +1594,8 @@ istream& operator>>(istream& fid, Molecule& M)
 	case M.GRID:
 	    result = M.ReadGrid(fid);
 	    break;
-	case M.XY:
-	    result = M.ReadXY(fid);
+	case M.XYZ:
+	    result = M.ReadXYZ(fid);
 	    break;
 	case M.ATOMEYE:
 	    throw runtime_error("reading of atomeye files not implemented");
@@ -1648,16 +1617,16 @@ ostream& operator<<(ostream& fid, Molecule& M)
     {
 	case M.GRID:
 	    fid << "# BGA molecule format = grid" << endl;
-	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    fid << "# delta = " << M.ss->delta << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid << ai->h << '\t' << ai->k << '\t' << ai->l << endl;
 	    }
 	    break;
-	case M.XY:
+	case M.XYZ:
 	    fid << "# BGA molecule format = xy" << endl;
-	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    fid << "# delta = " << M.ss->delta << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
@@ -1671,7 +1640,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    double xyz_lo = 0.0;
 	    double xyz_hi = 1.0;
 	    double xyz_range = xyz_hi - xyz_lo;
-	    if (M.NAtoms > 0)
+	    if (M.NAtoms() > 0)
 	    {
 		const double scale = 1.01*M.ss->delta;
 		double xyz_extremes[8] = {
@@ -1689,9 +1658,9 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		xyz_range = xyz_hi - xyz_lo;
 	    }
 	    fid << "# BGA molecule format = atomeye" << endl;
-	    fid << "# NAtoms = " << M.NAtoms << endl;
+	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    fid << "# delta = " << M.ss->delta << endl;
-	    fid << "Number of particles = " << M.NAtoms << endl;
+	    fid << "Number of particles = " << M.NAtoms() << endl;
 	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
 	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
 	    fid << "H0(1,2) = 0 A" << endl;

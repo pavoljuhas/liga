@@ -118,13 +118,10 @@ public:
     Molecule(SandSphere *SS,
 	    const vector<double>& vx, const vector<double>& vy,
 	    const vector<double>& vz);
-//    Molecule(const Molecule& M);		// copy constructor
-//    Molecule& operator=(const Molecule&);	// assignment
-//    ~Molecule();		// destructor
+    Molecule(const Molecule& M);		// copy constructor
+    Molecule& operator=(const Molecule&);	// assignment
+    ~Molecule();		// destructor
     // parameters
-    int NDist;    		// length of distance table
-    int NAtoms;   		// current number of atoms
-    mutable int max_NAtoms;	// target number of atoms
 //    int ABadness(int) const;	// fitness of specified atom
 //    int AFitness(int) const;	// badness of specified atom
     int Badness() const;	// total badness
@@ -165,11 +162,11 @@ public:
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
-    bool ReadXY(const char*); 		// read real coordinates
-    bool WriteXY(const char*); 		// save real coordinates
+    bool ReadXYZ(const char*); 		// read real coordinates
+    bool WriteXYZ(const char*); 	// save real coordinates
     bool WriteAtomEye(const char*);	// export in AtomEye format
     Molecule& OutFmtGrid();		// output format for operator>>
-    Molecule& OutFmtXY();               // output format for operator>>
+    Molecule& OutFmtXYZ();		// output format for operator>>
     Molecule& OutFmtAtomEye();          // output format for operator>>
     friend ostream& operator<<(ostream& os, Molecule& M);
     friend istream& operator>>(istream& is, Molecule& M);
@@ -181,10 +178,14 @@ private:
     void init();
     // data storage
     SandSphere *ss;
+    // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
     list<Pair_t> pairs;			// list of all atom pairs
     mutable list<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
+    inline int NDist()  const { return pairs.size(); }
+    inline int NAtoms() const { return atoms.size(); }
+    mutable int max_NAtoms;		// target number of atoms
     // badness evaluation
     mutable int max_abad;		// maximum atom badness
     mutable int badness;		// molecular badness
@@ -198,11 +199,11 @@ private:
 //    // MateWith helpers:
 //    Molecule& Molecule::mount(Molecule& Male);
     // IO helpers
-    enum file_fmt_type {GRID = 1, XY, ATOMEYE};
+    enum file_fmt_type {GRID = 1, XYZ, ATOMEYE};
     file_fmt_type output_format;
     class ParseHeader;
     istream& ReadGrid(istream& fid);
-    istream& ReadXY(istream& fid);
+    istream& ReadXYZ(istream& fid);
     string opened_file;
 };
 
