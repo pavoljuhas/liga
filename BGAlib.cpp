@@ -241,7 +241,10 @@ DistanceTable& DistanceTable::operator= (const vector<double>& v)
 
 DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
 {
-    *this = vector<double>(d0);
+    if (this == &d0)
+	return *this;
+    resize(d0.size());
+    copy(d0.begin(), d0.end(), begin());
     NAtoms = d0.NAtoms;
     max_d = d0.max_d;
 }
@@ -266,8 +269,11 @@ void DistanceTable::init()
 {
     if (size() == 0)
     {
-	cerr << "E: target distance table is empty" << endl;
-	throw InvalidDistanceTable();
+	NAtoms = 1;
+	max_d = 1.0;
+	return;
+//	cerr << "E: target distance table is empty" << endl;
+//	throw InvalidDistanceTable();
     }
     // calculate NAtoms
     double xNAtoms = 0.5 + sqrt(1 + 8.0*size())/2.0;
