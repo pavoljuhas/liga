@@ -176,9 +176,6 @@ public:
 //    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
-//    Molecule MateWith(const Molecule& Male, int trials = 500);
-//    double ABadnessAt(int nh, int nk) const;  // badness for new atom
-//    double MBadnessWith(const Molecule& M) const;   // badness for merging
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
@@ -201,13 +198,9 @@ private:
     void init();
     // data storage
     DistanceTable dTarget;
-    //pj:remove ss
-    SandSphere *ss;
     // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
     list<Pair_t*> pairs;		// list of all atom Pair_t objects
-    //pj: remove ssdIdxFree
-    mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
     // badness evaluation
     mutable double max_abad;		// maximum atom badness
@@ -216,12 +209,6 @@ private:
     int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);
     void calc_test_badness(Atom_t& a);
-//    list<badness_at> find_good_distances(int trials, const vector<int>& didx);
-//    list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
-//    list<badness_at> find_good_triangles2(int trials, const vector<int>& didx);
-//    void set_mbad_abadMax() const;
-//    // MateWith helpers:
-//    Molecule& Molecule::mount(Molecule& Male);
     // IO helpers
     enum file_fmt_type {GRID = 1, XYZ, ATOMEYE};
     file_fmt_type output_format;
