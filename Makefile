@@ -37,46 +37,46 @@ lib_objects: $(OBJECTS)
 tests: $(TESTS)
 
 ssTest01: ssTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest01: molTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest02: molTest02.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest03: molTest03.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest04: molTest04.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest05: molTest05.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest06: molTest06.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest07: molTest07.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
-# molTest08: molTest08.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
-# 
+molTest08: molTest08.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+
 # molTest09: molTest09.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
-# 
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+#
 # molTest10: molTest10.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 popTest01: popTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 # popTest02: popTest02.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
-# 
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+#
 # popTest03: popTest03.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 #####################################################################}}}
 # utility targets {{{
@@ -101,4 +101,4 @@ list:
 
 #}}}
 
-# vim: set foldmethod=marker: 
+# vim: set foldmethod=marker:
