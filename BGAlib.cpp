@@ -14,7 +14,7 @@
 #include <map>
 #include <unistd.h>
 #include <gsl/gsl_randist.h>
-#include "ioerror.hpp"
+#include "BGAutils.hpp"
 #include "BGAlib.hpp"
 
 // random number generator

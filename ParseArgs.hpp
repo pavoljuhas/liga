@@ -18,7 +18,7 @@
 #include <map>
 #include <stdexcept>
 #include <getopt.h>
-#include "ioerror.hpp"
+#include "BGAutils.hpp"
 
 using namespace std;
 

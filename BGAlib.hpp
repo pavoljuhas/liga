@@ -19,7 +19,7 @@
 #include <list>
 #include <map>
 #include <gsl/gsl_rng.h>
-#include "ioerror.hpp"
+#include "BGAutils.hpp"
 
 // global random number generator
 namespace BGA

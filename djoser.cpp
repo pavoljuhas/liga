@@ -9,7 +9,6 @@
 #include <limits>
 #include <unistd.h>
 #include <iomanip>
-#include "ioerror.hpp"
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
