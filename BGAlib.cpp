@@ -338,6 +338,13 @@ DistanceTable::DistanceTable(const vector<double>& v) : vector<double>(v)
     init();
 }
 
+DistanceTable& DistanceTable::operator= (const DistanceTable& DT)
+{
+    *this = vector<double>(DT);
+    NAtoms = DT.NAtoms;
+    max_d = DT.max_d;
+}
+
 DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
     *this = v;
@@ -425,8 +432,7 @@ Molecule::Molecule(const DistanceTable& dtab,
     }
 }
 
-Molecule::Molecule(const Molecule& M) :
-    ss(M.ss)
+Molecule::Molecule(const Molecule& M)
 {
     init();
     *this  = M;
@@ -437,18 +443,17 @@ Molecule& Molecule::operator=(const Molecule& M)
     if (this == &M) return *this;
     // Clear() must be the first statement
     Clear();
-    if (ss != M.ss)
-    {
-	ss->molecules.remove(this);
-	ss = M.ss;
-	ss->molecules.push_back(this);
-	ssdIdxFree.clear();
-	for (int i = 0; i < ss->NDist; ++i)
-	{
-	    ssdIdxFree.push_back(i);
-	}
-    }
+    // eventually this can be speed up by Pair_t copying
     atoms = M.atoms;
+    // restore dTarget to the original state
+    dTarget = M.dTarget;
+    typedef list<Pair_t*>::const_iterator LPPcit;
+    for (LPPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
+    {
+	dTarget.push_back((*ii)->dUsed);
+    }
+    sort(dTarget.begin(), dTarget.end());
+    // and calculate everything from scratch
     Recalculate();
     // IO helpers
     output_format = M.output_format;
@@ -459,24 +464,16 @@ Molecule& Molecule::operator=(const Molecule& M)
 //pj: fixthis
 void Molecule::init()
 {
-    ss->molecules.push_back(this);
-    max_NAtoms = ss->NAtoms;
     max_abad = 0;
     badness = 0;
-    // prepare ssdIdxFree
-    for (int i = 0; i < ss->NDist; ++i)
-    {
-	ssdIdxFree.push_back(i);
-    }
     // default output format
     OutFmtGrid();
 }
 
 Molecule::~Molecule()
 {
-    // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
+    // we must call Clear() to delete Pair_t objects
     Clear();
-    ss->molecules.remove(this);
 }
 
 
@@ -810,7 +807,7 @@ Molecule& Molecule::Add(double rx0, double ry0, double rz0)
 
 Molecule& Molecule::Add(Atom_t atom)
 {
-    if (NAtoms() == max_NAtoms)
+    if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: molecule too large" << endl;
 	throw InvalidMolecule();
@@ -830,7 +827,7 @@ Molecule& Molecule::Add(Atom_t atom)
 
 void Molecule::calc_test_badness(Atom_t& ta)
 {
-    if (NAtoms() == max_NAtoms)
+    if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: too many atoms in Molecule::calc_test_badness()" << endl;
 	throw InvalidMolecule();
@@ -896,7 +893,7 @@ int Molecule::push_good_triangles(
 	)
 {
     // generate randomly oriented triangles
-    if (NAtoms() == max_NAtoms)
+    if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: molecule too large for finding a new position" << endl;
 	throw InvalidMolecule();
@@ -977,7 +974,7 @@ int Molecule::push_good_pyramids(
 	vector<Atom_t>& vta, double *afit, int ntrials
 	)
 {
-    if (NAtoms() == max_NAtoms)
+    if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: molecule too large for finding a new position" << endl;
 	throw InvalidMolecule();
@@ -1131,7 +1128,7 @@ int Molecule::push_good_pyramids(
 
 Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 {
-    if (NAtoms() == max_NAtoms)
+    if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: full-sized molecule cannot Evolve()" << endl;
 	throw InvalidMolecule();
