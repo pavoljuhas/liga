@@ -809,3 +809,29 @@ ostream& operator<<(ostream& fid, Molecule& m)
     }
     return fid;
 }
+
+void Molecule::PrintBadness()
+{
+    cout << "MBadness() = " << MBadness() << endl;
+    cout << "ABadness() =";
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	cout << ' ' << ABadness(i);
+	if (ABadness(i) == abadMax)
+	    cout << '*';
+    }
+    cout << endl;
+}
+
+void Molecule::PrintFitness()
+{
+    cout << "MFitness() = " << MFitness() << endl;
+    cout << "AFitness() =";
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	cout << ' ' << AFitness(i);
+	if (ABadness(i) == abadMax)
+	    cout << '*';
+    }
+    cout << endl;
+}
