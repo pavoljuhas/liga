@@ -29,6 +29,16 @@ template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
     return ii;
 }
 
+struct Counters_t
+{
+    int penalty_calls;
+    int distance_calls;
+    void PrintCounters();
+    void PrintCPUtime();
+};
+// global instance of Counters_t
+namespace BGA { extern Counters_t cnt; }
+
 double vdnorm(const valarray<double>&);
 double vddot(const valarray<double>&, const valarray<double>&);
 valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
