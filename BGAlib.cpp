@@ -478,7 +478,7 @@ double Molecule::ABadnessAt(int nh, int nk)
     return nbad;
 }
 
-double Molecule::MBadnessWith(const Molecule& M)
+double Molecule::MBadnessWith(Molecule& M)
 {
     if (NAtoms+M.NAtoms > ss->NAtoms)
     {
@@ -524,13 +524,13 @@ double Molecule::MBadnessWith(const Molecule& M)
 // Molecule operators
 ////////////////////////////////////////////////////////////////////////
 
-Molecule& Molecule::Shift(int dh, int dk)
+Molecule& Molecule::Shift(double dh, double dk)
 {
     subtract_out_penalty();
     for (int i = 0; i < NAtoms; ++i)
     {
-	h[i] += dh;
-	k[i] += dk;
+	h[i] += (int) round(h[i] + dh);
+	k[i] += (int) round(k[i] + dk);
     }
     add_out_penalty();
     set_mbad_abadMax();
@@ -548,7 +548,7 @@ Molecule& Molecule::Center()
     }
     mean_h /= NAtoms;
     mean_k /= NAtoms;
-    Shift( (int) round(-mean_h), (int) round(-mean_k) );
+    Shift(-mean_h, -mean_k);
     return *this;
 }
 
@@ -972,20 +972,47 @@ namespace BGA_Molecule_MateWith
     }
 }
 
+struct Molecule::mount_par
+{
+    double mbad;
+    double dh, dk;
+    double phi, h0, k0;
+};
+bool operator<(
+	const Molecule::mount_par& lhs, const Molecule::mount_par& rhs
+	)
+{
+    return lhs.mbad < rhs.mbad;
+}
 
 Molecule Molecule::MateWith(Molecule Male, int trials)
 {
-    // pj: urob
-    /*
+    // pj: add Sperm, Egg division code
+    list<mount_par> mounts_log;
     for (int i = 0; i < trials; ++i)
     {
-	mount(Male);
-
+	mounts_log.push_back(mount(Male));
     }
-    */
+    // find the best mount and use it to create child
+    mount_par *best;
+    // maybe the last one is good:
+    if (mounts_log.back().mbad == 0.0)
+    {
+	best = &mounts_log.back();
+    }
+    else
+    {
+	best = &(*min_element(mounts_log.begin(), mounts_log.end()));
+    }
+    Molecule child(*this);
+    Male.Shift(best->dh, best->dk);
+    Male.Rotate(best->phi, best->h0, best->k0);
+    child.Add(Male);
+    child.Center();
+    return child;
 }
 
-Molecule& mount(Molecule& Male)
+Molecule::mount_par Molecule::mount(Molecule Male)
 {
 }
 

@@ -96,7 +96,7 @@ public:
 	return dh*dh + dk*dk;
     }
     // operator functions
-    Molecule& Shift(int dh, int dk);	// shift all atoms
+    Molecule& Shift(double dh, double dk);	// shift all atoms
     Molecule& Center();			// center w/r to the center of mass
     Molecule& Rotate(double phi, double h0 = 0.0, double k0 = 0.0);
     template<class T> 
@@ -122,7 +122,7 @@ public:
     Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
     Molecule MateWith(Molecule Male, int trials = 500);
     double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
-    double MBadnessWith(const Molecule& M);  // badness estimate for merging
+    double MBadnessWith(Molecule& M);	// badness estimate for merging
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
@@ -159,6 +159,7 @@ private:
     void calc_db();		// update distance and fitness tables
 public:
     struct badness_at;
+    struct mount_par;
 private:
     list<badness_at> find_good_distances(int trials, const list<int>& ssdIdx);
     list<badness_at> find_good_triangles(int trials, const list<int>& ssdIdx);
@@ -166,7 +167,7 @@ private:
     void add_out_penalty();
     void set_mbad_abadMax();
     // MateWith helpers:
-    Molecule& mount(Molecule& Male);
+    Molecule::mount_par Molecule::mount(Molecule Male);
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
     file_fmt_type output_format;
