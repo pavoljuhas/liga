@@ -52,8 +52,11 @@ void print_help(ParseArgs& a)
 "  eprob_max=double      [0.75] high limit of evolve probability\n"
 "  eprob_min=double      [0.25] low limit of evolve probability\n"
 "  bustprob=double       [0.01] probability of forced full structure built\n"
+"  buststop=double       [10.0] stop busting when (bad/tod_bad)>buststop\n"
 "  evolve_jump=bool      [true] allow additions of several atoms\n"
 "  evolve_frac=double    [1E-4] selection badness threshold of tested atoms\n"
+"  pop_max=int           [5] maximum number of removed atoms\n"
+"  pop_rand=bool         [false] randomize number of removed atoms\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
@@ -79,8 +82,11 @@ struct RunPar_t
     double eprob_max;
     double eprob_min;
     double bustprob;
+    double buststop;
     bool evolve_jump;
     double evolve_frac;
+    int pop_max;
+    bool pop_rand;
     string penalty;
     int dist_trials;
     int tri_trials;
@@ -212,12 +218,16 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     cout << "eprob_min=" << rp.eprob_min << endl;
     rp.bustprob = a.GetPar<double>("bustprob", 0.01);
     cout << "bustprob=" << rp.bustprob << endl;
+    rp.buststop = a.GetPar<double>("buststop", 10.0);
+    cout << "buststop=" << rp.buststop << endl;
     rp.evolve_jump = a.GetPar<bool>("evolve_jump", true);
     cout << "evolve_jump=" << rp.evolve_jump << endl;
     mol.evolve_jump = rp.evolve_jump;
     rp.evolve_frac = a.GetPar<double>("evolve_frac", 1.0e-4);
     cout << "evolve_frac=" << rp.evolve_frac << endl;
     mol.evolve_frac = rp.evolve_frac;
+    rp.pop_max = a.GetPar<int>("pop_max", 5);
+    rp.pop_rand = a.GetPar<int>("pop_rand", false);
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
         mol.penalty = BGA::pow2;
@@ -244,6 +254,8 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 double prob_evolve(const Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
     double pe;
+    if (rv.bust_now && mol.NormBadness() > rp.buststop*rp.tol_bad)
+        rv.bust_now = false;
     if (mol.NAtoms() == mol.max_NAtoms())
     {
         pe = 0.0;
@@ -251,7 +263,7 @@ double prob_evolve(const Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     }
     else if (mol.NAtoms() <= 1)
         pe = 1.0;
-    else if (rv.bust_now)
+    else if (rv.bust_now )
         pe = 1.0;
     else
         pe = rv.impr_rate*(rp.eprob_max-rp.eprob_min)+rp.eprob_min;
@@ -272,8 +284,9 @@ void evolve_or_degenerate(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
         {
             Npop = (int) ceil( mol.NAtoms()/4.0 *
                     (1.0 - rp.tol_bad/mol.NormBadness()) );
-            //          would this help?
-//          Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop);
+            Npop = min(Npop, rp.pop_max);
+            if (rp.pop_rand)
+                Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop);
         }
         mol.Degenerate(Npop);
         cout << " D " << mol.NAtoms() << " " << mol.NormBadness();
