@@ -413,8 +413,30 @@ vector<double>::iterator DistanceTable::return_back(const double& dback)
 
 void DistanceTable::init()
 {
+    if (size() == 0)
+    {
+	cerr << "E: target distance table is empty" << endl;
+	throw InvalidDistanceTable();
+    }
+    // calculate and check NAtoms
+    double xNAtoms = 0.5 + sqrt(1 + 8.0*size())/2.0;
+    NAtoms = int(xNAtoms);
+    if (double(NAtoms) != xNAtoms)
+    {
+	cerr << "E: incorrect length of target distance table, NAtoms=" <<
+		xNAtoms << '\n';
+	throw InvalidDistanceTable();
+    }
+    // sort and check values
     sort(begin(), end());
+    if (at(0) <= 0)
+    {
+	cerr << "E: non-positive entry in DistanceTable, " <<
+	    "dFree[0]=" << at(0) << endl;
+	throw InvalidDistanceTable();
+    }
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
@@ -522,7 +544,7 @@ Molecule::~Molecule()
 // recalculate everything from scratch
 void Molecule::Recalculate()
 {
-    if (NAtoms() >= ss->NDist)
+    if (NAtoms() > ss->NAtoms)
     {
 	cerr << "E: molecule too large" << endl;
 	throw InvalidMolecule();
