@@ -740,7 +740,7 @@ list<Molecule::badness_at> Molecule::find_good_distances(
     for (int i = 0; i < trials; ++i)
     {
 	int idx = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
-	list<int>::iterator lit = ssd_idx.begin();
+	list<int>::const_iterator lit = ssd_idx.begin();
 	advance(lit, idx);
 	double radius = ss->d[*lit];
 	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
@@ -794,7 +794,7 @@ list<Molecule::badness_at> Molecule::find_good_triangles(
 	int idf2 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size()-1) + 1;
 	idf2 = (idf2 + idf1) % ssd_idx.size();
 	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
-	list<int>::iterator lit;
+	list<int>::const_iterator lit;
 	lit = ssd_idx.begin(); advance(lit, idf1);
 	double r13 = ss->d[*lit];
 	lit = ssd_idx.begin(); advance(lit, idf2);
@@ -1072,7 +1072,7 @@ Molecule& Molecule::mount(Molecule& sperm)
 	}
     }
     // let's start with random mount:
-    list<int> d_idx = random_wt_choose(ssdIdxFree.size(), peggidx, d_len);
+//    list<int> d_idx = random_wt_choose(ssdIdxFree.size(), peggidx, d_len);
 }
 
 
