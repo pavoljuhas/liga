@@ -469,10 +469,14 @@ double Molecule::MaxABadness() const
 {
     if (max_abad < 0)
     {
-	//pj: check this
-	max_abad = (NAtoms() == 0) ?  0 : max( (double)NAtoms()-1, 
-		max_element(atoms.begin(), atoms.end(),
-		    comp_Atom_Badness)-> Badness() );
+	if (NAtoms() == 0)
+	    max_abad = 0.0;
+	else
+	{
+	    double mab = max_element(atoms.begin(), atoms.end(),
+		    comp_Atom_Badness) -> Badness();
+	    max_abad = max(BGA::tol_abadness, mab);
+	}
     }
     return max_abad;
 }
