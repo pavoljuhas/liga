@@ -22,10 +22,9 @@ struct RunPar_t
     Molecule ProcessArguments(int argc, char * argv[]);
     // IO parameters
     string distfile;
-    string outstru;
     string inistru;
-    string snapshot;
-    int snaprate;
+    string outstru;
+    int saverate;
     string frames;
     int framesrate;
     // Walk parameters
@@ -48,8 +47,8 @@ private:
 RunPar_t::RunPar_t()
 {
     char *pnames[] = {
-	"distfile", "outstru", "inistru",
-	"snapshot", "snaprate", "frames", "framesrate",
+	"distfile", "inistru",
+	"outstru", "saverate", "frames", "framesrate",
 	"tol_dd", "tol_bad", "seed",
 	"evolve_frac", "ligasize", "stopgame",
 	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
@@ -71,10 +70,9 @@ void RunPar_t::print_help(ParseArgs& a)
 "  -v, --version         show program version\n"
 "IO parameters:\n"
 "  distfile=FILE         target distance table\n"
-"  outstru=FILE          where to save the best full molecule\n"
 "  inistru=FILE          initial structure [empty box]\n"
-"  snapshot=FILE         live molecule structure\n"
-"  snaprate=int          [10] number of iterations between snapshot updates\n"
+"  outstru=FILE          where to save the best full molecule\n"
+"  saverate=int          [10] minimum iterations between outstru updates\n"
 "  frames=FILE           save intermediate structures to FILE.liga_round\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters\n"
@@ -189,12 +187,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     cout << hashsep << endl;
     Molecule mol(*dtab);
     cout << "distfile=" << distfile << endl;
-    // outstru
-    if (a.ispar("outstru"))
-    {
-        outstru = a.pars["outstru"];
-        cout << "outstru=" << outstru << endl;
-    }
     // inistru
     if (a.ispar("inistru"))
     {
@@ -207,13 +199,13 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    exit(EXIT_FAILURE);
 	}
     }
-    // snapshot, snaprate
-    if (a.ispar("snapshot"))
+    // outstru
+    if (a.ispar("outstru"))
     {
-        snapshot = a.pars["snapshot"];
-        cout << "snapshot=" << snapshot << endl;
-        snaprate = a.GetPar<int>("snaprate", 10);
-        cout << "snaprate=" << snaprate << endl;
+        outstru = a.pars["outstru"];
+        cout << "outstru=" << outstru << endl;
+        saverate = a.GetPar<int>("saverate", 10);
+        cout << "saverate=" << saverate << endl;
     }
     // frames, framesrate
     if (a.ispar("frames"))
@@ -284,11 +276,11 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 
 struct RunVar_t
 {
-    RunVar_t() : liga_round(0), full_liga(false), lastframe(false)
+    RunVar_t() : liga_round(0), full_liga(false), exiting(false)
     { }
     int liga_round;
     bool full_liga;
-    bool lastframe;
+    bool exiting;
 };
 
 
@@ -396,17 +388,18 @@ void SIGHUP_handler(int signum)
 // Output helpers
 ////////////////////////////////////////////////////////////////////////
 
-void save_snapshot(Molecule& mol, RunPar_t& rp)
+void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
     static int cnt = 0;
     double dbmax = numeric_limits<double>().max();
     static valarray<double> bestMNB(dbmax, mol.max_NAtoms()+1);
-    if (rp.snapshot.size() == 0 || rp.snaprate == 0 || ++cnt < rp.snaprate)
+    if (  rp.outstru.size() == 0 || rp.saverate == 0 ||
+	    (++cnt < rp.saverate && !rv.exiting) )
 	return;
     if (mol.NormBadness() < bestMNB[mol.NAtoms()])
     {
 	bestMNB[mol.NAtoms()] = mol.NormBadness();
-	mol.WriteAtomEye(rp.snapshot.c_str());
+	mol.WriteAtomEye(rp.outstru.c_str());
 	cnt = 0;
     }
 }
@@ -415,7 +408,7 @@ void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
     static int cnt = 0;
     if (  rp.frames.size() == 0 || rp.framesrate == 0 ||
-            (++cnt < rp.framesrate && !rv.lastframe) )
+            (++cnt < rp.framesrate && !rv.exiting) )
         return;
     ostringstream oss;
     oss << rp.frames << "." << rv.liga_round;
@@ -546,7 +539,7 @@ int main(int argc, char *argv[])
 	}
 	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
 	    << world_champ->NormBadness() << endl;
-        save_snapshot(*world_champ, rp);
+        save_outstru(*world_champ, rp, rv);
         save_frames(*world_champ, rp, rv);
 	if (    world_champ->NAtoms() > best_champ.NAtoms() ||
 		world_champ->NormBadness() < best_champ.NormBadness()
@@ -560,11 +553,9 @@ int main(int argc, char *argv[])
 	cout << "Solution found!!!" << endl << endl;
     BGA::cnt.PrintRunStats();
     // save last frame
-    rv.lastframe = true;
+    rv.exiting = true;
+    save_outstru(best_champ, rp, rv);
     save_frames(best_champ, rp, rv);
-    // save final structure
-    if (rp.outstru.size() != 0)
-        best_champ.WriteAtomEye(rp.outstru.c_str());
     if (SIGHUP_received)
 	exit(SIGHUP+128);
     return EXIT_SUCCESS;
