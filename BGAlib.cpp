@@ -195,9 +195,10 @@ Pair_t& Pair_t::operator=(const Pair_t&)
 
 Pair_t::~Pair_t()
 {
-    atom1->DecBadness(badness);
-    atom2->DecBadness(badness);
-    owner->badness -= 2*badness;
+    double badnesshalf = badness/2.0;
+    atom1->DecBadness(badnesshalf);
+    atom2->DecBadness(badnesshalf);
+    owner->badness -= badness;
     if (fabs(owner->badness) < BGA::eps_badness)
 	owner->badness = 0.0;
     if (dUsed > 0.0)
