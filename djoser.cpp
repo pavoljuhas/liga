@@ -12,16 +12,17 @@
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
-void print_version()
+string version_string(string quote = "")
 {
     using namespace std;
-    const char *ver =
-        "$Id$"
+    ostringstream oss;
+    oss << quote
+        << "$Id$" << endl
 #   if defined(__DATE__) && defined(__TIME__)
-        "\ncompiled " __DATE__ " " __TIME__
+	<< quote << "compiled " __DATE__ " " __TIME__ << endl
 #   endif
-        "\n";
-    cout << ver;
+        ;
+    return oss.str();
 }
 
 void print_help(ParseArgs& a)
@@ -130,7 +131,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     else if (a.isopt("v"))
     {
-        print_version();
+        cout << version_string();
         exit(EXIT_SUCCESS);
     }
     if (a.isopt("p"))
@@ -167,10 +168,10 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     string hashsep(72, '#');
     cout << hashsep << endl;
-    cout << "# " << a.cmd_t << ' ' <<
-        "$Id$" << endl;
     time_t cur_time = time(NULL);
     cout << "# " << ctime(&cur_time);
+    cout << "# " << a.cmd_t << endl;
+    cout << version_string("# ");
     cout << hashsep << endl;
     Molecule mol(*dtab);
     cout << "distfile=" << rp.distfile << endl;
@@ -181,14 +182,14 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     if (a.ispar("inistru"))
     {
-        rp.inistru = a.pars["inistru"];
-        cout << "inistru=" << rp.inistru << endl;
-        try {
-	mol.ReadXYZ(rp.inistru.c_str());
-        }
-        catch (IOError) {
-	exit(EXIT_FAILURE);
-        }
+	rp.inistru = a.pars["inistru"];
+	cout << "inistru=" << rp.inistru << endl;
+	try {
+	    mol.ReadXYZ(rp.inistru.c_str());
+	}
+	catch (IOError) {
+	    exit(EXIT_FAILURE);
+	}
     }
     if (a.ispar("snapshot"))
     {
