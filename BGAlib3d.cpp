@@ -188,23 +188,26 @@ const double Atom_t::AvgBadness()
     return (age != 0) ? 1.0*badness_sum/age : 0.0;
 }
 
-void Atom_t::IncBadness(int b)
+int Atom_t::IncBadness(int b)
 {
     badness += b;
     badness_sum += badness;
     age++;
+    return badness;
 }
 
-void Atom_t::DecBadness(int b)
+int Atom_t::DecBadness(int b)
 {
     badness -= b;
     badness_sum += badness;
     age++;
+    return badness;
 }
 
-void Atom_t::ResetBadness()
+int Atom_t::ResetBadness()
 {
     badness = badness_sum = age = 0;
+    return badness;
 }
 
 int dist2(const Atom_t& a1, const Atom_t& a2)
@@ -225,7 +228,7 @@ bool compare_in_array(const int& lhs, const pair<double,double*>& rhs)
 }
 
 Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
-    pmol(pM), atom1(a1), atom2(a2)
+    owner(pM), atom1(a1), atom2(a2)
 {
     d2 = dist2(atom1, atom2);
     d = sqrt(1.0*d2);
@@ -236,12 +239,12 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     }
     // abbreviation
     list<int>::iterator ii;
-    double *d2lo = &(pmol->ss->d2lo[0]);
-    double *d2hi = &(pmol->ss->d2hi[0]);
+    double *d2lo = &(owner->ss->d2lo[0]);
+    double *d2hi = &(owner->ss->d2hi[0]);
     pair<double,double*> d2_d2hi(d2, d2hi);
-    ii = lower_bound( pmol->ssdIdxFree.begin(), pmol->ssdIdxFree.end(),
+    ii = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
 	    d2_d2hi, compare_in_array );
-    if (ii == pmol->ssdIdxFree.end() || d2lo[*ii] > d2)
+    if (ii == owner->ssdIdxFree.end() || d2lo[*ii] > d2)
     {
 	ssdIdxUsed = -1;
 	badness++;
@@ -249,23 +252,29 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     else
     {
 	ssdIdxUsed = *ii;
-	pmol->ssdIdxFree.erase(ii);
+	owner->ssdIdxFree.erase(ii);
     }
     atom1.IncBadness(badness);
     atom2.IncBadness(badness);
+    owner->badness += 2*badness;
+    int mb = max(atom1.Badness(), atom2.Badness());
+    if (mb > owner->max_abad)  owner->max_abad = mb;
 }
 
 Pair_t::~Pair_t()
 {
+    int mb = max(atom1.Badness(), atom2.Badness());
+    if (mb >= owner->max_abad)  owner->max_abad = -1;
     atom1.DecBadness(badness);
     atom2.DecBadness(badness);
+    owner->badness -= 2*badness;
     if (ssdIdxUsed >= 0)
     {
-	// return it back to pmol->ssdIdxFree
+	// return it back to owner->ssdIdxFree
 	list<int>::iterator ii;
-	ii = lower_bound( pmol->ssdIdxFree.begin(), pmol->ssdIdxFree.end(),
+	ii = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
 		ssdIdxUsed );
-	pmol->ssdIdxFree.insert(ii, ssdIdxUsed);
+	owner->ssdIdxFree.insert(ii, ssdIdxUsed);
     }
 }
 
@@ -386,7 +395,9 @@ Molecule::Molecule(SandSphere *SS,
 void Molecule::init()
 {
     ss->molecules.push_back(this);
-    MaxAtoms = ss->NAtoms;
+    max_NAtoms = ss->NAtoms;
+    max_abad = 0;
+    badness = 0;
     // check coordinate sizes
     OutFmtGrid();
 }
@@ -759,15 +770,46 @@ void Molecule::init()
 //    fix_size();
 //    return *this;
 //}
-//
-//Molecule& Molecule::Clear()
-//{
-//    h.clear();
-//    k.clear();
-//    fix_size();
-//    return *this;
-//}
-//
+
+Molecule& Molecule::Clear()
+{
+    // pairs must be destroyed before atoms;
+    pairs.clear();
+    atoms.clear();
+    max_abad = 0;
+    badness = 0;
+    return *this;
+}
+
+Molecule& Molecule::Add(Molecule& M)
+{
+    for ( list<Atom_t>::iterator ai = M.atoms.begin();
+	    ai != M.atoms.end(); ++ai )
+    {
+	Add(*ai);
+    }
+    return *this;
+}
+
+Molecule& Molecule::Add(int nh, int nk, int nl)
+{
+    Add(Atom_t(nh, nk, nl));
+    return *this;
+}
+
+Molecule& Molecule::Add(Atom_t atom)
+{
+    list<Atom_t>::iterator this_atom, ai;
+    this_atom = atoms.insert(atoms.end(), atom);
+    this_atom->ResetBadness();
+    for (ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	if (ai == this_atom)  continue;
+	pairs.push_back(Pair_t(this, *ai, *this_atom));
+    }
+    return *this;
+}
+
 //Molecule& Molecule::Add(Molecule& M)
 //{
 //    for (int i = 0; i < M.NAtoms; ++i)
