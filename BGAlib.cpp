@@ -13,12 +13,6 @@
 #include <gsl/gsl_randist.h>
 #include "BGAlib.hpp"
 
-// exceptions
-struct InvalidDistanceTable { };
-struct InvalidMolecule { };
-struct InvalidPopulation { };
-struct IOError { };
-
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 
@@ -130,10 +124,7 @@ void SandSphere::init(const vector<double>& t)
     }
     // fill in and check distance valarray d
     d.resize(NDist);
-    for (int i = 0; i < NDist; ++i)
-    {
-	d[i] = t[i];
-    }
+    copy(t.begin(), t.end(), &d[0]);
     sort(&d[0], &d[d.size()]);
     if (d[0] <= 0)
     {
@@ -293,6 +284,11 @@ void Molecule::fix_size()
     }
     NAtoms = h.size();
     NDist  = NAtoms*(NAtoms-1)/2;
+    if (NDist > ss->NDist)
+    {
+	cerr << "E: molecule too large" << endl;
+	throw InvalidMolecule();
+    }
     abad.resize(NAtoms, 0.0);
     abadMax = 0.0;
     d2.resize(NDist, 0);
@@ -638,29 +634,115 @@ Molecule& Molecule::MoveAtomTo(int idx, int nh, int nk)
     return *this;
 }
 
-namespace BGA_Molecule_Evolve
+struct Molecule::badness_at
 {
-    struct badness_at
+    badness_at() : h(0), k(0)
     {
-	badness_at() : h(0), k(0)
-	{
-	    numeric_limits<double> double_info;
-	    abad = double_info.max();
-	}
-	badness_at(int nh, int nk, double nbad) :
-	    h(nh), k(nk), abad(nbad) { }
-	int h, k;
-	double abad;
-    };
-    bool operator<(const badness_at& lhs, const badness_at rhs)
-    {
-	return lhs.abad < rhs.abad;
+	numeric_limits<double> double_info;
+	abad = double_info.max();
     }
+    badness_at(int nh, int nk, double nbad) :
+	h(nh), k(nk), abad(nbad) { }
+    int h, k;
+    double abad;
+};
+bool operator<(const Molecule::badness_at& lhs, const Molecule::badness_at rhs)
+{
+    return lhs.abad < rhs.abad;
+}
+
+list<Molecule::badness_at> Molecule::find_good_distances(int trials)
+{
+    if (NAtoms > ss->NDist)
+    {
+	cerr << "E: molecule too large for finding new position" << endl;
+	throw InvalidMolecule();
+    }
+    // prepare a return list:
+    list<badness_at> retlist;
+    for (int i = 0; i < trials; ++i)
+    {
+	int idx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
+	list<int>::iterator lit = ssdIdxFree.begin();
+	advance(lit, idx);
+	double radius = ss->d[*lit];
+	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
+	int nh = h[0] + (int)round(radius * cos(phi));
+	int nk = k[0] + (int)round(radius * sin(phi));
+	retlist.push_back( badness_at(nh, nk, ABadnessAt(nh, nk)) );
+    }
+    return retlist;
+}
+
+list<Molecule::badness_at> Molecule::find_good_triangles(int trials)
+{
+    // try to generate 2 triangles with good distances, this may not always
+    // work, so this returns a list, which is either empty, or has 2 entries
+    if (NAtoms > ss->NDist)
+    {
+	cerr << "E: molecule too large for finding new position" << endl;
+	throw InvalidMolecule();
+    }
+    // prepare a return list:
+    list<badness_at> retlist;
+    // prepare discrete RNG
+    double afit[NAtoms];
+    for (int i = 0; i != NAtoms; ++i)
+    {
+	afit[i] = AFitness(i);
+    }
+    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, afit);
+    for (int nt = 0; nt < trials; ++nt)
+    {
+	// pick first atom and free distance
+	int a1 = gsl_ran_discrete(BGA::rng, table);
+	int a2 = gsl_ran_discrete(BGA::rng, table);
+	for (int i = 0; i < 5 && a1 == a2; ++i)
+	{
+	    a2 = gsl_ran_discrete(BGA::rng, table);
+	}
+	if (a1 == a2)
+	{
+	    a2 = (a1 + 1) % NAtoms;
+	}
+	int idf1 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
+	int idf2 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size()-1) + 1;
+	idf2 = (idf2 + idf1) % ssdIdxFree.size();
+	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
+	list<int>::iterator lit;
+	lit = ssdIdxFree.begin(); advance(lit, idf1);
+	double r13 = ss->d[*lit];
+	lit = ssdIdxFree.begin(); advance(lit, idf2);
+	double r23 = ss->d[*lit];
+	double r12 = dist(a1, a2);
+	// is triangle [a1 a2 a3] possible?
+	if (r13 + r23 < r12 || fabs(r13 - r23) > r12) continue;
+	// here we can construct 2 triangles
+	double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
+	double perpdir[2] = { -longdir[1], 	  longdir[0] };
+	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
+	double xperp = sqrt(r13*r13 - xlong*xlong);
+	int nh1 = (int) round(xlong*longdir[0] + xperp*perpdir[0]);
+	int nk1 = (int) round(xlong*longdir[1] + xperp*perpdir[1]);
+	// store the result
+	badness_at res1(nh1, nk1, ABadnessAt(nh1, nk1));
+	retlist.push_back(res1);
+	// jump out if it is a good location or if we did enough trials
+	if (res1.abad == 0.0 || ++nt == trials)  break;
+	// 2nd triangle:
+	int nh2 = (int) round(xlong*longdir[0] - xperp*perpdir[0]);
+	int nk2 = (int) round(xlong*longdir[1] - xperp*perpdir[1]);
+	// store the result
+	badness_at res2(nh2, nk2, ABadnessAt(nh2, nk2));
+	retlist.push_back(res2);
+	if (res2.abad == 0.0 || ++nt == trials)  break;
+    }
+    gsl_ran_discrete_free(table);
+    return retlist;
 }
 
 Molecule& Molecule::Evolve(int trials)
 {
-    using namespace BGA_Molecule_Evolve;
     list<int>::iterator lit;
     if (NAtoms == ss->NAtoms)
     {
