@@ -72,7 +72,12 @@ template<class T> T ParseArgs::GetPar(string par)
     }
     T val;
     istringstream iss(pars[par]);
-    iss >> val;
+    if ( !(iss >> val) )
+    {
+	ostringstream oss;
+	oss << "invalid value for parameter '" << par << "'";
+	throw ParseArgsError(oss.str());
+    }
     return val;
 }
 
