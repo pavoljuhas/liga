@@ -117,6 +117,8 @@ double Atom_t::IncBadness(double db)
 double Atom_t::DecBadness(double db)
 {
     badness -= db;
+    if (fabs(badness) < BGA::eps_abadness)
+	badness = 0.0;
     badness_sum += badness;
     age++;
     return badness;
@@ -184,6 +186,8 @@ Pair_t::~Pair_t()
     atom1->DecBadness(badness);
     atom2->DecBadness(badness);
     owner->badness -= 2*badness;
+    if (fabs(owner->badness) < BGA::eps_abadness)
+	owner->badness = 0.0;
     owner->dTarget.return_back(dUsed);
 }
 
@@ -736,7 +740,7 @@ int Molecule::push_good_distances(
 	double nrx = a1.rx + rdir[0]*radius;
 	double nry = a1.ry + rdir[1]*radius;
 	double nrz = a1.rz + rdir[2]*radius;
-	Atom_t ad1(nrx, nrz, nrz);
+	Atom_t ad1(nrx, nry, nrz);
 	calc_test_badness(ad1);
 	ad1.IncBadness(a1.Badness());
 	vta.push_back(ad1);
