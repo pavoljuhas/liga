@@ -908,7 +908,7 @@ namespace BGA_Molecule_MateWith
 	list<int> retlst;
 	if (N > Np)
 	{
-	    throw(runtime_error("too many items to choose"));
+	    throw(range_error("too many items to choose"));
 	}
 	// check trivial cases
 	else if (N == 0)
@@ -1021,6 +1021,7 @@ Molecule Molecule::MateWith(const Molecule& Male, int trials)
 
 Molecule& Molecule::mount(Molecule& sperm)
 {
+    using namespace BGA_Molecule_MateWith;
     if (NAtoms < sperm.NAtoms)
     {
 	cerr << "E: sperm molecule is larger than egg" << endl;
@@ -1041,15 +1042,20 @@ Molecule& Molecule::mount(Molecule& sperm)
 	Center();
 	return *this;
     }
-    // here we can be sure that NAtoms >= 2, sperm.NAtoms >= 1
+    else if (NAtoms == 2 && sperm.NAtoms == 1)
+    {
+	Evolve();
+	return *this;
+    }
+    // here we can be sure that NAtoms >= 2, sperm.NAtoms >= 2
     // make sure ssdIdxFree is updated for egg and sperm
     if (!cached) calc_db();
     if (!sperm.cached) sperm.calc_db();
     // calculate probabilities of choosing an egg free distance,
     // free distances common to egg and sperm have 5 times higher probability
     const double common_prob = 5.0;
-    double peggidx[ssdIdxFree.size()];
-    double *pp = peggidx;
+    double pidx[ssdIdxFree.size()];
+    double *pp = pidx;
     for (vector<int>::iterator
 	    eidx = ssdIdxFree.begin(), sidx = sperm.ssdIdxFree.begin();
 	    eidx != ssdIdxFree.end(); ++eidx, ++pp)
@@ -1066,7 +1072,28 @@ Molecule& Molecule::mount(Molecule& sperm)
 	}
     }
     // let's start with random mount:
-//    list<int> d_idx = random_wt_choose(ssdIdxFree.size(), peggidx, d_len);
+    int idf = random_wt_choose(ssdIdxFree.size(), pidx, 1).front();
+    double e_afit[NAtoms];
+    for (int i = 0; i < NAtoms; ++i)  e_afit[i] = AFitness(i);
+    double s_afit[sperm.NAtoms];
+    for (int i = 0; i < sperm.NAtoms; ++i)  s_afit[i] = sperm.AFitness(i);
+    int ea =  random_wt_choose(NAtoms, e_afit, 1).front();
+    int sa =  random_wt_choose(sperm.NAtoms, s_afit, 1).front();
+    double omega = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
+    Molecule sp1(sperm);
+    sp1.Rotate(omega, sp1.h[sa], sp1.k[sa]);
+    double radius = ss->d[ssdIdxFree[idf]];
+    double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
+    double shn = h[ea] + radius*cos(phi);
+    double skn = k[ea] + radius*sin(phi);
+    sp1.Shift(shn-sp1.h[sa], skn-sp1.k[sa]);
+    double ch1_badness = MBadnessWith(sp1);
+    // save child molecule
+    Molecule ch1(*this); ch1.Add(sp1);
+    // next try a sophisticated triangular mount:
+    list<int> lidf;
+    lidf = random_wt_choose(NAtoms, e_afit, 2);
+
 }
 
 
