@@ -91,8 +91,8 @@ public:
     Pair_t(Molecule *M, Atom_t& a1, Atom_t& a2);
     ~Pair_t();
     // do not allow copying or assignment
-    Pair_t(const Pair_t& pair0) {};
-    Pair_t& operator=(const Pair_t&) {};
+    Pair_t(const Pair_t& pair0);
+    Pair_t& operator=(const Pair_t&);
     //
     Atom_t *atom1, *atom2;
     mutable int d2;
@@ -180,7 +180,7 @@ private:
     SandSphere *ss;
     // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
-    list<Pair_t> pairs;			// list of all atom pairs
+    list<Pair_t*> pairs;		// list of all atom Pair_t objects
     mutable list<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
     inline int NDist()  const { return pairs.size(); }
