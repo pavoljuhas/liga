@@ -37,38 +37,38 @@ lib_objects: $(OBJECTS)
 
 tests: $(TESTS)
 
-ssTest01: ssTest01.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
+ssTest01: ssTest01.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-molTest01: molTest01.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
+molTest01: molTest01.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-molTest02: molTest02.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
+molTest02: molTest02.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-molTest03: molTest03.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
+molTest03: molTest03.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-molTest04: molTest04.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
+molTest04: molTest04.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-molTest05: molTest05.o $(OBJECTS)
-	$(CC) -o $@ $^ $(LDFLAGS) 
+molTest05: molTest05.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-# molTest06: molTest06.o $(OBJECTS)
-# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# molTest06: molTest06.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 # 
-# molTest07: molTest07.o $(OBJECTS)
-# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# molTest07: molTest07.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 # 
-# molTest08: molTest08.o $(OBJECTS)
-# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# molTest08: molTest08.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 # 
-# molTest09: molTest09.o $(OBJECTS)
-# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# molTest09: molTest09.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 # 
-# molTest10: molTest10.o $(OBJECTS)
-# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# molTest10: molTest10.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
 #####################################################################}}}
 # utility targets {{{
