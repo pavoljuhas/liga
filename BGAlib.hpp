@@ -224,29 +224,4 @@ private:
 
 template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
 
-//struct Couple
-//{
-//    Molecule *Male, *Female;
-//};
-//
-//class Population : public vector<Molecule>
-//{
-//public:
-//    Population() : vector<Molecule>() { init(); }
-//    Population(size_type n, SandSphere *SS) :
-//	vector<Molecule>(n, Molecule(SS))
-//    { init(); }
-//    Population(size_type n, const Molecule& M) :
-//	vector<Molecule>(n, M)
-//    { init(); }
-//    Population(Population &P) : vector<Molecule>(P) { init(); }
-//    template <class InputIterator>
-//	Population(InputIterator first, InputIterator last) :
-//	    vector<Molecule>(first, last) { init(); }
-//public:
-//    vector<Couple> FindCouples(int NCouples = 1);
-//private:
-//    void init();
-//};
-
 #endif
