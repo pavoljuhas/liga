@@ -116,7 +116,7 @@ public:
     Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
-    Molecule& Evolve(int Trials = 500);	// Add 1 atom to the right place
+    Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
     Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
     double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
     // IO functions
