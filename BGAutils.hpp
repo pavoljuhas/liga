@@ -14,7 +14,7 @@ struct IOError : public runtime_error
 	runtime_error(what_arg) { }
 };
 
-// similar to mkstemp, but returns ofstream with umask permissions
+// similar to mkstemp(3)
 ofstream& mktempofstream(ofstream& out, char *writefile);
 
 template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
