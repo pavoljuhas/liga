@@ -1,7 +1,7 @@
 #include <stdexcept>
 
-#ifndef IOERROR_HPP_INCLUDED
-#define IOERROR_HPP_INCLUDED
+#ifndef BGAUTILS_HPP_INCLUDED
+#define BGAUTILS_HPP_INCLUDED
 
 using namespace std;
 
