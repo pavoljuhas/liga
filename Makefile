@@ -10,6 +10,7 @@
 # compiler flags and file lists:
 CC = g++
 ifdef FAST
+# FAST version runs about 2 times faster
 CPPFLAGS = -O3 -ffast-math -I/u24/local/include $(CFLAGS)
 else
 CPPFLAGS = -gstabs+ -I/u24/local/include $(CFLAGS)
@@ -17,7 +18,7 @@ endif
 LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
-PROGRAMS = djoser
+PROGRAMS = djoser gizaliga
 TESTS   = $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
 SOURCES = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
 HEADERS = $(SOURCES:%.cpp=%.hpp)
