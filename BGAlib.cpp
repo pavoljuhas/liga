@@ -155,6 +155,16 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     owner->badness += 2*badness;
 }
 
+// this constructor should be used only in Molecule operator=()
+Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2, const Pair_t& p0) :
+    owner(pM), atom1(a1), atom2(a2)
+{
+    if (owner == p0.owner)
+	throw runtime_error("cloning Pair_t() of the same molecule");
+    badness = p0.badness;
+    dUsed = p0.dUsed;
+}
+
 Pair_t::Pair_t(const Pair_t& pair0)
 {
     cerr << "call to Pair_t() copy constructor" << endl;

@@ -97,6 +97,7 @@ struct Pair_t
 {
 public:
     Pair_t(Molecule *M, Atom_t *a1, Atom_t *a2);
+    Pair_t(Molecule *M, Atom_t *a1, Atom_t *a2, const Pair_t&);
     ~Pair_t();
     // do not allow copying or assignment
     Pair_t(const Pair_t& pair0);
