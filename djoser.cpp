@@ -183,6 +183,12 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     {
         rp.inistru = a.pars["inistru"];
         cout << "inistru=" << rp.inistru << endl;
+        try {
+	mol.ReadXYZ(rp.inistru.c_str());
+        }
+        catch (IOError) {
+	exit(EXIT_FAILURE);
+        }
     }
     if (a.ispar("snapshot"))
     {
