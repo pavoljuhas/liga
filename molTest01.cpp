@@ -23,7 +23,7 @@ int main()
 
     // build defective square molecule
     double px2[4] = {-.5,  .5,  .5, -.5};
-    double py2[4] = {-.5, -.5,  .5,  .5};
+    double py2[4] = {-.5, -.5,  .5,  .0};
     Molecule mol2(&ssSquare, 4, px2, py2);
 
     // evaluate and print fitness for mol1
@@ -32,7 +32,7 @@ int main()
     cout << "MFitness() = " << mol1.MFitness() << endl;
     for (int i = 0; i < mol1.NAtoms; ++i)
     {
-	cout << "ABadness(" << i << ") = " << mol1.ABadness(i) << '\t';
+	cout << "ABadness(" << i << ") = " << mol1.ABadness(i) << "  ";
 	cout << "AFitness(" << i << ") = " << mol1.AFitness(i) << '\n';
     }
     cout << endl;
