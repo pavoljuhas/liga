@@ -887,13 +887,14 @@ list<Molecule::badness_at> Molecule::find_good_triangles2(
 	    {
 		double r12 = dist(a1, a2);
 		// is triangle [a1 a2 a3] possible?
-		if (r12 < 1.0 || r13 + r23 < r12 || fabs(r13 - r23) > r12)
+		if (r12 < 1.0 || r13 + r23+0.5 < r12 || fabs(r13 - r23) > r12+0.5)
 		    continue;
 		// here we can construct 2 triangles
 		double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
 		double perpdir[2] = { -longdir[1], 	  longdir[0] };
 		double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
-		double xperp = sqrt(r13*r13 - xlong*xlong);
+		double xperp2 = r13*r13 - xlong*xlong;
+		double xperp = (xperp2 > 0.0) ? sqrt(r13*r13 - xlong*xlong) : 0;
 		int nh1 = h[a1] + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
 		int nk1 = k[a1] + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
 		// store the result
@@ -961,7 +962,7 @@ Molecule& Molecule::Evolve(int trials)
     if (trials_log.back().abad != 0.0)
     {
 	list<badness_at> fgt =
-	    find_good_triangles2(5, ssdIdxFree);
+	    find_good_triangles2(1, ssdIdxFree);
 //	    find_good_triangles(trials-trials_log.size(), ssdIdxFree);
 	trials_log.insert(trials_log.end(), fgt.begin(), fgt.end());
     }
