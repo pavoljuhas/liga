@@ -405,6 +405,12 @@ vector<double>::iterator DistanceTable::find_nearest(const double& dfind)
     return ii;
 }
 
+vector<double>::iterator DistanceTable::return_back(const double& dback)
+{
+    iterator ii = lower_bound(begin(), end(), dback);
+    return insert(ii, dback);
+}
+
 void DistanceTable::init()
 {
     sort(begin(), end());
