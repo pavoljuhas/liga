@@ -562,12 +562,12 @@ void Molecule::Recalculate()
 //    return abadMax - badness_i;
 //}
 
-int Molecule::Badness() const
+double Molecule::Badness() const
 {
     return badness;
 }
 
-int Molecule::Fitness() const
+double Molecule::Fitness() const
 {
     // call to MaxABadness() will update max_abad if necessary
     return NAtoms()*MaxABadness() - Badness();
@@ -593,7 +593,7 @@ bool comp_Atom_rz(const Atom_t& lhs, const Atom_t& rhs)
     return lhs.rz < rhs.rz;
 }
 
-int Molecule::MaxABadness() const
+double Molecule::MaxABadness() const
 {
     if (max_abad < 0)
     {
@@ -1034,7 +1034,7 @@ int Molecule::push_good_pyramids(
 	Atom_t& a1 = *list_at(atoms, *(aidxit++)); 
 	Atom_t& a2 = *list_at(atoms, *(aidxit++)); 
 	Atom_t& a3 = *list_at(atoms, *(aidxit++)); 
-	int base_badness = a1.Badness()+a2.Badness()+a3.Badness();
+	double base_badness = a1.Badness()+a2.Badness()+a3.Badness();
 	// pick 3 vertex distances
 	list<int> didx = random_choose_few(3, ssdIdxFree.size());
 	list<int>::iterator didxit = didx.begin();
@@ -1202,7 +1202,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     push_good_triangles(vta, afit, ntd2);
     if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
     // select among the minimal elements of vta
-    int min_badness = min_element(vta.begin(), vta.end(),
+    double min_badness = min_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness)-> Badness();
     typedef vector<Atom_t>::iterator VAit;
     vector<VAit> min_iterators;

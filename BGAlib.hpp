@@ -142,10 +142,9 @@ public:
     // parameters
 //    int ABadness(int) const;	// fitness of specified atom
 //    int AFitness(int) const;	// badness of specified atom
-    int Badness() const;	// total badness
-    int Fitness() const;	// total fitness
-    int MaxABadness() const;	// total fitness
-//    double dist(const int& i, const int& j) const;	// d(i,j)
+    double Badness() const;	// total badness
+    double Fitness() const;	// total fitness
+    double MaxABadness() const;	// total fitness
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
