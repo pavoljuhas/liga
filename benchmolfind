@@ -3,7 +3,7 @@
 setopt extendedglob
 
 # setup:
-REPEATS=50
+: ${REPEATS:=50}
 TIMEFMT="%U"
 distance_files=(
     solids/tetrahedron.dss
@@ -14,7 +14,7 @@ distance_files=(
     solids/prism12.dss
     solids/prismL16.dss
     solids/prism18.dss
-    solids/grid27.dss
+#   solids/grid27.dss
 )
 
 if [[ $# == 0 || -n "${(M)*:#--help}" ]]; then
@@ -38,29 +38,26 @@ if [[ -z ${(M)par:#DISTFILE} ]]; then
 fi
 
 results=( DISTFILE user )
-TMPFILE==()
 
-exec 3>&2
+exec 3<&1 4<&2
 print "#bm timing $CMD $par"
 for df in $distance_files;
 do
     for i in {1..$REPEATS}; : $RANDOM
-    {   time (
-	for i in {1..$REPEATS};
-	do
-	    SEED=$RANDOM
-	    p=( "${(@)par/(#s)SEED(#e)/$SEED}" )
-	    p=( "${(@)p/(#s)DISTFILE(#e)/$df}" )
-	    print "#bm $i of $REPEATS timings for $df"
-	    print "#bm $CMD $p"
-	    $CMD "${(@)p}"
-	done 2>&3
+	UT=$( 2>&1 time (
+	    for i in {1..$REPEATS};
+	    do
+		SEED=$RANDOM
+		p=( "${(@)par/(#s)SEED(#e)/$SEED}" )
+		p=( "${(@)p/(#s)DISTFILE(#e)/$df}" )
+		print "#bm $i of $REPEATS timings for $df"
+		print "#bm $CMD $p"
+		$CMD "${(@)p}"
+	    done 1>&3 2>&4
+	    )
 	)
-    } 2>$TMPFILE
-    UT=$(<$TMPFILE)
     print "#bm $UT\n"
     results=( $results ${df:t} $UT )
-    rm $TMPFILE
 done
 
 print
