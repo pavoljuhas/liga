@@ -24,6 +24,7 @@
 namespace BGA
 {
     extern gsl_rng* rng;
+    const double tol_abadness = 0.05*0.05;
 };
 
 // exceptions
