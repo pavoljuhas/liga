@@ -161,20 +161,11 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = dist(*atom1, *atom2);
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    if (fabs(dd) < BGA::tol_dist)
-    {
-	dUsed = *dnear;
-	badness = pow(dd/BGA::tol_dist, 2);
-	if (badness < BGA::eps_abadness)
-	    badness = 0.0;
-	owner->dTarget.erase(dnear);
-    }
-    else
-    {
-	dUsed = -1.0;
-	// pj: here should go some constant
-	badness = 1.0;
-    }
+    dUsed = *dnear;
+    badness = pow(dd/BGA::tol_dist, 2);
+    if (badness < BGA::eps_abadness)
+	badness = 0.0;
+    owner->dTarget.erase(dnear);
     atom1->IncBadness(badness);
     atom2->IncBadness(badness);
     owner->badness += 2*badness;
@@ -718,17 +709,9 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	double d = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(d);
 	double dd = *dnear - d;
-	if (fabs(dd) < BGA::tol_dist)
-	{
-	    tbad += pow(dd/BGA::tol_dist, 2);
-	    used_distances.push_back(*dnear);
-	    erased_positions.push_back(dTarget.erase(dnear));
-	}
-	else
-	{
-	    // pj: here should go some constant
-	    tbad += 1.0;
-	}
+	tbad += pow(dd/BGA::tol_dist, 2);
+	used_distances.push_back(*dnear);
+	erased_positions.push_back(dTarget.erase(dnear));
     }
     // restore dTarget to the original state
     list<double>::reverse_iterator rud = used_distances.rbegin();
