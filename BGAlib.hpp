@@ -10,6 +10,7 @@
 
 #ifndef BGALIB_HPP_INCLUDED
 #define BGALIB_HPP_INCLUDED
+
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -46,13 +47,8 @@ struct OrderedPair : pair<T,T>
     OrderedPair(const T& x, const T& y) : pair<T,T>(x, y)
     { if (!(first<second))  swap(first, second); }
 };
-template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
 list<int> random_choose_few(int K, int Np);
 list<int> random_wt_choose(int K, const double *p, int Np);
-double vdnorm(const valarray<double>&);
-double vddot(const valarray<double>&, const valarray<double>&);
-valarray<double> vdcross(const valarray<double>&, const valarray<double>&);
-valarray<double> vdrecipw0(const valarray<double>&);
 
 /* declaration of BGA objects */
 class DistanceTable : public vector<double>
@@ -215,5 +211,4 @@ private:
     const string& header;
 };
 
-
-#endif
+#endif		// BGALIB_HPP_INCLUDED
