@@ -37,3 +37,7 @@ three-dim-1f                1.111       2005-02-22
 three-dim-1g                1.114       2005-02-22
     atom fitness is now proportional to the probability that other atoms
     will be dumped
+
+three-dim-1h                1.116       2005-02-22
+    added debug counters for acceptance ratio of distances, triangles
+    and pyramids.
