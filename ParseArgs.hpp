@@ -51,6 +51,7 @@ public:
     template <class T> T GetPar(string par);
     template <class T> T GetPar(string par, T defval);
     template <typename T> vector<T> GetParVec(string par);
+    void ValidatePars(list<string>& validpars);
     inline bool ispar(const string& p) { return pars.count(p); }
     inline bool isopt(const string& o) { return opts.count(o); }
 private:

@@ -46,6 +46,45 @@ void ParseArgs::Parse()
     }
 }
 
+void ParseArgs::Dump()
+{
+    cout << "cmd_h = '" << cmd_h << "'" << endl;
+    cout << "cmd_t = '" << cmd_t << "'" << endl;
+    typedef map<string,string>::iterator MSSit;
+    for (MSSit ii = opts.begin(); ii != opts.end(); ++ii)
+	cout << "opts[" << ii->first << "] = '" << ii->second << "'" << endl;
+    for (MSSit ii = pars.begin(); ii != pars.end(); ++ii)
+	cout << "pars[" << ii->first << "] = '" << ii->second << "'" << endl;
+    for (int i = 0; i < args.size(); ++i)
+	cout << "args[" << i << "] = '" << args[i] << "'" << endl;
+}
+
+void ParseArgs::ValidatePars(list<string>& validpars)
+{
+    list<string> invalidpars;
+    typedef map<string,string>::iterator MSSit;
+    typedef list<string>::iterator LSit;
+    for (MSSit ii = pars.begin(); ii != pars.end(); ++ii)
+    {
+	LSit ivp = find(validpars.begin(), validpars.end(), ii->first);
+	if (ivp == validpars.end())
+	    invalidpars.push_back(ii->first);
+    }
+    if (invalidpars.size())
+    {
+	ostringstream oss;
+	if (invalidpars.size() == 1)
+	    oss << "invalid parameter -- ";
+	else
+	    oss << "invalid parameters -- ";
+	LSit ii = invalidpars.begin();
+	oss << *ii;
+	for (++ii; ii != invalidpars.end(); ++ii)
+	    oss << ", " << *ii;
+	throw ParseArgsError(oss.str());
+    }
+}
+
 void ParseArgs::ReadPars(const char *file)
 {
     // open file for reading
@@ -108,19 +147,6 @@ istream& ParseArgs::ReadPars(istream& fid)
 	pars[par] = (vb == string::npos) ? "" : line.substr(vb);
     }
     return fid;
-}
-
-void ParseArgs::Dump()
-{
-    cout << "cmd_h = '" << cmd_h << "'" << endl;
-    cout << "cmd_t = '" << cmd_t << "'" << endl;
-    typedef map<string,string>::iterator MSSit;
-    for (MSSit ii = opts.begin(); ii != opts.end(); ++ii)
-	cout << "opts[" << ii->first << "] = '" << ii->second << "'" << endl;
-    for (MSSit ii = pars.begin(); ii != pars.end(); ++ii)
-	cout << "pars[" << ii->first << "] = '" << ii->second << "'" << endl;
-    for (int i = 0; i < args.size(); ++i)
-	cout << "args[" << i << "] = '" << args[i] << "'" << endl;
 }
 
 void ParseArgs::init()
