@@ -426,32 +426,6 @@ Molecule::Molecule(const DistanceTable& dtab) : dFree(dtab)
 }
 
 Molecule::Molecule(const DistanceTable& dtab,
-	const int s, const int *ph, const int *pk, const int *pl) : dFree(dtab)
-{
-    init();
-    for (int i = 0; i < s; ++i)
-    {
-	Add(ph[i], pk[i], pl[i]);
-    }
-}
-
-Molecule::Molecule(const DistanceTable& dtab,
-	const vector<int>& vh, const vector<int>& vk, const vector<int>& vl
-	) : dFree(dtab)
-{
-    init();
-    if (vh.size() != vk.size() || vh.size() != vl.size())
-    {
-	cerr << "E: invalid coordinate vectors" << endl;
-	throw InvalidMolecule();
-    }
-    for (int i = 0; i < vh.size(); ++i)
-    {
-	Add(vh[i], vk[i], vl[i]);
-    }
-}
-
-Molecule::Molecule(const DistanceTable& dtab,
 	const int s, const double *px, const double *py, const double *pz
 	) : dFree(dtab)
 {

@@ -133,11 +133,6 @@ class Molecule
 public:
     // constructors
     Molecule(const DistanceTable&);
-    // pj: remove these 2 constructors
-    Molecule(const DistanceTable&, const int s,
-	    const int *ph, const int *pk, const int *pl);
-    Molecule(const DistanceTable&, const vector<int>& vh,
-	    const vector<int>& vk, const vector<int>& vl);
     Molecule(const DistanceTable&, const int s, const double *px,
 	    const double *py, const double *pz);
     Molecule(const DistanceTable&, const vector<double>& vx,
