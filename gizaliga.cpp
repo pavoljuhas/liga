@@ -367,27 +367,13 @@ int main(int argc, char *argv[])
         liga[level].push_back(lower_team);
     }
     cout << "Done" << endl;
-    // fill higher divisions
-    cout << "Filling higher divisions" << endl;
-    mol.evolve_jump = false;
-    for (int level = mol.NAtoms()+1; level <= mol.max_NAtoms(); ++level)
-    {
-        PMOL parent_team = liga[level-1].back();
-        PMOL higher_team = new Molecule(*parent_team);
-        higher_team->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
-	cout << rv.liga_round << " I " << higher_team->NAtoms() << ' '
-	    << higher_team->Badness() << endl;
-        liga[level].push_back(higher_team);
-    }
-    mol.evolve_jump = true;
-    cout << "Done" << endl;
-    // find the first world champion
-    PMOL world_champ = liga.back().best();
+    // the first world champion is the initial molecule
+    PMOL world_champ = first_team;
     cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
 	<< world_champ->Badness() << endl;
     cout << endl << "Starting the game ... now." << endl;
     // let the game begin
-    while ( !(world_champ->Badness() < rp.tol_bad ) )
+    while ( !(world_champ->Full() && world_champ->Badness() < rp.tol_bad) )
     {
         ++rv.liga_round;
 	typedef vector<Division_t>::iterator VDit;
@@ -395,6 +381,8 @@ int main(int argc, char *argv[])
 	for (VDit lo_div = liga.begin();
 		lo_div < liga.end()-1; ++lo_div, ++lo_level)
 	{
+	    if (lo_div->size() == 0)
+		continue;
 	    int winner_idx = lo_div->find_winner();
 	    PMOL advancing = lo_div->at(winner_idx);
 	    if (! (advancing->Badness() < rp.stopgame) )
@@ -410,6 +398,8 @@ int main(int argc, char *argv[])
 	    advancing->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
 	    int hi_level = advancing->NAtoms();
 	    VDit hi_div = liga.begin() + hi_level;
+	    if (hi_div->size() == 0)
+		hi_div->push_back(new Molecule(*advancing));
 	    int looser_idx = hi_div->find_looser();
 	    PMOL descending = hi_div->at(looser_idx);
 	    double desc_bad0 = descending->Badness();
@@ -436,11 +426,23 @@ int main(int argc, char *argv[])
 		hi_level << ' ' << desc_bad0 << ' ' <<
 		lo_level << ' ' << descending->Badness() << endl;
 	    // no need to finish round if we found champion
-	    if (hi_level == advancing->max_NAtoms() &&
-		    advancing->Badness() < rp.tol_bad  )
+	    if (advancing->Full() && advancing->Badness() < rp.tol_bad)
 		break;
 	}
-	world_champ = liga.back().best();
+	if (liga.back().size() != 0)
+	    world_champ = liga.back().best();
+	else
+	{
+	    typedef vector<Division_t>::reverse_iterator VDrit;
+	    for (VDrit ii = liga.rbegin(); ii != liga.rend(); ++ii)
+	    {
+		if (ii->size())
+		{
+		    world_champ = ii->best();
+		    break;
+		}
+	    }
+	}
 	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
 	    << world_champ->Badness() << endl;
         save_snapshot(*world_champ, rp);
