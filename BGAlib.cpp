@@ -210,6 +210,7 @@ void Molecule::calc_df()
     }
     sort(d2idx, d2idx+NDist, d2idx_cmp);
     // evaluate abad[i]
+    abad = 0.0;
     int ssdIdx = 0;
     for (ij = 0; ij < NDist; ++ij)
     {
@@ -226,7 +227,17 @@ void Molecule::calc_df()
 	// otherwise it is a matching distance
 	ssdIdx++;
     }
-
+    // now add penalty for outside SandSphere
+    double Ri;
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	Ri = sqrt(h[i]*h[i] + k[i]*k[i] + 0.0);
+	if (Ri > ss->gridmax)
+	{
+	    abad[i] += Ri - ss->gridmax;
+	}
+    }
+    abadMax = abad.max();
 }
 
 double Molecule::ABadness(int i)
@@ -388,6 +399,9 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.4  2005/01/25 04:46:39  juhas
+* added penalty for atoms outside SandSphere
+*
 * Revision 1.3  2005/01/25 04:38:15  juhas
 * afit renamed to abad, afitMax renamed to abadMax
 * added Molecule definitions for
