@@ -119,7 +119,7 @@ public:
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
-    Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
+    Molecule& Degenerate(int Npop = 1);	// Pop Npop atoms with abad[i] weight
     Molecule MateWith(const Molecule& Male, int trials = 500);
     double ABadnessAt(int nh, int nk) const;  // badness for new atom
     double MBadnessWith(const Molecule& M) const;   // badness for merging
@@ -162,6 +162,7 @@ public:
 private:
     list<badness_at> find_good_distances(int trials, const vector<int>& didx);
     list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
+    list<badness_at> find_good_triangles2(int trials, const vector<int>& didx);
     void subtract_out_penalty() const;
     void add_out_penalty() const;
     void set_mbad_abadMax() const;
