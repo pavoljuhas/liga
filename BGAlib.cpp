@@ -841,11 +841,6 @@ int Molecule::push_good_triangles(
 	double nry = a1.ry + xlong*longdir[1] + xperp*perpdir[1];
 	double nrz = a1.rz + xlong*longdir[2] + xperp*perpdir[2];
 	Atom_t ad2(nrx, nry, nrz);
-	// is ad2 already in vta?
-	vector<Atom_t>::reverse_iterator rvtadupend = 
-	    vta.rbegin()+min((int)vta.size(), 100);
-	if (find(vta.rbegin(), rvtadupend, ad2) != rvtadupend)
-	    continue;
 	calc_test_badness(ad2);
 	ad2.IncBadness(a1.Badness() + a2.Badness());
 	vta.push_back(ad2);
@@ -932,8 +927,6 @@ int Molecule::push_good_pyramids(
 	    // find pyramid vertices
 	    valarray<double> P4(0.0, 3);
 	    double h2 = r14*r14 - xP1*xP1;
-	    // prepare stop marker for duplicate search
-	    vector<Atom_t>::reverse_iterator rvtadupend;
 	    // does P4 belong to a1a2 line?
 	    if (fabs(h2) < 0.25)
 	    {
@@ -942,10 +935,6 @@ int Molecule::push_good_pyramids(
 		    continue;
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
-		// is ad3 already in vta?
-		rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
-		if (find(vta.rbegin(), rvtadupend, ad3) != rvtadupend)
-		    continue;
 		calc_test_badness(ad3);
 		ad3.IncBadness(base_badness);
 		vta.push_back(ad3);
@@ -963,10 +952,6 @@ int Molecule::push_good_pyramids(
 	    {
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
-		// is ad3 already in vta?
-		rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
-		if (find(vta.rbegin(), rvtadupend, ad3) != rvtadupend)
-		    continue;
 		calc_test_badness(ad3);
 		ad3.IncBadness(base_badness);
 		vta.push_back(ad3);
@@ -982,10 +967,6 @@ int Molecule::push_good_pyramids(
 	    // top one
 	    P4 = yP4*uvj + zP4*uvk + vT;
 	    Atom_t ad3top(P4[0], P4[1], P4[2]);
-	    // is ad3top already in vta?
-	    rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
-	    if (find(vta.rbegin(), rvtadupend, ad3top) != rvtadupend)
-		continue;
 	    calc_test_badness(ad3top);
 	    ad3top.IncBadness(base_badness);
 	    vta.push_back(ad3top);
@@ -993,10 +974,6 @@ int Molecule::push_good_pyramids(
 	    // and bottom one
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
-	    // is ad3bottom already in vta?
-	    rvtadupend = vta.rbegin()+min((int)vta.size(), 100);
-	    if (find(vta.rbegin(), rvtadupend, ad3bottom) != rvtadupend)
-		continue;
 	    calc_test_badness(ad3bottom);
 	    ad3bottom.IncBadness(base_badness);
 	    vta.push_back(ad3bottom);
