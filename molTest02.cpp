@@ -19,19 +19,12 @@ int main()
     int NGridTolerances = sizeof(GridTolerances)/sizeof(double);
 
     // distance table
-    char *distfile = "rand100.dss";
-    SandSphere ssRand(100, distfile);
+    char *distfile = "grid125.dss";
+    SandSphere ssRand(500, distfile);
 
     // read in coordinates of random molecule
     Molecule mol1(&ssRand);
-    ifstream fid("rand100.xyz");
-    if (!fid)
-    {
-	cerr << "cannot read coordinate file" << endl;
-	return EXIT_FAILURE;
-    }
-    fid >> mol1;
-    fid.close();
+    mol1.ReadXYZ("grid125.xyz");
 
     // build defective random molecule
     Molecule mol2 = mol1;
@@ -51,8 +44,8 @@ int main()
 	// evaluate and print fitness for mol2
 	cout << "mol2:  GridTol() = " << ssRand.GridTol() << '\t';
 	cout << "MBadness() = " << mol2.Badness() << endl;
-	mol1.PrintBadness();
-	mol1.PrintFitness();
+	mol2.PrintBadness();
+	mol2.PrintFitness();
 	cout << endl;
     }
 
