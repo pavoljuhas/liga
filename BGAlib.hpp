@@ -196,6 +196,7 @@ private:
     void calc_test_badness(Atom_t& a);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double lo_abad);
+    void relax_atom(Atom_t& a);
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
