@@ -21,6 +21,7 @@
 
 // exceptions
 struct IOError { };
+struct InvalidOption { };
 
 using namespace std;
 
@@ -29,6 +30,11 @@ class ParseArgs
 public:
     // constructor
     ParseArgs(int nargc, char * const nargv[]);
+    ParseArgs(int nargc, char * const nargv[], char *optstring);
+    ParseArgs(int nargc, char * const nargv[], char *optstring,
+	    const struct option *longopts);
+    int argc;
+    char * const * argv;
     char *optstring;
     const struct option *longopts;
     map<string,string> opts;
@@ -36,14 +42,13 @@ public:
     vector<string> args;
     string cmd_h, cmd_t;
     void Parse();
+    void List();
     void ReadPars(const char *file);
-    int argc;
-    char * const * argv;
 private:
     void init();
-    void arg_or_par(const char *s);
-    void do_getopt_long();
     void do_getopt();
+    void do_getopt_long();
+    void arg_or_par(const char *s);
 };
 
 #endif
