@@ -31,7 +31,7 @@ lib_objects: $(OBJECTS)
 %.o: %.cpp %.hpp
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
-madwalk: madwalk.o $(OBJECTS) $(HEADERS)
+djoser: djoser.o $(OBJECTS) $(HEADERS)
 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 #####################################################################}}}

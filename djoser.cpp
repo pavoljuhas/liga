@@ -31,7 +31,7 @@ void print_help(ParseArgs& a)
     // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
     cout << 
 "usage: " << a.cmd_t << "[-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
-"run madwalk simulation using distances from DISTFILE.  Parameters can\n"
+"run djoser simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
