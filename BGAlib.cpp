@@ -134,13 +134,6 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 // Pair_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
-{
-    const double value = rhs.first;
-    const double *a = rhs.second;
-    return a[lhs] < value;
-}
-
 Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     owner(pM), atom1(a1), atom2(a2)
 {
