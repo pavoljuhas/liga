@@ -289,7 +289,7 @@ void DistanceTable::init()
 // static members
 double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::tol_nbad  = 0.05*0.05;
-double Molecule::evolve_frac = 0.0001;
+double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
 namespace BGA {
     double pow2(double x) {return x*x;}
@@ -774,7 +774,6 @@ int Molecule::push_good_distances(
 	double nry = a1.ry + rdir[1]*radius;
 	double nrz = a1.rz + rdir[2]*radius;
 	Atom_t ad1(nrx, nry, nrz);
-	calc_test_badness(ad1);
 	ad1.IncBadness(a1.Badness());
 	vta.push_back(ad1);
     }
@@ -850,7 +849,6 @@ int Molecule::push_good_triangles(
 	double nry = a1.ry + xlong*longdir[1] + xperp*perpdir[1];
 	double nrz = a1.rz + xlong*longdir[2] + xperp*perpdir[2];
 	Atom_t ad2(nrx, nry, nrz);
-	calc_test_badness(ad2);
 	ad2.IncBadness(a1.Badness() + a2.Badness());
 	vta.push_back(ad2);
 	push_count++;
@@ -947,7 +945,6 @@ int Molecule::push_good_pyramids(
 		    continue;
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
-		calc_test_badness(ad3);
 		ad3.IncBadness(base_badness);
 		vta.push_back(ad3);
 		push_count++;
@@ -964,7 +961,6 @@ int Molecule::push_good_pyramids(
 	    {
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
-		calc_test_badness(ad3);
 		ad3.IncBadness(base_badness);
 		vta.push_back(ad3);
 		push_count++;
@@ -979,14 +975,12 @@ int Molecule::push_good_pyramids(
 	    // top one
 	    P4 = yP4*uvj + zP4*uvk + vT;
 	    Atom_t ad3top(P4[0], P4[1], P4[2]);
-	    calc_test_badness(ad3top);
 	    ad3top.IncBadness(base_badness);
 	    vta.push_back(ad3top);
 	    push_count++;
 	    // and bottom one
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
-	    calc_test_badness(ad3bottom);
 	    ad3bottom.IncBadness(base_badness);
 	    vta.push_back(ad3bottom);
 	    push_count++;
@@ -1032,25 +1026,13 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     push_good_triangles(vta, afit, ntd2);
     if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
     if (!vta.size())   return *this;
-    // select range from min_badness
-    double min_badness = min_element(vta.begin(), vta.end(),
-	    comp_Atom_Badness) -> Badness();
-    double max_badness = max_element(vta.begin(), vta.end(),
-	    comp_Atom_Badness) -> Badness();
-//  pj: this will be updated
-    max_badness = min(max_badness, min_badness+tol_nbad*NAtoms());
-    double hi_badness = evolve_frac*(max_badness-min_badness)+min_badness;
+    // set badness range from min_badness
+    double evolve_range = NAtoms()*tol_nbad*evolve_frac;
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
     while (true)
     {
-	VAit gai = vta.begin();
-	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
-	{
-	    if (ai->Badness() <= hi_badness)
-		*(gai++) = *ai;
-	}
-	vta.erase(gai, vta.end());
+	filter_good_atoms(vta, evolve_range);
 	if (vta.size() == 0)
 	    break;
 	// calculate fitness of test atoms
@@ -1067,9 +1049,9 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	if (NAtoms() == max_NAtoms() || !evolve_jump)
 	    break;
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
-	    calc_test_badness(*ai);
+	    ai->ResetBadness();
     }
-    if (NAtoms() < 40)    Center();
+//    if (NAtoms() < 40)    Center();
     return *this;
 }
 
