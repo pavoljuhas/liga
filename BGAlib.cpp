@@ -243,7 +243,7 @@ bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
 {
     const double value = rhs.first;
     const double *a = rhs.second;
-    return value < a[lhs];
+    return a[lhs] < value;
 }
 
 Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
@@ -276,8 +276,6 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     atom1->IncBadness(badness);
     atom2->IncBadness(badness);
     owner->badness += 2*badness;
-    int mab = max(atom1->Badness(), atom2->Badness());
-    if (mab > owner->max_abad)  owner->max_abad = mab;
 }
 
 Pair_t::Pair_t(const Pair_t& pair0)
@@ -294,9 +292,7 @@ Pair_t& Pair_t::operator=(const Pair_t&)
 
 Pair_t::~Pair_t()
 {
-cout << "in Pair_t::~Pair_t()\n";
     int mab = max(atom1->Badness(), atom2->Badness());
-    if (mab >= owner->max_abad)  owner->max_abad = -1;
     atom1->DecBadness(badness);
     atom2->DecBadness(badness);
     owner->badness -= 2*badness;
@@ -474,9 +470,15 @@ void Molecule::Recalculate()
 	cerr << "E: molecule too large" << endl;
 	throw InvalidMolecule();
     }
+    // destroy all pairs
+    typedef list<Pair_t*>::iterator LPPit;
+    for (LPPit ii = pairs.begin(); ii != pairs.end(); ++ii)
+    {
+	delete *ii;
+    }
     pairs.clear();
     // molecule parameters
-    max_abad = 0;
+    max_abad = -1;
     badness = 0;
     // reset all atoms
     typedef list<Atom_t>::iterator LAit;
@@ -489,7 +491,7 @@ void Molecule::Recalculate()
 	LAit aj = ai;
 	for (++aj; aj != atoms.end(); ++aj)
 	{
-	    pairs.push_back(Pair_t(this, *ai, *aj));
+	    pairs.push_back(new Pair_t(this, *ai, *aj));
 	}
     }
 }
@@ -542,9 +544,9 @@ int Molecule::MaxABadness() const
 {
     if (max_abad < 0)
     {
-	max_abad = (NAtoms() == 0) ?  0 :
-	    max_element(atoms.begin(), atoms.end(), comp_Atom_Badness)->
-	    Badness();
+	max_abad = (NAtoms() == 0) ?  0 : max( NAtoms()-1, 
+		max_element(atoms.begin(), atoms.end(),
+		    comp_Atom_Badness)-> Badness() );
     }
     return max_abad;
 }
@@ -733,12 +735,20 @@ Molecule& Molecule::Center()
 Molecule& Molecule::Pop(list<Atom_t>::iterator ai)
 {
     // delete all pairs that refer to *ai
-    Atom_t *pai = &(*ai);
-    for (list<Pair_t>::iterator ii = pairs.begin(); ii != pairs.end(); ++ii)
+    Atom_t *ap = &(*ai);
+    typedef list<Pair_t*>::iterator LPPit;
+    for (LPPit ii = pairs.begin(); ii != pairs.end(); ++ii)
     {
-	if (ii->atom1 == pai || ii->atom2 == pai)  pairs.erase(ii);
+	Pair_t* pp = *ii;
+	if (pp->atom1 == ap || pp->atom2 == ap)
+	{
+	    delete *ii;
+	    pairs.erase(ii);
+	}
     }
     atoms.erase(ai);
+    // uncache max atom badness
+    max_abad = -1;
     return *this;
 }
 
@@ -826,9 +836,15 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 Molecule& Molecule::Clear()
 {
     // pairs must be destroyed before atoms;
+    typedef list<Pair_t*>::iterator LPPit;
+    for (LPPit ii = pairs.begin(); ii != pairs.end(); ++ii)
+    {
+	delete *ii;
+    }
     pairs.clear();
     atoms.clear();
-    max_abad = 0;
+    // uncache max atom badness
+    max_abad = -1;
     badness = 0;
     return *this;
 }
@@ -859,10 +875,12 @@ Molecule& Molecule::Add(Atom_t atom)
     list<Atom_t>::iterator this_atom, ai;
     this_atom = atoms.insert(atoms.end(), atom);
     this_atom->ResetBadness();
+    // uncache max atom badness
+    max_abad = -1;
     for (ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
 	if (ai == this_atom)  continue;
-	pairs.push_back(Pair_t(this, *ai, *this_atom));
+	pairs.push_back(new Pair_t(this, *ai, *this_atom));
     }
     return *this;
 }
