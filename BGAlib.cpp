@@ -912,11 +912,16 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	case M.ATOMEYE:
 	    // this format outputs atom badnesses
 	    if (!M.cached) M.calc_df();
-	    valarray<int> hk_all(2*M.NAtoms);
-	    copy(M.h.begin(), M.h.end(), &(hk_all[0]));
-	    copy(M.k.begin(), M.k.end(), &(hk_all[M.NAtoms]));
-	    double xyz_lo = min(-M.ss->dmax, 1.01*M.ss->delta*hk_all.min());
-	    double xyz_hi = max(+M.ss->dmax, 1.01*M.ss->delta*hk_all.max());
+	    double xyz_extremes[6] = {
+		-M.ss->dmax,
+		1.01*M.ss->delta*min_element(M.h.begin(), M.h.end()),
+		1.01*M.ss->delta*min_element(M.k.begin(), M.k.end()),
+		M.ss->dmax,
+		1.01*M.ss->delta*max_element(M.h.begin(), M.h.end()),
+		1.01*M.ss->delta*max_element(M.k.begin(), M.k.end())
+	    };
+	    double xyz_lo = min_element(xyz_extremes, xyz_extremes+6);
+	    double xyz_hi = max_element(xyz_extremes, xyz_extremes+6);
 	    double xyz_rng = xyz_hi - xyz_lo;
 	    fid << "# BGA molecule format = atomeye" << endl;
 	    fid << "# NAtoms = " << M.NAtoms << endl;
