@@ -127,6 +127,7 @@ public:
     static double tol_nbad;
     static bool evolve_jump;
     static double evolve_frac;
+    static int center_size;
     static double (*penalty)(double);
     // fitness/badness functions
     double Badness() const;	// total badness

@@ -291,6 +291,7 @@ double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::tol_nbad  = 0.05*0.05;
 double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
+int    Molecule::center_size = 40;
 namespace BGA {
     double pow2(double x) {return x*x;}
     double well(double x) {return fabs(x)<Molecule::tol_dd ? 0.0 : 1.0;}
@@ -1053,7 +1054,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
 	    ai->ResetBadness();
     }
-//    if (NAtoms() < 40)    Center();
+    if (NAtoms() < center_size)
+	Center();
     return *this;
 }
 
@@ -1072,7 +1074,8 @@ Molecule& Molecule::Degenerate(int Npop)
     // generate list of atoms to pop
     list<int> ipop = random_wt_choose(Npop, abad, NAtoms());
     Pop(ipop);
-    if (NAtoms() < 40)    Center();
+    if (NAtoms() < center_size)
+	Center();
     return *this;
 }
 
