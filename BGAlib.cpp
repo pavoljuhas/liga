@@ -917,10 +917,10 @@ int Molecule::push_good_distances(
 	int didx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
 	double radius = ss->d[ssdIdxFree[didx]];
 	Atom_t& a1 = *list_at(atoms, aidx);
-	int nh = a1.rx + (int)round(rdir[0]*radius);
-	int nk = a1.ry + (int)round(rdir[1]*radius);
-	int nl = a1.rz + (int)round(rdir[2]*radius);
-	Atom_t ad1(nh, nk, nl);
+	double nrx = a1.rx + rdir[0]*radius;
+	double nry = a1.ry + rdir[1]*radius;
+	double nrz = a1.rz + rdir[2]*radius;
+	Atom_t ad1(nrx, nrz, nrz);
 	calc_test_badness(ad1);
 	ad1.IncBadness(a1.Badness());
 	vta.push_back(ad1);
@@ -993,10 +993,10 @@ int Molecule::push_good_triangles(
 	    cos(phi)*pdir1[1]+sin(phi)*pdir2[1],
 	    cos(phi)*pdir1[2]+sin(phi)*pdir2[2] };
 	// prepare new atom
-	int nh = a1.rx + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
-	int nk = a1.ry + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
-	int nl = a1.rz + (int) round(xlong*longdir[2] + xperp*perpdir[2]);
-	Atom_t ad2(nh, nk, nl);
+	double nrx = a1.rx + xlong*longdir[0] + xperp*perpdir[0];
+	double nry = a1.ry + xlong*longdir[1] + xperp*perpdir[1];
+	double nrz = a1.rz + xlong*longdir[2] + xperp*perpdir[2];
+	Atom_t ad2(nrx, nry, nrz);
 	// is ad2 already in vta?
 	vector<Atom_t>::reverse_iterator rvtadupend = 
 	    vta.rbegin()+min((int)vta.size(), 100);
