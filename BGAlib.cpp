@@ -158,12 +158,39 @@ Molecule::Molecule(SandSphere *SS,
     init();
 }
 
+Molecule::Molecule(SandSphere *SS,
+	size_t s, double *px, double *py) : ss(SS)
+{
+    h.resize(s);
+    k.resize(s);
+    for (int i = 0; i < s; ++i)
+    {
+	h[i] = (int) round(px[i] / ss->delta);
+	k[i] = (int) round(py[i] / ss->delta);
+    }
+    init();
+}
+
+Molecule::Molecule(SandSphere *SS,
+	const vector<double>& vx, const vector<double>& vy) : ss(SS)
+{
+    h.resize(vx.size());
+    k.resize(vx.size());
+    for (int i = 0; i < h.size(); ++i)
+    {
+	h[i] = (int) round(vx[i] / ss->delta);
+	k[i] = (int) round(vy[i] / ss->delta);
+    }
+    init();
+}
+
 void Molecule::init()
 {
     cached = false;
     // check coordinate sizes
     if (h.size() != k.size())
     {
+	cerr << "E: invalide coordinate vectors\n";
 	throw InvalidMolecule();
     }
     NAtoms = h.size();
@@ -192,6 +219,12 @@ void Molecule::calc_df()
 //    ssdIdxUsed.clear();
     ssdIdxFree.clear();
     d2idx_type d2idx[NDist];
+    // check if molecule is not too large
+    if (NDist > ss->NDist)
+    {
+	cerr << "E: molecule too large\n";
+	throw InvalidMolecule();
+    }
     // calculate and store distances
     int ij = 0;
     for (int i = 0; i < NAtoms; ++i)
@@ -394,6 +427,9 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.8  2005/01/25 17:23:24  juhas
+* added Molecule constructors from real coordinates
+*
 * Revision 1.7  2005/01/25 16:42:33  juhas
 * *** empty log message ***
 *

@@ -53,6 +53,9 @@ public:
     Molecule(SandSphere *SS, size_t s, int *ph, int *pk);
     Molecule(SandSphere *SS,
 	    const vector<int>& vh, const vector<int>& vk);
+    Molecule(SandSphere *SS, size_t s, double *px, double *py);
+    Molecule(SandSphere *SS,
+	    const vector<double>& vx, const vector<double>& vy);
     // parameters
     int NDist;    		// length of distance table
     int NAtoms;   		// target number of atoms
@@ -197,6 +200,9 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.6  2005/01/25 17:23:24  juhas
+* added Molecule constructors from real coordinates
+*
 * Revision 1.5  2005/01/25 16:42:33  juhas
 * *** empty log message ***
 *
