@@ -25,31 +25,44 @@ struct InvalidDistanceTable { };
 struct InvalidMolecule { };
 struct IOError { };
 
-// read vector from stream after skipping header lines
-template<class T> istream& read_header(istream& fid, vector<T>& v)
+// read lines that do not start with number
+istream& read_header(istream& fid, string& header)
 {
-    // prepare v
-    v.clear();
-    // ignore header lines up to the first number:
+    double x;
     string line;
     istringstream istrs;
-    T x;
-    while (!fid.eof() && getline(fid, line))
+    header.clear();
+    for (   istream::pos_type p = fid.tellg();
+	    !fid.eof() && getline(fid, line);
+	    p = fid.tellg()
+	)
     {
 	istrs.clear();
 	istrs.str(line);
-	if (! (istrs >> x) )
+	if (istrs >> x)
 	{
-	    continue;
+	    header.append(line);
 	}
 	else
 	{
-	    do {
-		v.push_back(x);
-	    } while (istrs >> x);
+	    fid.seekg(p);
+	    break;
 	}
     }
-    // read the rest of the file
+    return fid;
+}
+
+inline istream& read_header(istream& fid)
+{
+    string dummy;
+    return read_header(fid, dummy);
+}
+
+// read as many numbers as possible
+template<class T> istream& read_data(istream& fid, vector<T>& v)
+{
+    // prepare v
+    T x;
     while (fid >> x)
     {
 	v.push_back(x);
@@ -80,12 +93,12 @@ SandSphere::SandSphere(int GridMax, const char *file) :
     // open file for reading
     ifstream fid(file);
     if (!fid) {
-	cerr << "E: unable to read `" << file << "'" << endl;
+	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
     // read values to vt
     vector<double> vt;
-    read_header(fid, vt);
+    read_header(fid) && read_data(fid, vt);
     // check if everything was read
     if (!fid.eof())
     {
@@ -495,52 +508,125 @@ Molecule& Molecule::MoveAtom(int idx, int nh, int nk)
 // Molecule IO functions
 ////////////////////////////////////////////////////////////////////////
 
-bool Molecule::ReadGrid(const char* file)
+Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
 {
-    // open file for reading
-    ifstream fid(file);
-    if (!fid) {
-	cerr << "E: unable to read `" << file << "'" << endl;
-	throw IOError();
+    // parse format
+    string fmt;
+    // initialize members:
+    state = 
+	read_token("BGA molecule format", fmt) &&
+	read_token("NAtoms", NAtoms) &&
+	read_token("delta", delta);
+    if (!state)
+    {
+	return;
     }
+    if (fmt == "grid")
+	format = GRID;
+    else if (fmt == "xy")
+	format = XY;
+    else if (fmt == "atomeye")
+	format = ATOMEYE;
+    else
+    {
+	state = false;
+	return;
+    }
+}
+
+template<class T> bool Molecule::ParseHeader::read_token(
+	const char *token, T& value
+	)
+{
+    const char *fieldsep = ":= ";
+    size_t ltoken = sizeof(token)/sizeof(char);
+    string::size_type sp;
+    const string::size_type npos = string::npos;
+    if ( 
+	    npos == (sp = header.find(token)) || 
+	    npos == (sp = header.find_first_not_of(fieldsep, sp+ltoken))
+       )
+    {
+	return false;
+    }
+    istringstream istrs(header.substr(sp));
+    bool result = (istrs >> value);
+    return result;
+}
+
+istream& Molecule::ReadGrid(istream& fid)
+{
     // read values to integer vector vhk
+    string header;
     vector<int> vhk;
-    bool result = read_header(fid, vhk);
-    fid.close();
-    // check how many numbers were read
+    bool result = read_header(fid, header) && read_data(fid, vhk);
+    if (!result) return fid;
+    // parse header
+    double vhk_scale = 1.0;
+    int vhk_NAtoms = vhk.size()/2;
+    ParseHeader ph(header);
+    if (ph)
+    {
+	vhk_scale = ph.delta / ss->delta;
+	if ( vhk_NAtoms != ph.NAtoms )
+	{
+	    cerr << "E: " << Read_file << ": expected " << ph.NAtoms <<
+		" atoms, read " << vhk_NAtoms << endl;
+	    throw IOError();
+	}
+    }
+    // check if all coordinates have been read
     if ( vhk.size() % 2 )
     {
-	cerr << "E: " << file << ": incomplete data" << endl;
+	cerr << "E: " << Read_file << ": incomplete data" << endl;
 	throw IOError();
     }
     Clear();
-    h.resize(vhk.size()/2);
-    k.resize(vhk.size()/2);
-    for (int i = 0, iv = 0; i < vhk.size()/2; ++i)
+    h.resize(vhk_NAtoms);
+    k.resize(vhk_NAtoms);
+    for (int i = 0, iv = 0; i < vhk_NAtoms; ++i)
     {
 	h[i] = vhk[iv++];
 	k[i] = vhk[iv++];
     }
     fix_size();
-    return result;
+    return fid;
 }
 
-bool Molecule::ReadXY(const char* file)
+bool Molecule::ReadGrid(const char* file)
 {
     // open file for reading
     ifstream fid(file);
     if (!fid) {
-	cerr << "E: unable to read `" << file << "'" << endl;
+	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
-    // read values to integer vector vxy
-    vector<double> vxy;
-    bool result = read_header(fid, vxy);
+    Read_file = file;
+    bool result = ReadGrid(fid);
+    Read_file.clear();
     fid.close();
+    return result;
+}
+
+istream& Molecule::ReadXY(istream& fid)
+{
+    // read values to integer vector vxy
+    string header;
+    vector<double> vxy;
+    bool result = read_header(fid, header) && read_data(fid, vxy);
+    if (!result) return fid;
+    int vxy_NAtoms = vxy.size()/2;
     // check how many numbers were read
+    ParseHeader ph(header);
+    if (ph && vxy_NAtoms != ph.NAtoms)
+    {
+	cerr << "E: " << Read_file << ": expected " << ph.NAtoms <<
+	    " atoms, read " << vxy_NAtoms << endl;
+	throw IOError();
+    }
     if ( vxy.size() % 2 )
     {
-	cerr << "E: " << file << ": incomplete data" << endl;
+	cerr << "E: " << Read_file << ": incomplete data" << endl;
 	throw IOError();
     }
     Clear();
@@ -552,6 +638,21 @@ bool Molecule::ReadXY(const char* file)
 	k[i] = (int) round(vxy[iv++] / ss->delta);
     }
     fix_size();
+    return fid;
+}
+
+bool Molecule::ReadXY(const char* file)
+{
+    // open file for reading
+    ifstream fid(file);
+    if (!fid) {
+	cerr << "E: unable to read '" << file << "'" << endl;
+	throw IOError();
+    }
+    Read_file = file;
+    bool result = ReadXY(fid);
+    Read_file.clear();
+    fid.close();
     return result;
 }
 
@@ -560,7 +661,7 @@ bool write_file(const char* file, Molecule& m)
     // open file for writing
     ofstream fid(file);
     if (!fid) {
-	cerr << "E: unable to write to `" << file << "'" << endl;
+	cerr << "E: unable to write to '" << file << "'" << endl;
 	throw IOError();
     }
     bool result = (fid << m);
@@ -570,7 +671,7 @@ bool write_file(const char* file, Molecule& m)
 
 bool Molecule::WriteGrid(const char* file)
 {
-    out_fmt_type org_ofmt = output_format;
+    file_fmt_type org_ofmt = output_format;
     OutFmtGrid();
     bool result = write_file(file, *this);
     output_format = org_ofmt;
@@ -579,7 +680,7 @@ bool Molecule::WriteGrid(const char* file)
 
 bool Molecule::WriteXY(const char* file)
 {
-    out_fmt_type org_ofmt = output_format;
+    file_fmt_type org_ofmt = output_format;
     OutFmtXY();
     bool result = write_file(file, *this);
     output_format = org_ofmt;
@@ -588,7 +689,7 @@ bool Molecule::WriteXY(const char* file)
 
 bool Molecule::WriteAtomEye(const char* file)
 {
-    out_fmt_type org_ofmt = output_format;
+    file_fmt_type org_ofmt = output_format;
     OutFmtAtomEye();
     bool result = write_file(file, *this);
     output_format = org_ofmt;
@@ -613,56 +714,90 @@ Molecule& Molecule::OutFmtAtomEye()
     return *this;
 }
 
-ostream& operator<<(ostream& os, Molecule& m)
+istream& operator>>(istream& fid, Molecule& m)
+{
+    string header;
+    if( !read_header(fid, header) )
+    {
+	fid.setstate(ios_base::failbit);
+	return fid;
+    }
+    Molecule::ParseHeader ph(header);
+    if (!ph)
+    {
+	fid.setstate(ios_base::failbit);
+	return fid;
+    }
+    bool result;
+    switch (ph.format)
+    {
+	case m.GRID:
+	    result = m.ReadGrid(fid);
+	    break;
+	case m.XY:
+	    result = m.ReadXY(fid);
+	    break;
+	case m.ATOMEYE:
+	    throw runtime_error("reading of atomeye files not implemented");
+	    break;
+    }
+    if (!result)
+    {
+	fid.setstate(ios_base::failbit);
+    }
+    return fid;
+}
+
+ostream& operator<<(ostream& fid, Molecule& m)
 {
     switch (m.output_format)
     {
 	case m.GRID:
-	    os << "# BGA molecule format: grid" << endl;
-	    os << "# NAtoms = " << m.NAtoms << endl;
-	    os << "# delta = " << m.ss->delta << endl;
+	    fid << "# BGA molecule format = grid" << endl;
+	    fid << "# NAtoms = " << m.NAtoms << endl;
+	    fid << "# delta = " << m.ss->delta << endl;
 	    for (int i = 0; i < m.NAtoms; ++i)
 	    {
-		os << m.h[i] << '\t' << m.k[i] << endl;
+		fid << m.h[i] << '\t' << m.k[i] << endl;
 	    }
 	    break;
 	case m.XY:
-	    os << "# BGA molecule format: xy" << endl;
-	    os << "# NAtoms = " << m.NAtoms << endl;
-	    os << "# delta = " << m.ss->delta << endl;
+	    fid << "# BGA molecule format = xy" << endl;
+	    fid << "# NAtoms = " << m.NAtoms << endl;
+	    fid << "# delta = " << m.ss->delta << endl;
 	    for (int i = 0; i < m.NAtoms; ++i)
 	    {
-		os <<
+		fid <<
 		    m.ss->delta * m.h[i] << '\t' <<
 		    m.ss->delta * m.k[i] << endl;
 	    }
 	    break;
 	case m.ATOMEYE:
-	    os << "# BGA molecule format: aeye" << endl;
-	    os << "# NAtoms = " << m.NAtoms << endl;
-	    os << "# delta = " << m.ss->delta << endl;
-	    os << "Number of particles = " << m.NAtoms << endl;
-	    os << "A = 1.0 Angstrom (basic length-scale)" << endl;
-	    os << "H0(1,1) = " << 2.0 * m.ss->dmax << " A" << endl;
-	    os << "H0(1,2) = 0 A" << endl;
-	    os << "H0(1,3) = 0 A" << endl;
-	    os << "H0(2,1) = 0 A" << endl;
-	    os << "H0(2,2) = " << 2.0 * m.ss->dmax << " A" << endl;
-	    os << "H0(2,3) = 0 A" << endl;
-	    os << "H0(3,1) = 0 A" << endl;
-	    os << "H0(3,2) = 0 A" << endl;
-	    os << "H0(3,3) = " << 2.0 * m.ss->dmax << " A" << endl;
-	    os << ".NO_VELOCITY." << endl;
+	    fid << "# BGA molecule format = atomeye" << endl;
+	    fid << "# NAtoms = " << m.NAtoms << endl;
+	    fid << "# delta = " << m.ss->delta << endl;
+	    fid << "Number of particles = " << m.NAtoms << endl;
+	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
+	    fid << "H0(1,1) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    fid << "H0(1,2) = 0 A" << endl;
+	    fid << "H0(1,3) = 0 A" << endl;
+	    fid << "H0(2,1) = 0 A" << endl;
+	    fid << "H0(2,2) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    fid << "H0(2,3) = 0 A" << endl;
+	    fid << "H0(3,1) = 0 A" << endl;
+	    fid << "H0(3,2) = 0 A" << endl;
+	    fid << "H0(3,3) = " << 2.0 * m.ss->dmax << " A" << endl;
+	    fid << ".NO_VELOCITY." << endl;
 	    // 4 entries: x, y, z, Uiso
-	    os << "entry_count = 4" << endl;
-	    os << "auxiliary[0] = abad [au]" << endl;
-	    os << endl;
+	    fid << "entry_count = 4" << endl;
+	    fid << "auxiliary[0] = abad [au]" << endl;
+	    fid << endl;
 	    // pj: now it only works for a single Carbon atom in the molecule
-	    os << "12.0111" << endl;
-	    os << "C" << endl;
+	    fid << "12.0111" << endl;
+	    fid << "C" << endl;
 	    for (int i = 0; i < m.NAtoms; i++)
 	    {
-		os <<
+		fid <<
 		    (m.h[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
 		    (m.k[i]*m.ss->delta + m.ss->dmax)/(2*m.ss->dmax) << " " <<
 		    0.5 << " " <<
@@ -670,5 +805,5 @@ ostream& operator<<(ostream& os, Molecule& m)
 	    }
 	    break;
     }
-    return os;
+    return fid;
 }
