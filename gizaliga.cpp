@@ -49,7 +49,7 @@ void print_help(ParseArgs& a)
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
 "  ligasize=int          [10] number of teams per division\n"
-"  stopgame=double       [0.1] skip division when winner is worse\n"
+"  stopgame=double       [0.01] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
@@ -287,7 +287,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     rp.ligasize = a.GetPar<int>("ligasize", 10);
     cout << "ligasize=" << rp.ligasize << endl;
-    rp.stopgame = a.GetPar<double>("stopgame", 0.1);
+    rp.stopgame = a.GetPar<double>("stopgame", 0.01);
     cout << "stopgame=" << rp.stopgame << endl;
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
     PMOL first_team = new Molecule(mol);
     cout << "Initial team" << endl;
     cout << rv.liga_round << " I " << first_team->NAtoms() << ' '
-	<< first_team->Badness() << endl;
+	<< first_team->NormBadness() << endl;
     liga[mol.NAtoms()].push_back(first_team);
     // fill lower divisions
     cout << "Filling lower divisions" << endl;
@@ -366,17 +366,17 @@ int main(int argc, char *argv[])
         PMOL lower_team = new Molecule(*parent_team);
         lower_team->Degenerate(1);
 	cout << rv.liga_round << "L " << lower_team->NAtoms() << ' '
-	    << lower_team->Badness() << endl;
+	    << lower_team->NormBadness() << endl;
         liga[level].push_back(lower_team);
     }
     cout << "Done" << endl;
     // the first world champion is the initial molecule
     PMOL world_champ = first_team;
     cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
-	<< world_champ->Badness() << endl;
+	<< world_champ->NormBadness() << endl;
     cout << endl << "Starting the game ... now." << endl;
     // let the game begin
-    while ( !(world_champ->Full() && world_champ->Badness() < rp.tol_bad) )
+    while ( !(world_champ->Full() && world_champ->NormBadness() < rp.tol_bad) )
     {
         ++rv.liga_round;
 	typedef vector<Division_t>::iterator VDit;
@@ -388,9 +388,9 @@ int main(int argc, char *argv[])
 		continue;
 	    int winner_idx = lo_div->find_winner();
 	    PMOL advancing = lo_div->at(winner_idx);
-	    if (! (advancing->Badness() < rp.stopgame) )
+	    if (! (advancing->NormBadness() < rp.stopgame) )
 		continue;
-	    double adv_bad0 = advancing->Badness();
+	    double adv_bad0 = advancing->NormBadness();
 	    if (! lo_div->full() )
 	    {
 		// save clone of advancing winner
@@ -405,7 +405,7 @@ int main(int argc, char *argv[])
 		hi_div->push_back(new Molecule(*advancing));
 	    int looser_idx = hi_div->find_looser();
 	    PMOL descending = hi_div->at(looser_idx);
-	    double desc_bad0 = descending->Badness();
+	    double desc_bad0 = descending->NormBadness();
 	    if (! hi_div->full() )
 	    {
 		// save clone of descending looser
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
 		hi_div->push_back(looser_clone);
 	    }
 	    // clone winner if he made a good advance
-	    if (descending->Badness() > advancing->Badness())
+	    if (descending->NormBadness() > advancing->NormBadness())
 	    {
 		*descending = *advancing;
 	    }
@@ -424,12 +424,12 @@ int main(int argc, char *argv[])
 	    cout << rv.liga_round;
 	    cout << " A " <<
 		lo_level << ' ' << adv_bad0 << ' ' <<
-		hi_level << ' ' << advancing->Badness() << "    ";
+		hi_level << ' ' << advancing->NormBadness() << "    ";
 	    cout << " D " <<
 		hi_level << ' ' << desc_bad0 << ' ' <<
-		lo_level << ' ' << descending->Badness() << endl;
+		lo_level << ' ' << descending->NormBadness() << endl;
 	    // no need to finish round if we found champion
-	    if (advancing->Full() && advancing->Badness() < rp.tol_bad)
+	    if (advancing->Full() && advancing->NormBadness() < rp.tol_bad)
 		break;
 	}
 	if (liga.back().size() != 0)
@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
-	    << world_champ->Badness() << endl;
+	    << world_champ->NormBadness() << endl;
         save_snapshot(*world_champ, rp);
         save_frames(*world_champ, rp, rv);
     }
