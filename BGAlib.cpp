@@ -238,6 +238,7 @@ Molecule::Molecule(const Molecule& M0) :
 
 Molecule& Molecule::operator=(const Molecule& M0)
 {
+    if (this == &M0) return *this;
     // data storage
     if (ss != M0.ss)
     {
@@ -267,6 +268,7 @@ Molecule& Molecule::operator=(const Molecule& M0)
     // IO helpers
     output_format = M0.output_format;
     opened_file = M0.opened_file;
+    return *this;
 }
 
 void Molecule::init()
@@ -374,7 +376,10 @@ void Molecule::calc_df()
 	    abad[d2idx[ij].j]++;
 	}
 	// otherwise it is a matching distance
-	ssdIdx++;
+	else
+	{
+	    ssdIdx++;
+	}
     }
     // now add penalty for being outside the SandSphere
     for (int i = 0; i < NAtoms; ++i)
@@ -382,7 +387,7 @@ void Molecule::calc_df()
 	abad[i] += out_penalty(i);
     }
     mbad = abad.sum();
-    abadMax = max(abad.max(), (double) NAtoms);
+    abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
 }
 
 double Molecule::ABadness(int i)
@@ -437,7 +442,7 @@ Molecule& Molecule::Shift(int dh, int dk)
     }
     if (cached)
     {
-	abadMax = max(abad.max(), (double) NAtoms);
+	abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
 	mbad = abad.sum();
     }
     return *this;
@@ -464,6 +469,10 @@ Molecule& Molecule::Part(const list<int>& cidx)
     for ( list<int>::const_iterator li = cidx.begin();
 	    li != cidx.end(); ++li )
     {
+	if (*li < 0 || *li >= NAtoms)
+	{
+	    throw range_error("in Molecule::Part()");
+	}
 	h_new.push_back(h[*li]);
 	k_new.push_back(k[*li]);
     }
@@ -475,8 +484,13 @@ Molecule& Molecule::Part(const list<int>& cidx)
 
 Molecule& Molecule::Pop(const list<int>& cidx)
 {
+    if (cidx.size() == 0)  return *this;
     list<int> sidx(cidx);
     sidx.sort();
+    if (sidx.front() < 0 || sidx.back() >= NAtoms)
+    {
+	throw range_error("in Molecule::Pop(list<int>)");
+    }
     sidx.push_back(NAtoms);
     vector<int> h_new, k_new;
     int j = 0;
@@ -498,6 +512,10 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 
 Molecule& Molecule::Pop(const int cidx)
 {
+    if (cidx < 0 || cidx >= NAtoms)
+    {
+	throw range_error("in Molecule::Pop(list<int>)");
+    }
     h.erase(h.begin() + cidx);
     k.erase(k.begin() + cidx);
     fix_size();
@@ -531,11 +549,11 @@ Molecule& Molecule::Add(int nh, int nk)
     return *this;
 }
 
-Molecule& Molecule::MoveAtom(int idx, int nh, int nk)
+Molecule& Molecule::MoveAtomTo(int idx, int nh, int nk)
 {
-    if (idx > NAtoms)
+    if (idx >= NAtoms)
     {
-	throw range_error("in Molecule::MoveAtom()");
+	throw range_error("in Molecule::MoveAtomTo()");
     }
     UnCache();
     h[idx] = nh;
@@ -854,9 +872,10 @@ ostream& operator<<(ostream& fid, Molecule& m)
 
 void Molecule::PrintBadness()
 {
+    // call to MBadness() will update abadMax if necessary
     cout << "MBadness() = " << MBadness() << endl;
     cout << "ABadness() =";
-    double mx = abad.max();
+    double mx = (NAtoms > 0) ? abad.max() : 0.0;
     for (int i = 0; i < NAtoms; ++i)
     {
 	cout << ' ' << ABadness(i);
@@ -873,7 +892,7 @@ void Molecule::PrintFitness()
 {
     cout << "MFitness() = " << MFitness() << endl;
     cout << "AFitness() =";
-    double mx = abad.max();
+    double mx = (NAtoms > 0) ? abad.max() : 0.0;
     for (int i = 0; i < NAtoms; ++i)
     {
 	cout << ' ' << AFitness(i);
