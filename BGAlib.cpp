@@ -316,7 +316,7 @@ void DistanceTable::init()
 // static members
 double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::tol_nbad  = 0.05*0.05;
-double Molecule::tol_r = 1.0e-4;
+double Molecule::tol_r = 1.0e-8;
 double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
