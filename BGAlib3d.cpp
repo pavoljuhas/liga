@@ -63,7 +63,7 @@ template<class T> bool read_data(istream& fid, vector<T>& v)
 }
 
 // read as many numbers as possible
-template<class T> T list_at(const list<T>& lst, int n)
+template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
 {
     typename list<T>::iterator ii;
     if (n <= lst.size()/2)
@@ -76,7 +76,7 @@ template<class T> T list_at(const list<T>& lst, int n)
 	ii = lst.end();
 	advance(ii, n-lst.size());
     }
-    return *ii;
+    return ii;
 }
 
 
@@ -246,9 +246,9 @@ bool compare_in_array(const int& lhs, const pair<double,double*>& rhs)
 }
 
 Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
-    owner(pM), atom1(a1), atom2(a2)
+    owner(pM), atom1(&a1), atom2(&a2)
 {
-    d2 = dist2(atom1, atom2);
+    d2 = dist2(*atom1, *atom2);
     d = sqrt(1.0*d2);
     badness = 0;
     if (d < BGA::min_distance)
@@ -272,19 +272,19 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
 	ssdIdxUsed = *ii;
 	owner->ssdIdxFree.erase(ii);
     }
-    atom1.IncBadness(badness);
-    atom2.IncBadness(badness);
+    atom1->IncBadness(badness);
+    atom2->IncBadness(badness);
     owner->badness += 2*badness;
-    int mab = max(atom1.Badness(), atom2.Badness());
+    int mab = max(atom1->Badness(), atom2->Badness());
     if (mab > owner->max_abad)  owner->max_abad = mab;
 }
 
 Pair_t::~Pair_t()
 {
-    int mab = max(atom1.Badness(), atom2.Badness());
+    int mab = max(atom1->Badness(), atom2->Badness());
     if (mab >= owner->max_abad)  owner->max_abad = -1;
-    atom1.DecBadness(badness);
-    atom2.DecBadness(badness);
+    atom1->DecBadness(badness);
+    atom2->DecBadness(badness);
     owner->badness -= 2*badness;
     if (ssdIdxUsed >= 0)
     {
@@ -757,7 +757,56 @@ int Molecule::MaxABadness() const
 //    fix_size();
 //    return *this;
 //}
-//
+
+Molecule& Molecule::Pop(list<Atom_t>::iterator ai)
+{
+    // delete all pairs that refer to *ai
+    Atom_t *pai = &(*ai);
+    for (list<Pair_t>::iterator ii = pairs.begin(); ii != pairs.end(); ++ii)
+    {
+	if (ii->atom1 == pai || ii->atom2 == pai)  pairs.erase(ii);
+    }
+    atoms.erase(ai);
+    NAtoms--;
+    return *this;
+}
+
+Molecule& Molecule::Pop(const int cidx)
+{
+    if (cidx < 0 || cidx >= NAtoms)
+    {
+	throw range_error("in Molecule::Pop(list<int>)");
+    }
+    list<Atom_t>::iterator apop = list_at(atoms, cidx);
+    Pop(apop);
+    return *this;
+}
+
+Molecule& Molecule::Pop(const list<int>& cidx)
+{
+
+    typedef list<Atom_t>::iterator LAit;
+    list<LAit> atoms2pop;
+    // build a list of iterators to atoms to be popped
+    for ( list<int>::const_iterator ii = cidx.begin();
+	    ii != cidx.end(); ++ii )
+    {
+	if (*ii < 0 || *ii >= NAtoms)
+	{
+	    cerr << "index out of range in Molecule::Pop(list<int>)" << endl;
+	    throw range_error("in Molecule::Pop(list<int>)");
+	}
+	atoms2pop.push_back( list_at(atoms, *ii) );
+    }
+    // now pop those atoms
+    for ( list<LAit>::iterator ii = atoms2pop.begin(); 
+	    ii != atoms2pop.end(); ++ii )
+    {
+	Pop(*ii);
+    }
+    return *this;
+}
+
 //Molecule& Molecule::Pop(const Molecule& M, const int cidx)
 //{
 //    if (cidx < 0 || cidx >= M.NAtoms)

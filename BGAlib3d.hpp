@@ -83,6 +83,8 @@ private:
     int age;
 };
 
+//typedef list<Atom_t>::iterator LAit;
+
 struct Pair_t
 {
 public:
@@ -92,7 +94,7 @@ public:
     Pair_t(const Pair_t& pair0) {};
     Pair_t& operator=(const Pair_t&) {};
     //
-    Atom_t atom1, atom2;
+    Atom_t *atom1, *atom2;
     mutable int d2;
     mutable double d;
 private:
@@ -146,8 +148,10 @@ public:
 //	{
 //	    return Pop(*this, cidx);
 //	}
-//    Molecule& Pop(const Molecule& M, const int cidx);		// get M.Pop()
-//    Molecule& Pop(const Molecule& M, const list<int>& cidx);	// get M.Pop()
+    // remove atom(s)
+    Molecule& Pop(list<Atom_t>::iterator ai);
+    Molecule& Pop(const int cidx);
+    Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(int nh, int nk, int nl);	// add single atom
@@ -217,7 +221,7 @@ private:
 //};
 //
 
-template<class T> T list_at(const list<T>& lst, int n);
+template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
 
 //struct Couple
 //{
