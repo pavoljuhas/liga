@@ -985,34 +985,58 @@ bool operator<(
     return lhs.mbad < rhs.mbad;
 }
 
-Molecule Molecule::MateWith(Molecule Male, int trials)
+namespace BGA_Molecule_MateWith
 {
-    // pj: add Sperm, Egg division code
-    list<mount_par> mounts_log;
+    bool compare_MFitness(const Molecule& lhs, const Molecule&, rhs)
+    {
+	return lhs.MFitness() < rhs.MFitness();
+    }
+}
+
+Molecule Molecule::MateWith(const Molecule& Male, int trials)
+{
+    using namespace BGA_Molecule_MateWith;
+    if (NAtoms != Male.NAtoms)
+    {
+	cerr << "E: mating of unequal molecules" << endl;
+	throw InvalidMolecule();
+    }
+    double patom_f[NAtoms];
+    for (int i = 0; i < NAtoms; ++i)  patom_f[i] = AFitness(i);
+    double patom_m[Male.NAtoms];
+    for (int i = 0; i < Male.NAtoms; ++i)  patom_m[i] = Male.AFitness(i);
+    list<Molecule> children;
     for (int i = 0; i < trials; ++i)
     {
-	mounts_log.push_back(mount(Male));
+	Molecule egg(ss);
+	list<int> egg_atoms =
+	    random_wt_choose(NAtoms, patom_f, NAtoms/2);
+	egg.Part(*this, egg_atoms);
+	Molecule sperm(ss);
+	list<int> sperm_atoms =
+	    random_wt_choose(Male.NAtoms, patom_m, NAtoms - egg.NAtoms);
+	sperm.Part(Male, sperm_atoms);
+	egg.mount(sperm);
+	children.push_back(egg);
+	if (egg.MBadness() = 0.0)  break;
     }
-    // find the best mount and use it to create child
-    mount_par *best;
-    // maybe the last one is good:
-    if (mounts_log.back().mbad == 0.0)
+    // find the best child
+    Molecule *best;
+    // maybe the last child is a prodigy
+    if (children.back().MBadness() == 0.0)
     {
-	best = &mounts_log.back();
+	best = &children.back();
     }
     else
     {
-	best = &(*min_element(mounts_log.begin(), mounts_log.end()));
+	best = &( *min_element(children.begin(), children.end()),
+		compare_MFitness );
     }
-    Molecule child(*this);
-    Male.Shift(best->dh, best->dk);
-    Male.Rotate(best->phi, best->h0, best->k0);
-    child.Add(Male);
-    child.Center();
-    return child;
+    best->Center();
+    return *best;
 }
 
-Molecule::mount_par Molecule::mount(Molecule Male)
+Molecule& Molecule::mount(Molecule& sperm)
 {
 }
 
