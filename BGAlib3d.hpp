@@ -23,6 +23,8 @@
 namespace BGA
 {
     extern gsl_rng* rng;
+    const double min_distance = 1.0;
+    const int min_distance_penalty = 10;
 };
 
 // exceptions
@@ -72,30 +74,31 @@ public:
     mutable int h, k, l;
     const int Badness();
     const double AvgBadness();
-    void IncBadness();
-    void DecBadness();
+    void IncBadness(int b = 1);
+    void DecBadness(int b = 1);
     void ResetBadness();
 private:
-    int bad;
-    int abad_sum;
+    int badness;
+    int badness_sum;
     int age;
 };
 
 struct Pair_t
 {
 public:
-    Pair_t(Molecule *M, Atom_t& atom1, Atom_t& atom2);
+    Pair_t(Molecule *M, Atom_t& a1, Atom_t& a2);
     ~Pair_t();
     // do not allow copying or assignment
-    Pair_t(const Pair_t& M) {};
+    Pair_t(const Pair_t& pair0) {};
     Pair_t& operator=(const Pair_t&) {};
     //
-    Atom_t *pAtom1, *pAtom2;
+    Atom_t atom1, atom2;
     mutable int d2;
     mutable double d;
 private:
+    Molecule *pmol;
     int ssdIdxUsed;
-    double near_penalty;
+    int badness;
 };
 
 // Molecule in 2 dimensions
@@ -104,132 +107,133 @@ class Molecule
 public:
     // constructors
     Molecule(SandSphere *SS);
-    Molecule(SandSphere *SS, int s, int *ph, int *pk, int *pl);
-    Molecule(SandSphere *SS,
-	    const vector<int>& vh, const vector<int>& vk);
-    Molecule(SandSphere *SS, int s, double *px, double *py);
-    Molecule(SandSphere *SS,
-	    const vector<double>& vx, const vector<double>& vy);
-    Molecule(const Molecule& M);		// copy constructor
-    Molecule& operator=(const Molecule&);	// assignment
-    ~Molecule();		// destructor
-    // parameters
-    int NDist;    		// length of distance table
-    int NAtoms;   		// current number of atoms
-    mutable int MaxAtoms;	// target number of atoms
-    double ABadness(int) const;	// fitness of specified atom
-    double AFitness(int) const;	// badness of specified atom
-    double MBadness() const;	// total badness
-    double MFitness() const;	// total fitness
-    double dist(const int& i, const int& j) const;	// d(i,j)
-    // operator functions
-    Molecule& Shift(double dh, double dk);	// shift all atoms
-    Molecule& Center();			// center w/r to the center of mass
-    Molecule& Rotate(double phi, double h0 = 0.0, double k0 = 0.0);
-    template<class T> 
-	inline Molecule& Part(T cidx)	// keep only specified atom
-	{
-	    return Part(*this, cidx);
-	}
-    // set this Molecule to a Part of M
-    Molecule& Part(const Molecule& M, const int cidx); 	
-    Molecule& Part(const Molecule& M, const list<int>& cidx);
-    template<class T> 
-	inline Molecule& Pop(T cidx)	// remove specified atom(s)
-	{
-	    return Pop(*this, cidx);
-	}
-    Molecule& Pop(const Molecule& M, const int cidx);		// get M.Pop()
-    Molecule& Pop(const Molecule& M, const list<int>& cidx);	// get M.Pop()
-    Molecule& Clear();			// remove all atoms
-    Molecule& Add(Molecule& M);		// add specified molecule
-    Molecule& Add(int nh, int nk);	// add single atom
-    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
-    Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
-    Molecule& Degenerate(int Npop = 1);	// Pop Npop atoms with abad[i] weight
-    Molecule MateWith(const Molecule& Male, int trials = 500);
-    double ABadnessAt(int nh, int nk) const;  // badness for new atom
-    double MBadnessWith(const Molecule& M) const;   // badness for merging
-    // IO functions
-    bool ReadGrid(const char*); 	// read integer grid coordinates
-    bool WriteGrid(const char*); 	// save integer grid coordinates
-    bool ReadXY(const char*); 		// read real coordinates
-    bool WriteXY(const char*); 		// save real coordinates
-    bool WriteAtomEye(const char*);	// export in AtomEye format
-    Molecule& OutFmtGrid();		// output format for operator>>
-    Molecule& OutFmtXY();               // output format for operator>>
-    Molecule& OutFmtAtomEye();          // output format for operator>>
-    friend ostream& operator<<(ostream& os, Molecule& M);
-    friend istream& operator>>(istream& is, Molecule& M);
-    void PrintBadness();		// total and per-atomic badness
-    void PrintFitness();		// total and per-atomic fitness
+//    Molecule(SandSphere *SS, int s, int *ph, int *pk, int *pl);
+//    Molecule(SandSphere *SS,
+//	    const vector<int>& vh, const vector<int>& vk);
+//    Molecule(SandSphere *SS, int s, double *px, double *py);
+//    Molecule(SandSphere *SS,
+//	    const vector<double>& vx, const vector<double>& vy);
+//    Molecule(const Molecule& M);		// copy constructor
+//    Molecule& operator=(const Molecule&);	// assignment
+//    ~Molecule();		// destructor
+//    // parameters
+//    int NDist;    		// length of distance table
+//    int NAtoms;   		// current number of atoms
+//    mutable int MaxAtoms;	// target number of atoms
+//    double ABadness(int) const;	// fitness of specified atom
+//    double AFitness(int) const;	// badness of specified atom
+//    double MBadness() const;	// total badness
+//    double MFitness() const;	// total fitness
+//    double dist(const int& i, const int& j) const;	// d(i,j)
+//    // operator functions
+//    Molecule& Shift(double dh, double dk);	// shift all atoms
+//    Molecule& Center();			// center w/r to the center of mass
+//    Molecule& Rotate(double phi, double h0 = 0.0, double k0 = 0.0);
+//    template<class T> 
+//	inline Molecule& Part(T cidx)	// keep only specified atom
+//	{
+//	    return Part(*this, cidx);
+//	}
+//    // set this Molecule to a Part of M
+//    Molecule& Part(const Molecule& M, const int cidx); 	
+//    Molecule& Part(const Molecule& M, const list<int>& cidx);
+//    template<class T> 
+//	inline Molecule& Pop(T cidx)	// remove specified atom(s)
+//	{
+//	    return Pop(*this, cidx);
+//	}
+//    Molecule& Pop(const Molecule& M, const int cidx);		// get M.Pop()
+//    Molecule& Pop(const Molecule& M, const list<int>& cidx);	// get M.Pop()
+//    Molecule& Clear();			// remove all atoms
+//    Molecule& Add(Molecule& M);		// add specified molecule
+//    Molecule& Add(int nh, int nk);	// add single atom
+//    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
+//    Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
+//    Molecule& Degenerate(int Npop = 1);	// Pop Npop atoms with abad[i] weight
+//    Molecule MateWith(const Molecule& Male, int trials = 500);
+//    double ABadnessAt(int nh, int nk) const;  // badness for new atom
+//    double MBadnessWith(const Molecule& M) const;   // badness for merging
+//    // IO functions
+//    bool ReadGrid(const char*); 	// read integer grid coordinates
+//    bool WriteGrid(const char*); 	// save integer grid coordinates
+//    bool ReadXY(const char*); 		// read real coordinates
+//    bool WriteXY(const char*); 		// save real coordinates
+//    bool WriteAtomEye(const char*);	// export in AtomEye format
+//    Molecule& OutFmtGrid();		// output format for operator>>
+//    Molecule& OutFmtXY();               // output format for operator>>
+//    Molecule& OutFmtAtomEye();          // output format for operator>>
+//    friend ostream& operator<<(ostream& os, Molecule& M);
+//    friend istream& operator>>(istream& is, Molecule& M);
+//    void PrintBadness();		// total and per-atomic badness
+//    void PrintFitness();		// total and per-atomic fitness
+    void Recalculate() const; 	// update everything
 private:
-    // constructor helper
-    void init();
-    // data storage
+//    // constructor helper
+//    void init();
+//    // data storage
     SandSphere *ss;
     list<Atom_t> atom;			// list of all atoms
     list<Pair_t> pair;			// list of all atom pairs
     mutable list<int> ssdIdxFree;	// available elements in ss.dist
-    // badness evaluation
-    mutable double abadMax;		// maximum atom badness
-    mutable double mbadness;		// molecular badness
-    void calc_db() const;	// update distance and fitness tables
-public:
-    struct badness_at;
-private:
-    list<badness_at> find_good_distances(int trials, const vector<int>& didx);
-    list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
-    list<badness_at> find_good_triangles2(int trials, const vector<int>& didx);
-    void set_mbad_abadMax() const;
-    // MateWith helpers:
-    Molecule& Molecule::mount(Molecule& Male);
-    // IO helpers
-    enum file_fmt_type {GRID = 1, XY, ATOMEYE};
-    file_fmt_type output_format;
-    class ParseHeader;
-    istream& ReadGrid(istream& fid);
-    istream& ReadXY(istream& fid);
-    string opened_file;
+    friend class Pair_t;
+//    // badness evaluation
+//    mutable double abadMax;		// maximum atom badness
+//    mutable double mbadness;		// molecular badness
+//public:
+//    struct badness_at;
+//private:
+//    list<badness_at> find_good_distances(int trials, const vector<int>& didx);
+//    list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
+//    list<badness_at> find_good_triangles2(int trials, const vector<int>& didx);
+//    void set_mbad_abadMax() const;
+//    // MateWith helpers:
+//    Molecule& Molecule::mount(Molecule& Male);
+//    // IO helpers
+//    enum file_fmt_type {GRID = 1, XY, ATOMEYE};
+//    file_fmt_type output_format;
+//    class ParseHeader;
+//    istream& ReadGrid(istream& fid);
+//    istream& ReadXY(istream& fid);
+//    string opened_file;
 };
-
-class Molecule::ParseHeader
-{
-public:
-    ParseHeader(const string& s);
-    int NAtoms;
-    double delta;
-    file_fmt_type format;
-    operator bool() {return state;}
-private:
-    bool state;
-    template<class T> bool read_token(const char *token, T& value);
-    const string& header;
-};
-
-struct Couple
-{
-    Molecule *Male, *Female;
-};
-
-class Population : public vector<Molecule>
-{
-public:
-    Population() : vector<Molecule>() { init(); }
-    Population(size_type n, SandSphere *SS) :
-	vector<Molecule>(n, Molecule(SS))
-    { init(); }
-    Population(size_type n, const Molecule& M) :
-	vector<Molecule>(n, M)
-    { init(); }
-    Population(Population &P) : vector<Molecule>(P) { init(); }
-    template <class InputIterator>
-	Population(InputIterator first, InputIterator last) :
-	    vector<Molecule>(first, last) { init(); }
-public:
-    vector<Couple> FindCouples(int NCouples = 1);
-private:
-    void init();
-};
+//
+//class Molecule::ParseHeader
+//{
+//public:
+//    ParseHeader(const string& s);
+//    int NAtoms;
+//    double delta;
+//    file_fmt_type format;
+//    operator bool() {return state;}
+//private:
+//    bool state;
+//    template<class T> bool read_token(const char *token, T& value);
+//    const string& header;
+//};
+//
+//struct Couple
+//{
+//    Molecule *Male, *Female;
+//};
+//
+//class Population : public vector<Molecule>
+//{
+//public:
+//    Population() : vector<Molecule>() { init(); }
+//    Population(size_type n, SandSphere *SS) :
+//	vector<Molecule>(n, Molecule(SS))
+//    { init(); }
+//    Population(size_type n, const Molecule& M) :
+//	vector<Molecule>(n, M)
+//    { init(); }
+//    Population(Population &P) : vector<Molecule>(P) { init(); }
+//    template <class InputIterator>
+//	Population(InputIterator first, InputIterator last) :
+//	    vector<Molecule>(first, last) { init(); }
+//public:
+//    vector<Couple> FindCouples(int NCouples = 1);
+//private:
+//    void init();
+//};
 
 #endif
