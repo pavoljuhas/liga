@@ -829,6 +829,7 @@ Molecule& Molecule::Clear()
     atoms.clear();
     max_abad = 0;
     badness = 0;
+    NAtoms = 0;
     return *this;
 }
 
@@ -1374,162 +1375,160 @@ Molecule& Molecule::Add(Atom_t atom)
 //    lidf = random_wt_choose(NAtoms, e_afit, 2);
 //
 //}
-//
-//
-//////////////////////////////////////////////////////////////////////////
-//// Molecule IO functions
-//////////////////////////////////////////////////////////////////////////
-//
-//Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
-//{
-//    // parse format
-//    string fmt;
-//    // initialize members:
-//    state =
-//	read_token("BGA molecule format", fmt) &&
-//	read_token("NAtoms", NAtoms) &&
-//	read_token("delta", delta);
-//    if (!state)
-//    {
-//	return;
-//    }
-//    if (fmt == "grid")
-//	format = GRID;
-//    else if (fmt == "xy")
-//	format = XY;
-//    else if (fmt == "atomeye")
-//	format = ATOMEYE;
-//    else
-//    {
-//	state = false;
-//	return;
-//    }
-//}
-//
-//template<class T> bool Molecule::ParseHeader::read_token(
-//	const char *token, T& value
-//	)
-//{
-//    const char *fieldsep = ":= ";
-//    int ltoken = strlen(token);
-//    string::size_type sp;
-//    const string::size_type npos = string::npos;
-//    if (
-//	    npos == (sp = header.find(token)) ||
-//	    npos == (sp = header.find_first_not_of(fieldsep, sp+ltoken))
-//       )
-//    {
-//	return false;
-//    }
-//    istringstream istrs(header.substr(sp));
-//    bool result = (istrs >> value);
-//    return result;
-//}
-//
-//istream& Molecule::ReadGrid(istream& fid)
-//{
-//    // read values to integer vector vhk
-//    string header;
-//    vector<int> vhk;
-//    bool result = read_header(fid, header) && read_data(fid, vhk);
-//    if (!result) return fid;
-//    // parse header
-//    double vhk_scale = 1.0;
-//    int vhk_NAtoms = vhk.size()/2;
-//    ParseHeader ph(header);
-//    if (ph)
-//    {
-//	vhk_scale = ph.delta / ss->delta;
-//	if ( vhk_NAtoms != ph.NAtoms )
-//	{
-//	    cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
-//		" atoms, read " << vhk_NAtoms << endl;
-//	    throw IOError();
-//	}
-//    }
-//    // check if all coordinates have been read
-//    if ( vhk.size() % 2 )
-//    {
-//	cerr << "E: " << opened_file << ": incomplete data" << endl;
-//	throw IOError();
-//    }
-//    Clear();
-//    h.resize(vhk_NAtoms);
-//    k.resize(vhk_NAtoms);
-//    for (int i = 0, iv = 0; i < vhk_NAtoms; ++i)
-//    {
-//	h[i] = vhk[iv++];
-//	k[i] = vhk[iv++];
-//    }
-//    fix_size();
-//    return fid;
-//}
-//
-//bool Molecule::ReadGrid(const char* file)
-//{
-//    // open file for reading
-//    ifstream fid(file);
-//    if (!fid)
-//    {
-//	cerr << "E: unable to read '" << file << "'" << endl;
-//	throw IOError();
-//    }
-//    opened_file = file;
-//    bool result = ReadGrid(fid);
-//    opened_file.clear();
-//    fid.close();
-//    return result;
-//}
-//
-//istream& Molecule::ReadXY(istream& fid)
-//{
-//    // read values to integer vector vxy
-//    string header;
-//    vector<double> vxy;
-//    bool result = read_header(fid, header) && read_data(fid, vxy);
-//    if (!result) return fid;
-//    int vxy_NAtoms = vxy.size()/2;
-//    // check how many numbers were read
-//    ParseHeader ph(header);
-//    if (ph && vxy_NAtoms != ph.NAtoms)
-//    {
-//	cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
-//	    " atoms, read " << vxy_NAtoms << endl;
-//	throw IOError();
-//    }
-//    if ( vxy.size() % 2 )
-//    {
-//	cerr << "E: " << opened_file << ": incomplete data" << endl;
-//	throw IOError();
-//    }
-//    Clear();
-//    h.resize(vxy.size()/2);
-//    k.resize(vxy.size()/2);
-//    for (size_t i = 0, iv = 0; i < vxy.size()/2; ++i)
-//    {
-//	h[i] = (int) round(vxy[iv++] / ss->delta);
-//	k[i] = (int) round(vxy[iv++] / ss->delta);
-//    }
-//    fix_size();
-//    return fid;
-//}
-//
-//bool Molecule::ReadXY(const char* file)
-//{
-//    // open file for reading
-//    ifstream fid(file);
-//    if (!fid)
-//    {
-//	cerr << "E: unable to read '" << file << "'" << endl;
-//	throw IOError();
-//    }
-//    opened_file = file;
-//    bool result = ReadXY(fid);
-//    opened_file.clear();
-//    fid.close();
-//    return result;
-//}
-//
+
+
+////////////////////////////////////////////////////////////////////////
+// Molecule IO functions
+////////////////////////////////////////////////////////////////////////
+
+Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
+{
+    // parse format
+    string fmt;
+    // initialize members:
+    state =
+	read_token("BGA molecule format", fmt) &&
+	read_token("NAtoms", NAtoms) &&
+	read_token("delta", delta);
+    if (!state)
+    {
+	return;
+    }
+    if (fmt == "grid")
+	format = GRID;
+    else if (fmt == "xy")
+	format = XY;
+    else if (fmt == "atomeye")
+	format = ATOMEYE;
+    else
+    {
+	state = false;
+	return;
+    }
+}
+
+template<class T> bool Molecule::ParseHeader::read_token(
+	const char *token, T& value
+	)
+{
+    const char *fieldsep = ":= ";
+    int ltoken = strlen(token);
+    string::size_type sp;
+    const string::size_type npos = string::npos;
+    if (
+	    npos == (sp = header.find(token)) ||
+	    npos == (sp = header.find_first_not_of(fieldsep, sp+ltoken))
+       )
+    {
+	return false;
+    }
+    istringstream istrs(header.substr(sp));
+    bool result = (istrs >> value);
+    return result;
+}
+
+istream& Molecule::ReadGrid(istream& fid)
+{
+    // read values to integer vector vhkl
+    string header;
+    vector<int> vhkl;
+    bool result = read_header(fid, header) && read_data(fid, vhkl);
+    if (!result) return fid;
+    // parse header
+    double vhkl_scale = 1.0;
+    int vhkl_NAtoms = vhkl.size()/3;
+    ParseHeader ph(header);
+    if (ph)
+    {
+	vhkl_scale = ph.delta / ss->delta;
+	if ( vhkl_NAtoms != ph.NAtoms )
+	{
+	    cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
+		" atoms, read " << vhkl_NAtoms << endl;
+	    throw IOError();
+	}
+    }
+    // check if all coordinates have been read
+    if ( vhkl.size() % 3 )
+    {
+	cerr << "E: " << opened_file << ": incomplete data" << endl;
+	throw IOError();
+    }
+    Clear();
+    for (int i = 0; i < vhkl.size(); i += 3)
+    {
+	int h = vhkl[i+0];
+	int k = vhkl[i+1];
+	int l = vhkl[i+2];
+	Add(Atom_t(h, k, l));
+    }
+    return fid;
+}
+
+bool Molecule::ReadGrid(const char* file)
+{
+    // open file for reading
+    ifstream fid(file);
+    if (!fid)
+    {
+	cerr << "E: unable to read '" << file << "'" << endl;
+	throw IOError();
+    }
+    opened_file = file;
+    bool result = ReadGrid(fid);
+    opened_file.clear();
+    fid.close();
+    return result;
+}
+
+istream& Molecule::ReadXY(istream& fid)
+{
+    // read values to integer vector vxyz
+    string header;
+    vector<double> vxyz;
+    bool result = read_header(fid, header) && read_data(fid, vxyz);
+    if (!result) return fid;
+    int vxyz_NAtoms = vxyz.size()/3;
+    // check how many numbers were read
+    ParseHeader ph(header);
+    if (ph && vxyz_NAtoms != ph.NAtoms)
+    {
+	cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
+	    " atoms, read " << vxyz_NAtoms << endl;
+	throw IOError();
+    }
+    if ( vxyz.size() % 3 )
+    {
+	cerr << "E: " << opened_file << ": incomplete data" << endl;
+	throw IOError();
+    }
+    Clear();
+    for (int i = 0; i < vxyz.size(); i += 3)
+    {
+	int h = (int) round(vxyz[i+0] / ss->delta);
+	int k = (int) round(vxyz[i+1] / ss->delta);
+	int l = (int) round(vxyz[i+2] / ss->delta);
+	Add(Atom_t(h, k, l));
+    }
+    return fid;
+}
+
+bool Molecule::ReadXY(const char* file)
+{
+    // open file for reading
+    ifstream fid(file);
+    if (!fid)
+    {
+	cerr << "E: unable to read '" << file << "'" << endl;
+	throw IOError();
+    }
+    opened_file = file;
+    bool result = ReadXY(fid);
+    opened_file.clear();
+    fid.close();
+    return result;
+}
+
 //bool write_file(const char* file, Molecule& M)
 //{
 //    // open file for writing
@@ -1589,42 +1588,42 @@ Molecule& Molecule::OutFmtAtomEye()
     return *this;
 }
 
-//istream& operator>>(istream& fid, Molecule& M)
-//{
-//    string header;
-//    istream::pos_type p = fid.tellg();
-//    if( !read_header(fid, header) )
-//    {
-//	fid.setstate(ios_base::failbit);
-//	return fid;
-//    }
-//    fid.seekg(p);
-//    Molecule::ParseHeader ph(header);
-//    if (!ph)
-//    {
-//	fid.setstate(ios_base::failbit);
-//	return fid;
-//    }
-//    bool result;
-//    switch (ph.format)
-//    {
-//	case M.GRID:
-//	    result = M.ReadGrid(fid);
-//	    break;
-//	case M.XY:
-//	    result = M.ReadXY(fid);
-//	    break;
-//	case M.ATOMEYE:
-//	    throw runtime_error("reading of atomeye files not implemented");
-//	    break;
-//    }
-//    if (!result)
-//    {
-//	fid.setstate(ios_base::failbit);
-//    }
-//    return fid;
-//}
-//
+istream& operator>>(istream& fid, Molecule& M)
+{
+    string header;
+    istream::pos_type p = fid.tellg();
+    if( !read_header(fid, header) )
+    {
+	fid.setstate(ios_base::failbit);
+	return fid;
+    }
+    fid.seekg(p);
+    Molecule::ParseHeader ph(header);
+    if (!ph)
+    {
+	fid.setstate(ios_base::failbit);
+	return fid;
+    }
+    bool result;
+    switch (ph.format)
+    {
+	case M.GRID:
+	    result = M.ReadGrid(fid);
+	    break;
+	case M.XY:
+	    result = M.ReadXY(fid);
+	    break;
+	case M.ATOMEYE:
+	    throw runtime_error("reading of atomeye files not implemented");
+	    break;
+    }
+    if (!result)
+    {
+	fid.setstate(ios_base::failbit);
+    }
+    return fid;
+}
+
 //ostream& operator<<(ostream& fid, Molecule& M)
 //{
 //    switch (M.output_format)

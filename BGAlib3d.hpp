@@ -163,16 +163,16 @@ public:
 //    double ABadnessAt(int nh, int nk) const;  // badness for new atom
 //    double MBadnessWith(const Molecule& M) const;   // badness for merging
 //    // IO functions
-//    bool ReadGrid(const char*); 	// read integer grid coordinates
+    bool ReadGrid(const char*); 	// read integer grid coordinates
 //    bool WriteGrid(const char*); 	// save integer grid coordinates
-//    bool ReadXY(const char*); 		// read real coordinates
+    bool ReadXY(const char*); 		// read real coordinates
 //    bool WriteXY(const char*); 		// save real coordinates
 //    bool WriteAtomEye(const char*);	// export in AtomEye format
     Molecule& OutFmtGrid();		// output format for operator>>
     Molecule& OutFmtXY();               // output format for operator>>
     Molecule& OutFmtAtomEye();          // output format for operator>>
-//    friend ostream& operator<<(ostream& os, Molecule& M);
-//    friend istream& operator>>(istream& is, Molecule& M);
+    friend ostream& operator<<(ostream& os, Molecule& M);
+    friend istream& operator>>(istream& is, Molecule& M);
 //    void PrintBadness();		// total and per-atomic badness
 //    void PrintFitness();		// total and per-atomic fitness
     void Recalculate(); 	// update everything
@@ -200,26 +200,26 @@ private:
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
     file_fmt_type output_format;
-//    class ParseHeader;
-//    istream& ReadGrid(istream& fid);
-//    istream& ReadXY(istream& fid);
-//    string opened_file;
+    class ParseHeader;
+    istream& ReadGrid(istream& fid);
+    istream& ReadXY(istream& fid);
+    string opened_file;
 };
-//
-//class Molecule::ParseHeader
-//{
-//public:
-//    ParseHeader(const string& s);
-//    int NAtoms;
-//    double delta;
-//    file_fmt_type format;
-//    operator bool() {return state;}
-//private:
-//    bool state;
-//    template<class T> bool read_token(const char *token, T& value);
-//    const string& header;
-//};
-//
+
+class Molecule::ParseHeader
+{
+public:
+    ParseHeader(const string& s);
+    int NAtoms;
+    double delta;
+    file_fmt_type format;
+    operator bool() {return state;}
+private:
+    bool state;
+    template<class T> bool read_token(const char *token, T& value);
+    const string& header;
+};
+
 
 template<class T> typename list<T>::iterator list_at(const list<T>& lst, int n);
 
