@@ -1,8 +1,8 @@
 /***********************************************************************
 * Short Title: test of BGAlib.cpp
 *
-* Comments: create correct and defect square molecule and evaluate
-*     molecular and atomic fitness/badness
+* Comments: create correct line, correct square and defective square
+*     molecules and evaluate molecular and atomic fitness/badness
 *
 * $Id$
 ***********************************************************************/
