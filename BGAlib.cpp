@@ -447,7 +447,7 @@ double Molecule::Badness() const
     return badness;
 }
 
-double Molecule::NormalBadness() const
+double Molecule::NormBadness() const
 {
     return Badness()/NDist();
 }

@@ -134,8 +134,8 @@ public:
     static double (*penalty)(double);
     // fitness/badness functions
     double AFitness(const Atom_t&) const;
-    double Badness() const;		// total badness
-    double NormalBadness() const;	// normalized badness
+    double Badness() const;	// total badness
+    double NormBadness() const;	// normalized badness
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
