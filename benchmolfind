@@ -52,10 +52,10 @@ do
 		p=( "${(@)p/(#s)DISTFILE(#e)/$df}" )
 		print "#bm $i of $REPEATS timings for $df"
 		print "#bm $CMD $p"
-		$CMD "${(@)p}"
+		$CMD "${(@)p}" || exit $?
 	    done 1>&3 2>&4
 	    )
-	)
+	) || break
     print "#bm $UT\n"
     results=( $results ${df:t} $UT )
 done
