@@ -128,7 +128,6 @@ public:
     ~Molecule();		// destructor
     // data access
     // fitness/badness functions
-    double ABadness(int i) const;
     double AFitness(int i) const;
     double Badness() const;	// total badness
     double Fitness() const;	// total fitness

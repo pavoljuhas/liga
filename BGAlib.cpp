@@ -428,13 +428,6 @@ void Molecule::Recalculate()
     }
 }
 
-double Molecule::ABadness(int i) const
-{
-    list<Atom_t>::const_iterator ai = atoms.begin();
-    advance(ai, i);
-    return ai->Badness();
-}
-
 double Molecule::AFitness(int i) const
 {
     list<Atom_t>::const_iterator ai = atoms.begin();
