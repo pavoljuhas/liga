@@ -1,0 +1,12 @@
+Biosphere Genetic Algorithm
+
+Biosphere	array of populations of different molecule kinds
+Population	array of molecules of the same kind (same number of atoms)
+SandSphere	discrete grid inside a sphere with R=dmax, where atoms
+		can be placed, delta = dmax/ngridmax
+Molecule	list of atom positions on SandSphere grid,
+		individual atom fitnesses, total molecule fitness,
+		list of occupied lengths from target distance table
+		list of free lengths from target distance table
+
+

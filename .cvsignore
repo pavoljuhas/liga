@@ -1,0 +1,5 @@
+*.o
+.sw[a-z]
+.*.sw[a-z]
+.gdbtkinit
+.nbattrs
