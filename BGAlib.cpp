@@ -122,9 +122,10 @@ void SandSphere::init(const vector<double>& t)
     d2.resize(NDist);
     d2lo.resize(NDist);
     d2hi.resize(NDist);
+    d /= delta;
     d2 = d*d;
-    d2lo = d2 - 2*delta*d + delta*delta;
-    d2hi = d2 + 2*delta*d + delta*delta;
+    d2lo = d2 - 2*gridTol*d + gridTol*gridTol;
+    d2hi = d2 + 2*gridTol*d + gridTol*gridTol;
 }
  
 ////////////////////////////////////////////////////////////////////////
@@ -265,7 +266,7 @@ void Molecule::calc_df()
 	    abad[i] += Ri - ss->gridmax;
 	}
     }
-    abadMax = abad.max();
+    abadMax = max(abad.max(), (double) NAtoms);
 }
 
 double Molecule::ABadness(int i)
@@ -427,6 +428,9 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.9  2005/01/25 20:12:29  juhas
+* fixed evaluation of d2lo, d2hi, abadMax
+*
 * Revision 1.8  2005/01/25 17:23:24  juhas
 * added Molecule constructors from real coordinates
 *
