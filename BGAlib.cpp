@@ -311,8 +311,12 @@ void DistanceTable::init()
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
 
-// static members:
-double Molecule::tol_deltad;
+// static members
+//numeric_limits<double> double_info;
+//    tol_deltad = double_info.max();
+double Molecule::tol_deltad  = numeric_limits<double>().max();
+double Molecule::evolve_frac = 0.0001;
+bool   Molecule::evolve_jump = true;
 
 Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 {
@@ -382,8 +386,6 @@ void Molecule::init()
 {
     max_abad = 0;
     badness = 0;
-    numeric_limits<double> double_info;
-    tol_deltad = double_info.max();
     // default output format
     OutFmtGrid();
 }
@@ -995,7 +997,9 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    comp_Atom_Badness) -> Badness();
     double max_badness = max_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness) -> Badness();
-    double hi_badness = 0.05*min(max_badness-min_badness, 1.0)+min_badness;
+//  pj: how about
+//  double hi_badness = evolve_frac*min(max_badness-min_badness, penalty(tol_dd)+min_badness;
+    double hi_badness = evolve_frac*(max_badness-min_badness)+min_badness;
     typedef vector<Atom_t>::iterator VAit;
     // try to add as many atoms as possible
     while (true)
@@ -1011,7 +1015,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    break;
 	int idx = gsl_rng_uniform_int(BGA::rng, vta.size());
 	Add(vta[idx]);
-	if (NAtoms() == max_NAtoms())
+	if (NAtoms() == max_NAtoms() | !evolve_jump)
 	    break;
 	vta.erase(vta.begin()+idx);
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
