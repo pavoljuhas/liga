@@ -58,8 +58,8 @@ public:
     int NAtoms;   		// target number of atoms
     double ABadness(int);	// fitness of specified atom
     double AFitness(int);	// badness of specified atom
-    double MBadness();		// total fitness
-    double MFitness();		// total badness
+    double MBadness();		// total badness
+    double MFitness();		// total fitness
     double dist(const int& i, const int& j);		// d(i,j)
     inline int dist2(const int& i, const int& j);	// squared d(i,j)
     // operator functions
@@ -81,14 +81,14 @@ private:
     vector<int> h;		// x-coordinates
     vector<int> k;		// y-coordinates
     bool cached;
-    valarray<double> afit;	// individual atom fitnesses
-    double afitMax;		// maximum atom fitness
-    double mfitCache;
-    vector<int> d2;		// sorted table of squared distances 
-    list<int> ssdIdxUsed;	// used elements from ss.dist
+    valarray<double> abad;	// individual atom badnesses
+    double abadMax;		// maximum atom badness
+    valarray<int> d2;		// sorted table of squared distances 
+//    vector<int> ssdIdxUsed;	// used elements from ss.dist
     list<int> ssdIdxFree;	// available elements in ss.dist
     // helper functions
-    void init();
+    void init();		// constructor helper
+    void calc_df();		// update distance and fitness tables
 };
 
 /*
@@ -197,6 +197,10 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.4  2005/01/25 04:39:50  juhas
+* afit renamed to abad, afitMax renamed to abadMax
+* declared Molecule::calc_df()
+*
 * Revision 1.3  2005/01/19 21:20:39  juhas
 * init_dist() renamed to init()
 * list "dist" renamed to "d"
