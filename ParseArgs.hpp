@@ -10,18 +10,29 @@
 
 #ifndef PARSEARGS_HPP_INCLUDED
 #define PARSEARGS_HPP_INCLUDED
+#include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <map>
+#include <stdexcept>
 #include <getopt.h>
 
-// exceptions
-struct IOError { };
-struct InvalidOption { };
-struct InvalidParameter { };
-
 using namespace std;
+
+// exceptions
+struct IOError : public runtime_error
+{
+    IOError (const string& what_arg) :
+	runtime_error(what_arg) { }
+};
+
+struct ParseArgsError : public runtime_error
+{
+    ParseArgsError (string what_arg = "") :
+	runtime_error(what_arg) { }
+};
 
 class ParseArgs
 {
@@ -40,8 +51,9 @@ public:
     vector<string> args;
     string cmd_h, cmd_t;
     void Parse();
-    void List();
+    void Dump();
     void ReadPars(const char *file);
+    istream& ReadPars(istream& fid = cin);
     template <class T> T GetPar(string par);
     template <class T> T GetPar(string par, T defval);
     template <typename T> vector<T> GetParVec(string par);
@@ -56,8 +68,9 @@ template<class T> T ParseArgs::GetPar(string par)
 {
     if (!pars.count(par))
     {
-	cerr << "parameter '" << par << "' is not defined" << endl;
-	throw InvalidParameter();
+	ostringstream oss;
+	oss << "parameter '" << par << "' is not defined";
+	throw ParseArgsError(oss.str());
     }
     T val;
     istringstream iss(pars[par]);
@@ -74,8 +87,9 @@ template <typename T> vector<T> GetParVec(string par)
 {
     if (!pars.count(par))
     {
-	cerr << "parameter '" << par << "' is not defined" << endl;
-	throw InvalidParameter();
+	ostringstream oss;
+	oss << "parameter '" << par << "' is not defined";
+	throw ParseArgsError(oss.str());
     }
     vector<T> v;
     istringstream iss(pars[par]);
