@@ -362,10 +362,9 @@ void Molecule::calc_df()
 	{
 	    ssdIdxFree.push_back(ssdIdx);
 	}
-	// jump out if there are no more target distances
-	if (! (ssdIdx < ss->NDist) ) break;
-	// did we find a baddie?
-	if (ss->d2lo[ssdIdx] > d2idx[ij].d2)
+	// we found a baddie if we reached the end of ss->d2 table
+	// or if the current distance is smaller than d2lo
+	if (!(ssdIdx < ss->NDist) || d2idx[ij].d2 < ss->d2lo[ssdIdx])
 	{
 	    abad[d2idx[ij].i]++;
 	    abad[d2idx[ij].j]++;
@@ -375,6 +374,11 @@ void Molecule::calc_df()
 	{
 	    ssdIdx++;
 	}
+    }
+    // all unused distances from the table are free:
+    for(;  ssdIdx < ss->NDist; ++ssdIdx)
+    {
+	ssdIdxFree.push_back(ssdIdx);
     }
     // now add penalty for being outside the SandSphere
     for (int i = 0; i < NAtoms; ++i)
@@ -603,10 +607,9 @@ double Molecule::ABadnessAt(int nh, int nk)
     {
 	for ( ; idif != ssdIdxFree.end() && ss->d2hi[*idif] < *pnd2;
 		++idif ) {};
-	// jump out if there are no more target distances
-	if (idif == ssdIdxFree.end()) break;
-	// did we find a baddie?
-	if (ss->d2lo[*idif] > *pnd2)
+	// we found a baddie if we reached the end of ssdIdxFree table
+	// or if the current distance is smaller than d2lo
+	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
 	{
 	    nbad++;
 	}
