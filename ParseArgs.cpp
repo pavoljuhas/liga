@@ -92,7 +92,7 @@ istream& ParseArgs::ReadPars(istream& fid)
 	if (!ispar)
 	{
 	    ostringstream oss;
-	    oss << nr << ": invalid argument name '" << par << "'";
+	    oss << nr << ": invalid parameter name '" << par << "'";
 	    throw ParseArgsError(oss.str());
 	}
 	vb = line.find_first_not_of(blank, eq+1);
