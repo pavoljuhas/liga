@@ -283,7 +283,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     rp.ligasize = a.GetPar<int>("ligasize", 10);
     cout << "ligasize=" << rp.ligasize << endl;
-    rp.stopgame = a.GetPar<int>("stopgame", 1.0);
+    rp.stopgame = a.GetPar<double>("stopgame", 1.0);
     cout << "stopgame=" << rp.stopgame << endl;
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
     // put initial molecule to its division
     PMOL first_team = new Molecule(mol);
     cout << "Initial team" << endl;
-    cout << rv.liga_round << "L " << first_team->NAtoms() << ' '
+    cout << rv.liga_round << " I " << first_team->NAtoms() << ' '
 	<< first_team->Badness() << endl;
     liga[mol.NAtoms()].push_back(first_team);
     // fill lower divisions
@@ -437,6 +437,8 @@ int main(int argc, char *argv[])
         save_frames(*world_champ, rp, rv);
     }
     cout << "Solution found!!!" << endl;
+    cout << "cnt_penalty_calls = " <<
+	BGA::cnt_penalty_calls << endl;
     // save last frame
     rv.lastframe = true;
     save_frames(mol, rp, rv);
