@@ -444,12 +444,6 @@ double Molecule::Badness() const
     return badness;
 }
 
-double Molecule::Fitness() const
-{
-    // call to MaxABadness() will update max_abad if necessary
-    return NAtoms()*MaxABadness() - Badness();
-}
-
 bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
 {
     return lhs.Badness() < rhs.Badness();
@@ -468,23 +462,6 @@ bool comp_Atom_ry(const Atom_t& lhs, const Atom_t& rhs)
 bool comp_Atom_rz(const Atom_t& lhs, const Atom_t& rhs)
 {
     return lhs.rz < rhs.rz;
-}
-
-double Molecule::MaxABadness() const
-{
-    if (max_abad < 0)
-    {
-	if (NAtoms() == 0)
-	    max_abad = 0.0;
-	else
-	{
-	    double mab = max_element(atoms.begin(), atoms.end(),
-		    comp_Atom_Badness) -> Badness();
-//	    max_abad = max(1.0, mab);
-	    max_abad = (mab != 0.0) ? mab : 1.0;
-	}
-    }
-    return max_abad;
 }
 
 
@@ -1532,7 +1509,6 @@ void Molecule::PrintBadness()
 
 void Molecule::PrintFitness()
 {
-    cout << "MFitness() = " << Fitness() << endl;
     cout << "AFitness() =";
     double mab = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness) -> Badness();

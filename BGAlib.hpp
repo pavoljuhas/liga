@@ -130,8 +130,6 @@ public:
     // fitness/badness functions
     double AFitness(const Atom_t&) const;
     double Badness() const;	// total badness
-    double Fitness() const;	// total fitness
-    double MaxABadness() const;	// total fitness
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
