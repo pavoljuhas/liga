@@ -33,8 +33,7 @@ struct Counters_t
 {
     int penalty_calls;
     int distance_calls;
-    void PrintCounters();
-    void PrintCPUtime();
+    void PrintRunStats();
 };
 // global instance of Counters_t
 namespace BGA { extern Counters_t cnt; }
