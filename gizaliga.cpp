@@ -49,7 +49,7 @@ void print_help(ParseArgs& a)
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
 "  ligasize=int          [10] number of teams per division\n"
-"  stopgame=double       [0.01] skip division when winner is worse\n"
+"  stopgame=double       [0.025] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
@@ -287,7 +287,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     }
     rp.ligasize = a.GetPar<int>("ligasize", 10);
     cout << "ligasize=" << rp.ligasize << endl;
-    rp.stopgame = a.GetPar<double>("stopgame", 0.01);
+    rp.stopgame = a.GetPar<double>("stopgame", 0.0025);
     cout << "stopgame=" << rp.stopgame << endl;
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
