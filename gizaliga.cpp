@@ -8,7 +8,6 @@
 
 #include <limits>
 #include <unistd.h>
-#include <memory>
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
@@ -42,13 +41,13 @@ void print_help(ParseArgs& a)
 "  inistru=FILE          initial structure [empty box]\n"
 "  snapshot=FILE         live molecule structure\n"
 "  snaprate=int          [100] number of iterations between snapshot updates\n"
-"  frames=FILE           save intermediate structures to FILE.iteration\n"
+"  frames=FILE           save intermediate structures to FILE.liga_round\n"
 "  framesrate=int        [100] number of iterations between frame saves\n"
-"Walk parameters\n"
+"Liga parameters\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
-"  teams=int             [10] number of teams per division\n"
+"  ligasize=int          [10] number of teams per division\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
@@ -70,7 +69,7 @@ struct RunPar_t
     double tol_dd;
     double tol_bad;
     int seed;
-    int teams;
+    int ligasize;
     string penalty;
     int dist_trials;
     int tri_trials;
@@ -79,23 +78,68 @@ struct RunPar_t
 
 struct RunVar_t
 {
-    int iteration;
+    RunVar_t() : liga_round(0), full_liga(false), lastframe(false)
+    { }
+    int liga_round;
     bool full_liga;
     bool lastframe;
 };
 
-class Division_t
+typedef Molecule* PMOL;
+struct Division_t : public vector<Molecule*>
 {
 public:
     // constructors
-    Division_t(int s) : max_size(s) { };
-    const int max_size;
-    vector< auto_ptr<Molecule> > teams;
-    vector< auto_ptr<Molecule> >::iterator champion();
-    vector< auto_ptr<Molecule> >::iterator looser();
-    inline int size() { return teams.size(); }
+    Division_t(int s)  : vector<PMOL>(), max_size(s) { }
+    Division_t(const Division_t& div0) :
+	vector<PMOL>(div0), max_size(div0.max_size) { }
+    ~Division_t()
+    {
+	for (iterator ii = begin(); ii != end(); ++ii)
+	    delete *ii;
+    }
+    Division_t& operator= (const vector<PMOL>& div0)
+    {
+	*this = div0;
+    }
+    Division_t& operator= (const Division_t& div0)
+    {
+	*this = vector<PMOL>(div0);
+	max_size = div0.max_size;
+    }
+    PMOL& champion();
+    PMOL& looser();
     inline bool full() { return !(size() < max_size); }
+    inline int fullsize() { return max_size; }
+private:
+    mutable int max_size;
 };
+
+PMOL& Division_t::champion()
+{
+    // evaluate molecule fitness
+    valarray<double> vmfit(size());
+    double *pd = &vmfit[0];
+    for (iterator mi = begin(); mi != end(); ++mi, ++pd)
+	*pd = (*mi)->NormBadness();
+    // then get the reciprocal value
+    vmfit = vdrecipw0(vmfit);
+    double *mfit = &vmfit[0];
+    int idx = *(random_wt_choose(1, mfit, size()).begin());
+    return at(idx);
+}
+
+PMOL& Division_t::looser()
+{
+    // evaluate molecule fitness
+    valarray<double> vmbad(size());
+    double *pd = &vmbad[0];
+    for (iterator mi = begin(); mi != end(); ++mi, ++pd)
+	*pd = (*mi)->NormBadness();
+    double *mbad = &vmbad[0];
+    int idx = *(random_wt_choose(1, mbad, size()).begin());
+    return at(idx);
+}
 
 
 Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
@@ -183,7 +227,6 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     }
-    }
     if (a.ispar("snapshot"))
     {
         rp.snapshot = a.pars["snapshot"];
@@ -210,8 +253,8 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
         gsl_rng_set(BGA::rng, rp.seed);
         cout << "seed=" << rp.seed << endl;
     }
-    rp.teams = a.GetPar<int>("teams", 10);
-    cout << "teams=" << rp.teams << endl;
+    rp.ligasize = a.GetPar<int>("ligasize", 10);
+    cout << "ligasize=" << rp.ligasize << endl;
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
         mol.penalty = BGA::pow2;
@@ -239,14 +282,11 @@ void save_snapshot(Molecule& mol, RunPar_t& rp)
 {
 //  numeric_limits<double> double_info;
     static int cnt = 0;
-    static int largest = 0;
     static double bestMNB = numeric_limits<double>().max();
     if (rp.snapshot.size() == 0 || rp.snaprate == 0 || ++cnt < rp.snaprate)
         return;
-    if (  mol.NAtoms() > largest ||
-            (mol.NAtoms() == largest && mol.NormBadness() < bestMNB)  )
+    if ( mol.NormBadness() < bestMNB)
     {
-        largest = mol.NAtoms();
         bestMNB = mol.NormBadness();
         mol.WriteAtomEye(rp.snapshot.c_str());
         cnt = 0;
@@ -261,78 +301,108 @@ void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
             (++cnt < rp.framesrate && !rv.lastframe) )
         return;
     ostringstream oss;
-    oss << rp.frames << "." << rv.iteration;
+    oss << rp.frames << "." << rv.liga_round;
     mol.WriteAtomEye(oss.str().c_str());
     cnt = 0;
 }
 
 int main(int argc, char *argv[])
 {
+    // process arguments
     RunPar_t rp;
-    Molecule mol = process_arguments(rp, argc, argv);
     RunVar_t rv;
-    rv.lastframe = false;
+    Molecule mol = process_arguments(rp, argc, argv);
 
     // initialize liga divisions, primitive divisions have only 1 team
-    vector<Division_t> LigaDivision;
-    for (int i = 0; i <= mol.maxNAtoms(); ++i)
+    vector<Division_t> liga;
+    for (int i = 0; i <= mol.max_NAtoms(); ++i)
     {
-        int divteams = (i < 2) ? 1 : rp.teams;
-        LigaDivision.push_back(Division_t(divteams));
+        int divsize = (i < 2) ? 1 : rp.ligasize;
+        liga.push_back(Division_t(divsize));
     }
     // put initial molecule to its division
-    typedef auto_ptr<Molecule> APmol;
-    APmol first_team(new Molecule(mol));
-    LigaDivision[mol.NAtoms()].teams.push_back(first_team);
-    // fill higher divisions
-    mol.evolve_jump = false;
-    for (int ldidx = mol.NAtoms()+1; ldidx <= mol.maxNAtoms(); ++ldidx)
+    PMOL first_team = new Molecule(mol);
+    cout << "Initial team" << endl;
+    cout << rv.liga_round << "L " << first_team->NAtoms() << ' '
+	<< first_team->Badness() << endl;
+    liga[mol.NAtoms()].push_back(first_team);
+    // fill lower divisions
+    cout << "Filling lower divisions" << endl;
+    for (int level = mol.NAtoms()-1; level >= 0; --level)
     {
-        APmol parent_team = LigaDivision[ldidx-1].teams[0];
-        APmol higher_team(new Molecule(*parent_team));
+        PMOL parent_team = liga[level+1].back();
+        PMOL lower_team = new Molecule(*parent_team);
+        lower_team->Degenerate(1);
+	cout << rv.liga_round << "L " << lower_team->NAtoms() << ' '
+	    << lower_team->Badness() << endl;
+        liga[level].push_back(lower_team);
+    }
+    cout << "Done" << endl;
+    // fill higher divisions
+    cout << "Filling lower divisions" << endl;
+    mol.evolve_jump = false;
+    for (int level = mol.NAtoms()+1; level <= mol.max_NAtoms(); ++level)
+    {
+        PMOL parent_team = liga[level-1].back();
+        PMOL higher_team = new Molecule(*parent_team);
         higher_team->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
-        LigaDivision[ldidx].teams.push_back(higher_team);
+	cout << rv.liga_round << "L " << higher_team->NAtoms() << ' '
+	    << higher_team->Badness() << endl;
+        liga[level].push_back(higher_team);
     }
     mol.evolve_jump = true;
-    // fill lower divisions
-    for (int ldidx = mol.NAtoms()-1; ldidx >= 0; --ldidx)
+    // find the first world champion
+    PMOL world_champ = liga.back().champion();
+    cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
+	<< world_champ->Badness() << endl;
+    // let the game begin
+    while ( !(world_champ->Badness() < rp.tol_bad ) )
     {
-        APmol parent_team = LigaDivision[ldidx+1].teams[0];
-        APmol lower_team(new Molecule(*parent_team));
-        lower_team->Degenerate(1);
-        LigaDivision[ldidx].teams.push_back(lower_team);
-    }
-
-    rv.iteration = 0;
-    rv.full_liga = false;
-    while (!(LigaDivision.back().champion->Badness() < rp.tol_bad))
-    {
-        ++rv.iteration;
-        // it is a bit painful when liga is not filled
-        if (!rv.full_liga)
-        {
-	bool fullcheck = true;
-	for (vector<Division_t>::iteration dvi = LigaDivision.begin();
-	        dvi != LigaDivision.end() && fullcheck; ++dvi)
+        ++rv.liga_round;
+	typedef vector<Division_t>::iterator VDit;
+	int lo_level = 0;
+	for (VDit lo_div = liga.begin();
+		lo_div < liga.end()-1; ++lo_div, ++lo_level)
 	{
-	    fullcheck = fullcheck && dvi->full();
+	    PMOL& advancing = lo_div->champion();
+	    double adv_bad0 = advancing->Badness();
+	    if (! lo_div->full())
+	    {
+		// save clone of advancing champion
+		PMOL champ_clone = new Molecule(*advancing);
+		lo_div->push_back(champ_clone);
+	    }
+	    // advance as far as possible
+	    advancing->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
+	    int hi_level = advancing->NAtoms();
+	    VDit hi_div = liga.begin() + hi_level;
+	    PMOL& descending = hi_div->looser();
+	    double desc_bad0 = descending->Badness();
+	    if (! hi_div->full())
+	    {
+		// save clone of descending looser
+		PMOL looser_clone = new Molecule(*descending);
+		hi_div->push_back(looser_clone);
+	    }
+	    descending->Degenerate(hi_level-lo_level);
+	    // all set now so we can ...
+	    swap(advancing, descending);
+	    cout << rv.liga_round << " A " <<
+		lo_level << ' ' << adv_bad0 << ' ' <<
+		hi_level << ' ' << advancing->Badness() << endl;
+	    cout << rv.liga_round << " D " <<
+		hi_level << ' ' << desc_bad0 << ' ' <<
+		lo_level << ' ' << descending->Badness() << endl;
 	}
-	rv.full_liga = fullcheck;
-        }
-
-        //
-        // calculate probability of evolution
-        cout << rv.iteration;
-        // update bestMNBadness and improved
-        save_snapshot(mol, rp);
-        save_frames(mol, rp, rv);
-        if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
-        {
-            cout << "Solution found!!!" << endl;
-            break;
-        }
+	world_champ = liga.back().champion();
+	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
+	    << world_champ->Badness() << endl;
+        save_snapshot(*world_champ, rp);
+        save_frames(*world_champ, rp, rv);
     }
+    cout << "Solution found!!!" << endl;
     // save last frame
+    rv.lastframe = true;
     save_frames(mol, rp, rv);
     // save final structure
     if (rp.outstru.size() != 0)
