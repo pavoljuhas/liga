@@ -677,7 +677,8 @@ void Molecule::calc_test_badness(Atom_t& ta)
     ta.ResetBadness(tbad);
 }
 
-void Molecule::filter_good_atoms(vector<Atom_t>& vta, double evolve_range)
+void Molecule::filter_good_atoms(vector<Atom_t>& vta,
+	double evolve_range, double lo_abad)
 {
     if (NAtoms() == max_NAtoms())
     {
@@ -689,8 +690,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta, double evolve_range)
     int ldTsize = ldTarget.size();
     bool ldUsed[ldTsize];
     fill(ldUsed, ldUsed+ldTsize, false);
-    double lo_badness = numeric_limits<double>().max();
-    double hi_badness = numeric_limits<double>().max();
+    double hi_abad = lo_abad + evolve_range;
     typedef vector<Atom_t>::iterator VAit;
     typedef list<Atom_t>::iterator LAit;
     typedef vector<double>::iterator VDit;
@@ -701,7 +701,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta, double evolve_range)
 	list<int> ldUsedIdx;
 	// fast, possibly incomplete badness evaluation
 	for (   LAit ma = atoms.begin();
-		ma != atoms.end() && tbad <= hi_badness; ++ma )
+		ma != atoms.end() && tbad <= hi_abad; ++ma )
 	{
 	    double d = dist(*ma, *ta);
 	    int idx = ldTarget.find_nearest(d) - ldTarget.begin();
@@ -726,10 +726,10 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta, double evolve_range)
 	    }
 	}
 	ta->ResetBadness(tbad);
-	if (tbad < lo_badness)
+	if (tbad < lo_abad)
 	{
-	    lo_badness = tbad;
-	    hi_badness = tbad + evolve_range;
+	    lo_abad = tbad;
+	    hi_abad = lo_abad + evolve_range;
 	}
 	// restore ldUsed
 	for (   list<int>::iterator ii = ldUsedIdx.begin();
@@ -742,7 +742,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta, double evolve_range)
     VAit gai = vta.begin();
     for (VAit ta = vta.begin(); ta != vta.end(); ++ta)
     {
-	if (ta->Badness() <= hi_badness)
+	if (ta->Badness() <= hi_abad)
 	    *(gai++) = *ta;
     }
     vta.erase(gai, vta.end());
@@ -1030,9 +1030,10 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
+    double lo_abad = numeric_limits<double>().max();
     while (true)
     {
-	filter_good_atoms(vta, evolve_range);
+	filter_good_atoms(vta, evolve_range, lo_abad);
 	if (vta.size() == 0)
 	    break;
 	// calculate fitness of test atoms
@@ -1045,6 +1046,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	vtafit = vdrecipw0(vtafit);
 	int idx = *(random_wt_choose(1, &vtafit[0], vtafit.size()).begin());
 	Add(vta[idx]);
+	lo_abad = vta[idx].Badness();
 	vta.erase(vta.begin()+idx);
 	if (NAtoms() == max_NAtoms() || !evolve_jump)
 	    break;

@@ -189,7 +189,8 @@ private:
     int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);
     void calc_test_badness(Atom_t& a);
-    void filter_good_atoms(vector<Atom_t>& vta, double evolve_range);
+    void filter_good_atoms(vector<Atom_t>& vta,
+	    double evolve_range, double lo_abad);
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
