@@ -190,8 +190,8 @@ double SandSphere::GridTol()
 // Atom_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-Atom_t::Atom_t(double h0, double k0, double l0, double bad0) :
-    h(h0), k(k0), l(l0), badness(bad0)
+Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
+    rx(rx0), ry(ry0), rz(rz0), badness(bad0)
 {
     badness_sum = badness;
     age = 1;
@@ -232,12 +232,12 @@ double Atom_t::ResetBadness(double b)
 
 bool operator==(const Atom_t& a1, const Atom_t& a2)
 {
-    return a1.h == a2.h && a1.k == a2.k && a1.l == a2.l;
+    return a1.rx == a2.rx && a1.ry == a2.ry && a1.rz == a2.rz;
 }
 
 double dist2(const Atom_t& a1, const Atom_t& a2)
 {
-    double dr[3] = { (a1.h - a2.h), (a1.k - a2.k), (a1.l - a2.l) };
+    double dr[3] = { (a1.rx - a2.rx), (a1.ry - a2.ry), (a1.rz - a2.rz) };
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }
 
@@ -578,26 +578,27 @@ bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
     return lhs.Badness() < rhs.Badness();
 }
 
-bool comp_Atom_h(const Atom_t& lhs, const Atom_t& rhs)
+bool comp_Atom_rx(const Atom_t& lhs, const Atom_t& rhs)
 {
-    return lhs.h < rhs.h;
+    return lhs.rx < rhs.rx;
 }
 
-bool comp_Atom_k(const Atom_t& lhs, const Atom_t& rhs)
+bool comp_Atom_ry(const Atom_t& lhs, const Atom_t& rhs)
 {
-    return lhs.Badness() < rhs.Badness();
+    return lhs.ry < rhs.ry;
 }
 
-bool comp_Atom_l(const Atom_t& lhs, const Atom_t& rhs)
+bool comp_Atom_rz(const Atom_t& lhs, const Atom_t& rhs)
 {
-    return lhs.l < rhs.l;
+    return lhs.rz < rhs.rz;
 }
 
 int Molecule::MaxABadness() const
 {
     if (max_abad < 0)
     {
-	max_abad = (NAtoms() == 0) ?  0 : max( NAtoms()-1, 
+	//pj: check this
+	max_abad = (NAtoms() == 0) ?  0 : max( (double)NAtoms()-1, 
 		max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness)-> Badness() );
     }
@@ -651,31 +652,31 @@ int Molecule::MaxABadness() const
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
 
-Molecule& Molecule::Shift(double dh, double dk, double dl)
+Molecule& Molecule::Shift(double dx, double dy, double dz)
 {
     for (list<Atom_t>::iterator ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	ai->h += (int) round(dh);
-	ai->k += (int) round(dk);
-	ai->l += (int) round(dl);
+	ai->rx += (int) round(dx);
+	ai->ry += (int) round(dy);
+	ai->rz += (int) round(dz);
     }
     return *this;
 }
 
 Molecule& Molecule::Center()
 {
-    double avg_h = 0.0, avg_k = 0.0, avg_l = 0.0;
+    double avg_rx = 0.0, avg_ry = 0.0, avg_rz = 0.0;
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	avg_h += ai->h;
-	avg_k += ai->k;
-	avg_l += ai->l;
+	avg_rx += ai->rx;
+	avg_ry += ai->ry;
+	avg_rz += ai->rz;
     }
-    avg_h /= NAtoms();
-    avg_k /= NAtoms();
-    avg_l /= NAtoms();
-    Shift(-avg_h, -avg_k, -avg_l);
+    avg_rx /= NAtoms();
+    avg_ry /= NAtoms();
+    avg_rz /= NAtoms();
+    Shift(-avg_rx, -avg_ry, -avg_rz);
     return *this;
 }
 
@@ -916,9 +917,9 @@ int Molecule::push_good_distances(
 	int didx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
 	double radius = ss->d[ssdIdxFree[didx]];
 	Atom_t& a1 = *list_at(atoms, aidx);
-	int nh = a1.h + (int)round(rdir[0]*radius);
-	int nk = a1.k + (int)round(rdir[1]*radius);
-	int nl = a1.l + (int)round(rdir[2]*radius);
+	int nh = a1.rx + (int)round(rdir[0]*radius);
+	int nk = a1.ry + (int)round(rdir[1]*radius);
+	int nl = a1.rz + (int)round(rdir[2]*radius);
 	Atom_t ad1(nh, nk, nl);
 	calc_test_badness(ad1);
 	ad1.IncBadness(a1.Badness());
@@ -972,9 +973,9 @@ int Molecule::push_good_triangles(
 	    continue;
 	// direction along triangle base:
 	double longdir[3] = {
-	    (a2.h-a1.h)/r12,
-	    (a2.k-a1.k)/r12,
-	    (a2.l-a1.l)/r12 };
+	    (a2.rx - a1.rx)/r12,
+	    (a2.ry - a1.ry)/r12,
+	    (a2.rz - a1.rz)/r12 };
 	// generate random direction in the plane perpendicular to longdir
 	double pdir1[3] = { -longdir[1],  longdir[0],  0.0 };
 	if (pdir1[0] == 0 && pdir1[1] == 0)
@@ -992,9 +993,9 @@ int Molecule::push_good_triangles(
 	    cos(phi)*pdir1[1]+sin(phi)*pdir2[1],
 	    cos(phi)*pdir1[2]+sin(phi)*pdir2[2] };
 	// prepare new atom
-	int nh = a1.h + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
-	int nk = a1.k + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
-	int nl = a1.l + (int) round(xlong*longdir[2] + xperp*perpdir[2]);
+	int nh = a1.rx + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
+	int nk = a1.ry + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
+	int nl = a1.rz + (int) round(xlong*longdir[2] + xperp*perpdir[2]);
 	Atom_t ad2(nh, nk, nl);
 	// is ad2 already in vta?
 	vector<Atom_t>::reverse_iterator rvtadupend = 
@@ -1054,14 +1055,14 @@ int Molecule::push_good_pyramids(
 	    double r24 = dvperm[iperm][1];
 	    double r34 = dvperm[iperm][2];
 	    // uvi is a unit vector in a1a2 direction
-	    double uvi_val[3] = { a2.h-a1.h, a2.k-a1.k, a2.l-a1.l };
+	    double uvi_val[3] = { a2.rx-a1.rx, a2.ry-a1.ry, a2.rz-a1.rz };
 	    valarray<double> uvi(uvi_val, 3);
 	    double r12 = vdnorm(uvi);
 	    if (r12 < 1.0)
 		continue;
 	    uvi /= r12;
 	    // v13 is a1a3 vector
-	    double v13_val[3] = { a3.h-a1.h, a3.k-a1.k, a3.l-a1.l };
+	    double v13_val[3] = { a3.rx-a1.rx, a3.ry-a1.ry, a3.rz-a1.rz };
 	    valarray<double> v13(v13_val, 3);
 	    // uvj lies in a1a2a3 plane and is perpendicular to uvi
 	    valarray<double> uvj = v13;
@@ -1078,9 +1079,9 @@ int Molecule::push_good_pyramids(
 	    P1[0] = xP1; P1[1] = P1[2] = 0.0;
 	    // vT is translation from pyramid to normal system
 	    valarray<double> vT(3);
-	    vT[0] = a1.h - xP1*uvi[0];
-	    vT[1] = a1.k - xP1*uvi[1];
-	    vT[2] = a1.l - xP1*uvi[2];
+	    vT[0] = a1.rx - xP1*uvi[0];
+	    vT[1] = a1.ry - xP1*uvi[1];
+	    vT[2] = a1.rz - xP1*uvi[2];
 	    // obtain coordinates of P3
 	    valarray<double> P3 = P1;
 	    P3[0] += vddot(uvi, v13);
@@ -1739,7 +1740,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    fid << "# delta = " << M.ss->delta << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
-		fid << ai->h << '\t' << ai->k << '\t' << ai->l << endl;
+		fid << ai->rx << '\t' << ai->ry << '\t' << ai->rz << endl;
 	    }
 	    break;
 	case M.XYZ:
@@ -1749,9 +1750,9 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid <<
-		    M.ss->delta * ai->h << '\t' <<
-		    M.ss->delta * ai->k << '\t' <<
-		    M.ss->delta * ai->l << endl;
+		    M.ss->delta * ai->rx << '\t' <<
+		    M.ss->delta * ai->ry << '\t' <<
+		    M.ss->delta * ai->rz << endl;
 	    }
 	    break;
 	case M.ATOMEYE:
@@ -1763,13 +1764,13 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		const double scale = 1.01*M.ss->delta;
 		double xyz_extremes[8] = {
 		    -M.ss->dmax,
-		    scale * min_element(afirst, alast, comp_Atom_h)->h,
-		    scale * min_element(afirst, alast, comp_Atom_k)->k,
-		    scale * min_element(afirst, alast, comp_Atom_l)->l,
+		    scale * min_element(afirst, alast, comp_Atom_rx)->rx,
+		    scale * min_element(afirst, alast, comp_Atom_ry)->ry,
+		    scale * min_element(afirst, alast, comp_Atom_rz)->rz,
 		    M.ss->dmax,
-		    scale * max_element(afirst, alast, comp_Atom_h)->h,
-		    scale * max_element(afirst, alast, comp_Atom_k)->k,
-		    scale * max_element(afirst, alast, comp_Atom_l)->l,
+		    scale * max_element(afirst, alast, comp_Atom_rx)->rx,
+		    scale * max_element(afirst, alast, comp_Atom_ry)->ry,
+		    scale * max_element(afirst, alast, comp_Atom_rz)->rz,
 		};
 		xyz_lo = *min_element(xyz_extremes, xyz_extremes+8);
 		xyz_hi = *max_element(xyz_extremes, xyz_extremes+8);
@@ -1800,9 +1801,9 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid <<
-		    (ai->h * M.ss->delta - xyz_lo) / xyz_range << " " <<
-		    (ai->k * M.ss->delta - xyz_lo) / xyz_range << " " <<
-		    (ai->l * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    (ai->rx * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    (ai->ry * M.ss->delta - xyz_lo) / xyz_range << " " <<
+		    (ai->rz * M.ss->delta - xyz_lo) / xyz_range << " " <<
 		    ai->Badness() << endl;
 	    }
 	    break;

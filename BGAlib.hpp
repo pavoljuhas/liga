@@ -88,8 +88,8 @@ private:
 class Atom_t
 {
 public:
-    Atom_t(double h0, double k0, double l0, double bad0 = 0);
-    mutable double h, k, l;
+    Atom_t(double rx0, double ry0, double rz0, double bad0 = 0);
+    mutable double rx, ry, rz;
     double Badness() const;
     double AvgBadness() const;
     double IncBadness(double db = 1.0);
