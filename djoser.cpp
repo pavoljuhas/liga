@@ -127,6 +127,11 @@ int main(int argc, char *argv[])
 	    cerr << e.what() << endl;
 	    return EXIT_FAILURE;
 	}
+	catch (ParseArgsError(e)) {
+	    cerr << "invalid syntax in parameter file" << endl;
+	    cerr << e.what() << endl;
+	    return EXIT_FAILURE;
+	}
     }
     // assign run parameters
     RunPar_t rp;

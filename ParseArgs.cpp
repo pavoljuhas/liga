@@ -56,7 +56,14 @@ void ParseArgs::ReadPars(const char *file)
 	oss << "Unable to read '" << file << "'";
 	throw IOError(oss.str());
     }
-    ReadPars(fid);
+    try {
+	ReadPars(fid);
+    }
+    catch (ParseArgsError(e)) {
+	string msg(file);
+	msg = msg + ":" + e.what();
+	throw ParseArgsError(msg);
+    }
     fid.close();
 }
 
