@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <iostream>
 #include "ParseArgs.hpp"
 
 ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
@@ -105,12 +106,19 @@ void ParseArgs::do_getopt_long()
 		longopts, &option_index);
 	if (c == -1)
 	    break;
-	else if (c == '?')
-	    throw InvalidOption();
-	else
+	string o;
+	switch (c)
 	{
-	    const char *o = longopts[option_index].name;
-	    opts[o] = (optarg) ? optarg : "";
+	    case '?':
+		throw InvalidOption();
+		break;
+	    case 0:
+		o = longopts[option_index].name;
+		opts[o] = (optarg) ? optarg : "";
+		break;
+	    default:
+		o = c;
+		opts[o] = (optarg) ? optarg : "";
 	}
     }
     for (; optind < argc; ++optind)
@@ -136,4 +144,3 @@ void ParseArgs::arg_or_par(const char *s)
     else
 	args.push_back(s);
 }
-
