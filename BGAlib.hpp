@@ -88,10 +88,10 @@ public:
     bool WriteGrid(const char*); 	// save integer grid coordinates
     bool ReadXY(const char*); 		// read real coordinates
     bool WriteXY(const char*); 		// save real coordinates
-    bool WriteAeye(const char*);	// export in AtomEye format
+    bool WriteAtomEye(const char*);	// export in AtomEye format
     Molecule& OutFmtGrid();		// output format for operator>>
     Molecule& OutFmtXY();               // output format for operator>>
-    Molecule& OutFmtAeye();             // output format for operator>>
+    Molecule& OutFmtAtomEye();             // output format for operator>>
     // public utility functions
     inline void UnCache() { cached = false; }
     ~Molecule();		// destructor
@@ -114,7 +114,7 @@ private:
     void fix_size();		// set all sizes consistently with h.size()
     void calc_df();		// update distance and fitness tables
     // IO helpers
-    enum out_fmt_type {GRID = 1, XY, AEYE};
+    enum out_fmt_type {GRID = 1, XY, ATOMEYE};
     out_fmt_type output_format;
     friend ostream& operator<<(ostream& os, Molecule& M);
 };

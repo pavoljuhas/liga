@@ -586,10 +586,10 @@ bool Molecule::WriteXY(const char* file)
     return result;
 }
 
-bool Molecule::WriteAeye(const char* file)
+bool Molecule::WriteAtomEye(const char* file)
 {
     out_fmt_type org_ofmt = output_format;
-    OutFmtAeye();
+    OutFmtAtomEye();
     bool result = write_file(file, *this);
     output_format = org_ofmt;
     return result;
@@ -607,9 +607,9 @@ Molecule& Molecule::OutFmtXY()
     return *this;
 }
 
-Molecule& Molecule::OutFmtAeye()
+Molecule& Molecule::OutFmtAtomEye()
 {
-    output_format = AEYE;
+    output_format = ATOMEYE;
     return *this;
 }
 
@@ -637,7 +637,7 @@ ostream& operator<<(ostream& os, Molecule& m)
 		    m.ss->delta * m.k[i] << endl;
 	    }
 	    break;
-	case m.AEYE:
+	case m.ATOMEYE:
 	    os << "# BGA molecule format: aeye" << endl;
 	    os << "# NAtoms = " << m.NAtoms << endl;
 	    os << "# delta = " << m.ss->delta << endl;
