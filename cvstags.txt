@@ -45,3 +45,7 @@ three-dim-1h                1.116       2005-02-22
 three-dim-1i                1.126       2005-02-25
     atom fitness in Evolve() is calculated as a reciprocal badness,
     (removed debug counters from three-dim-1h)
+
+three-dim-1j                1.129       2005-02-26
+    calc_test_badness() is now using a local copy of dTarget
+    otherwise it is the same as three-dim-1i
