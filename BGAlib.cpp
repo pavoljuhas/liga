@@ -137,10 +137,10 @@ void SandSphere::init(const vector<double>& t)
     d /= delta;
     d2 = d*d;
     // take care of grid tolerance:
-    setGridTol(defGridTol);
+    SetGridTol(defGridTol);
 }
 
-void SandSphere::setGridTol(double t)
+void SandSphere::SetGridTol(double t)
 {
     vGridTol = t;
     for (int i = 0; i < NDist; ++i)

@@ -41,7 +41,7 @@ public:
     valarray<double> d2;	// sorted list of squared target distances
     valarray<double> d2lo;	// low limits for d2
     valarray<double> d2hi;	// high limits for d2
-    void setGridTol(double t);	// set grid tolerance
+    void SetGridTol(double t);	// set grid tolerance
     double GridTol();
 private:
     static const double defGridTol = 1.0;
