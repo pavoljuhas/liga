@@ -833,9 +833,9 @@ Molecule& Molecule::Add(Molecule& M)
     return *this;
 }
 
-Molecule& Molecule::Add(int nh, int nk, int nl)
+Molecule& Molecule::Add(double rx0, double ry0, double rz0)
 {
-    Add(Atom_t(nh, nk, nl));
+    Add(Atom_t(rx0, ry0, rz0));
     return *this;
 }
 

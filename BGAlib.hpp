@@ -168,8 +168,8 @@ public:
     Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& M);		// add specified molecule
-    Molecule& Add(int nh, int nk, int nl);	// add single atom
-    Molecule& Add(Atom_t a);			// add single atom
+    Molecule& Add(double rx0, double ry0, double rz0);	// add single atom
+    Molecule& Add(Atom_t a);				// add single atom
 //    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
