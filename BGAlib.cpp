@@ -1449,8 +1449,8 @@ istream& operator>>(istream& fid, Molecule& M)
 ostream& operator<<(ostream& fid, Molecule& M)
 {
     typedef list<Atom_t>::iterator LAit;
-		LAit afirst = M.atoms.begin();
-		LAit alast = M.atoms.end();
+    LAit afirst = M.atoms.begin();
+    LAit alast = M.atoms.end();
     switch (M.output_format)
     {
 	case M.GRID:
@@ -1495,6 +1495,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		xyz_hi = *max_element(xyz_extremes, xyz_extremes+10);
 		xyz_range = xyz_hi - xyz_lo;
 	    }
+	    double xyz_med = (xyz_hi + xyz_lo)/2.0;
 	    fid << "# BGA molecule format = atomeye" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    fid << "Number of particles = " << M.NAtoms() << endl;
@@ -1519,9 +1520,9 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid <<
-		    (ai->rx - xyz_lo) / xyz_range << " " <<
-		    (ai->ry - xyz_lo) / xyz_range << " " <<
-		    (ai->rz - xyz_lo) / xyz_range << " " <<
+		    (ai->rx - xyz_med) / xyz_range + 0.5 << " " <<
+		    (ai->ry - xyz_med) / xyz_range + 0.5 << " " <<
+		    (ai->rz - xyz_med) / xyz_range + 0.5 << " " <<
 		    ai->Badness() << endl;
 	    }
 	    break;
