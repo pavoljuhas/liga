@@ -312,12 +312,6 @@ double Molecule::dist(const int& i, const int& j) const
     return sqrt(1.0*dist2(i, j));
 }
 
-double Molecule::out_penalty(int nh, int nk) const
-{
-    double Rout = sqrt(nh*nh + nk*nk + 0.0) - ss->gridmax;
-    return (Rout > 0.0) ? Rout : 0.0;
-}
-
 namespace BGA_Molecule_calc_df
 {
     struct d2idx_type
@@ -330,18 +324,6 @@ namespace BGA_Molecule_calc_df
     {
 	return lhs.d2 < rhs.d2;
     }
-}
-
-void Molecule::subtract_out_penalty() const
-{
-    for (int i = 0; cached && i < NAtoms; ++i)
-	abad[i] -= out_penalty(h[i], k[i]);
-}
-
-void Molecule::add_out_penalty() const
-{
-    for (int i = 0; cached && i < NAtoms; ++i)
-	abad[i] += out_penalty(h[i], k[i]);
 }
 
 void Molecule::set_mbad_abadMax() const
@@ -409,7 +391,6 @@ void Molecule::calc_db() const
     }
     // now add penalty for being outside the SandSphere
     // this works only when cached == true
-    add_out_penalty();
     set_mbad_abadMax();
 }
 
@@ -474,8 +455,6 @@ double Molecule::ABadnessAt(int nh, int nk) const
 	    ++idif;
 	}
     }
-    // now add penalty for being outside the SandSphere
-    nbad += out_penalty(nh, nk);
     return nbad;
 }
 
@@ -527,14 +506,11 @@ double Molecule::MBadnessWith(const Molecule& M) const
 
 Molecule& Molecule::Shift(double dh, double dk)
 {
-    subtract_out_penalty();
     for (int i = 0; i < NAtoms; ++i)
     {
 	h[i] += (int) round(dh);
 	k[i] += (int) round(dk);
     }
-    add_out_penalty();
-    set_mbad_abadMax();
     return *this;
 }
 
@@ -555,7 +531,6 @@ Molecule& Molecule::Center()
 
 Molecule& Molecule::Rotate(double phi, double h0, double k0)
 {
-    subtract_out_penalty();
     // define rotation matrix
     double Rz[2][2] = {
 	{ cos(phi),	-sin(phi)  },
@@ -574,8 +549,6 @@ Molecule& Molecule::Rotate(double phi, double h0, double k0)
 	h[i] = (int) round(hrot + h0);
 	k[i] = (int) round(krot + k0);
     }
-    add_out_penalty();
-    set_mbad_abadMax();
     return *this;
 }
 

@@ -151,7 +151,6 @@ private:
     mutable double abadMax;		// maximum atom badness
     mutable double mbad;		// molecular badness
     mutable valarray<int> d2;		// sorted table of squared distances 
-    double out_penalty(int nh, int nk) const;	// penalty for run-away atoms
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
     mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     // operator helper functions
@@ -163,8 +162,6 @@ private:
     list<badness_at> find_good_distances(int trials, const vector<int>& didx);
     list<badness_at> find_good_triangles(int trials, const vector<int>& didx);
     list<badness_at> find_good_triangles2(int trials, const vector<int>& didx);
-    void subtract_out_penalty() const;
-    void add_out_penalty() const;
     void set_mbad_abadMax() const;
     // MateWith helpers:
     Molecule& Molecule::mount(Molecule& Male);
