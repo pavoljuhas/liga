@@ -159,20 +159,21 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     owner(pM), atom1(a1), atom2(a2)
 {
     d = dist(*atom1, *atom2);
-    badness = 0;
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
     if (fabs(dd) < BGA::tol_dist)
     {
 	dUsed = *dnear;
-	badness += pow(dd/BGA::tol_dist, 2);
+	badness = pow(dd/BGA::tol_dist, 2);
+	if (badness < BGA::eps_abadness)
+	    badness = 0.0;
 	owner->dTarget.erase(dnear);
     }
     else
     {
 	dUsed = -1.0;
 	// pj: here should go some constant
-	badness += 1.0;
+	badness = 1.0;
     }
     atom1->IncBadness(badness);
     atom2->IncBadness(badness);
@@ -486,7 +487,8 @@ double Molecule::MaxABadness() const
 	{
 	    double mab = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness) -> Badness();
-	    max_abad = max(1.0, mab);
+//	    max_abad = max(1.0, mab);
+	    max_abad = (mab != 0.0) ? mab : 1.0;
 	}
     }
     return max_abad;
