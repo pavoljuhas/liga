@@ -164,7 +164,7 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     badness = dd*dd;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
-    if (fabs(dd) < pM->tol_deltad)
+    if (fabs(dd) < owner->tol_deltad)
     {
 	dUsed = *dnear;
 	owner->dTarget.erase(dnear);
@@ -310,6 +310,9 @@ void DistanceTable::init()
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
+
+// static members:
+double Molecule::tol_deltad;
 
 Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 {
