@@ -43,39 +43,47 @@ private:
     void init_dist(const vector<double>& t);
 };
 
-    
-/*
-class Grid
-{
-public:
-    // constructor
-    Grid(double dmax, int NGridMax);
-}
-
-class DistanceTable : std::vector<double>
-{
-public:
-    // constructor
-    DistanceTable(const char *);	// create from file
-    int NAtoms();			// return number of atoms
-private:
-    const int NAtoms;			// number of atoms
-}
-
+// Molecule in 2 dimensions
 class Molecule
 {
 public:
     // constructors
-    Molecule(const Grid&, const DistanceTable); // empty molecule
-    // IO functions
-    bool Read(const char*); 	// read integer grid coordinates
-    bool Save(const char*); 	// save integer grid coordinates
-    bool SaveAeye(const char*); // export coordinates in AtomEye format
-    int NAtoms();		// number of points
+    Molecule(const SandSphere *ss);
+    Molecule(const SandSphere *ss, size_t s, double *ph, double *pk);
+    Molecule(const SandSphere *ss, size_t s,
+	    const vector<int>& vh, const vector<int>& vk);
+    // parameters
+    int NDist;    		// length of distance table
+    int NAtoms;   		// target number of atoms
     double ABadness(int);	// fitness of specified atom
     double AFitness(int);	// badness of specified atom
     double MBadness();		// total fitness
     double MFitness();		// total badness
+    // operator functions
+    Molecule& Shift(int dh, int dk);	// shift all atoms
+    Molecule& Center();			// center w/r to the center of mass
+    Molecule& Part(const list<int>& cidx);	// keep only specified atoms
+    Molecule& Pop(const list<int>& cidx);	// remove specified atoms
+    Molecule& Pop(const int cidx);	// remove 1 atom
+    Molecule& Add(Molecule& m);		// add specified molecule
+    Molecule& Add(int nh, int nk);	// add single atom
+    Molecule& MoveAtom(int idx, int nh, int nk);	// move 1 atom
+    // IO functions
+    bool Read(const char*); 	// read integer grid coordinates
+    bool Save(const char*); 	// save integer grid coordinates
+    bool SaveAeye(const char*); // export coordinates in AtomEye format
+private:
+    // data storage
+    SandSphere *ss;
+    valarray<int> h;		// x-coordinates
+    valarray<int> k;		// y-coordinates
+    bool cached;
+    valarray<double> afit;	// individual atom fitnesses
+    double mfit;
+    list<int> TidxUsed;		// used elements from ss.dist
+    list<int> TidxFree;		// available elements in ss.dist
+    // helper functions
+};
 
 private:
     Grid G;
@@ -185,7 +193,6 @@ private:
     enum file_format {PLAIN=1, ATOMEYE};
     file_format out_fmt;
 };
-*/
 
 #endif
 
@@ -193,8 +200,11 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
-* Revision 1.1  2005/01/18 23:24:36  juhas
-* Initial revision
+* Revision 1.2  2005/01/19 00:16:15  juhas
+* added some Molecule declarations
+*
+* Revision 1.1.1.1  2005/01/18 23:24:36  juhas
+* BGA - Biosphere Genetic Algorithm
 *
 *
 ***********************************************************************/
