@@ -306,7 +306,7 @@ void DistanceTable::init()
 	    "d[0]=" << at(0) << endl;
 	throw InvalidDistanceTable();
     }
-    max_d = *rend();
+    max_d = *rbegin();
 }
 
 
@@ -722,27 +722,18 @@ void Molecule::calc_test_badness(Atom_t& ta)
     }
     double tbad = 0;
     typedef vector<double>::iterator VDit;
-    list<double> used_distances;
-    list<VDit> erased_positions;
+    DistanceTable local_dTarget(dTarget);
     typedef list<Atom_t>::iterator LAit;
     for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
 	double d = dist(*ai, ta);
-	VDit dnear = dTarget.find_nearest(d);
+	VDit dnear = local_dTarget.find_nearest(d);
 	double dd = *dnear - d;
 	tbad += penalty(dd);  BGA::cnt_penalty_calls++;
 	if (fabs(dd) < tol_dd)
 	{
-	    used_distances.push_back(*dnear);
-	    erased_positions.push_back(dTarget.erase(dnear));
+	    local_dTarget.erase(dnear);
 	}
-    }
-    // restore dTarget to the original state
-    list<double>::reverse_iterator rud = used_distances.rbegin();
-    list<VDit>::reverse_iterator rpos = erased_positions.rbegin();
-    for (; rud != used_distances.rend(); ++rud, ++rpos)
-    {
-	dTarget.insert(*rpos, *rud);
     }
     ta.ResetBadness(tbad);
 }
