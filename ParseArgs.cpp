@@ -9,6 +9,7 @@
 ***********************************************************************/
 
 #include <iostream>
+#include <iostream>
 #include "ParseArgs.hpp"
 
 ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
