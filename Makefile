@@ -13,7 +13,7 @@ CPPFLAGS = -gstabs+ -I/u24/local/include $(CFLAGS)
 LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
-PROGRAMS =
+PROGRAMS = djoser
 TESTS   = $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
 SOURCES = BGAlib.cpp BGAutils.cpp
 HEADERS = $(SOURCES:%.cpp=%.hpp)
