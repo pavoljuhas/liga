@@ -451,9 +451,8 @@ int main(int argc, char *argv[])
         save_snapshot(*world_champ, rp);
         save_frames(*world_champ, rp, rv);
     }
-    cout << endl << "Solution found!!!" << endl;
-    cout << "cnt_penalty_calls = " <<
-	BGA::cnt_penalty_calls << endl;
+    cout << endl << "Solution found!!!" << endl << endl;
+    BGA::cnt.PrintRunStats();
     // save last frame
     rv.lastframe = true;
     save_frames(*world_champ, rp, rv);
