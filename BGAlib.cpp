@@ -340,6 +340,67 @@ Pair_t::~Pair_t()
 
 
 ////////////////////////////////////////////////////////////////////////
+// DistanceTable definitions
+////////////////////////////////////////////////////////////////////////
+
+DistanceTable::DistanceTable() : vector<double>()
+{
+    init();
+}
+
+DistanceTable::DistanceTable(const double* v, size_t s) : vector<double>()
+{
+    resize(s);
+    copy(v, v+s, begin());
+    init();
+}
+
+template <class InputIterator>
+DistanceTable::DistanceTable(InputIterator first, InputIterator last) :
+    vector<double>(first, last)
+{
+    init();
+}
+
+DistanceTable::DistanceTable(const char* file) : vector<double>()
+{
+    // open file for reading
+    ifstream fid(file);
+    if (!fid)
+    {
+	cerr << "E: unable to read '" << file << "'" << endl;
+	throw IOError();
+    }
+    bool result = read_header(fid) && read_data(fid, *this);
+    // check if everything was read
+    if ( !result || !fid.eof() )
+    {
+	fid.clear();
+	cerr << "E: " << file << ':' << fid.tellg() <<
+	    ": error reading DistanceTable" << endl;
+	throw IOError();
+    }
+    fid.close();
+    init();
+}
+
+DistanceTable::DistanceTable(const vector<double>& v) : vector<double>(v)
+{
+    init();
+}
+
+DistanceTable& DistanceTable::operator= (const vector<double>& v)
+{
+    *this = v;
+    init();
+}
+
+void DistanceTable::init()
+{
+    sort(begin(), end());
+}
+
+////////////////////////////////////////////////////////////////////////
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
 
