@@ -3,3 +3,5 @@
 .*.sw[a-z]
 .gdbtkinit
 .nbattrs
+core.*
+a.out
