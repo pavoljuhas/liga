@@ -91,7 +91,9 @@ public:
     bool WriteAtomEye(const char*);	// export in AtomEye format
     Molecule& OutFmtGrid();		// output format for operator>>
     Molecule& OutFmtXY();               // output format for operator>>
-    Molecule& OutFmtAtomEye();             // output format for operator>>
+    Molecule& OutFmtAtomEye();          // output format for operator>>
+    friend ostream& operator<<(ostream& os, Molecule& M);
+    friend istream& operator>>(istream& is, Molecule& M);
     // public utility functions
     inline void UnCache() { cached = false; }
     ~Molecule();		// destructor
@@ -114,9 +116,26 @@ private:
     void fix_size();		// set all sizes consistently with h.size()
     void calc_df();		// update distance and fitness tables
     // IO helpers
-    enum out_fmt_type {GRID = 1, XY, ATOMEYE};
-    out_fmt_type output_format;
-    friend ostream& operator<<(ostream& os, Molecule& M);
+    enum file_fmt_type {GRID = 1, XY, ATOMEYE};
+    file_fmt_type output_format;
+    class ParseHeader;
+    istream& ReadGrid(istream& fid);
+    istream& ReadXY(istream& fid);
+    string Read_file;
+};
+
+class Molecule::ParseHeader
+{
+public:
+    ParseHeader(const string& s);
+    int NAtoms;
+    double delta;
+    file_fmt_type format;
+    operator bool() {return state;}
+private:
+    bool state;
+    template<class T> bool read_token(const char *token, T& value);
+    const string& header;
 };
 
 #endif
