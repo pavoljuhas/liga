@@ -21,4 +21,14 @@ Molecule {
     Molecule& OutFmtXY();              // output format for operator>>
     Molecule& OutFmtAeye();            // output format for operator>>
     friend ostream& operator<<(ostream& os, Molecule& M);
+
+    Molecule& Shift(int dh, int dk)
+    Molecule& Center()
+    Molecule& Part(const list<int>& cidx)
+    Molecule& Pop(const list<int>& cidx)
+    Molecule& Pop(const int cidx)
+    Molecule& Clear()
+    Molecule& Add(Molecule& m)
+    Molecule& Add(int nh, int nk)
+    Molecule& MoveAtom(int idx, int nh, int nk)
 }
