@@ -26,7 +26,7 @@ struct InvalidMolecule { };
 struct IOError { };
 
 // read lines that do not start with number
-istream& read_header(istream& fid, string& header)
+bool read_header(istream& fid, string& header)
 {
     double x;
     string line;
@@ -41,25 +41,25 @@ istream& read_header(istream& fid, string& header)
 	istrs.str(line);
 	if (istrs >> x)
 	{
-	    header.append(line);
-	}
-	else
-	{
 	    fid.seekg(p);
 	    break;
 	}
+	else
+	{
+	    header.append(line + '\n');
+	}
     }
-    return fid;
+    return !(fid.rdstate() & ios::badbit);
 }
 
-inline istream& read_header(istream& fid)
+inline bool read_header(istream& fid)
 {
     string dummy;
     return read_header(fid, dummy);
 }
 
 // read as many numbers as possible
-template<class T> istream& read_data(istream& fid, vector<T>& v)
+template<class T> bool read_data(istream& fid, vector<T>& v)
 {
     // prepare v
     T x;
@@ -67,7 +67,7 @@ template<class T> istream& read_data(istream& fid, vector<T>& v)
     {
 	v.push_back(x);
     }
-    return fid;
+    return !(fid.rdstate() & ios::badbit);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -98,12 +98,12 @@ SandSphere::SandSphere(int GridMax, const char *file) :
     }
     // read values to vt
     vector<double> vt;
-    read_header(fid) && read_data(fid, vt);
+    bool result = read_header(fid) && read_data(fid, vt);
     // check if everything was read
-    if (!fid.eof())
+    if ( !result || !fid.eof() )
     {
 	cerr << "E: " << file << ':' << fid.tellg() <<
-	    ": invalid number" << endl;
+	    ": error reading SandSphere" << endl;
 	throw IOError();
     }
     fid.close();
@@ -539,7 +539,7 @@ template<class T> bool Molecule::ParseHeader::read_token(
 	)
 {
     const char *fieldsep = ":= ";
-    size_t ltoken = sizeof(token)/sizeof(char);
+    size_t ltoken = strlen(token);
     string::size_type sp;
     const string::size_type npos = string::npos;
     if ( 
@@ -717,11 +717,13 @@ Molecule& Molecule::OutFmtAtomEye()
 istream& operator>>(istream& fid, Molecule& m)
 {
     string header;
+    istream::pos_type p = fid.tellg();
     if( !read_header(fid, header) )
     {
 	fid.setstate(ios_base::failbit);
 	return fid;
     }
+    fid.seekg(p);
     Molecule::ParseHeader ph(header);
     if (!ph)
     {
