@@ -21,6 +21,7 @@
 
 // exceptions
 struct InvalidDistanceTable { };
+struct InvalidMolecule { };
 struct IOError { };
 
 ////////////////////////////////////////////////////////////////////////
@@ -29,7 +30,7 @@ struct IOError { };
 SandSphere::SandSphere(int GridMax, const vector<double>& vt) :
     gridmax(GridMax)
 {
-    init_dist(vt);
+    init(vt);
 }
 
 SandSphere::SandSphere(int GridMax, size_t s, const double *pt) :
@@ -37,7 +38,7 @@ SandSphere::SandSphere(int GridMax, size_t s, const double *pt) :
 {
     vector<double> vt(s);
     for (int i = 0; i < s; ++i) { vt[i] = pt[i]; }
-    init_dist(vt);
+    init(vt);
 }
 
 SandSphere::SandSphere(int GridMax, const char *file) :
@@ -81,11 +82,10 @@ SandSphere::SandSphere(int GridMax, const char *file) :
 	throw IOError();
     }
     fid.close();
-    init_dist(vt);
+    init(vt);
 }
 
-
-void SandSphere::init_dist(const vector<double>& t)
+void SandSphere::init(const vector<double>& t)
 {
     NDist = t.size();
     if (NDist == 0)
@@ -102,32 +102,97 @@ void SandSphere::init_dist(const vector<double>& t)
 		xNAtoms << '\n';
 	throw InvalidDistanceTable();
     }
-    // fill in and check dist
-    dist.resize(NDist);
+    // fill in and check distance valarray d
+    d.resize(NDist);
     for (size_t i = 0; i < NDist; ++i)
     {
-	dist[i] = t[i];
+	d[i] = t[i];
     }
-    sort(&dist[0], &dist[dist.size()]);
-    if (dist[0] <= 0)
+    sort(&d[0], &d[d.size()]);
+    if (d[0] <= 0)
     {
 	cerr << "E: non-positive entry in target distance table, " <<
-	    "dist[0]=" << dist[0] << '\n';
+	    "d[0]=" << d[0] << '\n';
 	throw InvalidDistanceTable();
     }
     // calculate grid parameters
-    dmax = dist[dist.size()-1];
+    dmax = d[d.size()-1];
     delta = dmax/gridmax;
-    // calculate d2lo, d2hi
+    // calculate d2, d2lo, d2hi
+    d2.resize(NDist);
     d2lo.resize(NDist);
     d2hi.resize(NDist);
-    d2lo = dist*dist - 2*delta*dist + delta*delta;
-    d2hi = dist*dist + 2*delta*dist + delta*delta;
+    d2 = d*d;
+    d2lo = d2 - 2*delta*d + delta*delta;
+    d2hi = d2 + 2*delta*d + delta*delta;
 }
  
 ////////////////////////////////////////////////////////////////////////
-// molecule definitions
+// Molecule definitions
 ////////////////////////////////////////////////////////////////////////
+Molecule::Molecule(SandSphere *SS) : ss(SS)
+{
+    h.clear();
+    k.clear();
+    init();
+}
+
+Molecule::Molecule(SandSphere *SS,
+	size_t s, int *ph, int *pk) : ss(SS)
+{
+    h.resize(s);
+    k.resize(s);
+    for (int i = 0; i < s; ++i)
+    {
+	h[i] = ph[i];
+	k[i] = pk[i];
+    }
+    init();
+}
+
+Molecule::Molecule(SandSphere *SS,
+	const vector<int>& vh, const vector<int>& vk) : ss(SS)
+{
+    h = vh;
+    k = vk;
+    init();
+}
+
+void Molecule::init()
+{
+    cached = false;
+    // check coordinate sizes
+    if (h.size() != k.size())
+    {
+	throw InvalidMolecule();
+    }
+    NAtoms = h.size();
+    NDist  = NAtoms*(NAtoms-1)/2;
+    afit.resize(NAtoms);
+    ssdIdxUsed.clear();
+    ssdIdxFree.clear();
+}
+
+double Molecule::ABadness(int i)
+{
+    return afitMax - AFitness(i);
+}
+
+double Molecule::AFitness(int i)
+{
+    if (!cached)
+    {
+	recalc();
+    }
+    return afit[i];
+}
+
+/*
+    double Molecule::MBadness();		// total fitness
+    double Molecule::MFitness();		// total badness
+    double Molecule::dist(const int& i, const int& j);		// d(i,j)
+    inline int Molecule::dist2(const int& i, const int& j);	// squared d(i,j)
+    */
 
 ///* declaration of a pdffit molecule objects */
 //class molecule
@@ -242,7 +307,12 @@ void SandSphere::init_dist(const vector<double>& t)
 * Here is what people have been up to:
 *
 * $Log$
-* Revision 1.1  2005/01/18 23:24:36  juhas
-* Initial revision
+* Revision 1.2  2005/01/19 21:19:38  juhas
+* init_dist() renamed to init()
+* list "dist" renamed to "d"
+* added a couple of Molecule definitions
+*
+* Revision 1.1.1.1  2005/01/18 23:24:36  juhas
+* BGA - Biosphere Genetic Algorithm
 *
 ***********************************************************************/

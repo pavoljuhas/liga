@@ -35,12 +35,13 @@ public:
     // target distance table
     int NDist;    		// length of distance table
     int NAtoms;   		// target number of atoms
-    valarray<double> dist;	// sorted list of target distances
+    valarray<double> d;		// sorted list of target distances
+    valarray<double> d2;	// sorted list of squared target distances
     valarray<double> d2lo;	// low limits for d2
     valarray<double> d2hi;	// high limits for d2
 private:
     // helper functions
-    void init_dist(const vector<double>& t);
+    void init(const vector<double>& t);
 };
 
 // Molecule in 2 dimensions
@@ -48,9 +49,9 @@ class Molecule
 {
 public:
     // constructors
-    Molecule(const SandSphere *ss);
-    Molecule(const SandSphere *ss, size_t s, double *ph, double *pk);
-    Molecule(const SandSphere *ss, size_t s,
+    Molecule(SandSphere *SS);
+    Molecule(SandSphere *SS, size_t s, int *ph, int *pk);
+    Molecule(SandSphere *SS,
 	    const vector<int>& vh, const vector<int>& vk);
     // parameters
     int NDist;    		// length of distance table
@@ -59,6 +60,8 @@ public:
     double AFitness(int);	// badness of specified atom
     double MBadness();		// total fitness
     double MFitness();		// total badness
+    double dist(const int& i, const int& j);		// d(i,j)
+    inline int dist2(const int& i, const int& j);	// squared d(i,j)
     // operator functions
     Molecule& Shift(int dh, int dk);	// shift all atoms
     Molecule& Center();			// center w/r to the center of mass
@@ -75,27 +78,20 @@ public:
 private:
     // data storage
     SandSphere *ss;
-    valarray<int> h;		// x-coordinates
-    valarray<int> k;		// y-coordinates
+    vector<int> h;		// x-coordinates
+    vector<int> k;		// y-coordinates
     bool cached;
     valarray<double> afit;	// individual atom fitnesses
-    double mfit;
-    list<int> TidxUsed;		// used elements from ss.dist
-    list<int> TidxFree;		// available elements in ss.dist
+    double afitMax;		// maximum atom fitness
+    double mfitCache;
+    vector<int> d2;		// sorted table of squared distances 
+    list<int> ssdIdxUsed;	// used elements from ss.dist
+    list<int> ssdIdxFree;	// available elements in ss.dist
     // helper functions
+    void init();
 };
 
-private:
-    Grid G;
-    DistanceTable T;
-    int NAtoms;
-    std::vector<int> h; 	// x-grid coordinate
-    std::vector<int> k;  	// y-grid coordinate
-    std::vector<int> afit; 	// fitness of atom i
-    std::list<int> TidxUsed;	// neutron scattering length for atom i
-    std::list<int> TidxFree;	// neutron scattering length for atom i
-    std::vector<int> Uiso; // isotropic temperature factor in A**2
-
+/*
     std::ifstream& operator>>(std::ifstream& s) {return read_stru(s);}
     friend std::ostream& operator<<(std::ostream& s, molecule& M)
     {return M.save_stru(s);}
@@ -193,6 +189,7 @@ private:
     enum file_format {PLAIN=1, ATOMEYE};
     file_format out_fmt;
 };
+*/
 
 #endif
 
@@ -200,6 +197,11 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.3  2005/01/19 21:20:39  juhas
+* init_dist() renamed to init()
+* list "dist" renamed to "d"
+* added a couple of Molecule definitions
+*
 * Revision 1.2  2005/01/19 00:16:15  juhas
 * added some Molecule declarations
 *
