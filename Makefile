@@ -57,9 +57,9 @@ molTest05: molTest05.o $(OBJECTS) $(HEADERS)
 molTest06: molTest06.o $(OBJECTS) $(HEADERS)
 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
-# molTest07: molTest07.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
-# 
+molTest07: molTest07.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+
 # molTest08: molTest08.o $(OBJECTS) $(HEADERS)
 # 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 # 
