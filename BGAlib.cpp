@@ -466,6 +466,7 @@ double Molecule::ABadnessAt(int nh, int nk) const
 	if (idif == ssdIdxFree.end() || *pnd2 < ss->d2lo[*idif])
 	{
 	    nbad++;
+	    if (*pnd2 < ss->d2lo[0])  nbad += NAtoms;
 	}
 	// otherwise it is a matching distance
 	else
@@ -851,6 +852,86 @@ list<Molecule::badness_at> Molecule::find_good_triangles(
     return retlist;
 }
 
+list<Molecule::badness_at> Molecule::find_good_triangles2(
+	int trials, const vector<int>& ssd_idx
+	)
+{
+    // try to generate 2 triangles with good distances, this may not always
+    // work, so this returns a list, which is either empty, or has even
+    // number of entries
+    if (NAtoms > ss->NDist)
+    {
+	cerr << "E: molecule too large for finding a new position" << endl;
+	throw InvalidMolecule();
+    }
+    else if (NAtoms < 2)
+    {
+	cerr << "E: molecule too small, triangulation not possible" << endl;
+	throw InvalidMolecule();
+    }
+    // prepare a return list:
+    list<badness_at> retlist;
+    for (int nt = 0; nt < trials; ++nt)
+    {
+	// choose 2 free indices
+	int idf1 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
+	int idf2 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size()-1) + 1;
+	idf2 = (idf2 + idf1) % ssd_idx.size();
+	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
+	double r13 = ss->d[ssd_idx[idf1]];
+	double r23 = ss->d[ssd_idx[idf2]];
+	// loop over all atom pairs
+	for (int a1 = 0; a1 < NAtoms; ++a1)
+	{
+	    for (int a2 = a1+1; a2 < NAtoms; ++a2)
+	    {
+		double r12 = dist(a1, a2);
+		// is triangle [a1 a2 a3] possible?
+		if (r12 < 1.0 || r13 + r23 < r12 || fabs(r13 - r23) > r12)
+		    continue;
+		// here we can construct 2 triangles
+		double longdir[2] = {  (h[a2]-h[a1])/r12, (k[a2]-k[a1])/r12 };
+		double perpdir[2] = { -longdir[1], 	  longdir[0] };
+		double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
+		double xperp = sqrt(r13*r13 - xlong*xlong);
+		int nh1 = h[a1] + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
+		int nk1 = k[a1] + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
+		// store the result
+		badness_at res1(nh1, nk1, abad[a1]+abad[a2]+ABadnessAt(nh1, nk1));
+		retlist.push_back(res1);
+		// jump out if it is a good location or if we did enough trials
+		/* debug:
+		   cout << nt << " a1 = " << a1 << " a2 = " << a2 << endl;
+		   cout << nt << " res1.abad = " << res1.abad << endl;
+		   cout << nt << " res1.h = " << res1.h <<
+		   " res1.k = " << res1.k << endl;
+		   */
+		// 2nd triangle:
+		int nh2 = h[a1] + (int) round(xlong*longdir[0] - xperp*perpdir[0]);
+		int nk2 = k[a1] + (int) round(xlong*longdir[1] - xperp*perpdir[1]);
+		// store the result
+		badness_at res2(nh2, nk2, abad[a1]+abad[a2]+ABadnessAt(nh2, nk2));
+		retlist.push_back(res2);
+		/* debug:
+		   cout << nt << " res2.abad = " << res2.abad << endl;
+		   cout << nt << " res2.h = " << res2.h <<
+		   " res2.k = " << res2.k << endl;
+		   cout << nt <<
+		   " longdir=[" << longdir[0] << ' ' << longdir[1] << "]," <<
+		   " perpdir=[" << perpdir[0] << ' ' << perpdir[1] << "]," <<
+		   " xlong=" << xlong << "," <<
+		   " xperp=" << xperp << "," <<
+		   " r12=" << r12 << "," <<
+		   " r13=" << r13 << "," <<
+		   " r23=" << r23 << "," <<
+		   endl;
+		   */
+	    }
+	}
+    }
+    return retlist;
+}
+
 Molecule& Molecule::Evolve(int trials)
 {
     if (NAtoms == ss->NAtoms)
@@ -880,33 +961,17 @@ Molecule& Molecule::Evolve(int trials)
     if (trials_log.back().abad != 0.0)
     {
 	list<badness_at> fgt =
-	    find_good_triangles(trials-trials_log.size(), ssdIdxFree);
+	    find_good_triangles2(5, ssdIdxFree);
+//	    find_good_triangles(trials-trials_log.size(), ssdIdxFree);
 	trials_log.insert(trials_log.end(), fgt.begin(), fgt.end());
     }
-    // find the best trial and Add atom to that place
-    badness_at *best;
-    // maybe the last one is good:
-    if (trials_log.back().abad == 0.0)
-    {
-	best = &trials_log.back();
-    }
-    else
-    {
-	best = &(*min_element(trials_log.begin(), trials_log.end()));
-    }
-    Add(best->h, best->k);
-    Center();
-    return *this;
-}
-
-Molecule& Molecule::Degenerate()
-{
-    // make sure valarray abad is updated
-    if (!cached) calc_db();
-    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, &(abad[0]));
-    int idx = gsl_ran_discrete(BGA::rng, table);
-    gsl_ran_discrete_free(table);
-    Pop(idx);
+    // purge trials_log to minimal elements
+    badness_at best = *min_element(trials_log.begin(), trials_log.end());
+    trials_log.remove_if( bind1st(less<badness_at>(),best) );
+    int idx = gsl_rng_uniform_int(BGA::rng, trials_log.size());
+    list<badness_at>::iterator lbi = trials_log.begin(); advance(lbi, idx);
+    best = *lbi;
+    Add(best.h, best.k);
     Center();
     return *this;
 }
@@ -984,6 +1049,19 @@ namespace BGA_Molecule_MateWith
     {
 	return lhs.MFitness() < rhs.MFitness();
     }
+}
+
+Molecule& Molecule::Degenerate(int Npop)
+{
+    using namespace BGA_Molecule_MateWith;
+    Npop = min(NAtoms, Npop);
+    if (Npop == 0)  return *this;
+    // make sure valarray abad is updated
+    if (!cached) calc_db();
+    list<int> ipop = random_wt_choose(Npop, &(abad[0]), NAtoms);
+    Pop(ipop);
+    Center();
+    return *this;
 }
 
 Molecule Molecule::MateWith(const Molecule& Male, int trials)
