@@ -1189,7 +1189,13 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
 	read_token("NAtoms", NAtoms);
     if (!state)
     {
-	return;
+	if (read_token("Number of particles", NAtoms))
+	{
+	    format = ATOMEYE;
+	    fmt = "atomeye";
+	}
+	else
+	    return;
     }
     else if (fmt == "xyz")
 	format = XYZ;
