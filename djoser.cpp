@@ -284,16 +284,18 @@ void save_snapshot(Molecule& mol, RunPar_t& rp)
     {
 	largest = mol.NAtoms();
 	bestMNB = mol.NormBadness();
-	mol.WriteXYZ(rp.snapshot.c_str());
+	mol.WriteAtomEye(rp.snapshot.c_str());
 	cnt = 0;
     }
 }
 
-void save_frames(Molecule& mol, RunPar_t& rp, int iteration)
+void save_frames(Molecule& mol, RunPar_t& rp, int iteration,
+	bool lastframe = false)
 {
 //  numeric_limits<double> double_info;
     static int cnt = 0;
-    if (rp.frames.size() == 0 || rp.framesrate == 0 || ++cnt < rp.framesrate)
+    if (  rp.frames.size() == 0 || rp.framesrate == 0 ||
+	    (++cnt < rp.framesrate && !lastframe) )
 	return;
     ostringstream oss;
     oss << rp.frames << "." << iteration;
@@ -311,8 +313,10 @@ int main(int argc, char *argv[])
     valarray<int> improved(1, rp.logsize);
     bool bust_now = false;
 
-    for (int iteration = 1; ; ++iteration)
+    int iteration = 0;
+    while (true)
     {
+	++iteration;
 	// calculate probability of evolution
 	double impr_rate = 1.0*improved.sum()/rp.logsize;
 	if (impr_rate >= 0.5 && rp.bustprob > gsl_rng_uniform(BGA::rng))
@@ -346,5 +350,7 @@ int main(int argc, char *argv[])
     // save final structure
     if (rp.outstru.size() != 0)
 	mol.WriteXYZ(rp.outstru.c_str());
+    // save last frame
+    save_frames(mol, rp, iteration, true);
     return EXIT_SUCCESS;
 }
