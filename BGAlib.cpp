@@ -1045,17 +1045,30 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    comp_Atom_Badness) -> Badness();
     double max_badness = max_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness) -> Badness();
+    double hi_badness = 0.05*(max_badness-min_badness)+min_badness;
+    vector<Atom_t> good_atoms;
     typedef vector<Atom_t>::iterator VAit;
-    vector<VAit> min_iterators;
     for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
     {
-	// pj: here should be constant
-	if (ai->Badness()-min_badness <= 0.05)
-	    min_iterators.push_back(ai);
+	if (ai->Badness() <= hi_badness)
+	    good_atoms.push_back(*ai);
     }
-    int itidx = gsl_rng_uniform_int(BGA::rng, min_iterators.size());
-    Atom_t& best = *min_iterators[itidx];
-    Add(best);
+    // now try to Add as many atoms as possible
+    while (NAtoms() < max_NAtoms() && good_atoms.size() != 0)
+    {
+	int itidx = gsl_rng_uniform_int(BGA::rng, good_atoms.size());
+	Atom_t& best = good_atoms[itidx];
+	Add(best);
+	good_atoms.erase(good_atoms.begin()+itidx);
+	for (VAit gai = good_atoms.begin(); gai != good_atoms.end(); )
+	{
+	    calc_test_badness(*gai);
+	    if (gai->Badness() > hi_badness)
+		gai = good_atoms.erase(gai);
+	    else
+		++gai;
+	}
+    }
     if (NAtoms() < 40)    Center();
     return *this;
 }
