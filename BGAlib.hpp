@@ -79,6 +79,7 @@ public:
     Molecule& Part(const list<int>& cidx);	// keep only specified atoms
     Molecule& Pop(const list<int>& cidx);	// remove specified atoms
     Molecule& Pop(const int cidx);	// remove 1 atom
+    Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& m);		// add specified molecule
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtom(int idx, int nh, int nk);	// move 1 atom
@@ -216,6 +217,9 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.12  2005/01/26 18:02:53  juhas
+* added Molecule::Clear()
+*
 * Revision 1.11  2005/01/26 16:48:52  juhas
 * added Molecule declarations for bool ReadXY(), bool WriteXY()
 * Molecule::Save() renamed to Write()
