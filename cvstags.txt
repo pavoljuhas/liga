@@ -30,6 +30,6 @@ three-dim-1e                1.110       2005-02-22
     nearest distance is now always used in badness calculation,
     no plateau for penalty function
 
-three-dim-1e                1.111       2005-02-22
+three-dim-1f                1.111       2005-02-22
     nearest distance is not used when |dd| >= BGA::tol_dist, but
     there is no plateau for penalty function
