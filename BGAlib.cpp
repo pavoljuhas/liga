@@ -737,15 +737,25 @@ list<Molecule::badness_at> Molecule::find_good_distances(
     }
     // prepare a return list:
     list<badness_at> retlist;
+    // prepare discrete RNG
+    double afit[NAtoms];
+    for (int i = 0; i != NAtoms; ++i)
+    {
+	afit[i] = AFitness(i);
+    }
+    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms, afit);
     for (int i = 0; i < trials; ++i)
     {
+	// pick one atom and free distance
+	int a1 = gsl_ran_discrete(BGA::rng, table);
 	int idx = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
 	double radius = ss->d[ssd_idx[idx]];
 	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
-	int nh = h[0] + (int)round(radius * cos(phi));
-	int nk = k[0] + (int)round(radius * sin(phi));
+	int nh = h[a1] + (int)round(radius * cos(phi));
+	int nk = k[a1] + (int)round(radius * sin(phi));
 	retlist.push_back( badness_at(nh, nk, ABadnessAt(nh, nk)) );
     }
+    gsl_ran_discrete_free(table);
     return retlist;
 }
 
