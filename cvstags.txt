@@ -61,10 +61,12 @@ gizaliga-1a     1.11        1.148       2005-03-02
     when evolved winner is better than looser, he will be cloned
     to descing looser
 
-gizaliga-1b:    1.14        1.148       2005-03-02
+gizaliga-1b     1.14        1.148       2005-03-02
     higher divisions are not initialized,
     default value of stopgame changed to 0.1
 
 djoser-1a       1.25        1.148       2005-03-03
     added listing of cnt_penalty_calls otherwise same as djoser-1
 
+gizaliga-1c	1.19        1.152	2005-03-06
+    using NormBadness(), fast evaluation of test badnesses
