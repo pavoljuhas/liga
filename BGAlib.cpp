@@ -92,7 +92,8 @@ SandSphere::SandSphere(int GridMax, const char *file) :
 {
     // open file for reading
     ifstream fid(file);
-    if (!fid) {
+    if (!fid)
+    {
 	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
@@ -230,6 +231,13 @@ Molecule::Molecule(SandSphere *SS,
     init();
 }
 
+Molecule::Molecule(const Molecule& M0) :
+    ss(M0.ss), h(M0.h), k(M0.k)
+{
+    init();
+    *this  = M0;
+}
+
 void Molecule::init()
 {
     ss->molecules.push_back(this);
@@ -258,8 +266,8 @@ void Molecule::fix_size()
 
 Molecule::~Molecule()
 {
-    ss->molecules.remove(this);
     // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
+    ss->molecules.remove(this);
 }
 
 double Molecule::dist(const int& i, const int& j)
@@ -597,7 +605,8 @@ bool Molecule::ReadGrid(const char* file)
 {
     // open file for reading
     ifstream fid(file);
-    if (!fid) {
+    if (!fid)
+    {
 	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
@@ -645,7 +654,8 @@ bool Molecule::ReadXY(const char* file)
 {
     // open file for reading
     ifstream fid(file);
-    if (!fid) {
+    if (!fid)
+    {
 	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
@@ -660,7 +670,8 @@ bool write_file(const char* file, Molecule& m)
 {
     // open file for writing
     ofstream fid(file);
-    if (!fid) {
+    if (!fid)
+    {
 	cerr << "E: unable to write to '" << file << "'" << endl;
 	throw IOError();
     }
@@ -814,11 +825,15 @@ void Molecule::PrintBadness()
 {
     cout << "MBadness() = " << MBadness() << endl;
     cout << "ABadness() =";
+    double mx = abad.max();
     for (int i = 0; i < NAtoms; ++i)
     {
 	cout << ' ' << ABadness(i);
-	if (ABadness(i) == abadMax)
+	if (ABadness(i) == mx)
+	{
 	    cout << '*';
+	    mx += 1.0;
+	}
     }
     cout << endl;
 }
@@ -827,11 +842,15 @@ void Molecule::PrintFitness()
 {
     cout << "MFitness() = " << MFitness() << endl;
     cout << "AFitness() =";
+    double mx = abad.max();
     for (int i = 0; i < NAtoms; ++i)
     {
 	cout << ' ' << AFitness(i);
-	if (ABadness(i) == abadMax)
+	if (ABadness(i) == mx)
+	{
 	    cout << '*';
+	    mx += 1.0;
+	}
     }
     cout << endl;
 }
