@@ -165,12 +165,9 @@ public:
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
-    bool ReadGrid(const char*); 	// read integer grid coordinates
-    bool WriteGrid(const char*); 	// save integer grid coordinates
     bool ReadXYZ(const char*); 		// read real coordinates
     bool WriteXYZ(const char*); 	// save real coordinates
     bool WriteAtomEye(const char*);	// export in AtomEye format
-    Molecule& OutFmtGrid();		// output format for operator>>
     Molecule& OutFmtXYZ();		// output format for operator>>
     Molecule& OutFmtAtomEye();          // output format for operator>>
     friend ostream& operator<<(ostream& os, Molecule& M);
@@ -198,10 +195,9 @@ private:
     int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);
     void calc_test_badness(Atom_t& a);
     // IO helpers
-    enum file_fmt_type {GRID = 1, XYZ, ATOMEYE};
+    enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
     class ParseHeader;
-    istream& ReadGrid(istream& fid);
     istream& ReadXYZ(istream& fid);
     string opened_file;
 };

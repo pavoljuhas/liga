@@ -384,7 +384,7 @@ void Molecule::init()
     max_abad = 0;
     badness = 0;
     // default output format
-    OutFmtGrid();
+    OutFmtXYZ();
 }
 
 Molecule::~Molecule()
@@ -1209,8 +1209,6 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
     {
 	return;
     }
-    if (fmt == "grid")
-	format = GRID;
     else if (fmt == "xyz")
 	format = XYZ;
     else if (fmt == "atomeye")
@@ -1239,58 +1237,6 @@ template<class T> bool Molecule::ParseHeader::read_token(
     }
     istringstream istrs(header.substr(sp));
     bool result = (istrs >> value);
-    return result;
-}
-
-istream& Molecule::ReadGrid(istream& fid)
-{
-    // read values to integer vector vhkl
-    string header;
-    vector<int> vhkl;
-    bool result = read_header(fid, header) && read_data(fid, vhkl);
-    if (!result) return fid;
-    // parse header
-    int vhkl_NAtoms = vhkl.size()/3;
-    ParseHeader ph(header);
-    if (ph)
-    {
-	if ( vhkl_NAtoms != ph.NAtoms )
-	{
-	    cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
-		" atoms, read " << vhkl_NAtoms << endl;
-	    throw IOError();
-	}
-    }
-    // check if all coordinates have been read
-    if ( vhkl.size() % 3 )
-    {
-	cerr << "E: " << opened_file << ": incomplete data" << endl;
-	throw IOError();
-    }
-    Clear();
-    for (int i = 0; i < vhkl.size(); i += 3)
-    {
-	int h = vhkl[i+0];
-	int k = vhkl[i+1];
-	int l = vhkl[i+2];
-	Add(Atom_t(h, k, l));
-    }
-    return fid;
-}
-
-bool Molecule::ReadGrid(const char* file)
-{
-    // open file for reading
-    ifstream fid(file);
-    if (!fid)
-    {
-	cerr << "E: unable to read '" << file << "'" << endl;
-	throw IOError();
-    }
-    opened_file = file;
-    bool result = ReadGrid(fid);
-    opened_file.clear();
-    fid.close();
     return result;
 }
 
@@ -1365,15 +1311,6 @@ bool write_file(const char* file, Molecule& M)
     return result;
 }
 
-bool Molecule::WriteGrid(const char* file)
-{
-    file_fmt_type org_ofmt = output_format;
-    OutFmtGrid();
-    bool result = write_file(file, *this);
-    output_format = org_ofmt;
-    return result;
-}
-
 bool Molecule::WriteXYZ(const char* file)
 {
     file_fmt_type org_ofmt = output_format;
@@ -1390,12 +1327,6 @@ bool Molecule::WriteAtomEye(const char* file)
     bool result = write_file(file, *this);
     output_format = org_ofmt;
     return result;
-}
-
-Molecule& Molecule::OutFmtGrid()
-{
-    output_format = GRID;
-    return *this;
 }
 
 Molecule& Molecule::OutFmtXYZ()
@@ -1429,9 +1360,6 @@ istream& operator>>(istream& fid, Molecule& M)
     bool result;
     switch (ph.format)
     {
-	case M.GRID:
-	    result = M.ReadGrid(fid);
-	    break;
 	case M.XYZ:
 	    result = M.ReadXYZ(fid);
 	    break;
@@ -1453,14 +1381,6 @@ ostream& operator<<(ostream& fid, Molecule& M)
     LAit alast = M.atoms.end();
     switch (M.output_format)
     {
-	case M.GRID:
-	    fid << "# BGA molecule format = grid" << endl;
-	    fid << "# NAtoms = " << M.NAtoms() << endl;
-	    for (LAit ai = afirst; ai != alast; ++ai)
-	    {
-		fid << ai->rx << '\t' << ai->ry << '\t' << ai->rz << endl;
-	    }
-	    break;
 	case M.XYZ:
 	    fid << "# BGA molecule format = xy" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
