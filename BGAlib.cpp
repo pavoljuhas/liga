@@ -181,7 +181,7 @@ typedef struct {
     int j;
 } d2idx_type;
 
-int d2idx_cmp(const d2idx_type& p, const d2idx_type& q)
+bool d2idx_cmp(const d2idx_type& p, const d2idx_type& q)
 {
     return (p.d2 < q.d2);
 }
@@ -394,6 +394,9 @@ inline int Molecule::dist2(const int& i, const int& j)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.7  2005/01/25 16:42:33  juhas
+* *** empty log message ***
+*
 * Revision 1.6  2005/01/25 16:23:07  juhas
 * simplified comparison function d2idx_cmp
 *

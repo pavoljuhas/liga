@@ -197,6 +197,9 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.5  2005/01/25 16:42:33  juhas
+* *** empty log message ***
+*
 * Revision 1.4  2005/01/25 04:39:50  juhas
 * afit renamed to abad, afitMax renamed to abadMax
 * declared Molecule::calc_df()
