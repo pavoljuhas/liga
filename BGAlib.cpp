@@ -1490,7 +1490,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    if (M.NAtoms() > 0)
 	    {
 		const double scale = 1.01;
-		double xyz_extremes[8] = {
+		double xyz_extremes[10] = {
 		    -M.dTarget.max_d,
 		    scale * min_element(afirst, alast, comp_Atom_rx)->rx,
 		    scale * min_element(afirst, alast, comp_Atom_ry)->ry,
@@ -1499,9 +1499,11 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		    scale * max_element(afirst, alast, comp_Atom_rx)->rx,
 		    scale * max_element(afirst, alast, comp_Atom_ry)->ry,
 		    scale * max_element(afirst, alast, comp_Atom_rz)->rz,
+		    // make atomeye happy
+		    -1.75, 1.75,
 		};
-		xyz_lo = *min_element(xyz_extremes, xyz_extremes+8);
-		xyz_hi = *max_element(xyz_extremes, xyz_extremes+8);
+		xyz_lo = *min_element(xyz_extremes, xyz_extremes+10);
+		xyz_hi = *max_element(xyz_extremes, xyz_extremes+10);
 		xyz_range = xyz_hi - xyz_lo;
 	    }
 	    fid << "# BGA molecule format = atomeye" << endl;
