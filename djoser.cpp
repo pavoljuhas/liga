@@ -347,10 +347,10 @@ int main(int argc, char *argv[])
 	    break;
 	}
     }
-    // save final structure
-    if (rp.outstru.size() != 0)
-	mol.WriteXYZ(rp.outstru.c_str());
     // save last frame
     save_frames(mol, rp, iteration, true);
+    // save final structure
+    if (rp.outstru.size() != 0)
+	mol.WriteAtomEye(rp.outstru.c_str());
     return EXIT_SUCCESS;
 }
