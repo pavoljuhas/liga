@@ -67,8 +67,14 @@ if ~isempty(strfind(header, 'Number of particles'))
     % it is atomeye file, needs to be read again
     pat   = 'H0(1,1) =';
     start = strfind(header, pat);
+    if isempty(start)
+	return
+    end
     a = sscanf(header(start(1)+length(pat):end), '%f', 1);
     r = rhead(fid, 0);
+    if size(r,2)<3
+	return
+    end
     r = r(:,1:3)*a - a/2.0;
 end
 fclose(fid);
