@@ -344,20 +344,26 @@ Molecule& Molecule::operator=(const Molecule& M)
     if (this == &M) return *this;
     // Clear() must be the first statement
     Clear();
-    // eventually this can be speed up by Pair_t copying
-    atoms = M.atoms;
-    // restore dTarget to the original state
     dTarget = M.dTarget;
+    atoms = M.atoms;
+    // map of src atoms to this.atoms
+    map<const Atom_t*, Atom_t*> pclone;
+    list<Atom_t>::const_iterator src;
+    list<Atom_t>::iterator clone;
+    for (src = M.atoms.begin(), clone = atoms.begin();
+	    src != M.atoms.end();  ++src, ++clone)
+    {
+	pclone[&(*src)] = &(*clone);
+    }
     typedef map<OrderedPair<Atom_t*>,Pair_t*>::const_iterator MAPcit;
     for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
     {
-	double d = ii->second->dUsed;
-	if (d > 0.0)
-	    dTarget.push_back(d);
+	Atom_t *a1 = pclone[ii->first.first];
+	Atom_t *a2 = pclone[ii->first.second];
+	OrderedPair<Atom_t*> key(a1, a2);
+	pairs[key] = new Pair_t(this, a1, a2, *(ii->second));
     }
-    sort(dTarget.begin(), dTarget.end());
-    // and calculate everything from scratch
-    Recalculate();
+    badness = M.badness;
     // IO helpers
     output_format = M.output_format;
     opened_file = M.opened_file;
