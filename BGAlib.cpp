@@ -382,16 +382,16 @@ void Molecule::calc_db() const
     }
     // evaluate abad[i]
     abad = 0.0;
-    int ssdIdx = 0;
+    int d_idx = 0;
     for (ij = 0; ij < NDist; ++ij)
     {
-	for(; ssdIdx < ss->NDist && ss->d2hi[ssdIdx] < d2idx[ij].d2; ++ssdIdx)
+	for(; d_idx < ss->NDist && ss->d2hi[d_idx] < d2idx[ij].d2; ++d_idx)
 	{
-	    ssdIdxFree.push_back(ssdIdx);
+	    ssdIdxFree.push_back(d_idx);
 	}
 	// we found a baddie if we reached the end of ss->d2 table
 	// or if the current distance is smaller than d2lo
-	if (!(ssdIdx < ss->NDist) || d2idx[ij].d2 < ss->d2lo[ssdIdx])
+	if (!(d_idx < ss->NDist) || d2idx[ij].d2 < ss->d2lo[d_idx])
 	{
 	    abad[d2idx[ij].i]++;
 	    abad[d2idx[ij].j]++;
@@ -399,13 +399,13 @@ void Molecule::calc_db() const
 	// otherwise it is a matching distance
 	else
 	{
-	    ssdIdx++;
+	    d_idx++;
 	}
     }
     // all unused distances from the table are free:
-    for(;  ssdIdx < ss->NDist; ++ssdIdx)
+    for(;  d_idx < ss->NDist; ++d_idx)
     {
-	ssdIdxFree.push_back(ssdIdx);
+	ssdIdxFree.push_back(d_idx);
     }
     // now add penalty for being outside the SandSphere
     // this works only when cached == true
@@ -727,7 +727,7 @@ bool operator<(
 }
 
 list<Molecule::badness_at> Molecule::find_good_distances(
-	int trials, const list<int>& ssdIdx
+	int trials, const list<int>& ssd_idx
 	)
 {
     if (NAtoms > ss->NDist)
@@ -739,8 +739,8 @@ list<Molecule::badness_at> Molecule::find_good_distances(
     list<badness_at> retlist;
     for (int i = 0; i < trials; ++i)
     {
-	int idx = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	list<int>::iterator lit = ssdIdxFree.begin();
+	int idx = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
+	list<int>::iterator lit = ssd_idx.begin();
 	advance(lit, idx);
 	double radius = ss->d[*lit];
 	double phi = 2.0*M_PI*gsl_rng_uniform(BGA::rng);
@@ -752,11 +752,12 @@ list<Molecule::badness_at> Molecule::find_good_distances(
 }
 
 list<Molecule::badness_at> Molecule::find_good_triangles(
-	int trials, const list<int>& ssdIdx
+	int trials, const list<int>& ssd_idx
 	)
 {
     // try to generate 2 triangles with good distances, this may not always
-    // work, so this returns a list, which is either empty, or has 2 entries
+    // work, so this returns a list, which is either empty, or has even
+    // number of entries
     if (NAtoms > ss->NDist)
     {
 	cerr << "E: molecule too large for finding a new position" << endl;
@@ -789,14 +790,14 @@ list<Molecule::badness_at> Molecule::find_good_triangles(
 	{
 	    a2 = (a1 + 1) % NAtoms;
 	}
-	int idf1 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size());
-	int idf2 = gsl_rng_uniform_int(BGA::rng, ssdIdxFree.size()-1) + 1;
-	idf2 = (idf2 + idf1) % ssdIdxFree.size();
+	int idf1 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size());
+	int idf2 = gsl_rng_uniform_int(BGA::rng, ssd_idx.size()-1) + 1;
+	idf2 = (idf2 + idf1) % ssd_idx.size();
 	if (idf1 == idf2) throw(runtime_error("idf1 == idf2"));
 	list<int>::iterator lit;
-	lit = ssdIdxFree.begin(); advance(lit, idf1);
+	lit = ssd_idx.begin(); advance(lit, idf1);
 	double r13 = ss->d[*lit];
-	lit = ssdIdxFree.begin(); advance(lit, idf2);
+	lit = ssd_idx.begin(); advance(lit, idf2);
 	double r23 = ss->d[*lit];
 	double r12 = dist(a1, a2);
 	// is triangle [a1 a2 a3] possible?
@@ -1050,17 +1051,28 @@ Molecule& Molecule::mount(Molecule& sperm)
     // make sure ssdIdxFree is updated for egg and sperm
     if (!cached) calc_db();
     if (!sperm.cached) sperm.calc_db();
-    // build a list of common distance indices ssdIdxFree
-    list<int> IdxFree;
+    // calculate probabilities of choosing an egg free distance,
+    // free distances common to egg and sperm have 5 times higher probability
+    const double common_prob = 5.0;
+    double peggidx[ssdIdxFree.size()];
+    double *pp = peggidx;
     for (list<int>::iterator
 	    eidx = ssdIdxFree.begin(), sidx = sperm.ssdIdxFree.begin();
-	    eidx != ssdIdxFree.end(); ++eidx)
+	    eidx != ssdIdxFree.end(); ++eidx, ++pp)
     {
 	for (; sidx != sperm.ssdIdxFree.end() && *sidx < *eidx; ++sidx) { }
 	// no more common distances if sidx was used
-	if (sidx == sperm.ssdIdxFree.end())  break;
-	else if (*sidx == *eidx)  IdxFree.push_back(*eidx);
+	if (sidx != sperm.ssdIdxFree.end() && *sidx == *eidx)
+	{
+	    *pp = common_prob;
+	}
+	else
+	{
+	    *pp = 1.0;
+	}
     }
+    // let's start with random mount:
+    list<int> d_idx = random_wt_choose(ssdIdxFree.size(), peggidx, d_len);
 }
 
 

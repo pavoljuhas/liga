@@ -160,8 +160,8 @@ private:
 public:
     struct badness_at;
 private:
-    list<badness_at> find_good_distances(int trials, const list<int>& ssdIdx);
-    list<badness_at> find_good_triangles(int trials, const list<int>& ssdIdx);
+    list<badness_at> find_good_distances(int trials, const list<int>& d_idx);
+    list<badness_at> find_good_triangles(int trials, const list<int>& d_idx);
     void subtract_out_penalty() const;
     void add_out_penalty() const;
     void set_mbad_abadMax() const;
