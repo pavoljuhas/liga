@@ -155,7 +155,7 @@ private:
 public:
     struct badness_at;
 private:
-    list<badness_at> find_good_distance(int trials=100);
+    list<badness_at> find_good_distances(int trials=100);
     list<badness_at> find_good_triangles(int trials=100);
     // IO helpers
     enum file_fmt_type {GRID = 1, XY, ATOMEYE};
