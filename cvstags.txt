@@ -53,3 +53,6 @@ three-dim-1j                1.129       2005-02-26
 three-dim-2                 1.142       2005-02-28
     nice working version of djoser, common utility functions moved
     to BGAutils.cpp
+
+gizaliga-1                  1.148       2005-03-02
+    first working version of gizaliga
