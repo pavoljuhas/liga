@@ -64,7 +64,8 @@ public:
     Molecule(SandSphere *SS, size_t s, double *px, double *py);
     Molecule(SandSphere *SS,
 	    const vector<double>& vx, const vector<double>& vy);
-    Molecule(const Molecule& M0);	// copy constructor
+    Molecule(const Molecule& M0);		// copy constructor
+    Molecule& operator=(const Molecule&);	// assignment
     // parameters
     int NDist;    		// length of distance table
     int NAtoms;   		// target number of atoms
@@ -124,7 +125,7 @@ private:
     class ParseHeader;
     istream& ReadGrid(istream& fid);
     istream& ReadXY(istream& fid);
-    string Read_file;
+    string opened_file;
 };
 
 class Molecule::ParseHeader

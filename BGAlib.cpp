@@ -179,8 +179,6 @@ double SandSphere::GridTol()
 ////////////////////////////////////////////////////////////////////////
 Molecule::Molecule(SandSphere *SS) : ss(SS)
 {
-    h.clear();
-    k.clear();
     init();
 }
 
@@ -232,10 +230,43 @@ Molecule::Molecule(SandSphere *SS,
 }
 
 Molecule::Molecule(const Molecule& M0) :
-    ss(M0.ss), h(M0.h), k(M0.k)
+    ss(M0.ss)
 {
     init();
     *this  = M0;
+}
+
+Molecule& Molecule::operator=(const Molecule& M0)
+{
+    // data storage
+    if (ss != M0.ss)
+    {
+	ss->molecules.remove(this);
+	ss = M0.ss;
+	ss->molecules.push_back(this);
+    }
+    // h, k assignment must preceed fix_size()
+    h = M0.h;			// x-coordinates
+    k = M0.k;			// y-coordinates
+    // parameters
+    if (NAtoms != M0.NAtoms)
+    {
+	// this sets NAtoms, NDist, resizes all valarray's
+	fix_size();
+    }
+    // badness evaluation
+    cached = M0.cached;
+    if (M0.cached)
+    {
+	abad = M0.abad;		// individual atom badnesses
+	abadMax = M0.abadMax;	// maximum atom badness
+	mbad = M0.mbad;		// molecular badness
+	d2 = M0.d2;		// sorted table of squared distances 
+	ssdIdxFree = M0.ssdIdxFree;	// available elements in ss.dist
+    }
+    // IO helpers
+    output_format = M0.output_format;
+    opened_file = M0.opened_file;
 }
 
 void Molecule::init()
@@ -578,7 +609,7 @@ istream& Molecule::ReadGrid(istream& fid)
 	vhk_scale = ph.delta / ss->delta;
 	if ( vhk_NAtoms != ph.NAtoms )
 	{
-	    cerr << "E: " << Read_file << ": expected " << ph.NAtoms <<
+	    cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
 		" atoms, read " << vhk_NAtoms << endl;
 	    throw IOError();
 	}
@@ -586,7 +617,7 @@ istream& Molecule::ReadGrid(istream& fid)
     // check if all coordinates have been read
     if ( vhk.size() % 2 )
     {
-	cerr << "E: " << Read_file << ": incomplete data" << endl;
+	cerr << "E: " << opened_file << ": incomplete data" << endl;
 	throw IOError();
     }
     Clear();
@@ -610,9 +641,9 @@ bool Molecule::ReadGrid(const char* file)
 	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
-    Read_file = file;
+    opened_file = file;
     bool result = ReadGrid(fid);
-    Read_file.clear();
+    opened_file.clear();
     fid.close();
     return result;
 }
@@ -629,13 +660,13 @@ istream& Molecule::ReadXY(istream& fid)
     ParseHeader ph(header);
     if (ph && vxy_NAtoms != ph.NAtoms)
     {
-	cerr << "E: " << Read_file << ": expected " << ph.NAtoms <<
+	cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
 	    " atoms, read " << vxy_NAtoms << endl;
 	throw IOError();
     }
     if ( vxy.size() % 2 )
     {
-	cerr << "E: " << Read_file << ": incomplete data" << endl;
+	cerr << "E: " << opened_file << ": incomplete data" << endl;
 	throw IOError();
     }
     Clear();
@@ -659,9 +690,9 @@ bool Molecule::ReadXY(const char* file)
 	cerr << "E: unable to read '" << file << "'" << endl;
 	throw IOError();
     }
-    Read_file = file;
+    opened_file = file;
     bool result = ReadXY(fid);
-    Read_file.clear();
+    opened_file.clear();
     fid.close();
     return result;
 }
