@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
     // parameters
     const int logsize = 10;
     const double pemin = 0.25;
-    const double pemax = 0.9;
+    const double pemax = 0.75;
     const double pallway = 0.01;
-    const double avgmb = 0.05;
-    BGA::tol_dist = 0.25;
+    const double avgmb = 0.01;
+    BGA::tol_dist = 0.1;
     ////////////////////////////////////////////////////////////////////////
     if (argc == 1)
     {
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 
     // set lastMBadness to a maximum double
     numeric_limits<double> double_info;
-    valarray<double> lastMBadness(double_info.max(), dtab->NAtoms);
+    valarray<double> lastMBadness(double_info.max(), dtab->NAtoms+1);
     double best_largest = double_info.max();
     valarray<int> improved(1, logsize);
 
@@ -69,14 +69,18 @@ int main(int argc, char *argv[])
     {
 	// calculate pe
 	double pe, impr_rate;
-	if (mol.NAtoms() == mol.max_NAtoms() || mol.Badness() > 10*mol.NAtoms())
+	if (mol.NAtoms() == mol.max_NAtoms())
 	{
 	    pe = 0.0;
 	    go_all_way = false;
 	}
-	else if (mol.NAtoms() == 0 || go_all_way)
+	else if (mol.NAtoms() == 0)
+	    pe = 1.0;
+	else if (go_all_way)
 	{
 	    pe = 1.0;
+	    if (mol.Badness() > 2*mol.NAtoms())
+		go_all_way = false;
 	}
 	else
 	{
@@ -84,8 +88,6 @@ int main(int argc, char *argv[])
 	    pe = impr_rate*(pemax-pemin)+pemin;
 	    if (impr_rate >= 0.66 && pallway > gsl_rng_uniform(BGA::rng))
 		go_all_way = true;
-	    if (mol.Badness() == 0)
-		pe = pemax;
 	}
 	cout << trial;
 	if (pe > gsl_rng_uniform(BGA::rng))
@@ -96,7 +98,7 @@ int main(int argc, char *argv[])
 	else
 	{
 	    int Npop = 0;
-	    Npop = (int) ceil(mol.Badness());
+	    Npop = 1 + (int) floor(mol.Badness());
 	    Npop = min(Npop, 5);
 	    if (Npop > 1)
 		Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop-1);
@@ -108,14 +110,14 @@ int main(int argc, char *argv[])
 	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/mol.max_NAtoms() << endl;
 	// update lastMBadness and improved
 	int ilog = trial % logsize;
-	if (mol.Badness()<=lastMBadness[mol.NAtoms()-1] || mol.Badness() == 0.0)
+	if (mol.Badness() < lastMBadness[mol.NAtoms()])
 	{
 	    if (mol.NAtoms() > maxatoms)
 	    {
-		best_largest = lastMBadness[mol.NAtoms()-1];
+		best_largest = lastMBadness[mol.NAtoms()];
 		maxatoms = mol.NAtoms();
 	    }
-	    lastMBadness[mol.NAtoms()-1] = mol.Badness();
+	    lastMBadness[mol.NAtoms()] = mol.Badness();
 	    improved[ilog] = 1;
 	    /*
 	    if (snapshot_file != NULL && mol.NAtoms() == maxatoms &&
@@ -146,7 +148,8 @@ int main(int argc, char *argv[])
 	else
 	{
 	    improved[ilog] = 0;
-	    lastMBadness[mol.NAtoms()-1] = mol.Badness();
+	    if (lastMBadness[mol.NAtoms()] < 1e-4)
+		lastMBadness[mol.NAtoms()] = 1e-4;
 	}
 	cout << endl;
     }
