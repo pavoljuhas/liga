@@ -123,6 +123,7 @@ bool operator==(const Atom_t& a1, const Atom_t& a2)
 
 double dist2(const Atom_t& a1, const Atom_t& a2)
 {
+    BGA::cnt.distance_calls++;
     double dr[3] = { (a1.rx - a2.rx), (a1.ry - a2.ry), (a1.rz - a2.rz) };
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }
