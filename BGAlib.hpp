@@ -213,7 +213,6 @@ private:
     int push_good_distances(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);
-    vector<int>::iterator find_nearest_distance(const double&);
     void calc_test_badness(Atom_t& a);
 //    list<badness_at> find_good_distances(int trials, const vector<int>& didx);
 //    list<badness_at> find_good_triangles(int trials, const vector<int>& didx);

@@ -252,31 +252,6 @@ bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
     return a[lhs] < value;
 }
 
-vector<int>::iterator Molecule::find_nearest_distance(const double& dfind)
-{
-    // abbreviations
-    double *ssd = &(ss->d[0]);
-    pair<double,double*> d_ssd(dfind, ssd);
-    vector<int>::iterator ilo, ihi, inear;
-    ihi = lower_bound( ssdIdxFree.begin(), ssdIdxFree.end(),
-	    d_ssd, comp_find_in_array );
-    inear = ihi;
-    if (ihi == ssdIdxFree.end())
-    {
-	--inear;
-    }
-    else if (ihi != ssdIdxFree.begin())
-    {
-	ilo = ihi;
-	--ilo;
-	if ( (dfind - ssd[*ilo]) < (ssd[*ihi] - dfind) )
-	{
-	    inear = ilo;
-	}
-    }
-    return inear;
-}
-
 Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     owner(pM), atom1(&a1), atom2(&a2)
 {
