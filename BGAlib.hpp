@@ -174,12 +174,14 @@ public:
     void Recalculate(); 	// update everything
     inline int NDist()  const { return pairs.size(); }
     inline int NAtoms() const { return atoms.size(); }
-    inline int max_NAtoms() const { return dTarget.NAtoms; }
+    inline int max_NAtoms() const { return val_max_NAtoms; }
+    void Set_max_NAtoms(int s);
 private:
     // constructor helper
     void init();
     // data storage
     DistanceTable dTarget;
+    int val_max_NAtoms;
     // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
     map<OrderedPair<Atom_t*>,Pair_t*> pairs;  // map Atom_t* to Pair_t objects

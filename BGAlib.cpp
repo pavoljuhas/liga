@@ -70,6 +70,7 @@ template<class T> bool read_data(istream& fid, vector<T>& v)
     return !(fid.rdstate() & ios::badbit);
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // Atom_t definitions
 ////////////////////////////////////////////////////////////////////////
@@ -340,6 +341,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     Clear();
     dTarget = M.dTarget;
     atoms = M.atoms;
+    val_max_NAtoms = M.val_max_NAtoms;
     // map of src atoms to this.atoms
     map<const Atom_t*, Atom_t*> pclone;
     list<Atom_t>::const_iterator src;
@@ -367,8 +369,19 @@ Molecule& Molecule::operator=(const Molecule& M)
 void Molecule::init()
 {
     badness = 0;
+    val_max_NAtoms = dTarget.NAtoms;
     // default output format
     OutFmtXYZ();
+}
+
+void Molecule::Set_max_NAtoms(int s)
+{
+    if (s > dTarget.NAtoms)
+    {
+	cerr << "E: molecule too large for distance table" << endl;
+	throw InvalidMolecule();
+    }
+    val_max_NAtoms = s;
 }
 
 Molecule::~Molecule()
