@@ -11,20 +11,48 @@
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
-string version_string(string quote = "")
+struct RunPar_t
 {
-    using namespace std;
-    ostringstream oss;
-    oss << quote
-        << "$Id$" << endl
-#   if defined(__DATE__) && defined(__TIME__)
-	<< quote << "compiled " __DATE__ " " __TIME__ << endl
-#   endif
-        ;
-    return oss.str();
+    RunPar_t();
+    Molecule ProcessArguments(int argc, char * argv[]);
+    // IO parameters
+    string distfile;
+    string outstru;
+    string inistru;
+    string snapshot;
+    int snaprate;
+    string frames;
+    int framesrate;
+    // Walk parameters
+    double tol_dd;
+    double tol_bad;
+    int seed;
+    double evolve_frac;
+    int ligasize;
+    double stopgame;
+    string penalty;
+    int dist_trials;
+    int tri_trials;
+    int pyr_trials;
+private:
+    void print_help(ParseArgs& a);
+    string version_string(string quote = "");
+    list<string> validpars;
+};
+
+RunPar_t::RunPar_t()
+{
+    char *pnames[] = {
+	"distfile", "outstru", "inistru",
+	"snapshot", "snaprate", "frames", "framesrate",
+	"tol_dd", "tol_bad", "seed",
+	"evolve_frac", "ligasize", "stopgame",
+	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
+    validpars.insert(validpars.end(),
+	    pnames, pnames+sizeof(pnames)/sizeof(char*));
 }
 
-void print_help(ParseArgs& a)
+void RunPar_t::print_help(ParseArgs& a)
 {
     // /usage:/;/;/-s/.*/"&\\n"/
     // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
@@ -58,34 +86,191 @@ void print_help(ParseArgs& a)
 ;
 }
 
-struct RunPar_t
+string RunPar_t::version_string(string quote)
 {
-    // IO parameters
-    string distfile;
-    string outstru;
-    string inistru;
-    string snapshot;
-    int snaprate;
-    string frames;
-    int framesrate;
-    // Walk parameters
-    double tol_dd;
-    double tol_bad;
-    int seed;
-    double evolve_frac;
-    int ligasize;
-    double stopgame;
-    string penalty;
-    int dist_trials;
-    int tri_trials;
-    int pyr_trials;
-};
+    using namespace std;
+    ostringstream oss;
+    oss << quote
+        << "$Id$" << endl
+#   if defined(__DATE__) && defined(__TIME__)
+	<< quote << "compiled " __DATE__ " " __TIME__ << endl
+#   endif
+        ;
+    return oss.str();
+}
 
-char *pnames[] = { "distfile", "outstru", "inistru",
-    "snapshot", "snaprate", "frames", "framesrate",
-    "tol_dd", "tol_bad", "seed", "evolve_frac", "ligasize", "stopgame",
-    "penalty", "dist_trials", "tri_trials", "pyr_trials" };
-list<string> validpars(pnames, pnames+sizeof(pnames)/sizeof(char*));
+Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
+{
+    char *short_options =
+        "p:hv";
+    // parameters and options
+    option long_options[] = {
+        {"parfile", 1, 0, 'p'},
+        {"help", 0, 0, 'h'},
+        {"version", 0, 0, 'v'},
+        {0, 0, 0, 0}
+    };
+    ParseArgs a(argc, argv, short_options, long_options);
+    try {
+        a.Parse();
+    }
+    catch (ParseArgsError) {
+        exit(EXIT_FAILURE);
+    }
+    if (a.isopt("h") || argc == 1)
+    {
+        print_help(a);
+        exit(EXIT_SUCCESS);
+    }
+    else if (a.isopt("v"))
+    {
+	cout << version_string();
+        exit(EXIT_SUCCESS);
+    }
+    if (a.isopt("p"))
+    {
+        try {
+            a.ReadPars(a.opts["p"].c_str());
+        }
+        catch (IOError(e)) {
+            cerr << e.what() << endl;
+            exit(EXIT_FAILURE);
+        }
+        catch (ParseArgsError(e)) {
+            cerr << "invalid syntax in parameter file" << endl;
+            cerr << e.what() << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    try {
+	a.ValidatePars(validpars);
+    }
+    catch (ParseArgsError(e)) {
+	cerr << e.what() << endl;
+	exit(EXIT_FAILURE);
+    }
+    // assign run parameters
+    // distfile
+    if (a.args.size())
+        a.pars["distfile"] = a.args[0];
+    if (a.args.size() > 1)
+    {
+	cerr << argv[0] << ": several DISTFILE arguments" << endl;
+	exit(EXIT_FAILURE);
+    }
+    if (!a.ispar("distfile"))
+    {
+        cerr << "Distance file not defined" << endl;
+        exit(EXIT_FAILURE);
+    }
+    distfile = a.pars["distfile"];
+    DistanceTable* dtab;
+    try {
+        dtab = new DistanceTable(distfile.c_str());
+    }
+    catch (IOError) {
+        exit(EXIT_FAILURE);
+    }
+    // intro messages
+    string hashsep(72, '#');
+    cout << hashsep << endl;
+    cout << "# " << a.cmd_t << endl;
+    cout << version_string("# ");
+    char hostname[255];
+    gethostname(hostname, 255);
+    cout << "# " << hostname << endl;
+    time_t cur_time = time(NULL);
+    cout << "# " << ctime(&cur_time);
+    cout << hashsep << endl;
+    Molecule mol(*dtab);
+    cout << "distfile=" << distfile << endl;
+    // outstru
+    if (a.ispar("outstru"))
+    {
+        outstru = a.pars["outstru"];
+        cout << "outstru=" << outstru << endl;
+    }
+    // inistru
+    if (a.ispar("inistru"))
+    {
+	inistru = a.pars["inistru"];
+	cout << "inistru=" << inistru << endl;
+	try {
+	    mol.ReadXYZ(inistru.c_str());
+	}
+	catch (IOError) {
+	    exit(EXIT_FAILURE);
+	}
+    }
+    // snapshot, snaprate
+    if (a.ispar("snapshot"))
+    {
+        snapshot = a.pars["snapshot"];
+        cout << "snapshot=" << snapshot << endl;
+        snaprate = a.GetPar<int>("snaprate", 10);
+        cout << "snaprate=" << snaprate << endl;
+    }
+    // frames, framesrate
+    if (a.ispar("frames"))
+    {
+        frames = a.pars["frames"];
+        cout << "frames=" << frames << endl;
+        framesrate = a.GetPar<int>("framesrate", 10);
+        cout << "framesrate=" << framesrate << endl;
+    }
+    // liga parameters
+    // tol_dd
+    tol_dd = a.GetPar<double>("tol_dd", 0.1);
+    cout << "tol_dd=" << tol_dd << endl;
+    mol.tol_dd = tol_dd;
+    // tol_bad
+    tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
+    cout << "tol_bad=" << tol_bad << endl;
+    mol.tol_nbad = tol_bad;
+    // seed
+    seed = a.GetPar<int>("seed", 0);
+    if (seed)
+    {
+        gsl_rng_set(BGA::rng, seed);
+        cout << "seed=" << seed << endl;
+    }
+    // evolve_frac
+    evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
+    cout << "evolve_frac=" << evolve_frac << endl;
+    mol.evolve_frac = evolve_frac;
+    // ligasize
+    ligasize = a.GetPar<int>("ligasize", 10);
+    cout << "ligasize=" << ligasize << endl;
+    // stopgame
+    stopgame = a.GetPar<double>("stopgame", 0.0025);
+    cout << "stopgame=" << stopgame << endl;
+    // penalty
+    penalty = a.GetPar<string>("penalty", "pow2");
+    if (penalty == "pow2")
+        mol.penalty = BGA::pow2;
+    else if (penalty == "well")
+        mol.penalty = BGA::well;
+    else if (penalty == "fabs")
+        mol.penalty = fabs;
+    else
+    {
+        cerr << "Invalid value of penalty parameter" << endl;
+        exit(EXIT_FAILURE);
+    }
+    cout << "penalty=" << penalty << endl;
+    // dist_trials
+    dist_trials = a.GetPar("dist_trials", 10);
+    cout << "dist_trials=" << dist_trials << endl;
+    // tri_trials
+    tri_trials = a.GetPar("tri_trials", 20);
+    cout << "tri_trials=" << tri_trials << endl;
+    // pyr_trials
+    pyr_trials = a.GetPar("pyr_trials", 1000);
+    cout << "pyr_trials=" << pyr_trials << endl;
+    // done
+    cout << hashsep << endl << endl;
+    return mol;
+}
 
 struct RunVar_t
 {
@@ -177,158 +362,6 @@ PMOL& Division_t::best()
     return *pm;
 }
 
-Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
-{
-    char *short_options =
-        "p:hv";
-    // parameters and options
-    option long_options[] = {
-        {"parfile", 1, 0, 'p'},
-        {"help", 0, 0, 'h'},
-        {"version", 0, 0, 'v'},
-        {0, 0, 0, 0}
-    };
-    ParseArgs a(argc, argv, short_options, long_options);
-    try {
-        a.Parse();
-    }
-    catch (ParseArgsError) {
-        exit(EXIT_FAILURE);
-    }
-    if (a.isopt("h") || argc == 1)
-    {
-        print_help(a);
-        exit(EXIT_SUCCESS);
-    }
-    else if (a.isopt("v"))
-    {
-	cout << version_string();
-        exit(EXIT_SUCCESS);
-    }
-    if (a.isopt("p"))
-    {
-        try {
-            a.ReadPars(a.opts["p"].c_str());
-        }
-        catch (IOError(e)) {
-            cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
-        }
-        catch (ParseArgsError(e)) {
-            cerr << "invalid syntax in parameter file" << endl;
-            cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-    try {
-	a.ValidatePars(validpars);
-    }
-    catch (ParseArgsError(e)) {
-	cerr << e.what() << endl;
-	exit(EXIT_FAILURE);
-    }
-    // assign run parameters
-    // distfile
-    if (a.args.size())
-        a.pars["distfile"] = a.args[0];
-    if (!a.ispar("distfile"))
-    {
-        cerr << "Distance file not defined" << endl;
-        exit(EXIT_FAILURE);
-    }
-    rp.distfile = a.pars["distfile"];
-    DistanceTable* dtab;
-    try {
-        dtab = new DistanceTable(rp.distfile.c_str());
-    }
-    catch (IOError) {
-        exit(EXIT_FAILURE);
-    }
-    string hashsep(72, '#');
-    cout << hashsep << endl;
-    cout << "# " << a.cmd_t << endl;
-    cout << version_string("# ");
-    char hostname[255];
-    gethostname(hostname, 255);
-    cout << "# " << hostname << endl;
-    time_t cur_time = time(NULL);
-    cout << "# " << ctime(&cur_time);
-    cout << hashsep << endl;
-    Molecule mol(*dtab);
-    cout << "distfile=" << rp.distfile << endl;
-    if (a.ispar("outstru"))
-    {
-        rp.outstru = a.pars["outstru"];
-        cout << "outstru=" << rp.outstru << endl;
-    }
-    if (a.ispar("inistru"))
-    {
-	rp.inistru = a.pars["inistru"];
-	cout << "inistru=" << rp.inistru << endl;
-	try {
-	    mol.ReadXYZ(rp.inistru.c_str());
-	}
-	catch (IOError) {
-	    exit(EXIT_FAILURE);
-	}
-    }
-    if (a.ispar("snapshot"))
-    {
-        rp.snapshot = a.pars["snapshot"];
-        cout << "snapshot=" << rp.snapshot << endl;
-        rp.snaprate = a.GetPar<int>("snaprate", 10);
-        cout << "snaprate=" << rp.snaprate << endl;
-    }
-    if (a.ispar("frames"))
-    {
-        rp.frames = a.pars["frames"];
-        cout << "frames=" << rp.frames << endl;
-        rp.framesrate = a.GetPar<int>("framesrate", 10);
-        cout << "framesrate=" << rp.framesrate << endl;
-    }
-    // Walk parameters
-    rp.tol_dd = a.GetPar<double>("tol_dd", 0.1);
-    cout << "tol_dd=" << rp.tol_dd << endl;
-    mol.tol_dd = rp.tol_dd;
-    rp.tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
-    cout << "tol_bad=" << rp.tol_bad << endl;
-    mol.tol_nbad = rp.tol_bad;
-    rp.seed = a.GetPar<int>("seed", 0);
-    if (rp.seed)
-    {
-        gsl_rng_set(BGA::rng, rp.seed);
-        cout << "seed=" << rp.seed << endl;
-    }
-    rp.evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
-    cout << "evolve_frac=" << rp.evolve_frac << endl;
-    mol.evolve_frac = rp.evolve_frac;
-    rp.ligasize = a.GetPar<int>("ligasize", 10);
-    cout << "ligasize=" << rp.ligasize << endl;
-    rp.stopgame = a.GetPar<double>("stopgame", 0.0025);
-    cout << "stopgame=" << rp.stopgame << endl;
-    rp.penalty = a.GetPar<string>("penalty", "pow2");
-    if (rp.penalty == "pow2")
-        mol.penalty = BGA::pow2;
-    else if (rp.penalty == "well")
-        mol.penalty = BGA::well;
-    else if (rp.penalty == "fabs")
-        mol.penalty = fabs;
-    else
-    {
-        cerr << "Invalid value of penalty parameter" << endl;
-        exit(EXIT_FAILURE);
-    }
-    cout << "penalty=" << rp.penalty << endl;
-    rp.dist_trials = a.GetPar("dist_trials", 10);
-    cout << "dist_trials=" << rp.dist_trials << endl;
-    rp.tri_trials = a.GetPar("tri_trials", 20);
-    cout << "tri_trials=" << rp.tri_trials << endl;
-    rp.pyr_trials = a.GetPar("pyr_trials", 1000);
-    cout << "pyr_trials=" << rp.pyr_trials << endl;
-    cout << hashsep << endl << endl;
-    return mol;
-}
-
 void save_snapshot(Molecule& mol, RunPar_t& rp)
 {
     static int cnt = 0;
@@ -361,7 +394,7 @@ int main(int argc, char *argv[])
     // process arguments
     RunPar_t rp;
     RunVar_t rv;
-    Molecule mol = process_arguments(rp, argc, argv);
+    Molecule mol = rp.ProcessArguments(argc, argv);
 
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
