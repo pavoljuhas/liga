@@ -74,9 +74,9 @@ public:
     mutable int h, k, l;
     const int Badness();
     const double AvgBadness();
-    void IncBadness(int b = 1);
-    void DecBadness(int b = 1);
-    void ResetBadness();
+    int IncBadness(int b = 1);
+    int DecBadness(int b = 1);
+    int ResetBadness();
 private:
     int badness;
     int badness_sum;
@@ -96,7 +96,7 @@ public:
     mutable int d2;
     mutable double d;
 private:
-    Molecule *pmol;
+    Molecule *owner;
     int ssdIdxUsed;
     int badness;
 };
@@ -122,11 +122,12 @@ public:
     // parameters
     int NDist;    		// length of distance table
     int NAtoms;   		// current number of atoms
-    mutable int MaxAtoms;	// target number of atoms
-//    double ABadness(int) const;	// fitness of specified atom
-//    double AFitness(int) const;	// badness of specified atom
-//    double MBadness() const;	// total badness
-//    double MFitness() const;	// total fitness
+    mutable int max_NAtoms;	// target number of atoms
+//    int ABadness(int) const;	// fitness of specified atom
+//    int AFitness(int) const;	// badness of specified atom
+    int MBadness() const;	// total badness
+    int MFitness() const;	// total fitness
+    int MaxABadness() const;	// total fitness
 //    double dist(const int& i, const int& j) const;	// d(i,j)
 //    // operator functions
 //    Molecule& Shift(double dh, double dk);	// shift all atoms
@@ -147,7 +148,7 @@ public:
 //	}
 //    Molecule& Pop(const Molecule& M, const int cidx);		// get M.Pop()
 //    Molecule& Pop(const Molecule& M, const list<int>& cidx);	// get M.Pop()
-//    Molecule& Clear();			// remove all atoms
+    Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(int nh, int nk, int nl);	// add single atom
     Molecule& Add(Atom_t a);			// add single atom
@@ -176,13 +177,13 @@ private:
     void init();
 //    // data storage
     SandSphere *ss;
-    list<Atom_t> atom;			// list of all atoms
-    list<Pair_t> pair;			// list of all atom pairs
+    list<Atom_t> atoms;			// list of all atoms
+    list<Pair_t> pairs;			// list of all atom pairs
     mutable list<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
 //    // badness evaluation
-//    mutable double abadMax;		// maximum atom badness
-//    mutable double mbadness;		// molecular badness
+    mutable int max_abad;		// maximum atom badness
+    mutable int badness;		// molecular badness
 //public:
 //    struct badness_at;
 //private:
