@@ -18,7 +18,7 @@ int main()
     vd[3] = 1.4142;
     vd[4] = 1.0;
     vd[5] = 1.0;
-    char *distfile = "ssTest1.dss";
+    char *distfile = "ssTest01.dss";
     SandSphere *ss1, *ss2, *ss3;
     try {
 	ss1 = new SandSphere(100, vd);

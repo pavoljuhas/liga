@@ -19,12 +19,12 @@ int main()
     int NGridTolerances = sizeof(GridTolerances)/sizeof(double);
 
     // distance table
-    char *distfile = "molTest2.dss";
+    char *distfile = "molTest02.dss";
     SandSphere ssRand(100, distfile);
 
     // read in coordinates:
     vector<double> vx1, vy1, vx2, vy2;
-    ifstream fid("molTest2.dxy");
+    ifstream fid("molTest02.dxy");
     // first line contains comment
     string dummy;
     getline(fid, dummy);
