@@ -414,17 +414,6 @@ void Molecule::Recalculate()
     }
 }
 
-double Molecule::AFitness(const Atom_t& a) const
-{
-    // take care of perfect molecule
-    double mb = Badness();
-    if (mb < BGA::eps_badness)
-	mb = 1.0;
-    // fitness is proportional to probability that other atoms will be dumped
-    // i.e., summed badness of all other atoms
-    return mb-a.Badness();
-}
-
 double Molecule::Badness() const
 {
     return badness;
@@ -1389,8 +1378,6 @@ ostream& operator<<(ostream& fid, Molecule& M)
 
 void Molecule::PrintBadness()
 {
-    // call to MBadness() will update abadMax if necessary
-    cout << "MBadness() = " << Badness() << endl;
     cout << "ABadness() =";
     double mab = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness) -> Badness();
@@ -1411,20 +1398,26 @@ void Molecule::PrintBadness()
 
 void Molecule::PrintFitness()
 {
-    cout << "AFitness() =";
-    double mab = max_element(atoms.begin(), atoms.end(),
-		    comp_Atom_Badness) -> Badness();
-    bool marked = false;
+    valarray<double> vafit(NAtoms());
+    double *pd = &vafit[0];
     typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    // first fill the array with badness
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pd)
+	*pd = ai->Badness();
+    // then get the reciprocal value
+    vafit = vdrecipw0(vafit);
+    cout << "AFitness() =";
+    double mab = vafit.max();
+    bool marked = false;
+    for (pd = &vafit[0]; pd != &vafit[vafit.size()]; ++pd)
     {
 	cout << ' ';
-	if (!marked && ai->Badness() == mab)
+	if (!marked && *pd == mab)
 	{
 	    cout << '+';
 	    marked = true;
 	}
-	cout << AFitness(*ai);
+	cout << *pd;
     }
     cout << endl;
 }
