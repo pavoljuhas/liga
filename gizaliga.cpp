@@ -8,8 +8,13 @@
 
 #include <limits>
 #include <unistd.h>
+#include <signal.h>
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
+
+////////////////////////////////////////////////////////////////////////
+// RunPar_t
+////////////////////////////////////////////////////////////////////////
 
 struct RunPar_t
 {
@@ -272,6 +277,11 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     return mol;
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// RunVar_t
+////////////////////////////////////////////////////////////////////////
+
 struct RunVar_t
 {
     RunVar_t() : liga_round(0), full_liga(false), lastframe(false)
@@ -280,6 +290,11 @@ struct RunVar_t
     bool full_liga;
     bool lastframe;
 };
+
+
+////////////////////////////////////////////////////////////////////////
+// Division_t
+////////////////////////////////////////////////////////////////////////
 
 typedef Molecule* PMOL;
 struct Division_t : public vector<Molecule*>
@@ -362,6 +377,25 @@ PMOL& Division_t::best()
     return *pm;
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// SIGHUP handling
+////////////////////////////////////////////////////////////////////////
+
+int SIGHUP_received = 0;
+void SIGHUP_handler(int signum)
+{
+    // die on 2nd call
+    if (SIGHUP_received)
+	exit(128 + signum);
+    SIGHUP_received = signum;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Output helpers
+////////////////////////////////////////////////////////////////////////
+
 void save_snapshot(Molecule& mol, RunPar_t& rp)
 {
     static int cnt = 0;
@@ -388,6 +422,11 @@ void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     mol.WriteAtomEye(oss.str().c_str());
     cnt = 0;
 }
+
+
+////////////////////////////////////////////////////////////////////////
+// MAIN
+////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[])
 {
@@ -428,6 +467,8 @@ int main(int argc, char *argv[])
     // save the best team ever:
     Molecule best_champ(*world_champ);
     cout << endl << "Starting the game ... now." << endl;
+    // watch for HUP
+    signal(SIGHUP, SIGHUP_handler);
     // let the game begin
     while ( !(world_champ->Full() && world_champ->NormBadness() < rp.tol_bad) )
     {
@@ -484,7 +525,11 @@ int main(int argc, char *argv[])
 	    // no need to finish round if we found champion
 	    if (advancing->Full() && advancing->NormBadness() < rp.tol_bad)
 		break;
+	    if (SIGHUP_received)
+		break;
 	}
+	if (SIGHUP_received)
+	    break;
 	if (liga.back().size() != 0)
 	    world_champ = liga.back().best();
 	else
@@ -508,7 +553,11 @@ int main(int argc, char *argv[])
 	   )
 	    best_champ = *world_champ;
     }
-    cout << endl << "Solution found!!!" << endl << endl;
+    cout << endl;
+    if (SIGHUP_received)
+	cout << "Received SIGHUP, graceful death." << endl << endl;
+    else
+	cout << "Solution found!!!" << endl << endl;
     BGA::cnt.PrintRunStats();
     // save last frame
     rv.lastframe = true;
@@ -516,5 +565,7 @@ int main(int argc, char *argv[])
     // save final structure
     if (rp.outstru.size() != 0)
         best_champ.WriteAtomEye(rp.outstru.c_str());
+    if (SIGHUP_received)
+	exit(SIGHUP+128);
     return EXIT_SUCCESS;
 }
