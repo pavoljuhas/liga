@@ -318,6 +318,7 @@ double Molecule::tol_nbad  = 0.05*0.05;
 double Molecule::tol_r = 1.0e-8;
 double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
+bool   Molecule::evolve_relax = true;
 int    Molecule::center_size = 40;
 namespace BGA {
     double pow2(double x) {return x*x;}
@@ -1190,6 +1191,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	// then get the reciprocal value
 	vtafit = vdrecipw0(vtafit);
 	int idx = *(random_wt_choose(1, &vtafit[0], vtafit.size()).begin());
+	if (evolve_relax)
+	    relax_atom(vta[idx]);
 	Add(vta[idx]);
 	lo_abad = vta[idx].Badness();
 	vta.erase(vta.begin()+idx);

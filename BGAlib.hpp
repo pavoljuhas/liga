@@ -130,6 +130,7 @@ public:
     static double tol_nbad;
     static double tol_r;
     static bool evolve_jump;
+    static bool evolve_relax;
     static double evolve_frac;
     static int center_size;
     static double (*penalty)(double);
@@ -198,7 +199,9 @@ private:
     void calc_test_badness(Atom_t& a);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double lo_abad);
+public:
     void relax_atom(Atom_t& a);
+private:
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
