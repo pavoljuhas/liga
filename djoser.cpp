@@ -374,7 +374,9 @@ int main(int argc, char *argv[])
         save_frames(mol, rp, rv);
         if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
         {
-            cout << "Solution found!!!" << endl;
+            cout << endl << "Solution found!!!" << endl;
+	    cout << "cnt_penalty_calls = " <<
+		BGA::cnt_penalty_calls << endl;
             break;
         }
     }
