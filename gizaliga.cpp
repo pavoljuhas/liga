@@ -33,6 +33,7 @@ struct RunPar_t
     double tol_bad;
     int seed;
     double evolve_frac;
+    bool evolve_relax;
     int ligasize;
     double stopgame;
     string penalty;
@@ -51,7 +52,7 @@ RunPar_t::RunPar_t()
 	"distfile", "inistru", "natoms",
 	"outstru", "saverate", "frames", "framesrate",
 	"tol_dd", "tol_bad", "seed",
-	"evolve_frac", "ligasize", "stopgame",
+	"evolve_frac", "evolve_relax", "ligasize", "stopgame",
 	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
@@ -82,6 +83,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
+"  evolve_relax=bool     [false] relax new atom before addition\n"
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.025] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
@@ -234,54 +236,64 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         cout << "framesrate=" << framesrate << endl;
     }
     // liga parameters
-    // tol_dd
-    tol_dd = a.GetPar<double>("tol_dd", 0.1);
-    cout << "tol_dd=" << tol_dd << endl;
-    mol.tol_dd = tol_dd;
-    // tol_bad
-    tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
-    cout << "tol_bad=" << tol_bad << endl;
-    mol.tol_nbad = tol_bad;
-    // seed
-    seed = a.GetPar<int>("seed", 0);
-    if (seed)
-    {
-        gsl_rng_set(BGA::rng, seed);
-        cout << "seed=" << seed << endl;
+    try {
+	// tol_dd
+	tol_dd = a.GetPar<double>("tol_dd", 0.1);
+	cout << "tol_dd=" << tol_dd << endl;
+	mol.tol_dd = tol_dd;
+	// tol_bad
+	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
+	cout << "tol_bad=" << tol_bad << endl;
+	mol.tol_nbad = tol_bad;
+	// seed
+	seed = a.GetPar<int>("seed", 0);
+	if (seed)
+	{
+	    gsl_rng_set(BGA::rng, seed);
+	    cout << "seed=" << seed << endl;
+	}
+	// evolve_frac
+	evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
+	cout << "evolve_frac=" << evolve_frac << endl;
+	mol.evolve_frac = evolve_frac;
+	// evolve_relax
+	evolve_relax = a.GetPar<bool>("evolve_relax", false);
+	cout << "evolve_relax=" << evolve_relax << endl;
+	mol.evolve_relax = evolve_relax;
+	// ligasize
+	ligasize = a.GetPar<int>("ligasize", 10);
+	cout << "ligasize=" << ligasize << endl;
+	// stopgame
+	stopgame = a.GetPar<double>("stopgame", 0.0025);
+	cout << "stopgame=" << stopgame << endl;
+	// penalty
+	penalty = a.GetPar<string>("penalty", "pow2");
+	if (penalty == "pow2")
+	    mol.penalty = BGA::pow2;
+	else if (penalty == "well")
+	    mol.penalty = BGA::well;
+	else if (penalty == "fabs")
+	    mol.penalty = fabs;
+	else
+	{
+	    cerr << "Invalid value of penalty parameter" << endl;
+	    exit(EXIT_FAILURE);
+	}
+	cout << "penalty=" << penalty << endl;
+	// dist_trials
+	dist_trials = a.GetPar("dist_trials", 10);
+	cout << "dist_trials=" << dist_trials << endl;
+	// tri_trials
+	tri_trials = a.GetPar("tri_trials", 20);
+	cout << "tri_trials=" << tri_trials << endl;
+	// pyr_trials
+	pyr_trials = a.GetPar("pyr_trials", 1000);
+	cout << "pyr_trials=" << pyr_trials << endl;
     }
-    // evolve_frac
-    evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
-    cout << "evolve_frac=" << evolve_frac << endl;
-    mol.evolve_frac = evolve_frac;
-    // ligasize
-    ligasize = a.GetPar<int>("ligasize", 10);
-    cout << "ligasize=" << ligasize << endl;
-    // stopgame
-    stopgame = a.GetPar<double>("stopgame", 0.0025);
-    cout << "stopgame=" << stopgame << endl;
-    // penalty
-    penalty = a.GetPar<string>("penalty", "pow2");
-    if (penalty == "pow2")
-        mol.penalty = BGA::pow2;
-    else if (penalty == "well")
-        mol.penalty = BGA::well;
-    else if (penalty == "fabs")
-        mol.penalty = fabs;
-    else
-    {
-        cerr << "Invalid value of penalty parameter" << endl;
-        exit(EXIT_FAILURE);
+    catch (ParseArgsError(e)) {
+	cerr << e.what() << endl;
+	exit(EXIT_FAILURE);
     }
-    cout << "penalty=" << penalty << endl;
-    // dist_trials
-    dist_trials = a.GetPar("dist_trials", 10);
-    cout << "dist_trials=" << dist_trials << endl;
-    // tri_trials
-    tri_trials = a.GetPar("tri_trials", 20);
-    cout << "tri_trials=" << tri_trials << endl;
-    // pyr_trials
-    pyr_trials = a.GetPar("pyr_trials", 1000);
-    cout << "pyr_trials=" << pyr_trials << endl;
     // done
     cout << hashsep << endl << endl;
     return mol;
