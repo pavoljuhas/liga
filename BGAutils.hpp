@@ -2,6 +2,7 @@
 #define BGAUTILS_HPP_INCLUDED
 
 #include <stdexcept>
+#include <fstream>
 #include <list>
 #include <valarray>
 
@@ -12,6 +13,9 @@ struct IOError : public runtime_error
     IOError (const string what_arg = "") :
 	runtime_error(what_arg) { }
 };
+
+// similar to mkstemp, but returns ofstream with umask permissions
+ofstream& mktempofstream(ofstream& out, char *writefile);
 
 template<class T> typename list<T>::iterator list_at(list<T>& lst, int n)
 {

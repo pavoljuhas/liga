@@ -1,8 +1,44 @@
 #include <iostream>
-#include <iomanip>
+#include <string>
+#include <sstream>
 #include <unistd.h>
 #include <sys/times.h>
 #include "BGAutils.hpp"
+
+ofstream& mktempofstream(ofstream& out, char *writefile)
+{
+    const int max_attempts = 10;
+    char *pX = strstr(writefile, "XXXXXX");
+    if (!pX)
+    {
+	throw IOError("mktempofstream(): XXXXXX missing in filename");
+    }
+    string alnum = "0123456789"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    for (int i = 0; ; ++i)
+    {
+	// create random name
+	for (int j = 0; j < 6; ++j)
+	    pX[j] = alnum[ rand() % alnum.size() ];
+	ifstream fid(writefile);
+	if (!fid)
+	    break;
+	else
+	    fid.close();
+	if ( !(i < max_attempts) )
+	    throw IOError("mktempofstream(): max_attempts exceeded");
+    }
+    // we should have a good name here
+    out.open(writefile);
+    if (!out)
+    {
+	ostringstream oss;
+	oss << "mktempofstream(): unable to open " <<
+				  writefile << "for writing";
+	throw IOError(oss.str());
+    }
+    return out;
+}
 
 void Counters_t::PrintRunStats()
 {
