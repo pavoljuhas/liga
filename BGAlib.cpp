@@ -210,10 +210,10 @@ void Molecule::init()
     ss->molecules.push_back(this);
     // check coordinate sizes
     UnCache();
-    fixsize();
+    fix_size();
 }
 
-void Molecule::fixsize()
+void Molecule::fix_size()
 {
     UnCache();
     if (h.size() != k.size())
@@ -234,6 +234,24 @@ Molecule::~Molecule()
 {
     ss->molecules.remove(this);
     // debug: cout << "ss->molecules.size() = " << ss->molecules.size() << endl;
+}
+
+double Molecule::dist(const int& i, const int& j)
+{
+    return sqrt(1.0*dist2(i, j));
+}
+
+inline int Molecule::dist2(const int& i, const int& j)
+{
+    int dh = h[i] - h[j];
+    int dk = k[i] - k[j];
+    return dh*dh + dk*dk;
+}
+
+double Molecule::out_penalty(int i)
+{
+    double Rout = sqrt(h[i]*h[i] + k[i]*k[i] + 0.0) - ss->gridmax;
+    return (Rout > 0.0) ? Rout : 0.0;
 }
 
 typedef struct {
@@ -293,16 +311,12 @@ void Molecule::calc_df()
 	// otherwise it is a matching distance
 	ssdIdx++;
     }
-    // now add penalty for outside SandSphere
-    double Ri;
+    // now add penalty for being outside the SandSphere
     for (int i = 0; i < NAtoms; ++i)
     {
-	Ri = sqrt(h[i]*h[i] + k[i]*k[i] + 0.0);
-	if (Ri > ss->gridmax)
-	{
-	    abad[i] += Ri - ss->gridmax;
-	}
+	abad[i] += out_penalty(i);
     }
+    mbad = abad.sum();
     abadMax = max(abad.max(), (double) NAtoms);
 }
 
@@ -324,13 +338,11 @@ double Molecule::AFitness(int i)
 
 double Molecule::MBadness()
 {
-    static double mbadCache;
     if (!cached)
     {
 	calc_df();
-	mbadCache = abad.sum();
     }
-    return mbadCache;
+    return mbad;
 }
 
 double Molecule::MFitness()
@@ -340,18 +352,6 @@ double Molecule::MFitness()
     return NAtoms*abadMax - mbadness;
 }
 
-double Molecule::dist(const int& i, const int& j)
-{
-    return sqrt(1.0*dist2(i, j));
-}
-
-inline int Molecule::dist2(const int& i, const int& j)
-{
-    int dh = h[i] - h[j];
-    int dk = k[i] - k[j];
-    return dh*dh + dk*dk;
-}
-
 ////////////////////////////////////////////////////////////////////////
 // Molecule operators
 ////////////////////////////////////////////////////////////////////////
@@ -359,8 +359,21 @@ Molecule& Molecule::Shift(int dh, int dk)
 {
     for (int i = 0; i < NAtoms; ++i)
     {
+	if (cached)
+	{
+	    abad[i] -= out_penalty(i);
+	}
 	h[i] += dh;
 	k[i] += dk;
+	if (cached)
+	{
+	    abad[i] += out_penalty(i);
+	}
+    }
+    if (cached)
+    {
+	abadMax = max(abad.max(), (double) NAtoms);
+	mbad = abad.sum();
     }
     return *this;
 }
@@ -391,7 +404,7 @@ Molecule& Molecule::Part(const list<int>& cidx)
     }
     h = h_new;
     k = k_new;
-    fixsize();
+    fix_size();
     return *this;
 }
 
@@ -414,7 +427,7 @@ Molecule& Molecule::Pop(const list<int>& cidx)
     }
     h = h_new;
     k = k_new;
-    fixsize();
+    fix_size();
     return *this;
 }
 
@@ -422,7 +435,7 @@ Molecule& Molecule::Pop(const int cidx)
 {
     h.erase(h.begin() + cidx);
     k.erase(k.begin() + cidx);
-    fixsize();
+    fix_size();
     return *this;
 }
 
@@ -431,6 +444,11 @@ Molecule& Molecule::Pop(const int cidx)
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.12  2005/01/26 15:53:08  juhas
+* Molecule::fixsize() renamed to fix_size()
+* MBadness cached in double Molecule.mbad
+* added Molecule::out_penalty()
+*
 * Revision 1.11  2005/01/26 05:41:01  juhas
 * added Molecule operations: Shift(int dx, int dy), Center(),
 *     Part(list<int>), Pop(list<int>), Pop(int)

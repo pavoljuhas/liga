@@ -97,13 +97,15 @@ private:
     bool cached;
     valarray<double> abad;	// individual atom badnesses
     double abadMax;		// maximum atom badness
+    double mbad;		// molecular badness
     valarray<int> d2;		// sorted table of squared distances 
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
     list<int> ssdIdxFree;	// available elements in ss.dist
     // helper functions
     void init();		// constructor helper
-    void fixsize();		// set all sizes consistently with h.size()
+    void fix_size();		// set all sizes consistently with h.size()
     void calc_df();		// update distance and fitness tables
+    double out_penalty(int i);	// penalty for being outside SandSphere
 };
 
 /*
@@ -212,6 +214,11 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.10  2005/01/26 15:53:31  juhas
+* Molecule::fixsize() renamed to fix_size()
+* MBadness cached in double Molecule.mbad
+* added Molecule::out_penalty()
+*
 * Revision 1.9  2005/01/26 05:37:33  juhas
 * Molecule resize operations grouped to fixsize()
 *
