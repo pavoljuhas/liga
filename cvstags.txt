@@ -41,3 +41,7 @@ three-dim-1g                1.114       2005-02-22
 three-dim-1h                1.116       2005-02-22
     added debug counters for acceptance ratio of distances, triangles
     and pyramids.
+
+three-dim-1i                1.126       2005-02-25
+    atom fitness in Evolve() is calculated as a reciprocal badness,
+    (removed debug counters from three-dim-1h)
