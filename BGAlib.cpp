@@ -426,13 +426,9 @@ Molecule::Molecule(const DistanceTable& dtab,
 	) : dTarget(dtab)
 {
     init();
-    int h, k, l;
     for (int i = 0; i < s; ++i)
     {
-	h = (int) round(px[i] / ss->delta);
-	k = (int) round(py[i] / ss->delta);
-	l = (int) round(pz[i] / ss->delta);
-	Add(h, k, l);
+	Add(px[i], py[i], pz[i]);
     }
 }
 
@@ -447,13 +443,9 @@ Molecule::Molecule(const DistanceTable& dtab,
 	cerr << "E: invalid coordinate vectors" << endl;
 	throw InvalidMolecule();
     }
-    int h, k, l;
     for (int i = 0; i < vx.size(); ++i)
     {
-	h = (int) round(vx[i] / ss->delta);
-	k = (int) round(vy[i] / ss->delta);
-	l = (int) round(vz[i] / ss->delta);
-	Add(h, k, l);
+	Add(vx[i], vy[i], vz[i]);
     }
 }
 
@@ -488,6 +480,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     return *this;
 }
 
+//pj: fixthis
 void Molecule::init()
 {
     ss->molecules.push_back(this);
@@ -656,9 +649,9 @@ Molecule& Molecule::Shift(double dx, double dy, double dz)
 {
     for (list<Atom_t>::iterator ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
-	ai->rx += (int) round(dx);
-	ai->ry += (int) round(dy);
-	ai->rz += (int) round(dz);
+	ai->rx += dx;
+	ai->ry += dy;
+	ai->rz += dz;
     }
     return *this;
 }
@@ -1608,10 +1601,7 @@ istream& Molecule::ReadXYZ(istream& fid)
     Clear();
     for (int i = 0; i < vxyz.size(); i += 3)
     {
-	int h = (int) round(vxyz[i+0] / ss->delta);
-	int k = (int) round(vxyz[i+1] / ss->delta);
-	int l = (int) round(vxyz[i+2] / ss->delta);
-	Add(Atom_t(h, k, l));
+	Add(Atom_t(vxyz[i+0], vxyz[i+1], vxyz[i+2]));
     }
     return fid;
 }
