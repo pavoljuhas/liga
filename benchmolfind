@@ -48,8 +48,8 @@ do
 	    for i in {1..$REPEATS};
 	    do
 		SEED=$RANDOM
-		p=( "${(@)par/(#s)SEED(#e)/$SEED}" )
-		p=( "${(@)p/(#s)DISTFILE(#e)/$df}" )
+		p=( "${(@)par/SEED/$SEED}" )
+		p=( "${(@)p/DISTFILE/$df}" )
 		print "#bm $i of $REPEATS timings for $df"
 		print "#bm $CMD $p"
 		$CMD "${(@)p}" || exit $?
