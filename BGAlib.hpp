@@ -129,9 +129,7 @@ public:
     // data access
     // fitness/badness functions
     double ABadness(int i) const;
-    double ABadness(list<Atom_t>::iterator) const;
     double AFitness(int i) const;
-    double AFitness(list<Atom_t>::iterator) const;
     double Badness() const;	// total badness
     double Fitness() const;	// total fitness
     double MaxABadness() const;	// total fitness

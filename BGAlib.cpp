@@ -416,21 +416,15 @@ void Molecule::Recalculate()
 
 double Molecule::ABadness(int i) const
 {
-    return list_at(atoms, i) -> Badness();
-}
-
-double Molecule::ABadness(list<Atom_t>::iterator ai) const
-{
+    list<Atom_t>::const_iterator ai = atoms.begin();
+    advance(ai, i);
     return ai->Badness();
 }
 
 double Molecule::AFitness(int i) const
 {
-    return AFitness(list_at(atoms, i));
-}
-
-double Molecule::AFitness(list<Atom_t>::iterator ai) const
-{
+    list<Atom_t>::const_iterator ai = atoms.begin();
+    advance(ai, i);
     return MaxABadness() - ai->Badness();
 }
 
