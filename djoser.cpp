@@ -29,7 +29,7 @@ void print_help(ParseArgs& a)
 	/*
 
 usage: << a.cmd_t << [-p PAR_FILE] [DISTHIST] [par1=val1 par2=val2...]
-run madwalk simulation using DISTHIST data.  Parameters can be set
+run drunkwalk simulation using DISTHIST data.  Parameters can be set
 in PAR_FILE or on the command line, which overrides PAR_FILE.
 Options:
   -p, --parfile=FILE    read parameters from FILE
