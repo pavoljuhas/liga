@@ -79,7 +79,7 @@ SandSphere::SandSphere(int GridMax, const vector<double>& vt) :
     init(vt);
 }
 
-SandSphere::SandSphere(int GridMax, size_t s, const double *pt) :
+SandSphere::SandSphere(int GridMax, int s, const double *pt) :
     gridmax(GridMax)
 {
     vector<double> vt(s);
@@ -130,7 +130,7 @@ void SandSphere::init(const vector<double>& t)
     }
     // fill in and check distance valarray d
     d.resize(NDist);
-    for (size_t i = 0; i < NDist; ++i)
+    for (int i = 0; i < NDist; ++i)
     {
 	d[i] = t[i];
     }
@@ -183,7 +183,7 @@ Molecule::Molecule(SandSphere *SS) : ss(SS)
 }
 
 Molecule::Molecule(SandSphere *SS,
-	size_t s, int *ph, int *pk) : ss(SS)
+	int s, int *ph, int *pk) : ss(SS)
 {
     h.resize(s);
     k.resize(s);
@@ -204,7 +204,7 @@ Molecule::Molecule(SandSphere *SS,
 }
 
 Molecule::Molecule(SandSphere *SS,
-	size_t s, double *px, double *py) : ss(SS)
+	int s, double *px, double *py) : ss(SS)
 {
     h.resize(s);
     k.resize(s);
@@ -221,7 +221,7 @@ Molecule::Molecule(SandSphere *SS,
 {
     h.resize(vx.size());
     k.resize(vx.size());
-    for (int i = 0; i < h.size(); ++i)
+    for (size_t i = 0; i < h.size(); ++i)
     {
 	h[i] = (int) round(vx[i] / ss->delta);
 	k[i] = (int) round(vy[i] / ss->delta);
@@ -306,13 +306,6 @@ Molecule::~Molecule()
 double Molecule::dist(const int& i, const int& j)
 {
     return sqrt(1.0*dist2(i, j));
-}
-
-inline int Molecule::dist2(const int& i, const int& j)
-{
-    int dh = h[i] - h[j];
-    int dk = k[i] - k[j];
-    return dh*dh + dk*dk;
 }
 
 double Molecule::out_penalty(int i)
@@ -463,35 +456,78 @@ Molecule& Molecule::Center()
     return *this;
 }
 
-Molecule& Molecule::Part(const list<int>& cidx)
+Molecule& Molecule::Part(const Molecule& M0, const int cidx)
 {
-    vector<int> h_new, k_new;
-    for ( list<int>::const_iterator li = cidx.begin();
-	    li != cidx.end(); ++li )
-    {
-	if (*li < 0 || *li >= NAtoms)
-	{
-	    throw range_error("in Molecule::Part()");
-	}
-	h_new.push_back(h[*li]);
-	k_new.push_back(k[*li]);
-    }
-    h = h_new;
-    k = k_new;
+    h.resize(1, M0.h[cidx]);
+    k.resize(1, M0.k[cidx]);
     fix_size();
     return *this;
 }
 
-Molecule& Molecule::Pop(const list<int>& cidx)
+Molecule& Molecule::Part(const Molecule& M0, const list<int>& cidx)
 {
-    if (cidx.size() == 0)  return *this;
-    list<int> sidx(cidx);
-    sidx.sort();
-    if (sidx.front() < 0 || sidx.back() >= NAtoms)
+    vector<int> *h_new, *k_new;
+    if (&M0 == this)
+    {
+	h_new = new vector<int>;
+	k_new = new vector<int>;
+    }
+    else
+    {
+	h_new = &h;
+	k_new = &k;
+    }
+    h_new->resize(cidx.size());
+    k_new->resize(cidx.size());
+    int idx = 0;
+    for ( list<int>::const_iterator li = cidx.begin();
+	    li != cidx.end(); ++li )
+    {
+	if (*li < 0 || *li >= M0.NAtoms)
+	{
+	    throw range_error("in Molecule::Part()");
+	}
+	(*h_new)[idx] = M0.h[*li];
+	(*k_new)[idx] = M0.k[*li];
+	++idx;
+    }
+    if (&M0 == this)
+    {
+	h = *h_new;
+	k = *k_new;
+	delete h_new, k_new;
+    }
+    fix_size();
+    return *this;
+}
+
+Molecule& Molecule::Pop(const Molecule& M0, const int cidx)
+{
+    if (cidx < 0 || cidx >= M0.NAtoms)
     {
 	throw range_error("in Molecule::Pop(list<int>)");
     }
-    sidx.push_back(NAtoms);
+    if (this != &M0)  *this = M0;
+    h.erase(h.begin() + cidx);
+    k.erase(k.begin() + cidx);
+    fix_size();
+    return *this;
+}
+
+Molecule& Molecule::Pop(const Molecule& M0, const list<int>& cidx)
+{
+    if (cidx.size() == 0)
+    {
+	if (this != &M0)  *this = M0;
+	return *this;
+    }
+    list<int> sidx(cidx);
+    sidx.sort();
+    if (sidx.front() < 0 || sidx.back() >= M0.NAtoms)
+    {
+	throw range_error("in Molecule::Pop(list<int>)");
+    }
+    sidx.push_back(M0.NAtoms);
     vector<int> h_new, k_new;
     int j = 0;
     for ( list<int>::iterator li = sidx.begin();
@@ -499,25 +535,13 @@ Molecule& Molecule::Pop(const list<int>& cidx)
     {
 	for (; j < *li; ++j)
 	{
-	    h_new.push_back(h[j]);
-	    k_new.push_back(k[j]);
+	    h_new.push_back(M0.h[j]);
+	    k_new.push_back(M0.k[j]);
 	}
 	j = *li + 1;
     }
     h = h_new;
     k = k_new;
-    fix_size();
-    return *this;
-}
-
-Molecule& Molecule::Pop(const int cidx)
-{
-    if (cidx < 0 || cidx >= NAtoms)
-    {
-	throw range_error("in Molecule::Pop(list<int>)");
-    }
-    h.erase(h.begin() + cidx);
-    k.erase(k.begin() + cidx);
     fix_size();
     return *this;
 }
@@ -596,7 +620,7 @@ template<class T> bool Molecule::ParseHeader::read_token(
 	)
 {
     const char *fieldsep = ":= ";
-    size_t ltoken = strlen(token);
+    int ltoken = strlen(token);
     string::size_type sp;
     const string::size_type npos = string::npos;
     if ( 
@@ -690,7 +714,7 @@ istream& Molecule::ReadXY(istream& fid)
     Clear();
     h.resize(vxy.size()/2);
     k.resize(vxy.size()/2);
-    for (int i = 0, iv = 0; i < vxy.size()/2; ++i)
+    for (size_t i = 0, iv = 0; i < vxy.size()/2; ++i)
     {
 	h[i] = (int) round(vxy[iv++] / ss->delta);
 	k[i] = (int) round(vxy[iv++] / ss->delta);
