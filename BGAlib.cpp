@@ -727,19 +727,37 @@ list<Molecule::badness_at> Molecule::find_good_triangles(int trials)
 	double perpdir[2] = { -longdir[1], 	  longdir[0] };
 	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
 	double xperp = sqrt(r13*r13 - xlong*xlong);
-	int nh1 = (int) round(xlong*longdir[0] + xperp*perpdir[0]);
-	int nk1 = (int) round(xlong*longdir[1] + xperp*perpdir[1]);
+	int nh1 = h[a1] + (int) round(xlong*longdir[0] + xperp*perpdir[0]);
+	int nk1 = k[a1] + (int) round(xlong*longdir[1] + xperp*perpdir[1]);
 	// store the result
 	badness_at res1(nh1, nk1, ABadnessAt(nh1, nk1));
 	retlist.push_back(res1);
 	// jump out if it is a good location or if we did enough trials
+	/* debug:
+	   cout << nt << " a1 = " << a1 << " a2 = " << a2 << endl;
+	   cout << nt << " res1.abad = " << res1.abad << endl;
+	   cout << nt << " res1.h = " << res1.h << " res1.k = " << res1.k << endl;
+	   */
 	if (res1.abad == 0.0 || ++nt == trials)  break;
 	// 2nd triangle:
-	int nh2 = (int) round(xlong*longdir[0] - xperp*perpdir[0]);
-	int nk2 = (int) round(xlong*longdir[1] - xperp*perpdir[1]);
+	int nh2 = h[a1] + (int) round(xlong*longdir[0] - xperp*perpdir[0]);
+	int nk2 = k[a1] + (int) round(xlong*longdir[1] - xperp*perpdir[1]);
 	// store the result
 	badness_at res2(nh2, nk2, ABadnessAt(nh2, nk2));
 	retlist.push_back(res2);
+	/* debug:
+	   cout << nt << " res2.abad = " << res2.abad << endl;
+	   cout << nt << " res2.h = " << res2.h << " res2.k = " << res2.k << endl;
+	   cout << nt <<
+	   " longdir=[" << longdir[0] << ' ' << longdir[1] << "]," <<
+	   " perpdir=[" << perpdir[0] << ' ' << perpdir[1] << "]," <<
+	   " xlong=" << xlong << "," <<
+	   " xperp=" << xperp << "," <<
+	   " r12=" << r12 << "," <<
+	   " r13=" << r13 << "," <<
+	   " r23=" << r23 << "," <<
+	   endl;
+	   */
 	if (res2.abad == 0.0 || ++nt == trials)  break;
     }
     gsl_ran_discrete_free(table);
@@ -775,15 +793,15 @@ Molecule& Molecule::Evolve(int trials)
 	trials_log.insert(trials_log.end(), fgt.begin(), fgt.end());
     }
     // find the best trial and Add atom to that place
-    list<badness_at>::iterator best;
+    badness_at *best;
     // maybe the last one is good:
     if (trials_log.back().abad == 0.0)
     {
-	best = trials_log.end();
+	best = &trials_log.back();
     }
     else
     {
-	best = min_element(trials_log.begin(), trials_log.end());
+	best = &(*min_element(trials_log.begin(), trials_log.end()));
     }
     Add(best->h, best->k);
     Center();
