@@ -1530,10 +1530,10 @@ istream& operator>>(istream& fid, Molecule& M)
     bool result;
     switch (ph.format)
     {
-	case M.XYZ:
+	case Molecule::XYZ:
 	    result = M.ReadXYZ(fid);
 	    break;
-	case M.ATOMEYE:
+	case Molecule::ATOMEYE:
 	    throw runtime_error("reading of atomeye files not implemented");
 	    break;
     }
@@ -1551,7 +1551,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
     LAit alast = M.atoms.end();
     switch (M.output_format)
     {
-	case M.XYZ:
+	case Molecule::XYZ:
 	    fid << "# BGA molecule format = xy" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
@@ -1562,7 +1562,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		    ai->r[2] << endl;
 	    }
 	    break;
-	case M.ATOMEYE:
+	case Molecule::ATOMEYE:
 	    double xyz_lo = 0.0;
 	    double xyz_hi = 1.0;
 	    double xyz_range = xyz_hi - xyz_lo;

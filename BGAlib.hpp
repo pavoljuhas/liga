@@ -43,7 +43,10 @@ template <class T>
 struct OrderedPair : pair<T,T>
 {
     OrderedPair(const T& x, const T& y) : pair<T,T>(x, y)
-    { if (!(first<second))  swap(first, second); }
+    {
+	if (pair<T,T>::first > pair<T,T>::second)
+	    swap(pair<T,T>::first, pair<T,T>::second);
+    }
 };
 list<int> random_choose_few(int K, int Np);
 list<int> random_wt_choose(int K, const double *p, int Np);
