@@ -274,55 +274,73 @@ Pair_t::~Pair_t()
 // Molecule definitions
 ////////////////////////////////////////////////////////////////////////
 
-//Molecule::Molecule(SandSphere *SS) : ss(SS)
-//{
-//    init();
-//}
-//
-//Molecule::Molecule(SandSphere *SS,
-//	int s, int *ph, int *pk, int *pl) : ss(SS)
-//{
-//    for (int i = 0; i < s; ++i)
-//    {
-//	Add(ph[i], pk[i], pl[i]);
-//    }
-//    init();
-//}
-//
-//Molecule::Molecule(SandSphere *SS,
-//	const vector<int>& vh, const vector<int>& vk) : ss(SS)
-//{
-//    h = vh;
-//    k = vk;
-//    init();
-//}
-//
-//Molecule::Molecule(SandSphere *SS,
-//	int s, double *px, double *py) : ss(SS)
-//{
-//    h.resize(s);
-//    k.resize(s);
-//    for (int i = 0; i < s; ++i)
-//    {
-//	h[i] = (int) round(px[i] / ss->delta);
-//	k[i] = (int) round(py[i] / ss->delta);
-//    }
-//    init();
-//}
-//
-//Molecule::Molecule(SandSphere *SS,
-//	const vector<double>& vx, const vector<double>& vy) : ss(SS)
-//{
-//    h.resize(vx.size());
-//    k.resize(vx.size());
-//    for (size_t i = 0; i < h.size(); ++i)
-//    {
-//	h[i] = (int) round(vx[i] / ss->delta);
-//	k[i] = (int) round(vy[i] / ss->delta);
-//    }
-//    init();
-//}
-//
+Molecule::Molecule(SandSphere *SS) : ss(SS)
+{
+    init();
+}
+
+Molecule::Molecule(SandSphere *SS,
+	const int s, const int *ph, const int *pk, const int *pl) : ss(SS)
+{
+    init();
+    for (int i = 0; i < s; ++i)
+    {
+	Add(ph[i], pk[i], pl[i]);
+    }
+}
+
+Molecule::Molecule(SandSphere *SS,
+	const vector<int>& vh, const vector<int>& vk, const vector<int>& vl
+	) : ss(SS)
+{
+    init();
+    if (vh.size() != vk.size() || vh.size() != vl.size())
+    {
+	cerr << "E: invalide coordinate vectors" << endl;
+	throw InvalidMolecule();
+    }
+    for (int i = 0; i < vh.size(); ++i)
+    {
+	Add(vh[i], vk[i], vl[i]);
+    }
+}
+
+Molecule::Molecule(SandSphere *SS,
+	const int s, const double *px, const double *py, const double *pz
+	) : ss(SS)
+{
+    init();
+    int h, k, l;
+    for (int i = 0; i < s; ++i)
+    {
+	h = (int) round(px[i] / ss->delta);
+	k = (int) round(py[i] / ss->delta);
+	l = (int) round(pz[i] / ss->delta);
+	Add(h, k, l);
+    }
+}
+
+Molecule::Molecule(SandSphere *SS,
+	const vector<double>& vx, const vector<double>& vy,
+	const vector<double>& vz
+	) : ss(SS)
+{
+    init();
+    if (vx.size() != vy.size() || vx.size() != vz.size())
+    {
+	cerr << "E: invalide coordinate vectors" << endl;
+	throw InvalidMolecule();
+    }
+    int h, k, l;
+    for (int i = 0; i < vx.size(); ++i)
+    {
+	h = (int) round(vx[i] / ss->delta);
+	k = (int) round(vy[i] / ss->delta);
+	l = (int) round(vz[i] / ss->delta);
+	Add(h, k, l);
+    }
+}
+
 //Molecule::Molecule(const Molecule& M) :
 //    ss(M.ss)
 //{
@@ -364,17 +382,15 @@ Pair_t::~Pair_t()
 //    opened_file = M.opened_file;
 //    return *this;
 //}
-//
-//void Molecule::init()
-//{
-//    ss->molecules.push_back(this);
-//    MaxAtoms = ss->NAtoms;
-//    // check coordinate sizes
-//    OutFmtGrid();
-//    UnCache();
-//    fix_size();
-//}
-//
+
+void Molecule::init()
+{
+    ss->molecules.push_back(this);
+    MaxAtoms = ss->NAtoms;
+    // check coordinate sizes
+    OutFmtGrid();
+}
+
 ////void Molecule::fix_size()
 ////{
 ////    UnCache();
