@@ -131,9 +131,9 @@ public:
     int Fitness() const;	// total fitness
     int MaxABadness() const;	// total fitness
 //    double dist(const int& i, const int& j) const;	// d(i,j)
-//    // operator functions
-//    Molecule& Shift(double dh, double dk);	// shift all atoms
-//    Molecule& Center();			// center w/r to the center of mass
+    // operator functions
+    Molecule& Shift(double dh, double dk, double dl);	// move all atoms
+    Molecule& Center();	  // center w/r to the center of mass
 //    Molecule& Rotate(double phi, double h0 = 0.0, double k0 = 0.0);
 //    template<class T> 
 //	inline Molecule& Part(T cidx)	// keep only specified atom
