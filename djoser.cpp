@@ -227,7 +227,9 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     cout << "evolve_frac=" << rp.evolve_frac << endl;
     mol.evolve_frac = rp.evolve_frac;
     rp.pop_max = a.GetPar<int>("pop_max", 5);
-    rp.pop_rand = a.GetPar<int>("pop_rand", false);
+    cout << "pop_max=" << rp.pop_max << endl;
+    rp.pop_rand = a.GetPar<bool>("pop_rand", false);
+    cout << "pop_rand=" << rp.pop_rand << endl;
     rp.penalty = a.GetPar<string>("penalty", "pow2");
     if (rp.penalty == "pow2")
         mol.penalty = BGA::pow2;
