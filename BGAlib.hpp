@@ -205,9 +205,6 @@ private:
     istream& ReadGrid(istream& fid);
     istream& ReadXYZ(istream& fid);
     string opened_file;
-    // temporary
-    template <class ForwardIter>
-	valarray<double> rec_badness(ForwardIter first, ForwardIter last);
 };
 
 class Molecule::ParseHeader
