@@ -36,4 +36,4 @@ three-dim-1f                1.111       2005-02-22
 
 three-dim-1g                1.114       2005-02-22
     atom fitness is now proportional to the probability that other atoms
-    are bad and will be dumped
+    will be dumped
