@@ -78,6 +78,15 @@ popTest01: popTest01.o $(OBJECTS) $(HEADERS)
 # popTest03: popTest03.o $(OBJECTS) $(HEADERS)
 # 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
+libTest01: libTest01.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+
+# libTest02: libTest02.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+#
+# libTest03: libTest03.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+
 #####################################################################}}}
 # utility targets {{{
 tags:	$(SOURCES) $(HEADERS) $(PROGRAMS:%=%.cpp)
