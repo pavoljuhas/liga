@@ -104,11 +104,8 @@ double prob_evolve(RunPar_t& rp, const Molecule& mol, double impr_rate)
     return pe;
 }
 
-
-int main(int argc, char *argv[])
+Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 {
-    using namespace std;
-
     char *short_options =
 	"p:hv";
     // parameters and options
@@ -124,17 +121,17 @@ int main(int argc, char *argv[])
 //	a.Dump();
     }
     catch (ParseArgsError) {
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
     }
     if (a.opts.count("h") || argc == 1)
     {
 	print_help(a);
-	return EXIT_SUCCESS;
+	exit(EXIT_SUCCESS);
     }
     else if (a.opts.count("v"))
     {
 	print_version();
-	return EXIT_SUCCESS;
+	exit(EXIT_SUCCESS);
     }
     if (a.opts.count("p"))
     {
@@ -143,31 +140,30 @@ int main(int argc, char *argv[])
 	}
 	catch (IOError(e)) {
 	    cerr << e.what() << endl;
-	    return EXIT_FAILURE;
+	    exit(EXIT_FAILURE);
 	}
 	catch (ParseArgsError(e)) {
 	    cerr << "invalid syntax in parameter file" << endl;
 	    cerr << e.what() << endl;
-	    return EXIT_FAILURE;
+	    exit(EXIT_FAILURE);
 	}
     }
     // assign run parameters
-    RunPar_t rp;
     // distfile
-    DistanceTable *dtab;
     if (a.args.size())
 	a.pars["distfile"] = a.args[0];
     if (!a.pars.count("distfile"))
     {
 	cerr << "Distance file not defined" << endl;
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
     }
     rp.distfile = a.pars["distfile"].c_str();
+    DistanceTable* dtab;
     try {
 	dtab = new DistanceTable(rp.distfile);
     }
     catch (IOError) {
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
     }
     string hashsep(72, '#');
     cout << hashsep << endl;
@@ -232,7 +228,7 @@ int main(int argc, char *argv[])
     else
     {
 	cerr << "Invalid value of penalty parameter" << endl;
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
     }
     cout << "penalty=" << rp.penalty << endl;
     rp.dist_trials = a.GetPar("dist_trials", 10);
@@ -242,11 +238,16 @@ int main(int argc, char *argv[])
     rp.pyr_trials = a.GetPar("pyr_trials", 1000);
     cout << "pyr_trials=" << rp.pyr_trials << endl;
     cout << hashsep << endl << endl;
+    return mol;
+}
 
-    ////////////////////////////////////////////////////////////////////////
-    // set lastMBadness to a maximum double
+int main(int argc, char *argv[])
+{
+    RunPar_t rp;
+    Molecule mol = process_arguments(rp, argc, argv);
+    // set lastNMBadness to a maximum double
     numeric_limits<double> double_info;
-    valarray<double> lastMBadness(double_info.max(), dtab->NAtoms+1);
+    valarray<double> lastNMBadness(double_info.max(), 1+mol.max_NAtoms());
     double best_largest = double_info.max();
     valarray<int> improved(1, rp.logsize);
 
@@ -283,16 +284,16 @@ int main(int argc, char *argv[])
 	cout << endl;
 //	if (rp.show_abad)
 //	    mol.PrintBadness();
-	// update lastMBadness and improved
+	// update lastNMBadness and improved
 	int ilog = trial % rp.logsize;
-	if (mol.Badness() < lastMBadness[mol.NAtoms()])
+	if (mol.Badness() < lastNMBadness[mol.NAtoms()])
 	{
 	    if (mol.NAtoms() > maxatoms)
 	    {
-		best_largest = lastMBadness[mol.NAtoms()];
+		best_largest = lastNMBadness[mol.NAtoms()];
 		maxatoms = mol.NAtoms();
 	    }
-	    lastMBadness[mol.NAtoms()] = mol.Badness();
+	    lastNMBadness[mol.NAtoms()] = mol.Badness();
 	    improved[ilog] = 1;
 	    /*
 	    if (snapshot_file != NULL && mol.NAtoms() == maxatoms &&
@@ -323,8 +324,8 @@ int main(int argc, char *argv[])
 	else
 	{
 	    improved[ilog] = 0;
-	    if (lastMBadness[mol.NAtoms()] < 1e-4)
-		lastMBadness[mol.NAtoms()] = 1e-4;
+	    if (lastNMBadness[mol.NAtoms()] < 1e-4)
+		lastNMBadness[mol.NAtoms()] = 1e-4;
 	}
 	cout << endl;
     }
