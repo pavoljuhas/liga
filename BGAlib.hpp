@@ -27,6 +27,8 @@ namespace BGA
     extern double eps_badness;
     double pow2(double x);
     double well(double x);
+    // counters
+    extern int cnt_penalty_calls;
 };
 
 // exceptions

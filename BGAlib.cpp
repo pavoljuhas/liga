@@ -18,6 +18,8 @@
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 double BGA::eps_badness = 1.0e-10;
+// counters
+int BGA::cnt_penalty_calls = 0;
 
 ////////////////////////////////////////////////////////////////////////
 // common helper functions
@@ -161,7 +163,7 @@ Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
     d = dist(*atom1, *atom2);
     vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = owner->penalty(dd);
+    badness = owner->penalty(dd); BGA::cnt_penalty_calls++;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
     if (fabs(dd) < owner->tol_dd)
@@ -702,7 +704,7 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	double d = dist(*ai, ta);
 	VDit dnear = dTarget.find_nearest(d);
 	double dd = *dnear - d;
-	tbad += penalty(dd);
+	tbad += penalty(dd);  BGA::cnt_penalty_calls++;
 	if (fabs(dd) < tol_dd)
 	{
 	    used_distances.push_back(*dnear);
