@@ -15,7 +15,7 @@ LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 # PROGRAMS = darwin mrmcpfl c60gradmin plotstrupdf plain2eye eye2plain
 PROGRAMS =
 TESTS   = $(patsubst %.cpp,%,$(wildcard *Test*.cpp))
-SOURCES = BGAlib.cpp ParseArgs.cpp
+SOURCES = BGAlib.cpp BGAutils.cpp
 HEADERS = $(SOURCES:%.cpp=%.hpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
@@ -31,8 +31,8 @@ lib_objects: $(OBJECTS)
 %.o: %.cpp %.hpp
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
-djoser: djoser.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+djoser: djoser.o $(OBJECTS) $(HEADERS) ParseArgs.o ParseArgs.hpp
+	$(CC) -o $@ $@.o $(OBJECTS) ParseArgs.o $(LDFLAGS)
 
 #####################################################################}}}
 # test programs {{{
