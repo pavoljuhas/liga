@@ -162,12 +162,12 @@ public:
 //    Molecule MateWith(const Molecule& Male, int trials = 500);
 //    double ABadnessAt(int nh, int nk) const;  // badness for new atom
 //    double MBadnessWith(const Molecule& M) const;   // badness for merging
-//    // IO functions
+    // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
-//    bool WriteGrid(const char*); 	// save integer grid coordinates
+    bool WriteGrid(const char*); 	// save integer grid coordinates
     bool ReadXY(const char*); 		// read real coordinates
-//    bool WriteXY(const char*); 		// save real coordinates
-//    bool WriteAtomEye(const char*);	// export in AtomEye format
+    bool WriteXY(const char*); 		// save real coordinates
+    bool WriteAtomEye(const char*);	// export in AtomEye format
     Molecule& OutFmtGrid();		// output format for operator>>
     Molecule& OutFmtXY();               // output format for operator>>
     Molecule& OutFmtAtomEye();          // output format for operator>>
@@ -177,15 +177,15 @@ public:
 //    void PrintFitness();		// total and per-atomic fitness
     void Recalculate(); 	// update everything
 private:
-//    // constructor helper
+    // constructor helper
     void init();
-//    // data storage
+    // data storage
     SandSphere *ss;
     list<Atom_t> atoms;			// list of all atoms
     list<Pair_t> pairs;			// list of all atom pairs
     mutable list<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
-//    // badness evaluation
+    // badness evaluation
     mutable int max_abad;		// maximum atom badness
     mutable int badness;		// molecular badness
 //public:
