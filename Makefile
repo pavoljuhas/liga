@@ -10,7 +10,7 @@
 # compiler flags and file lists:
 CC = g++
 ifdef FAST
-CPPFLAGS = -O6 -I/u24/local/include $(CFLAGS)
+CPPFLAGS = -O3 -I/u24/local/include $(CFLAGS)
 else
 CPPFLAGS = -gstabs+ -I/u24/local/include $(CFLAGS)
 endif
