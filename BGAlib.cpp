@@ -196,7 +196,7 @@ Pair_t::~Pair_t()
     if (fabs(owner->badness) < BGA::eps_badness)
 	owner->badness = 0.0;
     if (dUsed > 0.0)
-    owner->dTarget.return_back(dUsed);
+	owner->dTarget.return_back(dUsed);
 }
 
 
@@ -953,11 +953,6 @@ int Molecule::push_good_pyramids(
 
 Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 {
-    // debug:
-static int
-dist_gen = 0, dist_added = 0,
-tri_gen = 0, tri_added = 0,
-pyr_gen = 0, pyr_added = 0;
     if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: full-sized molecule cannot Evolve()" << endl;
@@ -972,11 +967,7 @@ pyr_gen = 0, pyr_added = 0;
 	    return *this;
 	case 1:
 	    double afit1 = 1.0;
-	    // debug:
-dist_gen+=
 	    push_good_distances(vta, &afit1, 1);
-dist_added++;
-
 	    Add(vta[0]);
 	    Center();
 	    return *this;
@@ -991,21 +982,9 @@ dist_added++;
     }
     // and push appropriate numbers of test atoms
     // here NAtoms() >= 2
-// debug: B
-int dist_n, tri_n, pyr_n = 0;
-vector<Atom_t> dist_vta, tri_vta, pyr_vta;
-dist_n =
     push_good_distances(vta, afit, ntd1);
-tri_n =
     push_good_triangles(vta, afit, ntd2);
-    if (NAtoms() > 2) 
-pyr_n =
-	push_good_pyramids(vta, afit, ntd3);
-dist_vta.insert(dist_vta.end(), vta.begin(), vta.begin()+dist_n);
-tri_vta.insert(tri_vta.end(), vta.begin()+dist_n, vta.begin()+dist_n+tri_n);
-pyr_vta.insert(pyr_vta.end(), vta.begin()+dist_n+tri_n, vta.end());
-dist_gen += dist_n; tri_gen += tri_n; pyr_gen += pyr_n;
-// debug: E
+    if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
     // select range from min_badness
     double min_badness = min_element(vta.begin(), vta.end(),
 	    comp_Atom_Badness) -> Badness();
@@ -1027,14 +1006,6 @@ dist_gen += dist_n; tri_gen += tri_n; pyr_gen += pyr_n;
 	    break;
 	int idx = gsl_rng_uniform_int(BGA::rng, vta.size());
 	Add(vta[idx]);
-// debug: B  count it
-if (find(dist_vta.begin(),dist_vta.end(), vta[idx])!=dist_vta.end())  dist_added++;
-if (find(tri_vta.begin(),tri_vta.end(), vta[idx])!=tri_vta.end())  tri_added++;
-if (find(pyr_vta.begin(),pyr_vta.end(), vta[idx])!=pyr_vta.end())  pyr_added++;
-cout << endl << "added " <<
-dist_added << '/' << dist_gen << " dist, " <<
-tri_added << '/' << tri_gen << " tri, " <<
-pyr_added << '/' << pyr_gen << " pyr." << endl;
 	if (NAtoms() == max_NAtoms())
 	    break;
 	vta.erase(vta.begin()+idx);
