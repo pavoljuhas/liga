@@ -419,6 +419,11 @@ int main(int argc, char *argv[])
 		PMOL looser_clone = new Molecule(*descending);
 		hi_div->push_back(looser_clone);
 	    }
+	    // clone winner if he made a good advance
+	    if (descending->Badness() > advancing->Badness())
+	    {
+		*descending = *advancing;
+	    }
 	    descending->Degenerate(hi_level-lo_level);
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
