@@ -84,12 +84,12 @@ public:
     int NDist;    		// length of distance table
     int NAtoms;   		// current number of atoms
     int MaxAtoms;		// target number of atoms
-    double ABadness(int);	// fitness of specified atom
-    double AFitness(int);	// badness of specified atom
-    double MBadness();		// total badness
-    double MFitness();		// total fitness
-    double dist(const int& i, const int& j);		// d(i,j)
-    inline int dist2(const int& i, const int& j)	// squared d(i,j)
+    double ABadness(int) const;	// fitness of specified atom
+    double AFitness(int) const;	// badness of specified atom
+    double MBadness() const;	// total badness
+    double MFitness() const;	// total fitness
+    double dist(const int& i, const int& j) const;	// d(i,j)
+    inline int dist2(const int& i, const int& j) const	// squared d(i,j)
     {
 	int dh = h[i] - h[j];
 	int dk = k[i] - k[j];
@@ -120,9 +120,9 @@ public:
     Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int trials = 300);	// Add 1 atom to the right place
     Molecule& Degenerate();	// Pop 1 atom with abad[i] probability
-    Molecule MateWith(Molecule& Male, int trials = 500);
-    double ABadnessAt(int nh, int nk);  // badness estimate for a new atom
-    double MBadnessWith(Molecule& M);	// badness estimate for merging
+    Molecule MateWith(const Molecule& Male, int trials = 500);
+    double ABadnessAt(int nh, int nk) const;  // badness for new atom
+    double MBadnessWith(const Molecule& M) const;   // badness for merging
     // IO functions
     bool ReadGrid(const char*); 	// read integer grid coordinates
     bool WriteGrid(const char*); 	// save integer grid coordinates
@@ -143,28 +143,28 @@ private:
     void init();
     // data storage
     SandSphere *ss;
-    vector<int> h;		// x-coordinates
-    vector<int> k;		// y-coordinates
+    vector<int> h;			// x-coordinates
+    vector<int> k;			// y-coordinates
     // badness evaluation
-    bool cached;
-    valarray<double> abad;	// individual atom badnesses
-    double abadMax;		// maximum atom badness
-    double mbad;		// molecular badness
-    valarray<int> d2;		// sorted table of squared distances 
-    double out_penalty(int nh, int nk);	// penalty for run-away atoms
+    mutable bool cached;
+    mutable valarray<double> abad;	// individual atom badnesses
+    mutable double abadMax;		// maximum atom badness
+    mutable double mbad;		// molecular badness
+    mutable valarray<int> d2;		// sorted table of squared distances 
+    double out_penalty(int nh, int nk) const;	// penalty for run-away atoms
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
-    list<int> ssdIdxFree;	// available elements in ss.dist
+    mutable list<int> ssdIdxFree;	// available elements in ss.dist
     // operator helper functions
     void fix_size();		// set all sizes consistently with h.size()
-    void calc_db();		// update distance and fitness tables
+    void calc_db() const;	// update distance and fitness tables
 public:
     struct badness_at;
 private:
     list<badness_at> find_good_distances(int trials, const list<int>& ssdIdx);
     list<badness_at> find_good_triangles(int trials, const list<int>& ssdIdx);
-    void subtract_out_penalty();
-    void add_out_penalty();
-    void set_mbad_abadMax();
+    void subtract_out_penalty() const;
+    void add_out_penalty() const;
+    void set_mbad_abadMax() const;
     // MateWith helpers:
     Molecule& Molecule::mount(Molecule& Male);
     // IO helpers

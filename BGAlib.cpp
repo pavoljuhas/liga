@@ -307,12 +307,12 @@ Molecule::~Molecule()
 // Molecule badness/fitness evaluation
 ////////////////////////////////////////////////////////////////////////
 
-double Molecule::dist(const int& i, const int& j)
+double Molecule::dist(const int& i, const int& j) const
 {
     return sqrt(1.0*dist2(i, j));
 }
 
-double Molecule::out_penalty(int nh, int nk)
+double Molecule::out_penalty(int nh, int nk) const
 {
     double Rout = sqrt(nh*nh + nk*nk + 0.0) - ss->gridmax;
     return (Rout > 0.0) ? Rout : 0.0;
@@ -332,26 +332,26 @@ namespace BGA_Molecule_calc_df
     }
 }
 
-void Molecule::subtract_out_penalty()
+void Molecule::subtract_out_penalty() const
 {
     for (int i = 0; cached && i < NAtoms; ++i)
 	abad[i] -= out_penalty(h[i], k[i]);
 }
 
-void Molecule::add_out_penalty()
+void Molecule::add_out_penalty() const
 {
     for (int i = 0; cached && i < NAtoms; ++i)
 	abad[i] += out_penalty(h[i], k[i]);
 }
 
-void Molecule::set_mbad_abadMax()
+void Molecule::set_mbad_abadMax() const
 {
     mbad = abad.sum();
     abadMax = (NAtoms > 0) ? max(abad.max(), (double) NAtoms) : 0.0;
 }
 
 // calculate all distances and atom/molecule badness 
-void Molecule::calc_db()
+void Molecule::calc_db() const
 {
     using namespace BGA_Molecule_calc_df;
     cached = true;
@@ -413,33 +413,33 @@ void Molecule::calc_db()
     set_mbad_abadMax();
 }
 
-double Molecule::ABadness(int i)
+double Molecule::ABadness(int i) const
 {
     if (!cached) calc_db();
     return abad[i];
 }
 
-double Molecule::AFitness(int i)
+double Molecule::AFitness(int i) const
 {
     // this will update abadMax if necessary
     double badness_i = ABadness(i);
     return abadMax - badness_i;
 }
 
-double Molecule::MBadness()
+double Molecule::MBadness() const
 {
     if (!cached) calc_db();
     return mbad;
 }
 
-double Molecule::MFitness()
+double Molecule::MFitness() const
 {
     // this will update abadMax if necessary
     double mbadness = MBadness();
     return NAtoms*abadMax - mbadness;
 }
 
-double Molecule::ABadnessAt(int nh, int nk)
+double Molecule::ABadnessAt(int nh, int nk) const
 {
     if (NAtoms == ss->NAtoms)
     {
@@ -478,7 +478,7 @@ double Molecule::ABadnessAt(int nh, int nk)
     return nbad;
 }
 
-double Molecule::MBadnessWith(Molecule& M)
+double Molecule::MBadnessWith(const Molecule& M) const
 {
     if (NAtoms+M.NAtoms > ss->NAtoms)
     {
@@ -860,11 +860,15 @@ Molecule& Molecule::Evolve(int trials)
 	    Add(0, 0);
 	    return *this;
 	case 1:
+	    // make sure ssdIdxFree is updated
+	    if (!cached) calc_db();
 	    list<badness_at> ba = find_good_distances(1, ssdIdxFree);
 	    Add(ba.front().h, ba.front().k);
 	    Center();
 	    return *this;
     }
+    // make sure ssdIdxFree is updated
+    if (!cached) calc_db();
     // here we can be sure that NAtoms >= 2
     list<badness_at> trials_log = find_good_distances(trials/3, ssdIdxFree);
     // if we did not find a good place, let's try triangulation
@@ -970,17 +974,14 @@ namespace BGA_Molecule_MateWith
 	}
 	return retlst;
     }
-}
 
-namespace BGA_Molecule_MateWith
-{
     bool compare_MFitness(Molecule& lhs, Molecule& rhs)
     {
 	return lhs.MFitness() < rhs.MFitness();
     }
 }
 
-Molecule Molecule::MateWith(Molecule& Male, int trials)
+Molecule Molecule::MateWith(const Molecule& Male, int trials)
 {
     using namespace BGA_Molecule_MateWith;
     if (NAtoms != Male.NAtoms)
@@ -1025,6 +1026,41 @@ Molecule Molecule::MateWith(Molecule& Male, int trials)
 
 Molecule& Molecule::mount(Molecule& sperm)
 {
+    if (NAtoms < sperm.NAtoms)
+    {
+	cerr << "E: sperm molecule is larger than egg" << endl;
+	throw InvalidMolecule();
+    }
+    // mounting is trivial for empty or 1-atom molecules
+    if (NAtoms == 0 || sperm.NAtoms ==0)
+    {
+	return *this;
+    }
+    else if (NAtoms == 1)
+    {
+	// here sperm.NAtoms must be equal 1
+	// make sure ssdIdxFree is updated
+	if (!cached) calc_db();
+	list<badness_at> ba = find_good_distances(1, ssdIdxFree);
+	Add(ba.front().h, ba.front().k);
+	Center();
+	return *this;
+    }
+    // here we can be sure that NAtoms >= 2, sperm.NAtoms >= 1
+    // make sure ssdIdxFree is updated for egg and sperm
+    if (!cached) calc_db();
+    if (!sperm.cached) sperm.calc_db();
+    // build a list of common distance indices ssdIdxFree
+    list<int> IdxFree;
+    for (list<int>::iterator
+	    eidx = ssdIdxFree.begin(), sidx = sperm.ssdIdxFree.begin();
+	    eidx != ssdIdxFree.end(); ++eidx)
+    {
+	for (; sidx != sperm.ssdIdxFree.end() && *sidx < *eidx; ++sidx) { }
+	// no more common distances if sidx was used
+	if (sidx == sperm.ssdIdxFree.end())  break;
+	else if (*sidx == *eidx)  IdxFree.push_back(*eidx);
+    }
 }
 
 
