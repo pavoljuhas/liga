@@ -57,7 +57,8 @@ do
 	    )
 	) || break
     print "#bm $UT\n"
-    results=( $results ${df:t} $UT )
+    float -F3 AVGT=$(( ${UT%s} / REPEATS ))
+    results=( $results ${df:t} $AVGT )
 done
 
 print
