@@ -15,6 +15,7 @@ int main()
     // square distance table
     double pdSquare[6] = {1.0, 1.0, 1.4142, 1.4142, 1.0, 1.0};
     SandSphere ssSquare(100, 6, pdSquare);
+    ssSquare.SetGridTol(1.1);
 
     // build correct square molecule
     double px1[4] = {-.5,  .5,  .5, -.5};
