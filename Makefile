@@ -8,7 +8,7 @@
 
 ########################################################################
 # compiler flags and file lists:
-CC = g++
+CXX = g++
 ifdef FAST
 # FAST version runs about 2 times faster
 CPPFLAGS = -O3 -ffast-math -I/u24/local/include $(CFLAGS)
@@ -37,10 +37,10 @@ lib_objects: $(OBJECTS)
 	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
 
 djoser: djoser.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 gizaliga: gizaliga.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 #####################################################################}}}
 # test programs {{{
@@ -48,55 +48,55 @@ gizaliga: gizaliga.o $(OBJECTS) $(HEADERS)
 tests: $(TESTS)
 
 ssTest01: ssTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest01: molTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest02: molTest02.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest03: molTest03.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest04: molTest04.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest05: molTest05.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest06: molTest06.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest07: molTest07.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest08: molTest08.o BGAlib.o BGAutils.o $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 molTest09: molTest09.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 #
 # molTest10: molTest10.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+# 	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 popTest01: popTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 # popTest02: popTest02.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+# 	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 #
 # popTest03: popTest03.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+# 	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 libTest01: libTest01.o $(OBJECTS) $(HEADERS)
-	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 # libTest02: libTest02.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+# 	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 #
 # libTest03: libTest03.o $(OBJECTS) $(HEADERS)
-# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+# 	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
 #####################################################################}}}
 # utility targets {{{
