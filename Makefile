@@ -70,6 +70,15 @@ molTest05: molTest05.o $(OBJECTS) $(HEADERS)
 # molTest10: molTest10.o $(OBJECTS) $(HEADERS)
 # 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
 
+popTest01: popTest01.o $(OBJECTS) $(HEADERS)
+	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+
+# popTest02: popTest02.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+# 
+# popTest03: popTest03.o $(OBJECTS) $(HEADERS)
+# 	$(CC) -o $@ $@.o $(OBJECTS) $(LDFLAGS) 
+
 #####################################################################}}}
 # utility targets {{{
 tags:	$(SOURCES) $(HEADERS) $(PROGRAMS:%=%.cpp)
