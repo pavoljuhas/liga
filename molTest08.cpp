@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
     const double pemax = 0.9;
     const double pallway = 0.01;
     const double avgmb = 0.05;
+    BGA::tol_dist = 0.25;
     ////////////////////////////////////////////////////////////////////////
     if (argc == 1)
     {
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 	else
 	{
 	    int Npop = 0;
-	    Npop = (int) ceil(1.0*mol.Badness() / mol.NAtoms());
+	    Npop = (int) ceil(mol.Badness());
 	    Npop = min(Npop, 5);
 	    if (Npop > 1)
 		Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop-1);
