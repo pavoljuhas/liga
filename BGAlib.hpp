@@ -212,7 +212,6 @@ class Molecule::ParseHeader
 public:
     ParseHeader(const string& s);
     int NAtoms;
-    double delta;
     file_fmt_type format;
     operator bool() {return state;}
 private:
