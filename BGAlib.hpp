@@ -120,13 +120,13 @@ public:
     Pair_t(const Pair_t& pair0);
     Pair_t& operator=(const Pair_t&);
     //
-    Atom_t *atom1, *atom2;
-    mutable int d2;
+    mutable double d2;
     mutable double d;
+    Atom_t *atom1, *atom2;
 private:
     Molecule *owner;
-    int ssdIdxUsed;
-    int badness;
+    double dUsed;
+    double badness;
 };
 
 // Molecule in 2 dimensions

@@ -289,23 +289,18 @@ Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
     owner(pM), atom1(&a1), atom2(&a2)
 {
     d2 = dist2(*atom1, *atom2);
-    d = sqrt(1.0*d2);
+    d = sqrt(d2);
     badness = 0;
+// pj:remove 4 lines
     if (d < BGA::min_distance/owner->ss->delta)
     {
 	badness += BGA::min_distance_penalty;
     }
-    vector<int>::iterator inear = owner->find_nearest_distance(d);
-    if ((d2 < owner->ss->d2lo[*inear]) || (d2 > owner->ss->d2hi[*inear]))
-    {
-	ssdIdxUsed = -1;
-	badness++;
-    }
-    else
-    {
-	ssdIdxUsed = *inear;
-	owner->ssdIdxFree.erase(inear);
-    }
+// pj: to here
+    vector<double>::iterator dit = owner->dTarget.find_nearest(d);
+    dUsed = *dit;
+    badness += pow(d-dUsed, 2);
+    owner->dTarget.erase(dit);
     atom1->IncBadness(badness);
     atom2->IncBadness(badness);
     owner->badness += 2*badness;
@@ -328,14 +323,7 @@ Pair_t::~Pair_t()
     atom1->DecBadness(badness);
     atom2->DecBadness(badness);
     owner->badness -= 2*badness;
-    if (ssdIdxUsed >= 0)
-    {
-	// return it back to owner->ssdIdxFree
-	vector<int>::iterator ii;
-	ii = lower_bound( owner->ssdIdxFree.begin(), owner->ssdIdxFree.end(),
-		ssdIdxUsed );
-	owner->ssdIdxFree.insert(ii, ssdIdxUsed);
-    }
+    owner->dTarget.return_back(dUsed);
 }
 
 
