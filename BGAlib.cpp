@@ -449,7 +449,7 @@ double Molecule::Badness() const
 
 double Molecule::NormBadness() const
 {
-    return Badness()/NDist();
+    return NDist() == 0 ? 0.0 : Badness()/NDist();
 }
 
 bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
