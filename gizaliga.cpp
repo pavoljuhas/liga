@@ -41,13 +41,14 @@ void print_help(ParseArgs& a)
 "  outstru=FILE          where to save the best full molecule\n"
 "  inistru=FILE          initial structure [empty box]\n"
 "  snapshot=FILE         live molecule structure\n"
-"  snaprate=int          [100] number of iterations between snapshot updates\n"
+"  snaprate=int          [10] number of iterations between snapshot updates\n"
 "  frames=FILE           save intermediate structures to FILE.liga_round\n"
-"  framesrate=int        [100] number of iterations between frame saves\n"
+"  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
+"  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.025] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
@@ -71,6 +72,7 @@ struct RunPar_t
     double tol_dd;
     double tol_bad;
     int seed;
+    double evolve_frac;
     int ligasize;
     double stopgame;
     string penalty;
@@ -263,14 +265,14 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     {
         rp.snapshot = a.pars["snapshot"];
         cout << "snapshot=" << rp.snapshot << endl;
-        rp.snaprate = a.GetPar<int>("snaprate", 100);
+        rp.snaprate = a.GetPar<int>("snaprate", 10);
         cout << "snaprate=" << rp.snaprate << endl;
     }
     if (a.ispar("frames"))
     {
         rp.frames = a.pars["frames"];
         cout << "frames=" << rp.frames << endl;
-        rp.framesrate = a.GetPar<int>("framesrate", 100);
+        rp.framesrate = a.GetPar<int>("framesrate", 10);
         cout << "framesrate=" << rp.framesrate << endl;
     }
     // Walk parameters
@@ -279,12 +281,16 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     mol.tol_dd = rp.tol_dd;
     rp.tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
     cout << "tol_bad=" << rp.tol_bad << endl;
+    mol.tol_nbad = rp.tol_bad;
     rp.seed = a.GetPar<int>("seed", 0);
     if (rp.seed)
     {
         gsl_rng_set(BGA::rng, rp.seed);
         cout << "seed=" << rp.seed << endl;
     }
+    rp.evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
+    cout << "evolve_frac=" << rp.evolve_frac << endl;
+    mol.evolve_frac = rp.evolve_frac;
     rp.ligasize = a.GetPar<int>("ligasize", 10);
     cout << "ligasize=" << rp.ligasize << endl;
     rp.stopgame = a.GetPar<double>("stopgame", 0.0025);
