@@ -60,3 +60,7 @@ gizaliga-1      1.8         1.148       2005-03-02
 gizaliga-1a     1.11        1.148       2005-03-02
     when evolved winner is better than looser, he will be cloned
     to descing looser
+
+gizaliga-1b:    1.14        1.148       2005-03-02
+    higher divisions are not initialized,
+    default value of stopgame changed to 0.1
