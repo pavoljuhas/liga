@@ -132,16 +132,16 @@ class Molecule
 {
 public:
     // constructors
-    Molecule(SandSphere *SS);
-    Molecule(SandSphere *SS, const int s, const int *ph, const int *pk,
-	    const int *pl);
-    Molecule(SandSphere *SS, const vector<int>& vh, const vector<int>& vk,
-	    const vector<int>& vl);
-    Molecule(SandSphere *SS, const int s, const double *px, const double *py,
-	    const double *pz);
-    Molecule(SandSphere *SS,
-	    const vector<double>& vx, const vector<double>& vy,
-	    const vector<double>& vz);
+    Molecule(const DistanceTable&);
+    // pj: remove these 2 constructors
+    Molecule(const DistanceTable&, const int s,
+	    const int *ph, const int *pk, const int *pl);
+    Molecule(const DistanceTable&, const vector<int>& vh,
+	    const vector<int>& vk, const vector<int>& vl);
+    Molecule(const DistanceTable&, const int s, const double *px,
+	    const double *py, const double *pz);
+    Molecule(const DistanceTable&, const vector<double>& vx,
+	    const vector<double>& vy, const vector<double>& vz);
     Molecule(const Molecule& M);		// copy constructor
     Molecule& operator=(const Molecule&);	// assignment
     ~Molecule();		// destructor
@@ -203,10 +203,13 @@ private:
     // constructor helper
     void init();
     // data storage
+    DistanceTable dFree;
+    //pj:remove ss
     SandSphere *ss;
     // atoms must precede pairs
     list<Atom_t> atoms;			// list of all atoms
     list<Pair_t*> pairs;		// list of all atom Pair_t objects
+    //pj: remove ssdIdxFree
     mutable vector<int> ssdIdxFree;	// available elements in ss.dist
     friend class Pair_t;
     mutable int max_NAtoms;		// target number of atoms
