@@ -395,6 +395,16 @@ DistanceTable& DistanceTable::operator= (const vector<double>& v)
     init();
 }
 
+vector<double>::iterator DistanceTable::find_nearest(const double& dfind)
+{
+    iterator ii = lower_bound(begin(), end(), dfind);
+    if (    ( ii == end() && size() != 0 ) ||
+	    ( ii != begin() && (dfind - *(ii-1)) < (*ii - dfind) )
+       )
+	--ii;
+    return ii;
+}
+
 void DistanceTable::init()
 {
     sort(begin(), end());
