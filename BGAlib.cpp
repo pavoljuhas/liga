@@ -421,6 +421,8 @@ void Molecule::Recalculate()
     }
 }
 
+//void Molecule::ReassignPairs()
+
 double Molecule::Badness() const
 {
     return badness;
@@ -1274,11 +1276,13 @@ bool Molecule::ReadXYZ(const char* file)
 bool write_file(const char* file, Molecule& M)
 {
     // test if file is writeable
-    ofstream fid(file, ios_base::out|ios_base::app );
+    ofstream fid(file, ios_base::out|ios_base::ate );
     if (!fid)
     {
-	cerr << "E: unable to write to '" << file << "'" << endl;
-	throw IOError();
+	ostringstream oss;
+	oss << "write_file(): unable to write to '" << file << "'";
+	cerr << oss.str() << endl;
+	throw IOError(oss.str());
     }
     fid.close();
     // write via temporary file
@@ -1287,10 +1291,7 @@ bool write_file(const char* file, Molecule& M)
     strcpy(writefile, file);
     memset(writefile+filelen, 'X', 6);
     writefile[filelen+6] = '\0';
-    // mkstemp returns sets a unique name, but file descriptor
-    // cannot be used
-    close(mkstemp(writefile));
-    fid.open(writefile);
+    mktempofstream(fid, writefile);
     bool result = (fid << M);
     fid.close();
     rename(writefile, file);
