@@ -55,7 +55,7 @@ void print_help(ParseArgs& a)
 "  bustprob=double       [0.01] probability of forced full structure built\n"
 "  buststop=double       [10.0] stop busting when (bad/tod_bad)>buststop\n"
 "  evolve_jump=bool      [true] allow additions of several atoms\n"
-"  evolve_frac=double    [1E-4] selection badness threshold of tested atoms\n"
+"  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
 "  pop_max=int           [5] maximum number of removed atoms\n"
 "  pop_rand=bool         [false] randomize number of removed atoms\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
@@ -213,6 +213,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     mol.tol_dd = rp.tol_dd;
     rp.tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
     cout << "tol_bad=" << rp.tol_bad << endl;
+    mol.tol_nbad = rp.tol_bad;
     rp.seed = a.GetPar<int>("seed", 0);
     if (rp.seed)
     {
@@ -232,7 +233,7 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     rp.evolve_jump = a.GetPar<bool>("evolve_jump", true);
     cout << "evolve_jump=" << rp.evolve_jump << endl;
     mol.evolve_jump = rp.evolve_jump;
-    rp.evolve_frac = a.GetPar<double>("evolve_frac", 1.0e-4);
+    rp.evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
     cout << "evolve_frac=" << rp.evolve_frac << endl;
     mol.evolve_frac = rp.evolve_frac;
     rp.pop_max = a.GetPar<int>("pop_max", 5);
