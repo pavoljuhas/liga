@@ -84,11 +84,14 @@ public:
     Molecule& Add(int nh, int nk);	// add single atom
     Molecule& MoveAtom(int idx, int nh, int nk);	// move 1 atom
     // IO functions
-    bool Read(const char*); 		// read integer grid coordinates
-    bool Write(const char*); 		// save integer grid coordinates
+    bool ReadGrid(const char*); 	// read integer grid coordinates
+    bool WriteGrid(const char*); 	// save integer grid coordinates
     bool ReadXY(const char*); 		// read real coordinates
     bool WriteXY(const char*); 		// save real coordinates
     bool WriteAeye(const char*);	// export in AtomEye format
+    Molecule& OutFmtGrid();		// output format for operator>>
+    Molecule& OutFmtXY();               // output format for operator>>
+    Molecule& OutFmtAeye();             // output format for operator>>
     // public utility functions
     inline void UnCache() { cached = false; }
     ~Molecule();		// destructor
@@ -97,18 +100,23 @@ private:
     SandSphere *ss;
     vector<int> h;		// x-coordinates
     vector<int> k;		// y-coordinates
+    // badness evaluation
     bool cached;
     valarray<double> abad;	// individual atom badnesses
     double abadMax;		// maximum atom badness
     double mbad;		// molecular badness
     valarray<int> d2;		// sorted table of squared distances 
+    double out_penalty(int i);	// penalty for being outside SandSphere
 //    vector<int> ssdIdxUsed;	// used elements from ss.dist
     list<int> ssdIdxFree;	// available elements in ss.dist
     // helper functions
     void init();		// constructor helper
     void fix_size();		// set all sizes consistently with h.size()
     void calc_df();		// update distance and fitness tables
-    double out_penalty(int i);	// penalty for being outside SandSphere
+    // IO helpers
+    enum out_fmt_type {GRID = 1, XY, AEYE};
+    out_fmt_type output_format;
+    friend ostream& operator<<(ostream& os, Molecule& M);
 };
 
 #endif
