@@ -41,12 +41,13 @@ class Molecule;
 class DistanceTable : public vector<double>
 {
 public:
-    DistanceTable() : vector<double>();
-    DistanceTable(const double*, size_t) : vector<double>();
-    DistanceTable(const char* file) : vector<double>();
+    DistanceTable();
+    DistanceTable(const double*, size_t);
     template <class InputIterator>
-	DistanceTable(InputIterator first, InputIterator last) :
-	    vector<double>(first, last) { init(); }
+	DistanceTable(InputIterator first, InputIterator last);
+    DistanceTable(const char* file);
+    DistanceTable(const vector<double>& v);
+    DistanceTable& operator= (const vector<double>& v);
 private:
     void init();
 };
