@@ -152,8 +152,8 @@ bool comp_find_in_array(const int& lhs, const pair<double,double*>& rhs)
     return a[lhs] < value;
 }
 
-Pair_t::Pair_t(Molecule *pM, Atom_t& a1, Atom_t& a2) :
-    owner(pM), atom1(&a1), atom2(&a2)
+Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
+    owner(pM), atom1(a1), atom2(a2)
 {
     d2 = dist2(*atom1, *atom2);
     d = sqrt(d2);
@@ -347,10 +347,10 @@ Molecule& Molecule::operator=(const Molecule& M)
     atoms = M.atoms;
     // restore dTarget to the original state
     dTarget = M.dTarget;
-    typedef list<Pair_t*>::const_iterator LPPcit;
-    for (LPPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
+    typedef map<OrderedPair<Atom_t*>,Pair_t*>::const_iterator MAPcit;
+    for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
     {
-	dTarget.push_back((*ii)->dUsed);
+	dTarget.push_back(ii->second->dUsed);
     }
     sort(dTarget.begin(), dTarget.end());
     // and calculate everything from scratch
@@ -388,10 +388,10 @@ void Molecule::Recalculate()
 	throw InvalidMolecule();
     }
     // destroy all pairs
-    typedef list<Pair_t*>::iterator LPPit;
-    for (LPPit ii = pairs.begin(); ii != pairs.end(); ++ii)
+    typedef map<OrderedPair<Atom_t*>,Pair_t*>::iterator MAPit;
+    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii)
     {
-	delete *ii;
+	delete ii->second;
     }
     pairs.clear();
     // molecule parameters
@@ -408,7 +408,8 @@ void Molecule::Recalculate()
 	LAit aj = ai;
 	for (++aj; aj != atoms.end(); ++aj)
 	{
-	    pairs.push_back(new Pair_t(this, *ai, *aj));
+	    OrderedPair<Atom_t*> key(&(*ai), &(*aj));
+	    pairs[key] = new Pair_t(this, &(*ai), &(*aj));
 	}
     }
 }
@@ -577,25 +578,19 @@ Molecule& Molecule::Center()
 //    return *this;
 //}
 
-Molecule& Molecule::Pop(list<Atom_t>::iterator ai)
+Molecule& Molecule::Pop(list<Atom_t>::iterator api)
 {
-    // delete all pairs that refer to *ai
-    Atom_t *ap = &(*ai);
-    typedef list<Pair_t*>::iterator LPPit;
-    for (LPPit ii = pairs.begin(); ii != pairs.end(); )
+    // delete all pairs containing *api
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ii = atoms.begin(); ii != atoms.end(); ++ii)
     {
-	Pair_t* pp = *ii;
-	if (pp->atom1 == ap || pp->atom2 == ap)
-	{
-	    delete *ii;
-	    ii = pairs.erase(ii);
-	}
-	else
-	{
-	    ++ii;
-	}
+	if (ii == api)  continue;
+	OrderedPair<Atom_t*> key(&(*ii), &(*api));
+	Pair_t *pp = pairs[key];
+	delete pp;
+	pairs.erase(key);
     }
-    atoms.erase(ai);
+    atoms.erase(api);
     // uncache max atom badness
     max_abad = -1;
     return *this;
@@ -639,10 +634,10 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 Molecule& Molecule::Clear()
 {
     // pairs must be destroyed before atoms;
-    typedef list<Pair_t*>::iterator LPPit;
-    for (LPPit ii = pairs.begin(); ii != pairs.end(); ++ii)
+    typedef map<OrderedPair<Atom_t*>,Pair_t*>::iterator MAPit;
+    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii)
     {
-	delete *ii;
+	delete ii->second;
     }
     pairs.clear();
     atoms.clear();
@@ -683,7 +678,8 @@ Molecule& Molecule::Add(Atom_t atom)
     for (ai = atoms.begin(); ai != atoms.end(); ++ai)
     {
 	if (ai == this_atom)  continue;
-	pairs.push_back(new Pair_t(this, *ai, *this_atom));
+	OrderedPair<Atom_t*> key(&(*ai), &(*this_atom));
+	pairs[key] = new Pair_t(this, &(*ai), &(*this_atom));
     }
     return *this;
 }
