@@ -1723,41 +1723,45 @@ ostream& operator<<(ostream& fid, Molecule& M)
     return fid;
 }
 
-//void Molecule::PrintBadness()
-//{
-//    // call to MBadness() will update abadMax if necessary
-//    cout << "MBadness() = " << MBadness() << endl;
-//    cout << "ABadness() =";
-//    double mx = (NAtoms > 0) ? abad.max() : 0.0;
-//    for (int i = 0; i < NAtoms; ++i)
-//    {
-//	cout << ' ' << ABadness(i);
-//	if (ABadness(i) == mx)
-//	{
-//	    cout << '*';
-//	    mx += 1.0;
-//	}
-//    }
-//    cout << endl;
-//}
-//
-//void Molecule::PrintFitness()
-//{
-//    cout << "MFitness() = " << MFitness() << endl;
-//    cout << "AFitness() =";
-//    double mx = (NAtoms > 0) ? abad.max() : 0.0;
-//    for (int i = 0; i < NAtoms; ++i)
-//    {
-//	cout << ' ' << AFitness(i);
-//	if (ABadness(i) == mx)
-//	{
-//	    cout << '*';
-//	    mx += 1.0;
-//	}
-//    }
-//    cout << endl;
-//}
-//
+void Molecule::PrintBadness()
+{
+    // call to MBadness() will update abadMax if necessary
+    cout << "MBadness() = " << Badness() << endl;
+    cout << "ABadness() =";
+    double mab = MaxABadness();
+    bool marked = false;
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	cout << ' ' << ai->Badness();
+	if (!marked && ai->Badness() == mab)
+	{
+	    cout << '*';
+	    marked = true;
+	}
+    }
+    cout << endl;
+}
+
+void Molecule::PrintFitness()
+{
+    cout << "MFitness() = " << Fitness() << endl;
+    cout << "AFitness() =";
+    double mab = MaxABadness();
+    bool marked = false;
+    typedef list<Atom_t>::iterator LAit;
+    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+	cout << ' ' << mab - ai->Badness();
+	if (!marked && ai->Badness() == mab)
+	{
+	    cout << '*';
+	    marked = true;
+	}
+    }
+    cout << endl;
+}
+
 //////////////////////////////////////////////////////////////////////////
 //// Population definitions
 //////////////////////////////////////////////////////////////////////////

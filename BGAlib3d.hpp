@@ -173,8 +173,8 @@ public:
     Molecule& OutFmtAtomEye();          // output format for operator>>
     friend ostream& operator<<(ostream& os, Molecule& M);
     friend istream& operator>>(istream& is, Molecule& M);
-//    void PrintBadness();		// total and per-atomic badness
-//    void PrintFitness();		// total and per-atomic fitness
+    void PrintBadness();		// total and per-atomic badness
+    void PrintFitness();		// total and per-atomic fitness
     void Recalculate(); 	// update everything
 private:
     // constructor helper
