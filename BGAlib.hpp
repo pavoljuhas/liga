@@ -102,6 +102,7 @@ private:
     list<int> ssdIdxFree;	// available elements in ss.dist
     // helper functions
     void init();		// constructor helper
+    void fixsize();		// set all sizes consistently with h.size()
     void calc_df();		// update distance and fitness tables
 };
 
@@ -211,6 +212,9 @@ private:
 * Here is what people have been up to:
 *
 * $Log$
+* Revision 1.9  2005/01/26 05:37:33  juhas
+* Molecule resize operations grouped to fixsize()
+*
 * Revision 1.8  2005/01/25 23:19:11  juhas
 * added functions for dealing with GridTol,
 * SandSphere keeps the list of molecules using the same grid
