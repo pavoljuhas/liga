@@ -142,9 +142,12 @@ public:
     Molecule(const Molecule& M);		// copy constructor
     Molecule& operator=(const Molecule&);	// assignment
     ~Molecule();		// destructor
-    // parameters
-//    int ABadness(int) const;	// fitness of specified atom
-//    int AFitness(int) const;	// badness of specified atom
+    // data access
+    // fitness/badness functions
+    double ABadness(int i) const;
+    double ABadness(list<Atom_t>::iterator) const;
+    double AFitness(int i) const;
+    double AFitness(list<Atom_t>::iterator) const;
     double Badness() const;	// total badness
     double Fitness() const;	// total fitness
     double MaxABadness() const;	// total fitness
