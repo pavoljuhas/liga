@@ -24,7 +24,7 @@ OBJECTS = $(SOURCES:%.cpp=%.o)
 # most common targets:
 all:	 	BGAlib.o
 # all:	 	$(PROGRAMS)
-# all:	 	test
+# all:	 	tests
 lib_objects: $(OBJECTS)
 
 ########################################################################
@@ -35,13 +35,40 @@ lib_objects: $(OBJECTS)
 #####################################################################}}}
 # test programs {{{
 
-test: $(TESTS)
+tests: $(TESTS)
 
-ssTest%: ssTest%.o $(OBJECTS)
+ssTest01: ssTest01.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
 
-molTest%: molTest%.o $(OBJECTS)
+molTest01: molTest01.o $(OBJECTS)
 	$(CC) -o $@ $^ $(LDFLAGS) 
+
+molTest02: molTest02.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+molTest03: molTest03.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+molTest04: molTest04.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+molTest05: molTest05.o $(OBJECTS)
+	$(CC) -o $@ $^ $(LDFLAGS) 
+
+# molTest06: molTest06.o $(OBJECTS)
+# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# 
+# molTest07: molTest07.o $(OBJECTS)
+# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# 
+# molTest08: molTest08.o $(OBJECTS)
+# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# 
+# molTest09: molTest09.o $(OBJECTS)
+# 	$(CC) -o $@ $^ $(LDFLAGS) 
+# 
+# molTest10: molTest10.o $(OBJECTS)
+# 	$(CC) -o $@ $^ $(LDFLAGS) 
 
 #####################################################################}}}
 # utility targets {{{
@@ -51,10 +78,7 @@ tags:	$(SOURCES) $(HEADERS) $(PROGRAMS:%=%.cpp)
 clean:
 	rm -f $(PROGRAMS) $(OBJECTS) $(PROGRAMS:%=%.o) \
 	    a.out \
-	    ssTest*.o \
-	    molTest*.o \
-	    ssTest[0-9][0-9] \
-	    molTest[0-9][0-9] \
+	    $(TESTS) $(TESTS:%=%.o) \
 	    core.[1-9]*
 
 list:
