@@ -1,4 +1,30 @@
+#include <iostream>
+#include <iomanip>
+#include <unistd.h>
+#include <sys/times.h>
 #include "BGAutils.hpp"
+
+void Counters_t::PrintCounters()
+{
+    cout << "Counters:" << endl;
+    cout << "  penalty_calls = " << penalty_calls << endl;
+    cout << "  distance_calls = " << penalty_calls << endl;
+    void Dump();
+}
+
+void Counters_t::PrintCPUtime()
+{
+    tms tbuf;
+    times(&tbuf);
+    clock_t clk_tck = sysconf(_SC_CLK_TCK);
+    double cputime = 1.0*tbuf.tms_utime/clk_tck;
+    char hostname[255];
+    gethostname(hostname, 255);
+    cout << "UserCPUtime = " << cputime << "s  on " << hostname << endl;
+}
+
+// define global instance of Counters_t
+namespace BGA { Counters_t cnt; }
 
 double vdnorm(const valarray<double>& v)
 {
