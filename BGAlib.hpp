@@ -24,8 +24,7 @@
 namespace BGA
 {
     extern gsl_rng* rng;
-    extern double tol_deltad;
-    const double eps_badness = 1.0e-10;
+    extern double eps_badness;
 };
 
 // exceptions
@@ -126,7 +125,8 @@ public:
     Molecule(const Molecule& M);		// copy constructor
     Molecule& operator=(const Molecule&);	// assignment
     ~Molecule();		// destructor
-    // data access
+    // fit parameters
+    static double tol_deltad;
     // fitness/badness functions
     double AFitness(const Atom_t&) const;
     double Badness() const;	// total badness
