@@ -257,7 +257,7 @@ void evolve_or_degenerate(Molecule& mol, RunPar_t& rp, double pe)
 	    Npop = (int) ceil( mol.NAtoms()/4.0 *
 		    (1.0 - rp.tol_bad/mol.NormBadness()) );
 	    //		would this help?
-	    Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop);
+//	    Npop = 1 + gsl_rng_uniform_int(BGA::rng, Npop);
 	}
 	mol.Degenerate(Npop);
 	cout << " D " << mol.NAtoms() << " " << mol.NormBadness();
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
     valarray<int> improved(1, rp.logsize);
     bool bust_now = false;
 
-    for (int iteration = 0; ; ++iteration)
+    for (int iteration = 1; ; ++iteration)
     {
 	// calculate probability of evolution
 	double impr_rate = 1.0*improved.sum()/rp.logsize;
