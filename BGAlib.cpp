@@ -25,6 +25,38 @@ struct InvalidDistanceTable { };
 struct InvalidMolecule { };
 struct IOError { };
 
+// read vector from stream after skipping header lines
+template<class T> istream& read_header(istream& fid, vector<T>& v)
+{
+    // prepare v
+    v.clear();
+    // ignore header lines up to the first number:
+    string line;
+    istringstream istrs;
+    T x;
+    while (!fid.eof() && getline(fid, line))
+    {
+	istrs.clear();
+	istrs.str(line);
+	if (! (istrs >> x) )
+	{
+	    continue;
+	}
+	else
+	{
+	    do {
+		v.push_back(x);
+	    } while (istrs >> x);
+	}
+    }
+    // read the rest of the file
+    while (fid >> x)
+    {
+	v.push_back(x);
+    }
+    return fid;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // SandSphere definitions
 ////////////////////////////////////////////////////////////////////////
@@ -48,34 +80,12 @@ SandSphere::SandSphere(int GridMax, const char *file) :
     // open file for reading
     ifstream fid(file);
     if (!fid) {
-	cerr << "E: unable to open `" << file << "'\n";
+	cerr << "E: unable to read `" << file << "'\n";
 	throw IOError();
     }
+    // read values to vt
     vector<double> vt;
-    // ignore header lines up to the first number:
-    string line;
-    istringstream istrs;
-    double x;
-    while (!fid.eof() && getline(fid, line))
-    {
-	istrs.clear();
-	istrs.str(line);
-	if (! (istrs >> x) )
-	{
-	    continue;
-	}
-	else
-	{
-	    do {
-		vt.push_back(x);
-	    } while (istrs >> x);
-	}
-    }
-    // read the rest of the file
-    while (fid >> x)
-    {
-	vt.push_back(x);
-    }
+    read_header(fid, vt);
     // check if everything was read
     if (!fid.eof())
     {
@@ -440,6 +450,14 @@ Molecule& Molecule::Pop(const int cidx)
     return *this;
 }
 
+Molecule& Molecule::Clear()
+{
+    h.clear();
+    k.clear();
+    fix_size();
+    return *this;
+}
+
 Molecule& Molecule::Add(Molecule& m)
 {
     for (int i = 0; i < m.NAtoms; ++i)
@@ -471,59 +489,146 @@ Molecule& Molecule::MoveAtom(int idx, int nh, int nk)
     return *this;
 }
 
+////////////////////////////////////////////////////////////////////////
+// Molecule IO functions
+////////////////////////////////////////////////////////////////////////
 
-/***********************************************************************
-* Here is what people have been up to:
-*
-* $Log$
-* Revision 1.13  2005/01/26 16:45:06  juhas
-* defined Molecule member functions Add(Molecule& m), Add(int nh, int nk),
-*     MoveAtom(int idx, int nh, int nk)
-*
-* Revision 1.12  2005/01/26 15:53:08  juhas
-* Molecule::fixsize() renamed to fix_size()
-* MBadness cached in double Molecule.mbad
-* added Molecule::out_penalty()
-*
-* Revision 1.11  2005/01/26 05:41:01  juhas
-* added Molecule operations: Shift(int dx, int dy), Center(),
-*     Part(list<int>), Pop(list<int>), Pop(int)
-* Molecule resize operations grouped to fixsize()
-*
-* Revision 1.10  2005/01/25 23:19:11  juhas
-* added functions for dealing with GridTol,
-* SandSphere keeps the list of molecules using the same grid
-*
-* Revision 1.9  2005/01/25 20:12:29  juhas
-* fixed evaluation of d2lo, d2hi, abadMax
-*
-* Revision 1.8  2005/01/25 17:23:24  juhas
-* added Molecule constructors from real coordinates
-*
-* Revision 1.7  2005/01/25 16:42:33  juhas
-* *** empty log message ***
-*
-* Revision 1.6  2005/01/25 16:23:07  juhas
-* simplified comparison function d2idx_cmp
-*
-* Revision 1.5  2005/01/25 16:16:19  juhas
-* BGAlib.h renamed to BGAlib.hpp
-*
-* Revision 1.4  2005/01/25 04:46:39  juhas
-* added penalty for atoms outside SandSphere
-*
-* Revision 1.3  2005/01/25 04:38:15  juhas
-* afit renamed to abad, afitMax renamed to abadMax
-* added Molecule definitions for
-*     calc_df(),  ABadness(),  AFitness(),  MBadness(),
-*     MFitness(),  dist(),  dist2()
-*
-* Revision 1.2  2005/01/19 21:19:38  juhas
-* init_dist() renamed to init()
-* list "dist" renamed to "d"
-* added a couple of Molecule definitions
-*
-* Revision 1.1.1.1  2005/01/18 23:24:36  juhas
-* BGA - Biosphere Genetic Algorithm
-*
-***********************************************************************/
+bool Molecule::Read(const char* file)
+{
+    // open file for reading
+    ifstream fid(file);
+    if (!fid) {
+	cerr << "E: unable to read `" << file << "'\n";
+	throw IOError();
+    }
+    // read values to integer vector vhk
+    vector<int> vhk;
+    bool result = read_header(fid, vhk);
+    fid.close();
+    // check how many numbers were read
+    if ( vhk.size() % 2 )
+    {
+	cerr << "E: " << file << ": incomplete data\n";
+	throw IOError();
+    }
+    Clear();
+    h.resize(vhk.size()/2);
+    k.resize(vhk.size()/2);
+    for (int i = 0, iv = 0; i < vhk.size()/2; ++i)
+    {
+	h[i] = vhk[iv++];
+	k[i] = vhk[iv++];
+    }
+    fix_size();
+    return result;
+}
+
+bool Molecule::ReadXY(const char* file)
+{
+    // open file for reading
+    ifstream fid(file);
+    if (!fid) {
+	cerr << "E: unable to read `" << file << "'\n";
+	throw IOError();
+    }
+    // read values to integer vector vxy
+    vector<double> vxy;
+    bool result = read_header(fid, vxy);
+    fid.close();
+    // check how many numbers were read
+    if ( vxy.size() % 2 )
+    {
+	cerr << "E: " << file << ": incomplete data\n";
+	throw IOError();
+    }
+    Clear();
+    h.resize(vxy.size()/2);
+    k.resize(vxy.size()/2);
+    for (int i = 0, iv = 0; i < vxy.size()/2; ++i)
+    {
+	h[i] = (int) round(vxy[iv++] / ss->delta);
+	k[i] = (int) round(vxy[iv++] / ss->delta);
+    }
+    fix_size();
+    return result;
+}
+
+bool Molecule::Write(const char* file)
+{
+    // open file for writing
+    ofstream fid(file);
+    if (!fid) {
+	cerr << "E: unable to write to `" << file << "'\n";
+	throw IOError();
+    }
+    fid << "# BGA molecule in grid coordinates\n";
+    fid << "# NAtoms = " << NAtoms << endl;
+    fid << "# delta = " << ss->delta << endl;
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	fid << h[i] << '\t' << k[i] << endl;
+    }
+    fid.close();
+    bool result = fid;
+    return result;
+}
+
+bool Molecule::WriteXY(const char* file)
+{
+    // open file for writing
+    ofstream fid(file);
+    if (!fid) {
+	cerr << "E: unable to write to `" << file << "'\n";
+	throw IOError();
+    }
+    fid << "# BGA molecule in real coordinates\n";
+    fid << "# NAtoms = " << NAtoms << endl;
+    fid << "# delta = " << ss->delta << endl;
+    for (int i = 0; i < NAtoms; ++i)
+    {
+	fid << ss->delta * h[i] << '\t' << ss->delta * k[i] << endl;
+    }
+    fid.close();
+    bool result = fid;
+    return result;
+}
+
+bool Molecule::WriteAeye(const char* file)
+{
+    // open file for writing
+    ofstream fid(file);
+    if (!fid) {
+	cerr << "E: unable to write to `" << file << "'\n";
+	throw IOError();
+    }
+    fid << "# BGA molecule in atomeye format\n";
+    fid << "Number of particles = " << NAtoms << '\n';
+    fid << "A = 1.0 Angstrom (basic length-scale)\n";
+    fid << "H0(1,1) = " << 2.0 * ss->dmax << " A\n";
+    fid << "H0(1,2) = 0 A\n";
+    fid << "H0(1,3) = 0 A\n";
+    fid << "H0(2,1) = 0 A\n";
+    fid << "H0(2,2) = " << 2.0 * ss->dmax << " A\n";
+    fid << "H0(2,3) = 0 A\n";
+    fid << "H0(3,1) = 0 A\n";
+    fid << "H0(3,2) = 0 A\n";
+    fid << "H0(3,3) = " << 2.0 * ss->dmax << " A\n";
+    fid << ".NO_VELOCITY.\n";
+    // 4 entries: x, y, z, Uiso
+    fid << "entry_count = 4\n";
+    fid << "auxiliary[0] = abad [au]\n";
+    fid << '\n';
+    // pj: now it only works for a single Carbon atom in the molecule
+    fid << "12.0111\n";
+    fid << "C\n";
+    for (size_t i = 0; i < NAtoms; i++) {
+	fid <<
+	    (h[i] * ss->delta + ss->dmax) / (2.0 * ss->dmax) << " " <<
+	    (k[i] * ss->delta + ss->dmax) / (2.0 * ss->dmax) << " " <<
+	    0.0 << " " <<
+	    abad[i] << endl;
+    }
+    fid.close();
+    bool result = fid;
+    return result;
+}
