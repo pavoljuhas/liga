@@ -23,6 +23,7 @@ struct RunPar_t
     // IO parameters
     string distfile;
     string inistru;
+    int natoms;
     string outstru;
     int saverate;
     string frames;
@@ -47,7 +48,7 @@ private:
 RunPar_t::RunPar_t()
 {
     char *pnames[] = {
-	"distfile", "inistru",
+	"distfile", "inistru", "natoms",
 	"outstru", "saverate", "frames", "framesrate",
 	"tol_dd", "tol_bad", "seed",
 	"evolve_frac", "ligasize", "stopgame",
@@ -71,6 +72,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "IO parameters:\n"
 "  distfile=FILE         target distance table\n"
 "  inistru=FILE          initial structure [empty box]\n"
+"  natoms=int            size of molecule, use with loose target distances\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
 "  frames=FILE           save intermediate structures to FILE.liga_round\n"
@@ -196,6 +198,22 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    mol.ReadXYZ(inistru.c_str());
 	}
 	catch (IOError) {
+	    exit(EXIT_FAILURE);
+	}
+    }
+    // natoms
+    if (a.ispar("natoms"))
+    {
+	try {
+	    natoms = a.GetPar<int>("natoms");
+	    cout << "natoms=" << natoms << endl;
+	    mol.Set_max_NAtoms(natoms);
+	}
+        catch (ParseArgsError(e)) {
+            cerr << e.what() << endl;
+            exit(EXIT_FAILURE);
+	}
+	catch (InvalidMolecule) {
 	    exit(EXIT_FAILURE);
 	}
     }
