@@ -14,6 +14,9 @@
 #include <map>
 #include <unistd.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_multifit_nlin.h>
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
 
@@ -713,6 +716,134 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     vta.erase(gai, vta.end());
 }
 
+int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
+{
+    static Atom_t ta(0.0, 0.0, 0.0);
+    ta.rx = gsl_vector_get(x, 0);
+    ta.ry = gsl_vector_get(x, 1);
+    ta.rz = gsl_vector_get(x, 2);
+    typedef list<Atom_t> LA;
+    typedef valarray<double> VAD;
+    pair<LA*,VAD*>& rxa_par = *( (pair<LA*,VAD*> *)params );
+    LA& atoms = *(rxa_par.first);
+    VAD& ad0 = *(rxa_par.second);
+    VAD ad(ad0.size());
+    typedef list<Atom_t>::iterator LAit;
+    int idx = 0;
+    gsl_matrix_set_zero(J);
+    for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma, ++idx)
+    {
+	ad[idx] = dist(ta, *ma);
+	gsl_vector_set(f, idx, ad[idx]-ad0[idx]);
+	if (ad[idx] != 0.0)
+	{
+	    gsl_matrix_set(J, idx, 0, (ta.rx - ma->rx)/ad[idx]);
+	    gsl_matrix_set(J, idx, 1, (ta.ry - ma->ry)/ad[idx]);
+	    gsl_matrix_set(J, idx, 2, (ta.rz - ma->rz)/ad[idx]);
+	}
+    }
+    return GSL_SUCCESS;
+}
+
+int rxa_f(const gsl_vector *x, void *params, gsl_vector *f)
+{
+    static Atom_t ta(0.0, 0.0, 0.0);
+    ta.rx = gsl_vector_get(x, 0);
+    ta.ry = gsl_vector_get(x, 1);
+    ta.rz = gsl_vector_get(x, 2);
+    typedef list<Atom_t> LA;
+    typedef valarray<double> VAD;
+    pair<LA*,VAD*>& rxa_par = *( (pair<LA*,VAD*> *)params );
+    LA& atoms = *(rxa_par.first);
+    VAD& ad0 = *(rxa_par.second);
+    typedef list<Atom_t>::iterator LAit;
+    int idx = 0;
+    for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma, ++idx)
+    {
+	gsl_vector_set(f, idx, dist(ta, *ma) - ad0[idx]);
+    }
+    return GSL_SUCCESS;
+}
+
+int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
+{
+    typedef list<Atom_t> LA;
+    typedef valarray<double> VAD;
+    pair<LA*,VAD*>& rxa_par = *( (pair<LA*,VAD*> *)params );
+    LA& atoms = *(rxa_par.first);
+    // just use rxa_fdf ignoring function values
+    gsl_vector *fignore = gsl_vector_alloc(rxa_par.first->size());
+    int status = rxa_fdf(x, params, fignore, J);
+    gsl_vector_free(fignore);
+    return status;
+}
+
+void Molecule::relax_atom(Atom_t& ta)
+{
+    // dTarget is not changed in this function
+    int dTsize = dTarget.size();
+    bool dUsed[dTsize];
+    fill(dUsed, dUsed+dTsize, false);
+    valarray<double> ad0(atoms.size());
+    typedef list<Atom_t>::iterator LAit;
+    typedef vector<double>::iterator VDit;
+    // loop while badness is improved
+    double lo_abad = numeric_limits<double>().max();
+    while (true)
+    {
+	list<int> dUsedIdx;
+	double *pad0 = &ad0[0];
+	for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma)
+	{
+	    double d = dist(*ma, ta);
+	    int idx = dTarget.find_nearest(d) - dTarget.begin();
+	    if (dUsed[idx])
+	    {
+		int hi, lo, nidx = -1;
+		for (hi = idx; hi != dTsize && dUsed[hi]; ++hi) { };
+		if (hi != dTsize)
+		    nidx = hi;
+		for (lo = idx; lo >= 0 && dUsed[lo]; --lo) { };
+		if (lo >= 0  && (nidx < 0 || d-dTarget[lo] < dTarget[nidx]-d))
+		    nidx = lo;
+		idx = nidx;
+	    }
+	    *(pad0++) = dTarget[idx];
+	    double dd = dTarget[idx] - d;
+	    if (fabs(dd) < tol_dd)
+	    {
+		dUsed[idx] = true;
+		dUsedIdx.push_back(idx);
+	    }
+	}
+	// restore dUsed
+	for (   list<int>::iterator ii = dUsedIdx.begin();
+		ii != dUsedIdx.end(); ++ii  )
+	{
+	    dUsed[*ii] = false;
+	}
+	// define function to be minimized
+	gsl_multifit_function_fdf f;
+	f.f = &rxa_f;
+	f.df = &rxa_df;
+	f.fdf = &rxa_fdf;
+	f.n = NAtoms();
+	f.p = 3;
+	typedef list<Atom_t> LA;
+	typedef valarray<double> VAD;
+	pair<LA*,VAD*> rxa_par(&atoms, &ad0);
+	f.params = &rxa_par;
+	// starting position
+	// allocate solver
+	gsl_multifit_fdfsolver *lms = gsl_multifit_fdfsolver_alloc(
+		gsl_multifit_fdfsolver_lmsder, NAtoms(), 3);
+	// pj: change when Atom_t rx changed
+	double x_init[3] = {ta.rx, ta.ry, ta.rz};
+	gsl_vector_view x = gsl_vector_view_array(x_init, 3);
+	gsl_multifit_fdfsolver_set(lms, &f, &x.vector);
+	// pj: needs to be finished
+    }
+}
 
 int Molecule::push_good_distances(
 	vector<Atom_t>& vta, double *afit, int ntrials
