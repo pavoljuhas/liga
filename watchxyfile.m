@@ -13,7 +13,7 @@ end
 hp = plot(mean(xlim), mean(ylim), plotstyle);
 set(hp, 'XData', x, 'YData', y);
 axis equal;
-alim = max(abs([2; x(:); y(:)]));
+alim = 1.05 * max(abs([1; x(:); y(:)]));
 axis([-alim, alim, -alim, alim]);
 mhs = clock; mhs = mhs(4:6); v = 1;
 
@@ -45,7 +45,7 @@ while 1
     else
 	x = []; y = [];
     end
-    alim = max(abs([2; x(:); y(:)]));
+    alim = 1.05 * max(abs([1; x(:); y(:)]));
     axis([-1 1 -1 1]*alim);
     set(hp, 'XData', x, 'YData', y);
     mhs = clock; mhs = mhs(4:6); v = v+1;
