@@ -15,10 +15,21 @@ ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
 {
     optstring = NULL;
     longopts = NULL;
-    cmd_h = argv[0];
-    string::size_type pslash = cmd_h.find_last_of('/');
-    cmd_t = cmd_h.substr(pslash+1);
-    cmd_h.erase(pslash);
+    init();
+}
+
+ParseArgs::ParseArgs(int nargc, char * const nargv[], char *noptstring) :
+    argc(nargc), argv(nargv), optstring(noptstring)
+{
+    longopts = NULL;
+    init();
+}
+
+ParseArgs::ParseArgs(int nargc, char * const nargv[], char *noptstring,
+	    const struct option *nlongopts) :
+    argc(nargc), argv(nargv), optstring(noptstring), longopts(nlongopts)
+{
+    init();
 }
 
 void ParseArgs::Parse()
@@ -34,6 +45,36 @@ void ParseArgs::Parse()
     }
 }
 
+void ParseArgs::ReadPars(const char *file)
+{
+}
+
+void ParseArgs::List()
+{
+    cout << "cmd_h = '" << cmd_h << "'" << endl;
+    cout << "cmd_t = '" << cmd_t << "'" << endl;
+    typedef map<string,string>::iterator MSSit;
+    for (MSSit ii = opts.begin(); ii != opts.end(); ++ii)
+	cout << "opts[" << ii->first << "] = '" << ii->second << "'" << endl;
+    for (MSSit ii = pars.begin(); ii != pars.end(); ++ii)
+	cout << "pars[" << ii->first << "] = '" << ii->second << "'" << endl;
+    for (int i = 0; i < args.size(); ++i)
+	cout << "args[" << i << "] = '" << args[i] << "'" << endl;
+}
+
+void ParseArgs::init()
+{
+    cmd_h = argv[0];
+    string::size_type pslash = cmd_h.find_last_of('/');
+    if (pslash != string::npos)
+    {
+	cmd_t = cmd_h.substr(pslash+1);
+	cmd_h.erase(pslash);
+    }
+    else
+	cmd_h.swap(cmd_t);
+}
+
 void ParseArgs::do_getopt()
 {
     while (1)
@@ -43,7 +84,10 @@ void ParseArgs::do_getopt()
 	int c = getopt(argc, argv, optstring);
 	if (c == -1)
 	    break;
-	opts[string(1,c)] = (optarg) ? optarg : "";
+	else if (c == '?')
+	    throw InvalidOption();
+	else
+	    opts[string(1,c)] = (optarg) ? optarg : "";
     }
     for (; optind < argc; ++optind)
     {
@@ -61,8 +105,13 @@ void ParseArgs::do_getopt_long()
 		longopts, &option_index);
 	if (c == -1)
 	    break;
-	const char *o = longopts[option_index].name;
-	opts[o] = (optarg) ? optarg : "";
+	else if (c == '?')
+	    throw InvalidOption();
+	else
+	{
+	    const char *o = longopts[option_index].name;
+	    opts[o] = (optarg) ? optarg : "";
+	}
     }
     for (; optind < argc; ++optind)
     {
@@ -83,10 +132,8 @@ void ParseArgs::arg_or_par(const char *s)
     for (const char *p = s+1; ispar && p < peq; ++p)
 	ispar = isalnum(*p);
     if (ispar)
-	pars[string(s, peq-1-s)] = string(peq+1);
+	pars[string(s, peq-s)] = string(peq+1);
     else
 	args.push_back(s);
 }
 
-void ParseArgs::ReadPars(const char *file)
-{}
