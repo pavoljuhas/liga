@@ -72,8 +72,8 @@ class Atom_t
 public:
     Atom_t(int h0 = 0, int k0 = 0, int l0 = 0, int bad0 = 0);
     mutable int h, k, l;
-    const int Badness();
-    const double AvgBadness();
+    int Badness() const;
+    double AvgBadness() const;
     int IncBadness(int b = 1);
     int DecBadness(int b = 1);
     int ResetBadness();
@@ -125,8 +125,8 @@ public:
     mutable int max_NAtoms;	// target number of atoms
 //    int ABadness(int) const;	// fitness of specified atom
 //    int AFitness(int) const;	// badness of specified atom
-    int MBadness() const;	// total badness
-    int MFitness() const;	// total fitness
+    int Badness() const;	// total badness
+    int Fitness() const;	// total fitness
     int MaxABadness() const;	// total fitness
 //    double dist(const int& i, const int& j) const;	// d(i,j)
 //    // operator functions
