@@ -128,6 +128,7 @@ public:
     // fit parameters
     static double tol_dd;
     static double tol_nbad;
+    static double tol_r;
     static bool evolve_jump;
     static double evolve_frac;
     static int center_size;
