@@ -38,6 +38,19 @@ using namespace std;
 
 class Molecule;
 
+class DistanceTable : public vector<double>
+{
+public:
+    DistanceTable() : vector<double>();
+    DistanceTable(const double*, size_t) : vector<double>();
+    DistanceTable(const char* file) : vector<double>();
+    template <class InputIterator>
+	DistanceTable(InputIterator first, InputIterator last) :
+	    vector<double>(first, last) { init(); }
+private:
+    void init();
+};
+
 class SandSphere
 {
 public:
