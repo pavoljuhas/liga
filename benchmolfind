@@ -1,0 +1,70 @@
+#!/u24/local/bin/zsh -f
+
+setopt extendedglob
+
+# setup:
+REPEATS=50
+TIMEFMT="%U"
+distance_files=(
+    solids/tetrahedron.dss
+    solids/octahedron.dss
+    solids/cube.dss
+    solids/icosahedron.dss
+    solids/dodecahedron.dss
+    solids/prism12.dss
+    solids/prismL16.dss
+    solids/prism18.dss
+    solids/grid27.dss
+)
+
+if [[ $# == 0 || -n "${(M)*:#--help}" ]]; then
+    print "usage: $0:t CmdToBench [SEED] DISTFILE arg1 arg2 ..."
+    print "where SEED will be replaced with RANDOM integer and"
+    print "DISTFILE will be replaced with following distance table files"
+    print -c '  '${^distance_files}
+    exit
+fi
+
+CMD=$1
+if [[ ! -x $CMD ]]; then
+    print -u2 -- "cannot execute ${CMD}"
+    exit 1
+fi
+
+par=( "${(@)argv[2,-1]}" )
+if [[ -z ${(M)par:#DISTFILE} ]]; then
+    print -u2 -- "no DISTFILE among the arguments"
+    exit 1
+fi
+
+results=( DISTFILE user )
+TMPFILE==()
+
+exec 3>&2
+print "#bm timing $CMD $par"
+for df in $distance_files;
+do
+    for i in {1..$REPEATS}; : $RANDOM
+    {   time (
+	for i in {1..$REPEATS};
+	do
+	    SEED=$RANDOM
+	    p=( "${(@)par/(#s)SEED(#e)/$SEED}" )
+	    p=( "${(@)p/(#s)DISTFILE(#e)/$df}" )
+	    print "#bm $i of $REPEATS timings for $df"
+	    print "#bm $CMD $p"
+	    $CMD "${(@)p}"
+	done 2>&3
+	)
+    } 2>$TMPFILE
+    UT=$(<$TMPFILE)
+    print "#bm $UT\n"
+    results=( $results ${df:t} $UT )
+    rm $TMPFILE
+done
+
+print
+print "================================================================"
+print "$CMD $par"
+print "================================================================"
+print -aC2 $results
