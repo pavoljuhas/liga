@@ -49,7 +49,7 @@ void print_help(ParseArgs& a)
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
 "  ligasize=int          [10] number of teams per division\n"
-"  stopgame=double       [1.0] badness threshold to start new round\n"
+"  stopgame=double       [1.0] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
@@ -311,22 +311,20 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
 
 void save_snapshot(Molecule& mol, RunPar_t& rp)
 {
-//  numeric_limits<double> double_info;
     static int cnt = 0;
     static double bestMNB = numeric_limits<double>().max();
     if (rp.snapshot.size() == 0 || rp.snaprate == 0 || ++cnt < rp.snaprate)
-        return;
-    if ( mol.NormBadness() < bestMNB)
+	return;
+    if (mol.NormBadness() < bestMNB)
     {
-        bestMNB = mol.NormBadness();
-        mol.WriteAtomEye(rp.snapshot.c_str());
-        cnt = 0;
+	bestMNB = mol.NormBadness();
+	mol.WriteAtomEye(rp.snapshot.c_str());
+	cnt = 0;
     }
 }
 
 void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
-//  numeric_limits<double> double_info;
     static int cnt = 0;
     if (  rp.frames.size() == 0 || rp.framesrate == 0 ||
             (++cnt < rp.framesrate && !rv.lastframe) )
@@ -444,7 +442,7 @@ int main(int argc, char *argv[])
 	BGA::cnt_penalty_calls << endl;
     // save last frame
     rv.lastframe = true;
-    save_frames(mol, rp, rv);
+    save_frames(*world_champ, rp, rv);
     // save final structure
     if (rp.outstru.size() != 0)
         world_champ->WriteAtomEye(rp.outstru.c_str());
