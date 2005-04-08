@@ -346,6 +346,7 @@ int main(int argc, char *argv[])
 	}
 	if (nb1 < best_mol.NormBadness())
 	{
+	    mol.Center();
 	    best_mol = mol;
 	    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
 		<< best_mol.NormBadness() << endl;
