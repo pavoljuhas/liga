@@ -437,12 +437,17 @@ void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
 {
     static int cnt = 0;
+    DistanceTable dummydtgt;
+    static Molecule last_frame(dummydtgt);
     if (  rp.frames.size() == 0 || rp.framesrate == 0 ||
-            (++cnt < rp.framesrate && !rv.exiting) )
-        return;
+	    (++cnt < rp.framesrate && !rv.exiting) ||
+	    last_frame == mol
+       )
+	return;
     ostringstream oss;
     oss << rp.frames << "." << rv.liga_round;
     mol.WriteAtomEye(oss.str().c_str());
+    last_frame = mol;
     cnt = 0;
 }
 
@@ -478,7 +483,7 @@ int main(int argc, char *argv[])
         PMOL parent_team = liga[level+1].back();
         PMOL lower_team = new Molecule(*parent_team);
         lower_team->Degenerate(1);
-	cout << rv.liga_round << "L " << lower_team->NAtoms() << ' '
+	cout << rv.liga_round << " L " << lower_team->NAtoms() << ' '
 	    << lower_team->NormBadness() << endl;
         liga[level].push_back(lower_team);
     }
