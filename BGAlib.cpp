@@ -405,22 +405,6 @@ void Molecule::init()
     OutFmtXYZ();
 }
 
-void Molecule::Set_max_NAtoms(int s)
-{
-    if (s > dTarget.NAtoms)
-    {
-	cerr << "E: max_NAtoms = " << s <<
-	    " is too large for distance table" << endl;
-	throw InvalidMolecule();
-    }
-    else if (s < 1)
-    {
-	cerr << "E: invalid value of max_NAtoms = " << s << endl;
-	throw InvalidMolecule();
-    }
-    val_max_NAtoms = s;
-}
-
 Molecule::~Molecule()
 {
     // we must call Clear() to delete Pair_t objects
@@ -501,6 +485,32 @@ bool comp_Atom_r2(const Atom_t& lhs, const Atom_t& rhs)
 //////////////////////////////////////////////////////////////////////////
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
+
+bool operator==(const Molecule& m1, const Molecule& m2)
+{
+    if (&m1 == &m2)
+	return true;
+    bool isequal =
+	m1.max_NAtoms() == m2.max_NAtoms() &&
+	m1.atoms == m2.atoms;
+    return isequal;
+}
+
+void Molecule::Set_max_NAtoms(int s)
+{
+    if (s > dTarget.NAtoms)
+    {
+	cerr << "E: max_NAtoms = " << s <<
+	    " is too large for distance table" << endl;
+	throw InvalidMolecule();
+    }
+    else if (s < 1)
+    {
+	cerr << "E: invalid value of max_NAtoms = " << s << endl;
+	throw InvalidMolecule();
+    }
+    val_max_NAtoms = s;
+}
 
 Molecule& Molecule::Shift(double dx, double dy, double dz)
 {
@@ -639,7 +649,6 @@ Atom_t Molecule::Atom(const int cidx)
     list<Atom_t>::iterator ai = list_at(atoms, cidx);
     return *ai;
 }
-
 
 void Molecule::calc_test_badness(Atom_t& ta)
 {

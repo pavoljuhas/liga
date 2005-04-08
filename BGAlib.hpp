@@ -90,7 +90,10 @@ private:
 bool operator==(const Atom_t& a1, const Atom_t& a2);
 double dist2(const Atom_t& a1, const Atom_t& a2);
 inline double dist(const Atom_t& a1, const Atom_t& a2)
-{ return sqrt(1.0*dist2(a1, a2)); }
+{
+    return sqrt(1.0*dist2(a1, a2));
+}
+
 
 class Molecule;
 
@@ -192,6 +195,7 @@ private:
     list<Atom_t> atoms;			// list of all atoms
     map<OrderedPair<Atom_t*>,Pair_t*> pairs;  // map Atom_t* to Pair_t objects
     friend class Pair_t;
+    friend bool operator==(const Molecule&, const Molecule&);
     // badness evaluation
     mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double *afit, int ntrials);
@@ -210,6 +214,7 @@ private:
     istream& ReadXYZ(istream& fid);
     string opened_file;
 };
+bool operator==(const Molecule& m1, const Molecule& m2);
 
 class Molecule::ParseHeader
 {
