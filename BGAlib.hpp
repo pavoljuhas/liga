@@ -144,20 +144,6 @@ public:
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
-//    Molecule& Rotate(double phi, double h0 = 0.0, double k0 = 0.0);
-//    template<class T> 
-//	inline Molecule& Part(T cidx)	// keep only specified atom
-//	{
-//	    return Part(*this, cidx);
-//	}
-//    // set this Molecule to a Part of M
-//    Molecule& Part(const Molecule& M, const int cidx); 	
-//    Molecule& Part(const Molecule& M, const list<int>& cidx);
-//    template<class T> 
-//	inline Molecule& Pop(T cidx)	// remove specified atom(s)
-//	{
-//	    return Pop(*this, cidx);
-//	}
     // remove atom(s)
     Molecule& Pop(list<Atom_t>::iterator ai);
     Molecule& Pop(const int cidx);
@@ -167,7 +153,6 @@ public:
     Molecule& Add(double rx0, double ry0, double rz0);	// add single atom
     Molecule& Add(Atom_t a);				// add single atom
     Atom_t Atom(const int cidx);	// obtain specified atom
-//    Molecule& MoveAtomTo(int idx, int nh, int nk);	// move 1 atom
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
