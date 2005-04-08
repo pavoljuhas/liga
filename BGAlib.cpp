@@ -630,6 +630,17 @@ Molecule& Molecule::Add(Atom_t atom)
     return *this;
 }
 
+Atom_t Molecule::Atom(const int cidx)
+{
+    if (cidx < 0 || cidx >= NAtoms())
+    {
+	throw range_error("in Molecule::Pop(list<int>)");
+    }
+    list<Atom_t>::iterator ai = list_at(atoms, cidx);
+    return *ai;
+}
+
+
 void Molecule::calc_test_badness(Atom_t& ta)
 {
     if (NAtoms() == max_NAtoms())
