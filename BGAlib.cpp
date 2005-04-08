@@ -509,6 +509,11 @@ void Molecule::Set_max_NAtoms(int s)
 	cerr << "E: invalid value of max_NAtoms = " << s << endl;
 	throw InvalidMolecule();
     }
+    else if (s < NAtoms())
+    {
+	cerr << "E: molecule too large in Set_max_NAtoms()" << endl;
+	throw InvalidMolecule();
+    }
     val_max_NAtoms = s;
 }
 
