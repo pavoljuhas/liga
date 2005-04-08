@@ -54,7 +54,7 @@ void RunPar_t::print_help(ParseArgs& a)
     // /usage:/;/;/-s/.*/"&\\n"/
     // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
     cout << 
-"usage: " << a.cmd_t << "[-p PAR_FILE] [DISTFILE] [INISTRU] [par1=val1...]\n"
+"usage: " << a.cmd_t << " [-p PAR_FILE] [DISTFILE] [INISTRU] [par1=val1...]\n"
 "run MC molecule simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
