@@ -277,5 +277,22 @@ void SIGHUP_handler(int signum)
     SIGHUP_received = signum;
 }
 
+////////////////////////////////////////////////////////////////////////
+// Output helpers
+////////////////////////////////////////////////////////////////////////
 
+void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
+{
+    static int cnt = 0;
+    static double bestMNB = numeric_limits<double>().max();
+    if (  rp.outstru.size() == 0 || rp.saverate == 0 ||
+	    (++cnt < rp.saverate && !rv.exiting) )
+	return;
+    if (mol.NormBadness() < bestMNB)
+    {
+	bestMNB = mol.NormBadness();
+	mol.WriteAtomEye(rp.outstru.c_str());
+	cnt = 0;
+    }
+}
 
