@@ -55,7 +55,7 @@ void RunPar_t::print_help(ParseArgs& a)
     // /usage:/;/;/-s/.*/"&\\n"/
     // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
     cout << 
-"usage: " << a.cmd_t << "[-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
+"usage: " << a.cmd_t << "[-p PAR_FILE] [DISTFILE] [INISTRU] [par1=val1...]\n"
 "run MC molecule simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
@@ -63,8 +63,8 @@ void RunPar_t::print_help(ParseArgs& a)
 "  -h, --help            display this message\n"
 "  -v, --version         show program version\n"
 "IO parameters:\n"
-"  distfile=FILE         target distance table\n"
-"  inistru=FILE          initial structure [empty box]\n"
+"  distfile=FILE         target distance table - required\n"
+"  inistru=FILE          initial structure - required\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
 "  frames=FILE           save intermediate structures to FILE.step\n"
@@ -141,13 +141,14 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	cerr << e.what() << endl;
 	exit(EXIT_FAILURE);
     }
-    // assign run parameters
-    // distfile
-    if (a.args.size())
+    // assign required parameters, distfile and inistru
+    if (a.args.size() > 0)
         a.pars["distfile"] = a.args[0];
     if (a.args.size() > 1)
+        a.pars["inistru"] = a.args[1];
+    if (a.args.size() > 2)
     {
-	cerr << argv[0] << ": several DISTFILE arguments" << endl;
+	cerr << argv[0] << ": too many file arguments" << endl;
 	exit(EXIT_FAILURE);
     }
     if (!a.ispar("distfile"))
@@ -155,12 +156,9 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         cerr << "Distance file not defined" << endl;
         exit(EXIT_FAILURE);
     }
-    distfile = a.pars["distfile"];
-    DistanceTable* dtab;
-    try {
-        dtab = new DistanceTable(distfile.c_str());
-    }
-    catch (IOError) {
+    if (!a.ispar("inistru"))
+    {
+        cerr << "Initial structure not defined" << endl;
         exit(EXIT_FAILURE);
     }
     // intro messages
@@ -174,19 +172,25 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     time_t cur_time = time(NULL);
     cout << "# " << ctime(&cur_time);
     cout << hashsep << endl;
-    Molecule mol(*dtab);
+    // distfile
+    distfile = a.pars["distfile"];
     cout << "distfile=" << distfile << endl;
+    DistanceTable* dtab;
+    try {
+        dtab = new DistanceTable(distfile.c_str());
+    }
+    catch (IOError) {
+        exit(EXIT_FAILURE);
+    }
+    Molecule mol(*dtab);
     // inistru
-    if (a.ispar("inistru"))
-    {
-	inistru = a.pars["inistru"];
-	cout << "inistru=" << inistru << endl;
-	try {
-	    mol.ReadXYZ(inistru.c_str());
-	}
-	catch (IOError) {
-	    exit(EXIT_FAILURE);
-	}
+    inistru = a.pars["inistru"];
+    cout << "inistru=" << inistru << endl;
+    try {
+	mol.ReadXYZ(inistru.c_str());
+    }
+    catch (IOError) {
+	exit(EXIT_FAILURE);
     }
     // outstru
     if (a.ispar("outstru"))
