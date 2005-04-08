@@ -42,6 +42,9 @@ djoser: djoser.o $(OBJECTS) $(HEADERS)
 gizaliga: gizaliga.o $(OBJECTS) $(HEADERS)
 	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
 
+mcfitdist: mcfitdist.o $(OBJECTS) $(HEADERS)
+	$(CXX) -o $@ $@.o $(OBJECTS) $(LDFLAGS)
+
 #####################################################################}}}
 # test programs {{{
 
