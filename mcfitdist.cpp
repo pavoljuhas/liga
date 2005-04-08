@@ -26,8 +26,6 @@ struct RunPar_t
     string outstru;
     int saverate;
     int lograte;
-    string frames;
-    int framesrate;
     // MC parameters
     double boxsize;
     double kbt;
@@ -44,7 +42,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "lograte", "frames", "framesrate",
+	"outstru", "saverate", "lograte", 
 	"boxsize", "kbt", "tol_bad", "seed",
 	"penalty" };
     validpars.insert(validpars.end(),
@@ -69,8 +67,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum steps between outstru updates\n"
 "  lograte=int           [100] minimum steps between log printout\n"
-"  frames=FILE           save intermediate structures to FILE.step\n"
-"  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters\n"
 "  boxsize=double        [0.1] size of box of possible MC step\n"
 "  kbt=double            [0.001] Boltzman factor\n"
@@ -205,14 +201,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     //  lograte
     lograte = a.GetPar<int>("lograte", 100);
     cout << "lograte=" << lograte << endl;
-    // frames, framesrate
-    if (a.ispar("frames"))
-    {
-        frames = a.pars["frames"];
-        cout << "frames=" << frames << endl;
-        framesrate = a.GetPar<int>("framesrate", 10);
-        cout << "framesrate=" << framesrate << endl;
-    }
     // MC parameters
     try {
 	// boxsize
@@ -370,7 +358,7 @@ int main(int argc, char *argv[])
     else
 	cout << "Solution found!!!" << endl << endl;
     BGA::cnt.PrintRunStats();
-    // save last frame
+    // save last molecule
     rv.exiting = true;
     save_outstru(best_mol, rp, rv);
     if (SIGHUP_received)
