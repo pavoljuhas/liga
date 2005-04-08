@@ -204,10 +204,10 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     // MC parameters
     try {
 	// boxsize
-	boxsize = a.GetPar<double>("boxsize", 0.001);
+	boxsize = a.GetPar<double>("boxsize", 0.1);
 	cout << "boxsize=" << boxsize << endl;
 	// kbt
-	kbt = a.GetPar<double>("kbt", 0.1);
+	kbt = a.GetPar<double>("kbt", 0.001);
 	cout << "kbt=" << kbt << endl;
 	// tol_bad
 	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
