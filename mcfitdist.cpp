@@ -25,6 +25,7 @@ struct RunPar_t
     string inistru;
     string outstru;
     int saverate;
+    int lograte;
     string frames;
     int framesrate;
     // MC parameters
@@ -43,7 +44,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "frames", "framesrate",
+	"outstru", "saverate", "lograte", "frames", "framesrate",
 	"boxsize", "kbt", "tol_bad", "seed",
 	"penalty" };
     validpars.insert(validpars.end(),
@@ -66,7 +67,8 @@ void RunPar_t::print_help(ParseArgs& a)
 "  distfile=FILE         target distance table - required\n"
 "  inistru=FILE          initial structure - required\n"
 "  outstru=FILE          where to save the best full molecule\n"
-"  saverate=int          [10] minimum iterations between outstru updates\n"
+"  saverate=int          [10] minimum steps between outstru updates\n"
+"  lograte=int           [100] minimum steps between log printout\n"
 "  frames=FILE           save intermediate structures to FILE.step\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters\n"
@@ -200,6 +202,9 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         saverate = a.GetPar<int>("saverate", 10);
         cout << "saverate=" << saverate << endl;
     }
+    //  lograte
+    lograte = a.GetPar<int>("lograte", 100);
+    cout << "lograte=" << lograte << endl;
     // frames, framesrate
     if (a.ispar("frames"))
     {
@@ -258,9 +263,10 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 
 struct RunVar_t
 {
-    RunVar_t() : step(0), exiting(false)
+    RunVar_t() : totsteps(0), accsteps(0), exiting(false)
     { }
-    int step;
+    int totsteps;
+    int accsteps;
     bool exiting;
 };
 
@@ -296,3 +302,78 @@ void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     }
 }
 
+////////////////////////////////////////////////////////////////////////
+// MAIN
+////////////////////////////////////////////////////////////////////////
+
+int main(int argc, char *argv[])
+{
+    // process arguments
+    RunPar_t rp;
+    RunVar_t rv;
+    Molecule mol = rp.ProcessArguments(argc, argv);
+
+    // print initial badness
+    cout << rv.totsteps << ' ' << rv.accsteps << " I "
+	<< mol.NormBadness() << endl;
+    // store the best molecule ever
+    Molecule best_mol(mol);
+    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
+	<< best_mol.NormBadness() << endl;
+    // watch for HUP
+    signal(SIGHUP, SIGHUP_handler);
+    // let the roulette begin
+    while ( !(best_mol.NormBadness() < rp.tol_bad) )
+    {
+	if (SIGHUP_received)
+	    break;
+        ++rv.totsteps;
+	// store original normalized badnees
+	double nb0 = mol.NormBadness();
+	// pick one atom
+	int aidx = gsl_rng_uniform_int(BGA::rng, mol.NAtoms());
+	Atom_t a0 = mol.Atom(aidx);
+	// apply random shift to a copy
+	double r1[3];
+	r1[0] = a0.r[0] + rp.boxsize * (gsl_rng_uniform(BGA::rng) - 0.5);
+	r1[1] = a0.r[1] + rp.boxsize * (gsl_rng_uniform(BGA::rng) - 0.5);
+	r1[2] = a0.r[2] + rp.boxsize * (gsl_rng_uniform(BGA::rng) - 0.5);
+	Atom_t a1(r1);
+	// replace original atom with a new copy
+	mol.Pop(aidx).Add(a1);
+	double nb1 = mol.NormBadness();
+	// accept according to Metropolis algorithm
+	if (nb1 < nb0 || gsl_rng_uniform(BGA::rng) < exp(-(nb1-nb0)/rp.kbt) )
+	    ++rv.accsteps;
+	else
+	{
+	    // revert back, a1 is the last atom
+	    mol.Pop(mol.NAtoms()-1).Add(a0);
+	}
+	// saving, log printing
+        save_outstru(mol, rp, rv);
+	if (rp.lograte && rv.totsteps % rp.lograte == 0)
+	{
+	    cout << rv.totsteps << ' ' << rv.accsteps << " L "
+		<< mol.NormBadness() << endl;
+	}
+	if (nb1 < best_mol.NormBadness())
+	{
+	    best_mol = mol;
+	    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
+		<< best_mol.NormBadness() << endl;
+	}
+    }
+    cout << endl;
+    if (SIGHUP_received)
+	cout << "Received SIGHUP, graceful death." << endl << endl;
+    else
+	cout << "Solution found!!!" << endl << endl;
+    BGA::cnt.PrintRunStats();
+    // save last frame
+    rv.exiting = true;
+    save_outstru(best_mol, rp, rv);
+    if (SIGHUP_received)
+	exit(SIGHUP+128);
+    return EXIT_SUCCESS;
+}
