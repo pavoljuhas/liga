@@ -338,8 +338,7 @@ int main(int argc, char *argv[])
 	    // revert back, a1 is the last atom
 	    mol.Pop(mol.NAtoms()-1).Add(a0);
 	}
-	// saving, log printing
-        save_outstru(mol, rp, rv);
+	// log printing
 	if (rp.lograte && rv.totsteps % rp.lograte == 0)
 	{
 	    cout << rv.totsteps << ' ' << rv.accsteps << " L "
@@ -351,6 +350,7 @@ int main(int argc, char *argv[])
 	    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
 		<< best_mol.NormBadness() << endl;
 	}
+        save_outstru(best_mol, rp, rv);
     }
     cout << endl;
     if (SIGHUP_received)
