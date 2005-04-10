@@ -576,8 +576,6 @@ int main(int argc, char *argv[])
 	}
 	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
 	    << world_champ->NormBadness() << endl;
-        save_outstru(*world_champ, rp, rv);
-        save_frames(*world_champ, rp, rv);
 	if (    world_champ->NAtoms() > best_champ.NAtoms() ||
 		world_champ->NormBadness() < best_champ.NormBadness()
 	   )
@@ -586,6 +584,8 @@ int main(int argc, char *argv[])
 	    cout << rv.liga_round << " BC " << best_champ.NAtoms() << ' '
 		<< best_champ.NormBadness() << endl;
 	}
+        save_outstru(best_champ, rp, rv);
+        save_frames(best_champ, rp, rv);
     }
     cout << endl;
     if (SIGHUP_received)
