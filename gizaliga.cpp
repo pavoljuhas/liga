@@ -31,6 +31,7 @@ struct RunPar_t
     // Walk parameters
     double tol_dd;
     double tol_bad;
+    double maxcputime;
     int seed;
     double evolve_frac;
     bool evolve_relax;
@@ -51,7 +52,7 @@ RunPar_t::RunPar_t()
     char *pnames[] = {
 	"distfile", "inistru", "natoms",
 	"outstru", "saverate", "frames", "framesrate",
-	"tol_dd", "tol_bad", "seed",
+	"tol_dd", "tol_bad", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "ligasize", "stopgame",
 	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
     validpars.insert(validpars.end(),
@@ -81,6 +82,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "Liga parameters\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
+"  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
 "  evolve_relax=bool     [false] relax new atom before addition\n"
@@ -245,6 +247,10 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
 	cout << "tol_bad=" << tol_bad << endl;
 	mol.tol_nbad = tol_bad;
+	// maxcputime
+	maxcputime = a.GetPar<double>("maxcputime", 0.0);
+	if (maxcputime > 0.0)
+	    cout << "maxcputime=" << maxcputime << endl;
 	// seed
 	seed = a.GetPar<int>("seed", 0);
 	if (seed)
@@ -502,6 +508,11 @@ int main(int argc, char *argv[])
     // let the game begin
     while ( !(world_champ->Full() && world_champ->NormBadness() < rp.tol_bad) )
     {
+	// check special stoping conditions
+	if (SIGHUP_received)
+	    break;
+	if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+	    break;
         ++rv.liga_round;
 	typedef vector<Division_t>::iterator VDit;
 	int lo_level = 0;
@@ -558,8 +569,6 @@ int main(int argc, char *argv[])
 	    if (SIGHUP_received)
 		break;
 	}
-	if (SIGHUP_received)
-	    break;
 	if (liga.back().size() != 0)
 	    world_champ = liga.back().best();
 	else
@@ -590,6 +599,8 @@ int main(int argc, char *argv[])
     cout << endl;
     if (SIGHUP_received)
 	cout << "Received SIGHUP, graceful death." << endl << endl;
+    else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+	cout << "Exceeded maxcputime." << endl << endl;
     else
 	cout << "Solution found!!!" << endl << endl;
     BGA::cnt.PrintRunStats();
