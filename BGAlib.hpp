@@ -134,6 +134,7 @@ public:
     static double tol_r;
     static bool evolve_jump;
     static bool evolve_relax;
+    static bool degenerate_relax;
     static double evolve_frac;
     static int center_size;
     static double (*penalty)(double);
