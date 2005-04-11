@@ -317,6 +317,7 @@ double Molecule::tol_r = 1.0e-8;
 double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
+bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
 namespace BGA {
     double pow2(double x) {return x*x;}
@@ -823,6 +824,9 @@ int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
 
 void Molecule::relax_atom(Atom_t& ta)
 {
+    // pj: this seems to be crashing when NAtoms() < 3
+    if (NAtoms() < 3)
+	return;
     const int max_iter = 500;
     // dTarget is not changed in this function
     int dTsize = dTarget.size();
@@ -934,6 +938,7 @@ void Molecule::relax_atom(Atom_t& ta)
 	    rta.r[i] = gsl_vector_get(lms->x, i);
 	// get relaxed value of tbad
 	// pj: this may go away later
+	/*
 	tbad = 0.0;
 	for (int i = 0; i < NAtoms(); ++i)
 	{
@@ -941,8 +946,9 @@ void Molecule::relax_atom(Atom_t& ta)
 	    BGA::cnt.penalty_calls++;
 	}
 	// and update lo_abad before reassigning the distances
-//	lo_abad = min(lo_abad, tbad);
-//	cout << "relaxed tbad = " << tbad << endl;
+	lo_abad = min(lo_abad, tbad);
+	cout << "relaxed tbad = " << tbad << endl;
+	*/
 	gsl_vector_free(G);
 	gsl_multifit_fdfsolver_free(lms);
     }
@@ -1252,9 +1258,12 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    LAit worst = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness);
 	    Atom_t wa = *worst;
-	    Pop(worst);
-	    relax_atom(wa);
-	    Add(wa);
+	    if (wa.Badness() != 0.0)
+	    {
+		Pop(worst);
+		relax_atom(wa);
+		Add(wa);
+	    }
 	}
 	if (NAtoms() == max_NAtoms() || !evolve_jump)
 	    break;
@@ -1281,6 +1290,18 @@ Molecule& Molecule::Degenerate(int Npop)
     // generate list of atoms to pop
     list<int> ipop = random_wt_choose(Npop, abad, NAtoms());
     Pop(ipop);
+    if (degenerate_relax && NAtoms() > 1)
+    {
+	LAit worst = max_element(atoms.begin(), atoms.end(),
+		comp_Atom_Badness);
+	Atom_t wa = *worst;
+	if (wa.Badness() != 0.0)
+	{
+	    Pop(worst);
+	    relax_atom(wa);
+	    Add(wa);
+	}
+    }
     if (NAtoms() < center_size)
 	Center();
     return *this;
