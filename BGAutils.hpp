@@ -38,6 +38,7 @@ struct Counters_t
 {
     long long penalty_calls;
     long long distance_calls;
+    double CPUTime();
     void PrintRunStats();
 };
 // global instance of Counters_t

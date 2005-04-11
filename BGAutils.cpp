@@ -40,17 +40,21 @@ ofstream& mktempofstream(ofstream& out, char *writefile)
     return out;
 }
 
-void Counters_t::PrintRunStats()
+double Counters_t::CPUTime()
 {
     tms tbuf;
     times(&tbuf);
-    double cputime = 1.0*tbuf.tms_utime/sysconf(_SC_CLK_TCK);
+    return 1.0*tbuf.tms_utime/sysconf(_SC_CLK_TCK);
+}
+
+void Counters_t::PrintRunStats()
+{
     char hostname[255];
     gethostname(hostname, 255);
     cout << "Run statistics:" << endl;
     cout << "penalty_calls = " << penalty_calls << endl;
     cout << "distance_calls = " << distance_calls << endl;
-    cout << "UserCPUtime = " << cputime << 's' << endl;
+    cout << "UserCPUtime = " << CPUTime() << 's' << endl;
     cout << "Host = " << hostname << endl;
 }
 
