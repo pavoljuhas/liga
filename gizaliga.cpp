@@ -35,6 +35,7 @@ struct RunPar_t
     int seed;
     double evolve_frac;
     bool evolve_relax;
+    bool degenerate_relax;
     int ligasize;
     double stopgame;
     string penalty;
@@ -53,7 +54,8 @@ RunPar_t::RunPar_t()
 	"distfile", "inistru", "natoms",
 	"outstru", "saverate", "frames", "framesrate",
 	"tol_dd", "tol_bad", "maxcputime", "seed",
-	"evolve_frac", "evolve_relax", "ligasize", "stopgame",
+	"evolve_frac", "evolve_relax", "degenerate_relax",
+	"ligasize", "stopgame",
 	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
@@ -85,7 +87,8 @@ void RunPar_t::print_help(ParseArgs& a)
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
-"  evolve_relax=bool     [false] relax new atom before addition\n"
+"  evolve_relax=bool     [false] relax the worst atom after addition\n"
+"  degenerate_relax=bool [false] relax the worst atom after removal\n"
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.025] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
@@ -266,6 +269,10 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	evolve_relax = a.GetPar<bool>("evolve_relax", false);
 	cout << "evolve_relax=" << evolve_relax << endl;
 	mol.evolve_relax = evolve_relax;
+	// degenerate_relax
+	degenerate_relax = a.GetPar<bool>("degenerate_relax", false);
+	cout << "degenerate_relax=" << degenerate_relax << endl;
+	mol.degenerate_relax = degenerate_relax;
 	// ligasize
 	ligasize = a.GetPar<int>("ligasize", 10);
 	cout << "ligasize=" << ligasize << endl;
@@ -597,18 +604,28 @@ int main(int argc, char *argv[])
         save_frames(best_champ, rp, rv);
     }
     cout << endl;
+    int exit_code;
     if (SIGHUP_received)
+    {
 	cout << "Received SIGHUP, graceful death." << endl << endl;
+	exit_code = SIGHUP+128;
+    }
     else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+    {
 	cout << "Exceeded maxcputime." << endl << endl;
+	exit_code = 1;
+    }
     else
+    {
 	cout << "Solution found!!!" << endl << endl;
+	exit_code = EXIT_SUCCESS;
+    }
     BGA::cnt.PrintRunStats();
     // save last frame
     rv.exiting = true;
     save_outstru(best_champ, rp, rv);
     save_frames(best_champ, rp, rv);
     if (SIGHUP_received)
-	exit(SIGHUP+128);
-    return EXIT_SUCCESS;
+	exit(exit_code);
+    return exit_code;
 }
