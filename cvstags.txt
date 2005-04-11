@@ -80,7 +80,7 @@ gizaliga-1e	1.23        1.161	2005-03-11
 gizaliga-1f	1.26        1.171	2005-03-14
     new atoms can be relaxed if evolve_relax=true
 
-gizaliga-1g	1.30        1.179	2005-04-11
+gizaliga-1g	1.31        1.179	2005-04-11
     atoms can also be relaxed after removal when degenerate_relax=true
     optional limit for maximum CPU time
     added parameters degenerate_relax, maxcputime
