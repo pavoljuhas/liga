@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """dvar.py   calculate variance of test versus target distances
-Usage: dvar.py [options] target.dst test.dst
+Usage: dvar.py [-n] target.dst test.dst
 
 both target.dst and test.dst can be simple lists of distances or list of
 coordinates in plain or atomeye format.  Number of distances in target.dst
