@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 """dvar.py   calculate variance of test versus target distances
-Usage: dvar.py [-n] target.dst test.dst
+Usage: dvar.py [-n] target.dst test1.dst [test2.dst]...
 
 both target.dst and test.dst can be simple lists of distances or list of
 coordinates in plain or atomeye format.  Number of distances in target.dst
 can be larger than in test.dst.
 
 Options:
-  -n, --noscale   do not scale test distances to target distance list
+  -n, --noscale   do not scale test to target distances
+  -h, --help   i  display this message
 """
 
 __id__ = "$Id$"
@@ -158,29 +159,37 @@ import getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "n", ["noscale"])
-    except getopt.GetoptError:
-        usage()
+        opts, args = getopt.getopt(argv, "nh", ["noscale", "help"])
+    except getopt.GetoptError, errmsg:
+        print >> sys.stderr, errmsg
         sys.exit(2)
     if len(args) < 2:
         usage()
         sys.exit()
-    elif len(args) > 2:
-        print >> sys.stderr, "too many file arguments:"
-        print >> sys.stderr, "\n    ".join(args)
-        sys.exit(2)
     # process options
     rescale = True
     for o, a in opts:
         if o in ("-n", "--noscale"):
             rescale = False
-    dTarget = getDistancesFrom(args[0])
-    dTest = getDistancesFrom(args[1])
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
     try:
-        dv = dvar(dTarget, dTest, rescale)
-        print dv
-    except RuntimeError, s:
-        print >> sys.stderr, s
+        dTarget = getDistancesFrom(args[0])
+        dTest = dict(zip(args[1:], [ getDistancesFrom(a) for a in args[1:] ]))
+    except IOError, (errno, errmsg):
+        print >> sys.stderr, "%s: %s" % (a, errmsg)
+        sys.exit(1)
+    maxflen = max([ len(a) for a in args[1:] ])
+    try:
+        for f, d in dTest.iteritems():
+            v = dvar(dTarget, d, rescale)
+            if len(dTest) > 1:
+                print f.ljust(maxflen+1), v
+            else:
+                print "%.8g" % v
+    except RuntimeError, errmsg:
+        print >> sys.stderr, "%s: %s" % (f, errmsg)
         sys.exit(1)
     return
 
