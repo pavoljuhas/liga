@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """dvar.py   calculate variance of test versus target distances
-Usage: dvar.py [-n] target.dst test1.dst [test2.dst]...
+Usage: dvar.py [options] target.dst test1.dst [test2.dst]...
 
 both target.dst and test.dst can be simple lists of distances or list of
 coordinates in plain or atomeye format.  Number of distances in target.dst
@@ -9,7 +9,8 @@ can be larger than in test.dst.
 
 Options:
   -n, --noscale   do not scale test to target distances
-  -h, --help   i  display this message
+  -h, --help      display this message
+  -v, --version   show script version
 """
 
 __id__ = "$Id$"
@@ -150,22 +151,25 @@ def dvar(dTarget, dTest, rescale = True):
     v /= len(dTest)
     return v
 
-def usage():
+def usage(style = None):
     import os.path
-    print __doc__.replace("dvar.py", os.path.basename(sys.argv[0]))
+    myname = os.path.basename(sys.argv[0])
+    msg = __doc__.replace("dvar.py", myname)
+    if style == 'brief':
+        msg = msg.split("\n")[1] + "\n" + \
+                "Try `%s --help' for more information." % myname
+    print msg
+    return
 
 import sys
 import getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "nh", ["noscale", "help"])
+        opts, args = getopt.getopt(argv, "nhv", ["noscale", "help", "version"])
     except getopt.GetoptError, errmsg:
         print >> sys.stderr, errmsg
         sys.exit(2)
-    if len(args) < 2:
-        usage()
-        sys.exit()
     # process options
     rescale = True
     for o, a in opts:
@@ -174,6 +178,12 @@ def main(argv):
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
+        elif o in ("-v", "--version"):
+            print __id__
+            sys.exit()
+    if len(args) < 2:
+        usage('brief')
+        sys.exit()
     try:
         dTarget = getDistancesFrom(args[0])
         dTest = dict(zip(args[1:], [ getDistancesFrom(a) for a in args[1:] ]))
