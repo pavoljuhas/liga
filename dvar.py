@@ -186,21 +186,23 @@ def main(argv):
         sys.exit()
     try:
         dTarget = getDistancesFrom(args[0])
-        dTest = dict(zip(args[1:], [ getDistancesFrom(a) for a in args[1:] ]))
     except IOError, (errno, errmsg):
-        print >> sys.stderr, "%s: %s" % (a, errmsg)
+        print >> sys.stderr, "%s: %s" % (args[0], errmsg)
         sys.exit(1)
     maxflen = max([ len(a) for a in args[1:] ])
-    try:
-        for f, d in dTest.iteritems():
-            v = dvar(dTarget, d, rescale)
-            if len(dTest) > 1:
+    for f in args[1:]:
+        try:
+            v = dvar(dTarget, getDistancesFrom(f), rescale)
+            if len(args) > 2:
                 print f.ljust(maxflen+1), v
             else:
                 print "%.8g" % v
-    except RuntimeError, errmsg:
-        print >> sys.stderr, "%s: %s" % (f, errmsg)
-        sys.exit(1)
+        except RuntimeError, errmsg:
+            print >> sys.stderr, "%s: %s" % (f, errmsg)
+            sys.exit(1)
+        except IOError, (errno, errmsg):
+            print >> sys.stderr, "%s: %s" % (f, errmsg)
+            sys.exit(1)
     return
 
 if __name__ == "__main__":
