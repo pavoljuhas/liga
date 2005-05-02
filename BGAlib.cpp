@@ -306,7 +306,7 @@ void DistanceTable::init()
 	    "d[0]=" << at(0) << endl;
 	throw InvalidDistanceTable();
     }
-    max_d = *rbegin();
+    max_d = back();
 }
 
 
