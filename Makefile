@@ -9,6 +9,8 @@
 ########################################################################
 # compiler flags and file lists:
 CXX = g++
+CFLAGS=-Wall -Wno-sign-compare
+
 ifdef FAST
 # FAST version runs about 2 times faster
 CPPFLAGS = -O3 -ffast-math -I/u24/local/include $(CFLAGS)
