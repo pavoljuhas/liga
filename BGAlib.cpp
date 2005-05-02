@@ -983,11 +983,10 @@ int Molecule::push_good_distances(
 	valarray<double> rdir(0.0, 3);
 	if (NAtoms() > 1)
 	{
-	    list<int> aidx;
+	    vector<int> aidx;
 	    aidx = random_wt_choose(2, afit, NAtoms());
-	    list<int>::iterator aidxit = aidx.begin();
-	    a1 = *list_at(atoms, *(aidxit++));
-	    Atom_t& a2 = *list_at(atoms, *(aidxit++));
+	    a1 = *list_at(atoms, aidx[0]);
+	    Atom_t& a2 = *list_at(atoms, aidx[1]);
 	    for (int i = 0; i < 3; ++i)
 		rdir[i] = a2.r[i] - a1.r[i];
 	    // randomize orientation
@@ -1051,10 +1050,9 @@ int Molecule::push_good_triangles(
     {
 	// pick first atom and free distance
 	int nchoose = NAtoms() > 2 ? 3 : 2;
-	list<int> aidx = random_wt_choose(nchoose, afit, NAtoms());
-	list<int>::iterator aidxit = aidx.begin();
-	Atom_t& a1 = *list_at(atoms, *(aidxit++));
-	Atom_t& a2 = *list_at(atoms, *(aidxit++));
+	vector<int> aidx = random_wt_choose(nchoose, afit, NAtoms());
+	Atom_t& a1 = *list_at(atoms, aidx[0]);
+	Atom_t& a2 = *list_at(atoms, aidx[1]);
 	int idf1 = gsl_rng_uniform_int(BGA::rng, dTarget.size());
 	int idf2 = gsl_rng_uniform_int(BGA::rng, dTarget.size()-1) + 1;
 	idf2 = (idf2 + idf1) % dTarget.size();
@@ -1081,7 +1079,7 @@ int Molecule::push_good_triangles(
 	valarray<double> perpdir(0.0, 3);
 	if (nchoose > 2)
 	{
-	    Atom_t& a3 = *list_at(atoms, *(aidxit++));
+	    Atom_t& a3 = *list_at(atoms, aidx[2]);
 	    for (int i = 0; i < 3; ++i)
 		perpdir[i] = a3.r[i] - a1.r[i];
 	    perpdir -= longdir*vddot(longdir, perpdir);
@@ -1144,19 +1142,17 @@ int Molecule::push_good_pyramids(
     for (int nt = 0; nt < ntrials;)
     {
 	// pick 3 base atoms
-	list<int> aidx = random_wt_choose(3, afit, NAtoms());
-	list<int>::iterator aidxit = aidx.begin();
-	Atom_t& a1 = *list_at(atoms, *(aidxit++));
-	Atom_t& a2 = *list_at(atoms, *(aidxit++));
-	Atom_t& a3 = *list_at(atoms, *(aidxit++));
+	vector<int> aidx = random_wt_choose(3, afit, NAtoms());
+	Atom_t& a1 = *list_at(atoms, aidx[0]);
+	Atom_t& a2 = *list_at(atoms, aidx[1]);
+	Atom_t& a3 = *list_at(atoms, aidx[2]);
 	double base_badness = a1.Badness()+a2.Badness()+a3.Badness();
 	// pick 3 vertex distances
-	list<int> didx = random_choose_few(3, dTarget.size());
-	list<int>::iterator didxit = didx.begin();
+	vector<int> didx = random_choose_few(3, dTarget.size());
 	double dvperm[3] = {
-	    dTarget[*(didxit++)],
-	    dTarget[*(didxit++)],
-	    dTarget[*(didxit++)] };
+	    dTarget[didx[0]],
+	    dTarget[didx[1]],
+	    dTarget[didx[2]] };
 	sort(dvperm, dvperm+3);
 	// loop over unique permutations of dvperm
 	do
@@ -1310,7 +1306,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    *pd = ai->Badness();
 	// then get the reciprocal value
 	vtafit = vdrecipw0(vtafit);
-	int idx = *(random_wt_choose(1, &vtafit[0], vtafit.size()).begin());
+	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
 	lo_abad = vta[idx].Badness();
 	vta.erase(vta.begin()+idx);
@@ -1349,7 +1345,8 @@ Molecule& Molecule::Degenerate(int Npop)
 	*pb = ai->Badness();
     }
     // generate list of atoms to pop
-    list<int> ipop = random_wt_choose(Npop, abad, NAtoms());
+    vector<int> ipop_vector = random_wt_choose(Npop, abad, NAtoms());
+    list<int> ipop(ipop_vector.begin(), ipop_vector.end());
     Pop(ipop);
     if (degenerate_relax && NAtoms() > 1)
     {
@@ -1368,9 +1365,9 @@ Molecule& Molecule::Degenerate(int Npop)
     return *this;
 }
 
-list<int> random_choose_few(int K, int Np)
+vector<int> random_choose_few(int K, int Np)
 {
-    list<int> lst;
+    vector<int> vec(K);
     if (K > Np)
     {
 	cerr << "random_wt_choose(): too many items to choose" << endl;
@@ -1379,10 +1376,11 @@ list<int> random_choose_few(int K, int Np)
     // check trivial case
     else if (K == 0)
     {
-	return lst;
+	return vec;
     }
     int N = Np;
     map<int,int> tr;
+    vector<int>::iterator vecit = vec.begin();
     for (int i = 0; i < K; ++i, --N)
     {
 	int k = gsl_rng_uniform_int(BGA::rng, N);
@@ -1394,15 +1392,15 @@ list<int> random_choose_few(int K, int Np)
 		throw runtime_error("too many translations");
 	    }
 	}
-	lst.push_back(k);
+	*(vecit++) = k;
 	tr[k] = N-1;
     }
-    return lst;
+    return vec;
 }
 
-list<int> random_wt_choose(int K, const double *p, int Np)
+vector<int> random_wt_choose(int K, const double *p, int Np)
 {
-    list<int> lst;
+    vector<int> vec(K);
     if (K > Np)
     {
 	cerr << "random_wt_choose(): too many items to choose" << endl;
@@ -1411,7 +1409,7 @@ list<int> random_wt_choose(int K, const double *p, int Np)
     // check trivial case
     else if (K == 0)
     {
-	return lst;
+	return vec;
     }
     if ( p+Np != find_if(p, p+Np, bind2nd(less<double>(),0.0)) )
     {
@@ -1427,6 +1425,7 @@ list<int> random_wt_choose(int K, const double *p, int Np)
     // cumulative probability
     double cumprob[Np];
     // main loop
+    vector<int>::iterator vecit = vec.begin();
     for (int i = 0, Nprob = Np; i != K; ++i, --Nprob)
     {
 	// calculate cumulative probability
@@ -1452,12 +1451,12 @@ list<int> random_wt_choose(int K, const double *p, int Np)
 	double r = gsl_rng_uniform(BGA::rng);
 	double *pcp = upper_bound(cumprob, cumprob+Nprob, r);
 	int idx = pcp - cumprob;
-	lst.push_back(val[idx]);
+	*(vecit++) = val[idx];
 	// overwrite this element with the last number
 	prob[idx] = prob[Nprob-1];
 	val[idx] = val[Nprob-1];
     }
-    return lst;
+    return vec;
 }
 
 

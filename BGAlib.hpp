@@ -45,8 +45,8 @@ struct OrderedPair : pair<T,T>
 	    swap(pair<T,T>::first, pair<T,T>::second);
     }
 };
-list<int> random_choose_few(int K, int Np);
-list<int> random_wt_choose(int K, const double *p, int Np);
+vector<int> random_choose_few(int K, int Np);
+vector<int> random_wt_choose(int K, const double *p, int Np);
 
 /* declaration of BGA objects */
 class DistanceTable : public vector<double>
