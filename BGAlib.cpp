@@ -969,6 +969,9 @@ int Molecule::push_good_distances(
 	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
 	throw InvalidMolecule();
     }
+    // (N over 2) distance permutations
+    int max_ntrials = NAtoms()*(NAtoms()-1)/2 + 1;
+    ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
