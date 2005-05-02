@@ -110,8 +110,8 @@ public:
     mutable double d;
 private:
     friend class Molecule;
-    Atom_t *atom1, *atom2;
     Molecule *owner;
+    Atom_t *atom1, *atom2;
     double dUsed;
     double badness;
 };
