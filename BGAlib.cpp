@@ -958,32 +958,67 @@ int Molecule::push_good_distances(
 	vector<Atom_t>& vta, double *afit, int ntrials
 	)
 {
-    // prepare discrete generator
-    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms(), afit);
+    // add new atom in direction defined by 2 atoms
+    if (NAtoms() == max_NAtoms())
+    {
+	cerr << "E: molecule too large for finding a new position" << endl;
+	throw InvalidMolecule();
+    }
+    else if (NAtoms() < 1)
+    {
+	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
+	throw InvalidMolecule();
+    }
+    int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
-	// pick a random direction
-	double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
-	double z = 2*gsl_rng_uniform(BGA::rng) - 1.0;
-	double w = sqrt(1 - z*z);
-	double rdir[3];
-	rdir[0] = w*cos(phi);
-	rdir[1] = w*sin(phi);
-	rdir[2] = z;
-	// pick one atom and free distance
-	int aidx = gsl_ran_discrete(BGA::rng, table);
+	Atom_t a1(0.0, 0.0, 0.0);
+	valarray<double> rdir(0.0, 3);
+	if (NAtoms() > 1)
+	{
+	    list<int> aidx;
+	    aidx = random_wt_choose(2, afit, NAtoms());
+	    list<int>::iterator aidxit = aidx.begin();
+	    a1 = *list_at(atoms, *(aidxit++));
+	    Atom_t& a2 = *list_at(atoms, *(aidxit++));
+	    for (int i = 0; i < 3; ++i)
+		rdir[i] = a2.r[i] - a1.r[i];
+	}
+	else
+	{
+	    a1 = atoms.front();
+	}
+	// normalize rdir, if it is not defined, generate random direction
+	double nm_rdir = vdnorm(rdir);
+	if (nm_rdir != 0.0)
+	{
+	    rdir /= nm_rdir;
+	}
+	else
+	{
+	    // pick a random direction
+	    double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
+	    double z = 2*gsl_rng_uniform(BGA::rng) - 1.0;
+	    double w = sqrt(1 - z*z);
+	    rdir[0] = w*cos(phi);
+	    rdir[1] = w*sin(phi);
+	    rdir[2] = z;
+	}
+	// pick free distance
 	int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
 	double radius = dTarget[didx];
-	Atom_t& a1 = *list_at(atoms, aidx);
-	double nrx = a1.r[0] + rdir[0]*radius;
-	double nry = a1.r[1] + rdir[1]*radius;
-	double nrz = a1.r[2] + rdir[2]*radius;
-	Atom_t ad1(nrx, nry, nrz);
-	ad1.IncBadness(a1.Badness());
-	vta.push_back(ad1);
+	valarray<double> P1(a1.r, 3);
+	valarray<double> P2(3);
+	P2 = P1 + radius*rdir;
+	Atom_t ad1front(P2[0], P2[1], P2[2], a1.Badness());
+	vta.push_back(ad1front);
+	push_count++;
+	P2 = P1 - radius*rdir;
+	Atom_t ad1back(P2[0], P2[1], P2[2], a1.Badness());
+	vta.push_back(ad1back);
+	push_count++;
     }
-    gsl_ran_discrete_free(table);
-    return ntrials;
+    return push_count;
 }
 
 int Molecule::push_good_triangles(
