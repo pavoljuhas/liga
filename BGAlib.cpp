@@ -106,6 +106,8 @@ double Atom_t::AvgBadness() const
 double Atom_t::IncBadness(double db)
 {
     badness += db;
+    if (badness < BGA::eps_badness)
+	badness = 0.0;
     badness_sum += badness;
     age++;
     return badness;
@@ -971,7 +973,7 @@ int Molecule::push_good_distances(
 	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
 	throw InvalidMolecule();
     }
-    // (N over 2) distance permutations
+    // (N over 2) inline atoms permutations
     int max_ntrials = NAtoms()*(NAtoms()-1)/2 + 1;
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
@@ -990,18 +992,19 @@ int Molecule::push_good_distances(
 		rdir[i] = a2.r[i] - a1.r[i];
 	    // randomize orientation
 	    if (gsl_rng_uniform_int(BGA::rng, 2) == 1)
-		rdir *= -1.0;
+		rdir = -rdir;
 	}
 	else
 	{
 	    a1 = atoms.front();
 	}
-	// normalize rdir, if it is not defined, generate random direction
+	// normalize rdir if defined
 	double nm_rdir = vdnorm(rdir);
 	if (nm_rdir != 0.0)
 	{
 	    rdir /= nm_rdir;
 	}
+	// otherwise generate random direction
 	else
 	{
 	    // pick a random direction
@@ -1040,11 +1043,15 @@ int Molecule::push_good_triangles(
 	cerr << "E: molecule too small, triangulation not possible" << endl;
 	throw InvalidMolecule();
     }
+    // (N over 3) inplane atoms permutations
+    int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1;
+    ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
 	// pick first atom and free distance
-	list<int> aidx = random_wt_choose(2, afit, NAtoms());
+	int nchoose = NAtoms() > 2 ? 3 : 2;
+	list<int> aidx = random_wt_choose(nchoose, afit, NAtoms());
 	list<int>::iterator aidxit = aidx.begin();
 	Atom_t& a1 = *list_at(atoms, *(aidxit++));
 	Atom_t& a2 = *list_at(atoms, *(aidxit++));
@@ -1055,7 +1062,7 @@ int Molecule::push_good_triangles(
 	double r23 = dTarget[idf2];
 	double r12 = dist(a1, a2);
 	// is triangle base reasonably large?
-	if (r12 < 1.0)
+	if (r12 < tol_r)
 	    continue;
 	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
 	double xperp2 = r13*r13 - xlong*xlong;
@@ -1067,32 +1074,49 @@ int Molecule::push_good_triangles(
 	else
 	    continue;
 	// direction along triangle base:
-	double longdir[3] = {
-	    (a2.r[0] - a1.r[0])/r12,
-	    (a2.r[1] - a1.r[1])/r12,
-	    (a2.r[2] - a1.r[2])/r12 };
-	// generate random direction in the plane perpendicular to longdir
-	double pdir1[3] = { -longdir[1],  longdir[0],  0.0 };
-	if (pdir1[0] == 0 && pdir1[1] == 0)
-	    pdir1[0] = 1.0;
-	double norm_pdir1 =
-	    sqrt(pdir1[0]*pdir1[0] + pdir1[1]*pdir1[1] + pdir1[2]*pdir1[2]);
-	pdir1[0] /= norm_pdir1; pdir1[1] /= norm_pdir1; pdir1[2] /= norm_pdir1;
-	double pdir2[3] = {
-	    longdir[1]*pdir1[2]-longdir[2]*pdir1[1],
-	    longdir[2]*pdir1[0]-longdir[0]*pdir1[2],
-	    longdir[0]*pdir1[1]-longdir[1]*pdir1[0] };
-	double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
-	double perpdir[3] = {
-	    cos(phi)*pdir1[0]+sin(phi)*pdir2[0],
-	    cos(phi)*pdir1[1]+sin(phi)*pdir2[1],
-	    cos(phi)*pdir1[2]+sin(phi)*pdir2[2] };
+	valarray<double> longdir(3);
+	for (int i = 0; i < 3; ++i)
+	    longdir[i] = (a2.r[i] - a1.r[i])/r12;
+	// generate perpendicular to longdir
+	valarray<double> perpdir(0.0, 3);
+	if (nchoose > 2)
+	{
+	    Atom_t& a3 = *list_at(atoms, *(aidxit++));
+	    for (int i = 0; i < 3; ++i)
+		perpdir[i] = a3.r[i] - a1.r[i];
+	    perpdir -= longdir*vddot(longdir, perpdir);
+	    // randomize orientation
+	    if (gsl_rng_uniform_int(BGA::rng, 2) == 1)
+		perpdir = -perpdir;
+	}
+	// normalize perpdir if defined
+	double nm_perpdir = vdnorm(perpdir);
+	if (nm_perpdir != 0.0)
+	{
+	    perpdir /= nm_perpdir;
+	}
+	// otherwise generate random direction
+	else
+	{
+	    double pdir1[3] = { -longdir[1],  longdir[0],  0.0 };
+	    if (pdir1[0] == 0 && pdir1[1] == 0)
+		pdir1[0] = 1.0;
+	    double norm_pdir1 =
+		sqrt(pdir1[0]*pdir1[0] + pdir1[1]*pdir1[1] + pdir1[2]*pdir1[2]);
+	    pdir1[0] /= norm_pdir1; pdir1[1] /= norm_pdir1; pdir1[2] /= norm_pdir1;
+	    double pdir2[3] = {
+		longdir[1]*pdir1[2]-longdir[2]*pdir1[1],
+		longdir[2]*pdir1[0]-longdir[0]*pdir1[2],
+		longdir[0]*pdir1[1]-longdir[1]*pdir1[0] };
+	    double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
+	    for (int i = 0; i < 3; ++i)
+		perpdir[i] = cos(phi)*pdir1[i]+sin(phi)*pdir2[i];
+	}
 	// prepare new atom
 	double nrx = a1.r[0] + xlong*longdir[0] + xperp*perpdir[0];
 	double nry = a1.r[1] + xlong*longdir[1] + xperp*perpdir[1];
 	double nrz = a1.r[2] + xlong*longdir[2] + xperp*perpdir[2];
-	Atom_t ad2(nrx, nry, nrz);
-	ad2.IncBadness(a1.Badness() + a2.Badness());
+	Atom_t ad2(nrx, nry, nrz, a1.Badness() + a2.Badness());
 	vta.push_back(ad2);
 	push_count++;
     }
@@ -1113,7 +1137,7 @@ int Molecule::push_good_pyramids(
 	cerr << "E: molecule too small, cannot construct pyramid" << endl;
 	throw InvalidMolecule();
     }
-    // (N over 3)*6 distance permutations
+    // (N over 3)*6 pyramid base permutations
     int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2);
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
@@ -1145,7 +1169,7 @@ int Molecule::push_good_pyramids(
 	    double uvi_val[3] = { a2.r[0]-a1.r[0], a2.r[1]-a1.r[1], a2.r[2]-a1.r[2] };
 	    valarray<double> uvi(uvi_val, 3);
 	    double r12 = vdnorm(uvi);
-	    if (r12 < 1.0)
+	    if (r12 < tol_r)
 		continue;
 	    uvi /= r12;
 	    // v13 is a1a3 vector
@@ -1155,7 +1179,7 @@ int Molecule::push_good_pyramids(
 	    valarray<double> uvj = v13;
 	    uvj -= uvi*vddot(uvi, uvj);
 	    double nm_uvj = vdnorm(uvj);
-	    if (nm_uvj < 1.0)
+	    if (nm_uvj < tol_r)
 		continue;
 	    uvj /= nm_uvj;
 	    // uvk is a unit vector perpendicular to a1a2a3 plane
