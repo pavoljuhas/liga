@@ -347,11 +347,13 @@ public:
     Division_t& operator= (const vector<PMOL>& div0)
     {
 	*this = div0;
+	return *this;
     }
     Division_t& operator= (const Division_t& div0)
     {
 	*this = vector<PMOL>(div0);
 	max_size = div0.max_size;
+	return *this;
     }
     int find_winner();
     PMOL& winner();
@@ -374,7 +376,7 @@ int Division_t::find_winner()
     // then get the reciprocal value
     vmfit = vdrecipw0(vmfit);
     double *mfit = &vmfit[0];
-    int idx = *(random_wt_choose(1, mfit, size()).begin());
+    int idx = random_wt_choose(1, mfit, size()).front();
     return idx;
 }
 
@@ -391,7 +393,7 @@ int Division_t::find_looser()
     for (iterator mi = begin(); mi != end(); ++mi, ++pd)
 	*pd = (*mi)->NormBadness();
     double *mbad = &vmbad[0];
-    int idx = *(random_wt_choose(1, mbad, size()).begin());
+    int idx = random_wt_choose(1, mbad, size()).front();
     return idx;
 }
 
