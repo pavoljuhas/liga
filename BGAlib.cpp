@@ -255,6 +255,7 @@ DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
     *this = v;
     init();
+    return *this;
 }
 
 DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
@@ -265,6 +266,7 @@ DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
     copy(d0.begin(), d0.end(), begin());
     NAtoms = d0.NAtoms;
     max_d = d0.max_d;
+    return *this;
 }
 
 vector<double>::iterator DistanceTable::find_nearest(const double& dfind)
@@ -986,6 +988,9 @@ int Molecule::push_good_distances(
 	    Atom_t& a2 = *list_at(atoms, *(aidxit++));
 	    for (int i = 0; i < 3; ++i)
 		rdir[i] = a2.r[i] - a1.r[i];
+	    // randomize orientation
+	    if (gsl_rng_uniform_int(BGA::rng, 2) == 1)
+		rdir *= -1.0;
 	}
 	else
 	{
@@ -1010,15 +1015,11 @@ int Molecule::push_good_distances(
 	// pick free distance
 	int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
 	double radius = dTarget[didx];
-	valarray<double> P1(a1.r, 3);
-	valarray<double> P2(3);
-	P2 = P1 + radius*rdir;
-	Atom_t ad1front(P2[0], P2[1], P2[2], a1.Badness());
-	vta.push_back(ad1front);
-	push_count++;
-	P2 = P1 - radius*rdir;
-	Atom_t ad1back(P2[0], P2[1], P2[2], a1.Badness());
-	vta.push_back(ad1back);
+	double nrx = a1.r[0] + rdir[0]*radius;
+	double nry = a1.r[1] + rdir[1]*radius;
+	double nrz = a1.r[2] + rdir[2]*radius;
+	Atom_t ad1(nrx, nry, nrz, a1.Badness());
+	vta.push_back(ad1);
 	push_count++;
     }
     return push_count;
@@ -1039,7 +1040,6 @@ int Molecule::push_good_triangles(
 	cerr << "E: molecule too small, triangulation not possible" << endl;
 	throw InvalidMolecule();
     }
-    gsl_ran_discrete_t *table = gsl_ran_discrete_preproc(NAtoms(), afit);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
@@ -1096,7 +1096,6 @@ int Molecule::push_good_triangles(
 	vta.push_back(ad2);
 	push_count++;
     }
-    gsl_ran_discrete_free(table);
     return push_count;
 }
 
@@ -1403,7 +1402,6 @@ list<int> random_wt_choose(int K, const double *p, int Np)
     for (int i = 0; i != Np; ++i)  val[i] = i;
     // cumulative probability
     double cumprob[Np];
-    int Nprob = Np;
     // main loop
     for (int i = 0, Nprob = Np; i != K; ++i, --Nprob)
     {
