@@ -20,10 +20,10 @@ int main(int argc, char* argv[])
     {
 	for (int i = 0; i <= N; ++i)
 	{
-	    list<int> lst = random_choose_few(i, N);
+	    vector<int> vec = random_choose_few(i, N);
 	    cout << i << " of " << N << ':';
-	    for (list<int>::iterator li = lst.begin(); li != lst.end(); ++li)
-		cout << ' ' << *li;
+	    for (vector<int>::iterator vi = vec.begin(); vi != vec.end(); ++vi)
+		cout << ' ' << *vi;
 	    cout << endl;
 	}
     }
