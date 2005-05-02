@@ -88,3 +88,6 @@ gizaliga-1g	1.31        1.179	2005-04-11
 gizaliga-1h	1.31        1.182	2005-05-02
     push_good_distances searches along lattice direction
 
+gizaliga-1i	1.31        1.183	2005-05-02
+    push_good_triangles now searches within lattice planes
+
