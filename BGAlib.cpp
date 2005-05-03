@@ -1629,7 +1629,7 @@ istream& operator>>(istream& fid, Molecule& M)
 	fid.setstate(ios_base::failbit);
 	return fid;
     }
-    bool result;
+    bool result = true;
     switch (ph.format)
     {
 	case Molecule::XYZ:
