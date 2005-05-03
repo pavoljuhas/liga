@@ -973,29 +973,23 @@ int Molecule::push_good_distances(
 	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
 	throw InvalidMolecule();
     }
-    // (N over 2) inline atoms permutations
-    int max_ntrials = NAtoms()*(NAtoms()-1)/2 + 1;
+    // (N over 2) * 2 inline atoms permutations
+    int max_ntrials = 2*(NAtoms()*(NAtoms()-1)/2 + 1);
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
-	Atom_t a1(0.0, 0.0, 0.0);
+	vector<int> aidx = random_wt_choose(min(NAtoms(),2), afit, NAtoms());
+	Atom_t& a1 = *list_at(atoms, aidx[0]);
 	valarray<double> rdir(0.0, 3);
 	if (NAtoms() > 1)
 	{
-	    vector<int> aidx;
-	    aidx = random_wt_choose(2, afit, NAtoms());
-	    a1 = *list_at(atoms, aidx[0]);
 	    Atom_t& a2 = *list_at(atoms, aidx[1]);
 	    for (int i = 0; i < 3; ++i)
 		rdir[i] = a2.r[i] - a1.r[i];
 	    // randomize orientation
 	    if (gsl_rng_uniform_int(BGA::rng, 2) == 1)
 		rdir = -rdir;
-	}
-	else
-	{
-	    a1 = atoms.front();
 	}
 	// normalize rdir if defined
 	double nm_rdir = vdnorm(rdir);
@@ -1042,9 +1036,9 @@ int Molecule::push_good_triangles(
 	cerr << "E: molecule too small, triangulation not possible" << endl;
 	throw InvalidMolecule();
     }
-    const double eps_d = sqrt(numeric_limits<double>().epsilon());
-    // (N over 3) inplane atoms permutations
-    int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1;
+    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
+    // (N over 3)*4 inplane atoms permutations
+    int max_ntrials = 4*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1);
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
@@ -1136,9 +1130,9 @@ int Molecule::push_good_pyramids(
 	cerr << "E: molecule too small, cannot construct pyramid" << endl;
 	throw InvalidMolecule();
     }
-    const double eps_d = sqrt(numeric_limits<double>().epsilon());
-    // (N over 3)*6 pyramid base permutations
-    int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2);
+    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
+    // (N over 3)*6*2 pyramid base permutations
+    int max_ntrials = 12*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6);
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
@@ -1238,7 +1232,8 @@ int Molecule::push_good_pyramids(
 	    Atom_t ad3top(P4[0], P4[1], P4[2]);
 	    vta.push_back(ad3top);
 	    push_count++;
-	    // and bottom one
+	    // and bottom one, which makes an extra trial
+	    ++nt;
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
 	    vta.push_back(ad3bottom);
