@@ -1042,6 +1042,7 @@ int Molecule::push_good_triangles(
 	cerr << "E: molecule too small, triangulation not possible" << endl;
 	throw InvalidMolecule();
     }
+    const double eps_d = sqrt(numeric_limits<double>().epsilon());
     // (N over 3) inplane atoms permutations
     int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1;
     ntrials = min(ntrials, max_ntrials);
@@ -1067,7 +1068,7 @@ int Molecule::push_good_triangles(
 	double xperp;
 	if (xperp2 > 0.0)
 	    xperp = sqrt(xperp2);
-	else if (xperp2 > -0.25)
+	else if (xperp2 > -eps_d)
 	    xperp = 0.0;
 	else
 	    continue;
@@ -1135,6 +1136,7 @@ int Molecule::push_good_pyramids(
 	cerr << "E: molecule too small, cannot construct pyramid" << endl;
 	throw InvalidMolecule();
     }
+    const double eps_d = sqrt(numeric_limits<double>().epsilon());
     // (N over 3)*6 pyramid base permutations
     int max_ntrials = NAtoms()*(NAtoms()-1)*(NAtoms()-2);
     ntrials = min(ntrials, max_ntrials);
@@ -1199,10 +1201,10 @@ int Molecule::push_good_pyramids(
 	    valarray<double> P4(0.0, 3);
 	    double h2 = r14*r14 - xP1*xP1;
 	    // does P4 belong to a1a2 line?
-	    if (fabs(h2) < 0.25)
+	    if (fabs(h2) < eps_d)
 	    {
 		// is vertex on a1a2
-		if (fabs(vdnorm(P3)) - r14 > 0.25)
+		if (fabs(vdnorm(P3) - r14) > eps_d)
 		    continue;
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
@@ -1217,7 +1219,7 @@ int Molecule::push_good_pyramids(
 	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r34*r34);
 	    double z2P4 = h2 - yP4*yP4;
 	    // does P4 belong to a1a2a3 plane?
-	    if (fabs(z2P4) < 0.25)
+	    if (fabs(z2P4) < eps_d)
 	    {
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
