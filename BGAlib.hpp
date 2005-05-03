@@ -73,13 +73,13 @@ private:
 class Atom_t
 {
 public:
-    Atom_t(double rx0, double ry0, double rz0, double bad0 = 0);
-    Atom_t(double r0[3], double bad0 = 0);
+    Atom_t(double rx0, double ry0, double rz0, double bad0 = 0.0);
+    Atom_t(double r0[3], double bad0 = 0.0);
     mutable double r[3];
     double Badness() const;
     double AvgBadness() const;
-    double IncBadness(double db = 1.0);
-    double DecBadness(double db = 1.0);
+    double IncBadness(double db);
+    double DecBadness(double db);
     double ResetBadness(double b = 0.0);
 private:
     double badness;
