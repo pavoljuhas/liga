@@ -91,6 +91,6 @@ gizaliga-1h	1.31        1.182	2005-05-02
 gizaliga-1i	1.31        1.183	2005-05-02
     push_good_triangles now searches within lattice planes
 
-gizaliga-1i	1.32        1.186	2005-05-02
+gizaliga-1j	1.32        1.186	2005-05-02
     fixed several warnings, choice functions return vector
 
