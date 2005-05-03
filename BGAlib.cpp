@@ -1020,7 +1020,6 @@ int Molecule::push_good_distances(
 	double nrx = a1.r[0] + rdir[0]*radius;
 	double nry = a1.r[1] + rdir[1]*radius;
 	double nrz = a1.r[2] + rdir[2]*radius;
-//	Atom_t ad1(nrx, nry, nrz, a1.Badness());
 	Atom_t ad1(nrx, nry, nrz);
 	vta.push_back(ad1);
 	push_count++;
@@ -1115,7 +1114,6 @@ int Molecule::push_good_triangles(
 	double nrx = a1.r[0] + xlong*longdir[0] + xperp*perpdir[0];
 	double nry = a1.r[1] + xlong*longdir[1] + xperp*perpdir[1];
 	double nrz = a1.r[2] + xlong*longdir[2] + xperp*perpdir[2];
-//	Atom_t ad2(nrx, nry, nrz, a1.Badness() + a2.Badness());
 	Atom_t ad2(nrx, nry, nrz);
 	vta.push_back(ad2);
 	push_count++;
@@ -1148,8 +1146,6 @@ int Molecule::push_good_pyramids(
 	Atom_t& a1 = *list_at(atoms, aidx[0]);
 	Atom_t& a2 = *list_at(atoms, aidx[1]);
 	Atom_t& a3 = *list_at(atoms, aidx[2]);
-//	double base_badness = a1.Badness()+a2.Badness()+a3.Badness();
-	double base_badness = 0.0;
 	// pick 3 vertex distances
 	vector<int> didx = random_choose_few(3, dTarget.size());
 	double dvperm[3] = {
@@ -1210,7 +1206,6 @@ int Molecule::push_good_pyramids(
 		    continue;
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
-		ad3.IncBadness(base_badness);
 		vta.push_back(ad3);
 		push_count++;
 		continue;
@@ -1226,7 +1221,6 @@ int Molecule::push_good_pyramids(
 	    {
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
-		ad3.IncBadness(base_badness);
 		vta.push_back(ad3);
 		push_count++;
 		continue;
@@ -1240,13 +1234,11 @@ int Molecule::push_good_pyramids(
 	    // top one
 	    P4 = yP4*uvj + zP4*uvk + vT;
 	    Atom_t ad3top(P4[0], P4[1], P4[2]);
-	    ad3top.IncBadness(base_badness);
 	    vta.push_back(ad3top);
 	    push_count++;
 	    // and bottom one
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
-	    ad3bottom.IncBadness(base_badness);
 	    vta.push_back(ad3bottom);
 	    push_count++;
 	} while (next_permutation(dvperm, dvperm+3));
