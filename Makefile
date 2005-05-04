@@ -112,7 +112,8 @@ clean:
 	rm -f $(PROGRAMS) $(OBJECTS) $(PROGRAMS:%=%.o) \
 	    a.out \
 	    $(TESTS) $(TESTS:%=%.o) \
-	    core.[1-9]*
+	    core.[1-9]* \
+	    *.pyc
 
 list:
 	@printf "PROGRAMS:\n"
@@ -123,6 +124,9 @@ list:
 	@printf "  %s\n" $(SOURCES)
 	@printf "TESTS:\n"
 	@printf "  %s\n" $(TESTS:%=%.cpp)
+
+install-py:
+	install -m 755 coord.py dvar.py ${HOME}/bin
 
 #}}}
 
