@@ -27,13 +27,15 @@ def coordinatesToDist(r):
     d.sort()
     return d
 
-def readXYZ(file):
+def readXYZ(file, headlines=0):
     """read plain coordinates from open file
     return list of coordinates"""
     rlist = []
     file.seek(0)
+    nr = 0
     for l in file:
-        if l[0] == '#':
+        nr += 1
+        if l[0] == '#' or nr <= headlines:
             continue
         rlist.append( [ float(w) for w in l.split()[0:3] ] )
     return rlist
@@ -101,6 +103,7 @@ def getDistancesFrom(filename):
     if re.search('^Number of particles', '\n'.join(lhead), re.M):
         dlist = coordinatesToDist(readAtomEye(file))
     else:
+        headlines = 0
         for l in lhead:
             numbercount = 0
             for w in l.split():
@@ -108,13 +111,17 @@ def getDistancesFrom(filename):
                     x = float(w)
                     numbercount += 1
                 except ValueError:
-                    pass
+                    numbercount = 0
+                    break
             if numbercount:
                 break
+            headlines += 1
         if numbercount == 1:
             dlist = readDistanceList(file)
+        elif numbercount == 3:
+            dlist = coordinatesToDist(readXYZ(file, headlines))
         else:
-            dlist = coordinatesToDist(readXYZ(file))
+            raise RuntimeError, "invalid data format in " + filename
     file.close()
     return dlist
 
