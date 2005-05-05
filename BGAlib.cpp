@@ -973,11 +973,11 @@ int Molecule::push_good_distances(
 	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
 	throw InvalidMolecule();
     }
-    // (N over 2) * 2 inline atoms permutations
-    int max_ntrials = 2*(NAtoms()*(NAtoms()-1)/2 + 1);
+    // N*(N-1) possible directions
+    int max_ntrials = NAtoms()*(NAtoms()-1) + 1;
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
-    for (int nt = 0; nt < ntrials; ++nt)
+    for (int nt = 0; nt < ntrials; )
     {
 	vector<int> aidx = random_wt_choose(min(NAtoms(),2), afit, NAtoms());
 	Atom_t& a1 = *list_at(atoms, aidx[0]);
@@ -987,15 +987,14 @@ int Molecule::push_good_distances(
 	    Atom_t& a2 = *list_at(atoms, aidx[1]);
 	    for (int i = 0; i < 3; ++i)
 		rdir[i] = a2.r[i] - a1.r[i];
-	    // randomize orientation
-	    if (gsl_rng_uniform_int(BGA::rng, 2) == 1)
-		rdir = -rdir;
 	}
 	// normalize rdir if defined
+	bool lattice_rdir;
 	double nm_rdir = vdnorm(rdir);
 	if (nm_rdir != 0.0)
 	{
 	    rdir /= nm_rdir;
+	    lattice_rdir = true;
 	}
 	// otherwise generate random direction
 	else
@@ -1007,16 +1006,29 @@ int Molecule::push_good_distances(
 	    rdir[0] = w*cos(phi);
 	    rdir[1] = w*sin(phi);
 	    rdir[2] = z;
+	    lattice_rdir = false;
 	}
 	// pick free distance
 	int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
 	double radius = dTarget[didx];
-	double nrx = a1.r[0] + rdir[0]*radius;
-	double nry = a1.r[1] + rdir[1]*radius;
-	double nrz = a1.r[2] + rdir[2]*radius;
-	Atom_t ad1(nrx, nry, nrz);
-	vta.push_back(ad1);
+	// add front atom
+	double nr[3];
+	for (int i = 0; i < 3; ++i)
+	    nr[i] = a1.r[i] + rdir[i]*radius;
+	Atom_t ad1front(nr[0], nr[1], nr[2]);
+	vta.push_back(ad1front);
 	push_count++;
+	nt++;
+	// check opposite direction when it makes sense
+	if (lattice_rdir && nt < ntrials)
+	{
+	    for (int i = 0; i < 3; ++i)
+		nr[i] = a1.r[i] - rdir[i]*radius;
+	    Atom_t ad1back(nr[0], nr[1], nr[2]);
+	    vta.push_back(ad1back);
+	    push_count++;
+	    nt++;
+	}
     }
     return push_count;
 }
