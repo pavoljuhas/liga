@@ -977,7 +977,7 @@ int Molecule::push_good_distances(
     int max_ntrials = NAtoms()*(NAtoms()-1) + 1;
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
-    for (int nt = 0; nt < ntrials; )
+    for (int nt = 0; nt < ntrials; ++nt)
     {
 	vector<int> aidx = random_wt_choose(min(NAtoms(),2), afit, NAtoms());
 	Atom_t& a1 = *list_at(atoms, aidx[0]);
@@ -1018,16 +1018,16 @@ int Molecule::push_good_distances(
 	Atom_t ad1front(nr[0], nr[1], nr[2]);
 	vta.push_back(ad1front);
 	push_count++;
-	nt++;
 	// check opposite direction when it makes sense
-	if (lattice_rdir && nt < ntrials)
+	// this accounts for extra trial
+	if (lattice_rdir)
 	{
+	    ++nt;
 	    for (int i = 0; i < 3; ++i)
 		nr[i] = a1.r[i] - rdir[i]*radius;
 	    Atom_t ad1back(nr[0], nr[1], nr[2]);
 	    vta.push_back(ad1back);
 	    push_count++;
-	    nt++;
 	}
     }
     return push_count;
@@ -1049,34 +1049,31 @@ int Molecule::push_good_triangles(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // (N over 3)*4 inplane atoms permutations
-    int max_ntrials = 4*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1);
+    // (N over 3)*4 plane orientations and possible triangle vertices
+    int max_ntrials = 4*NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1;
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
-	// pick first atom and free distance
+	// pick 2 atoms for base and 3rd for plane orientation
 	int nchoose = NAtoms() > 2 ? 3 : 2;
 	vector<int> aidx = random_wt_choose(nchoose, afit, NAtoms());
 	Atom_t& a1 = *list_at(atoms, aidx[0]);
 	Atom_t& a2 = *list_at(atoms, aidx[1]);
-	int idf1 = gsl_rng_uniform_int(BGA::rng, dTarget.size());
-	int idf2 = gsl_rng_uniform_int(BGA::rng, dTarget.size()-1) + 1;
-	idf2 = (idf2 + idf1) % dTarget.size();
-	double r13 = dTarget[idf1];
-	double r23 = dTarget[idf2];
+	// pick 2 vertex distances
+	vector<int> didx = random_choose_few(2, dTarget.size());
+	double r13 = dTarget[didx[0]];
+	double r23 = dTarget[didx[1]];
 	double r12 = dist(a1, a2);
 	// is triangle base reasonably large?
-	if (r12 < tol_r)
+	if (r12 < eps_d)
 	    continue;
 	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
 	double xperp2 = r13*r13 - xlong*xlong;
-	double xperp;
-	if (xperp2 > 0.0)
-	    xperp = sqrt(xperp2);
-	else if (xperp2 > -eps_d)
+	double xperp = sqrt(fabs(xperp2));
+	if (xperp < eps_d)
 	    xperp = 0.0;
-	else
+	else if (xperp2 < 0.0)
 	    continue;
 	// direction along triangle base:
 	valarray<double> longdir(3);
@@ -1090,15 +1087,14 @@ int Molecule::push_good_triangles(
 	    for (int i = 0; i < 3; ++i)
 		perpdir[i] = a3.r[i] - a1.r[i];
 	    perpdir -= longdir*vddot(longdir, perpdir);
-	    // randomize orientation
-	    if (gsl_rng_uniform_int(BGA::rng, 2) == 1)
-		perpdir = -perpdir;
 	}
 	// normalize perpdir if defined
+	bool lattice_plane;
 	double nm_perpdir = vdnorm(perpdir);
 	if (nm_perpdir != 0.0)
 	{
 	    perpdir /= nm_perpdir;
+	    lattice_plane = true;
 	}
 	// otherwise generate random direction
 	else
@@ -1116,14 +1112,32 @@ int Molecule::push_good_triangles(
 	    double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
 	    for (int i = 0; i < 3; ++i)
 		perpdir[i] = cos(phi)*pdir1[i]+sin(phi)*pdir2[i];
+	    lattice_plane = false;
 	}
-	// prepare new atom
-	double nrx = a1.r[0] + xlong*longdir[0] + xperp*perpdir[0];
-	double nry = a1.r[1] + xlong*longdir[1] + xperp*perpdir[1];
-	double nrz = a1.r[2] + xlong*longdir[2] + xperp*perpdir[2];
-	Atom_t ad2(nrx, nry, nrz);
+	// prepare new atom at vertex P
+	valarray<double> a1r(a1.r, 3);
+	valarray<double> P(3);
+	P = a1r + xlong*longdir + xperp*perpdir;
+	Atom_t ad2(P[0], P[1], P[2]);
 	vta.push_back(ad2);
-	push_count++;
+	// add remaining vertices if it makes sense
+	// they account for extra trials
+	// if several of them go to the same place, it's only better
+	if (lattice_plane)
+	{
+	    ++nt;
+	    P = a1r + xlong*longdir - xperp*perpdir;
+	    vta.push_back(Atom_t(P[0], P[1], P[2]));
+	    push_count++;
+	    ++nt;
+	    P = a1r + (r12 - xlong)*longdir + xperp*perpdir;
+	    vta.push_back(Atom_t(P[0], P[1], P[2]));
+	    push_count++;
+	    ++nt;
+	    P = a1r + (r12 - xlong)*longdir - xperp*perpdir;
+	    vta.push_back(Atom_t(P[0], P[1], P[2]));
+	    push_count++;
+	}
     }
     return push_count;
 }
