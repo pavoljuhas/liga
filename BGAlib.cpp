@@ -1170,23 +1170,19 @@ int Molecule::push_good_pyramids(
 	Atom_t& a3 = *list_at(atoms, aidx[2]);
 	// pick 3 vertex distances
 	vector<int> didx = random_choose_few(3, dTarget.size());
-	double dvperm[3] = {
-	    dTarget[didx[0]],
-	    dTarget[didx[1]],
-	    dTarget[didx[2]] };
-	sort(dvperm, dvperm+3);
-	// loop over unique permutations of dvperm
+	// loop over all permutations of selected distances
+	sort(didx.begin(), didx.end());
 	do
 	{
 	    ++nt;
-	    double r14 = dvperm[0];
-	    double r24 = dvperm[1];
-	    double r34 = dvperm[2];
+	    double r14 = dTarget[ didx[0] ];
+	    double r24 = dTarget[ didx[1] ];
+	    double r34 = dTarget[ didx[2] ];
 	    // uvi is a unit vector in a1a2 direction
 	    double uvi_val[3] = { a2.r[0]-a1.r[0], a2.r[1]-a1.r[1], a2.r[2]-a1.r[2] };
 	    valarray<double> uvi(uvi_val, 3);
 	    double r12 = vdnorm(uvi);
-	    if (r12 < tol_r)
+	    if (r12 < eps_d)
 		continue;
 	    uvi /= r12;
 	    // v13 is a1a3 vector
@@ -1196,7 +1192,7 @@ int Molecule::push_good_pyramids(
 	    valarray<double> uvj = v13;
 	    uvj -= uvi*vddot(uvi, uvj);
 	    double nm_uvj = vdnorm(uvj);
-	    if (nm_uvj < tol_r)
+	    if (nm_uvj < eps_d)
 		continue;
 	    uvj /= nm_uvj;
 	    // uvk is a unit vector perpendicular to a1a2a3 plane
@@ -1264,7 +1260,7 @@ int Molecule::push_good_pyramids(
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
 	    vta.push_back(ad3bottom);
 	    push_count++;
-	} while (next_permutation(dvperm, dvperm+3));
+	} while ( next_permutation(didx.begin(), didx.end()) );
     }
     return push_count;
 }
