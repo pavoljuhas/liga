@@ -68,32 +68,36 @@ gizaliga-1b     1.14        1.148       2005-03-02
 djoser-1a       1.25        1.148       2005-03-03
     added listing of cnt_penalty_calls otherwise same as djoser-1
 
-gizaliga-1c	1.20        1.154	2005-03-06
+gizaliga-1c     1.20        1.154       2005-03-06
     using NormBadness(), BGAlib.cpp is using filter_good_atoms()
 
-gizaliga-1d	1.22        1.154	2005-03-07
+gizaliga-1d     1.22        1.154       2005-03-07
     graceful exit on SIGHUP, otherwise it is the same as gizaliga-1c
 
-gizaliga-1e	1.23        1.161	2005-03-11
+gizaliga-1e     1.23        1.161       2005-03-11
     allowing for loose distance tables, added parameter natoms to gizaliga
 
-gizaliga-1f	1.26        1.171	2005-03-14
+gizaliga-1f     1.26        1.171       2005-03-14
     new atoms can be relaxed if evolve_relax=true
 
-gizaliga-1g	1.31        1.179	2005-04-11
+gizaliga-1g     1.31        1.179       2005-04-11
     atoms can also be relaxed after removal when degenerate_relax=true
     optional limit for maximum CPU time
     added parameters degenerate_relax, maxcputime
 
-gizaliga-1h	1.31        1.182	2005-05-02
+gizaliga-1h     1.31        1.182       2005-05-02
     push_good_distances searches along lattice direction
 
-gizaliga-1i	1.31        1.183	2005-05-02
+gizaliga-1i     1.31        1.183       2005-05-02
     push_good_triangles now searches within lattice planes
 
-gizaliga-1j	1.32        1.186	2005-05-02
+gizaliga-1j     1.32        1.186       2005-05-02
     fixed several warnings, random_whatever() now returns vector
 
-gizaliga-1k	1.32        1.188	2005-05-03
+gizaliga-1k     1.32        1.188       2005-05-03
     initial badness of test atoms changed to zero
+
+gizaliga-1l     1.32        1.193       2005-05-05
+    loop over index permutations in push_good_pyramids, with possible
+    test-atom degeneracies.  push_good_triangles now checks all 4 vertices
 
