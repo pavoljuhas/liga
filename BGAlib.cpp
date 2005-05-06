@@ -1072,7 +1072,6 @@ int Molecule::push_good_triangles(
 	// get and store both possible values of xlong
 	double xl0 = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
 	double xlong[2] = { xl0, r12-xl0 };
-	sort(xlong, xlong+2);
 	// get and store both possible values of xperp
 	double xp2 = r13*r13 - xlong[0]*xlong[0];
 	double xp = sqrt(fabs(xp));
@@ -1080,7 +1079,6 @@ int Molecule::push_good_triangles(
 	    xp = 0.0;
 	else if (xp2 < 0.0)
 	    continue;
-	// xp is ge 0, no need for sorting
 	double xperp[2] = { -xp, xp };
 	// find direction along triangle base:
 	valarray<double> longdir(3);
@@ -1124,8 +1122,10 @@ int Molecule::push_good_triangles(
 	// if vertex search has already failed above, nt would increase by 1
 	// here we want nt to count number of added vertices
 	--nt;
+	sort(xperp, xperp+2);
 	do
 	{
+	    sort(xlong, xlong+2);
 	    do
 	    {
 		++nt;
