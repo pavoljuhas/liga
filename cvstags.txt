@@ -101,3 +101,7 @@ gizaliga-1l     1.32        1.193       2005-05-05
     loop over index permutations in push_good_pyramids, with possible
     test-atom degeneracies.  push_good_triangles now checks all 4 vertices
 
+gizaliga-1m     1.32        1.195       2005-05-06
+    loop over unique distance permutations in push_good_triangles and
+    push_good_pyramids
+
