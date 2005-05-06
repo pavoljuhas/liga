@@ -973,6 +973,7 @@ int Molecule::push_good_distances(
 	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
 	throw InvalidMolecule();
     }
+    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     // N*(N-1) possible directions
     int max_ntrials = NAtoms()*(NAtoms()-1) + 1;
     ntrials = min(ntrials, max_ntrials);
@@ -991,7 +992,7 @@ int Molecule::push_good_distances(
 	// normalize rdir if defined
 	bool lattice_rdir;
 	double nm_rdir = vdnorm(rdir);
-	if (nm_rdir != 0.0)
+	if (nm_rdir > eps_d)
 	{
 	    rdir /= nm_rdir;
 	    lattice_rdir = true;
@@ -1017,7 +1018,7 @@ int Molecule::push_good_distances(
 	    nr[i] = a1.r[i] + rdir[i]*radius;
 	Atom_t ad1front(nr[0], nr[1], nr[2]);
 	vta.push_back(ad1front);
-	push_count++;
+	++push_count;
 	// check opposite direction when it makes sense
 	// this accounts for extra trial
 	if (lattice_rdir)
@@ -1027,7 +1028,7 @@ int Molecule::push_good_distances(
 		nr[i] = a1.r[i] - rdir[i]*radius;
 	    Atom_t ad1back(nr[0], nr[1], nr[2]);
 	    vta.push_back(ad1back);
-	    push_count++;
+	    ++push_count;
 	}
     }
     return push_count;
@@ -1068,18 +1069,24 @@ int Molecule::push_good_triangles(
 	// is triangle base reasonably large?
 	if (r12 < eps_d)
 	    continue;
-	double xlong = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
-	double xperp2 = r13*r13 - xlong*xlong;
-	double xperp = sqrt(fabs(xperp2));
-	if (xperp < eps_d)
-	    xperp = 0.0;
-	else if (xperp2 < 0.0)
+	// get and store both possible values of xlong
+	double xl0 = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
+	double xlong[2] = { xl0, r12-xl0 };
+	sort(xlong, xlong+2);
+	// get and store both possible values of xperp
+	double xp2 = r13*r13 - xlong[0]*xlong[0];
+	double xp = sqrt(fabs(xp));
+	if (xp < eps_d)
+	    xp = 0.0;
+	else if (xp2 < 0.0)
 	    continue;
-	// direction along triangle base:
+	// xp is ge 0, no need for sorting
+	double xperp[2] = { -xp, xp };
+	// find direction along triangle base:
 	valarray<double> longdir(3);
 	for (int i = 0; i < 3; ++i)
 	    longdir[i] = (a2.r[i] - a1.r[i])/r12;
-	// generate perpendicular to longdir
+	// generate direction perpendicular to longdir
 	valarray<double> perpdir(0.0, 3);
 	if (nchoose > 2)
 	{
@@ -1091,7 +1098,7 @@ int Molecule::push_good_triangles(
 	// normalize perpdir if defined
 	bool lattice_plane;
 	double nm_perpdir = vdnorm(perpdir);
-	if (nm_perpdir != 0.0)
+	if (nm_perpdir > eps_d)
 	{
 	    perpdir /= nm_perpdir;
 	    lattice_plane = true;
@@ -1114,30 +1121,23 @@ int Molecule::push_good_triangles(
 		perpdir[i] = cos(phi)*pdir1[i]+sin(phi)*pdir2[i];
 	    lattice_plane = false;
 	}
-	// prepare new atom at vertex P
-	valarray<double> a1r(a1.r, 3);
+	// allocate vallarays for positions of a1 and vertex P
+	valarray<double> Pa1(a1.r, 3);
 	valarray<double> P(3);
-	P = a1r + xlong*longdir + xperp*perpdir;
-	Atom_t ad2(P[0], P[1], P[2]);
-	vta.push_back(ad2);
-	// add remaining vertices if it makes sense
-	// they account for extra trials
-	// if several of them go to the same place, it's only better
-	if (lattice_plane)
+	// if vertex search has already failed above, nt would increase by 1
+	// here we want nt to count number of added vertices
+	--nt;
+	do
 	{
-	    ++nt;
-	    P = a1r + xlong*longdir - xperp*perpdir;
-	    vta.push_back(Atom_t(P[0], P[1], P[2]));
-	    push_count++;
-	    ++nt;
-	    P = a1r + (r12 - xlong)*longdir + xperp*perpdir;
-	    vta.push_back(Atom_t(P[0], P[1], P[2]));
-	    push_count++;
-	    ++nt;
-	    P = a1r + (r12 - xlong)*longdir - xperp*perpdir;
-	    vta.push_back(Atom_t(P[0], P[1], P[2]));
-	    push_count++;
-	}
+	    do
+	    {
+		++nt;
+		P = Pa1 + xlong[0]*longdir + xperp[0]*perpdir;
+		Atom_t ad2(P[0], P[1], P[2]);
+		vta.push_back(ad2);
+		++push_count;
+	    } while (lattice_plane && next_permutation(xlong, xlong+2));
+	} while (lattice_plane && next_permutation(xperp, xperp+2));
     }
     return push_count;
 }
@@ -1170,14 +1170,18 @@ int Molecule::push_good_pyramids(
 	Atom_t& a3 = *list_at(atoms, aidx[2]);
 	// pick 3 vertex distances
 	vector<int> didx = random_choose_few(3, dTarget.size());
-	// loop over all permutations of selected distances
-	sort(didx.begin(), didx.end());
+	// loop over unique permutations of selected distances
+	double dvperm[3] = {
+	    dTarget[didx[0]],
+	    dTarget[didx[1]],
+	    dTarget[didx[2]] };
+	sort(dvperm, dvperm+3);
 	do
 	{
 	    ++nt;
-	    double r14 = dTarget[ didx[0] ];
-	    double r24 = dTarget[ didx[1] ];
-	    double r34 = dTarget[ didx[2] ];
+	    double r14 = dvperm[0];
+	    double r24 = dvperm[1];
+	    double r34 = dvperm[2];
 	    // uvi is a unit vector in a1a2 direction
 	    double uvi_val[3] = { a2.r[0]-a1.r[0], a2.r[1]-a1.r[1], a2.r[2]-a1.r[2] };
 	    valarray<double> uvi(uvi_val, 3);
@@ -1225,7 +1229,7 @@ int Molecule::push_good_pyramids(
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
 		vta.push_back(ad3);
-		push_count++;
+		++push_count;
 		continue;
 	    }
 	    else if (h2 < 0)
@@ -1240,7 +1244,7 @@ int Molecule::push_good_pyramids(
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
 		vta.push_back(ad3);
-		push_count++;
+		++push_count;
 		continue;
 	    }
 	    else if (z2P4 < 0)
@@ -1253,14 +1257,14 @@ int Molecule::push_good_pyramids(
 	    P4 = yP4*uvj + zP4*uvk + vT;
 	    Atom_t ad3top(P4[0], P4[1], P4[2]);
 	    vta.push_back(ad3top);
-	    push_count++;
+	    ++push_count;
 	    // and bottom one, which makes an extra trial
 	    ++nt;
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
 	    vta.push_back(ad3bottom);
-	    push_count++;
-	} while ( next_permutation(didx.begin(), didx.end()) );
+	    ++push_count;
+	} while (next_permutation(dvperm, dvperm+3));
     }
     return push_count;
 }
