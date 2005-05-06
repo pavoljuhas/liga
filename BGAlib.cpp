@@ -1106,19 +1106,16 @@ int Molecule::push_good_triangles(
 	// otherwise generate random direction
 	else
 	{
-	    double pdir1[3] = { -longdir[1],  longdir[0],  0.0 };
+	    valarray<double> pdir1(3), pdir2(3);
+	    pdir1[0] = -longdir[1];
+	    pdir1[1] = longdir[0];
+	    pdir1[2] = 0.0;
 	    if (pdir1[0] == 0 && pdir1[1] == 0)
 		pdir1[0] = 1.0;
-	    double norm_pdir1 =
-		sqrt(pdir1[0]*pdir1[0] + pdir1[1]*pdir1[1] + pdir1[2]*pdir1[2]);
-	    pdir1[0] /= norm_pdir1; pdir1[1] /= norm_pdir1; pdir1[2] /= norm_pdir1;
-	    double pdir2[3] = {
-		longdir[1]*pdir1[2]-longdir[2]*pdir1[1],
-		longdir[2]*pdir1[0]-longdir[0]*pdir1[2],
-		longdir[0]*pdir1[1]-longdir[1]*pdir1[0] };
+	    pdir1 /= vdnorm(pdir1);
+	    pdir2 = vdcross(longdir, pdir1);
 	    double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
-	    for (int i = 0; i < 3; ++i)
-		perpdir[i] = cos(phi)*pdir1[i]+sin(phi)*pdir2[i];
+	    perpdir = cos(phi)*pdir1 + sin(phi)*pdir2;
 	    lattice_plane = false;
 	}
 	// allocate vallarays for positions of a1 and vertex P
