@@ -105,3 +105,8 @@ gizaliga-1m     1.32        1.195       2005-05-06
     loop over unique distance permutations in push_good_triangles and
     push_good_pyramids
 
+gizaliga-1n     1.32        1.196       2005-05-06
+    reverted back to doing all distance permutations and getting all vertices
+    in push_good_triangles() and push_good_pyramids().  This appears to work
+    better and is simpler to code.  More-less the same as gizaliga-1l.
+
