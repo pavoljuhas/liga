@@ -84,7 +84,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  saverate=int          [10] minimum iterations between outstru updates\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
-"Liga parameters\n"
+"Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
