@@ -50,6 +50,25 @@ mcfitdist: mcfitdist.o $(OBJECTS) $(HEADERS)
 #####################################################################}}}
 # test programs {{{
 
+test: gizaliga-test-solids gizaliga-test-shapes
+	@echo
+	@echo "-------------"
+	@echo "All passed!!!"
+	@echo "-------------"
+
+gizaliga-test-solids:
+	./gizaliga maxcputime=1 solids/tetrahedron.dst
+	./gizaliga maxcputime=1 solids/octahedron.dst
+	./gizaliga maxcputime=1 solids/cube.dst
+	./gizaliga maxcputime=1 solids/icosahedron.dst
+	./gizaliga maxcputime=1 solids/dodecahedron.dst
+
+gizaliga-test-shapes:
+	./gizaliga maxcputime=1 pyr_trials=0 shapes/square.dst
+	./gizaliga maxcputime=1 pyr_trials=0 shapes/hexagon.dst
+	./gizaliga maxcputime=1 pyr_trials=0 shapes/heptagon.dst
+	./gizaliga maxcputime=1 pyr_trials=0 shapes/octagon.dst
+
 tests: $(TESTS)
 
 ssTest01: ssTest01.o $(OBJECTS) $(HEADERS)
