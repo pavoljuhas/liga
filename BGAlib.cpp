@@ -1122,19 +1122,22 @@ int Molecule::push_good_triangles(
 	// if vertex search has already failed above, nt would increase by 1
 	// here we want nt to count number of added vertices
 	--nt;
-	sort(xperp, xperp+2);
-	do
+	// loops over all 4 vertices in case of lattice_plane
+	for (double *pxl = xlong; pxl != xlong+2; ++pxl)
 	{
-	    sort(xlong, xlong+2);
-	    do
+	    for (double *pxp = xperp; pxp != xperp+2; ++pxp)
 	    {
 		++nt;
-		P = Pa1 + xlong[0]*longdir + xperp[0]*perpdir;
+		P = Pa1 + (*pxl)*longdir + (*pxp)*perpdir;
 		Atom_t ad2(P[0], P[1], P[2]);
 		vta.push_back(ad2);
 		++push_count;
-	    } while (lattice_plane && next_permutation(xlong, xlong+2));
-	} while (lattice_plane && next_permutation(xperp, xperp+2));
+		if (!lattice_plane)
+		    break;
+	    }
+	    if (!lattice_plane)
+		break;
+	}
     }
     return push_count;
 }
@@ -1167,18 +1170,14 @@ int Molecule::push_good_pyramids(
 	Atom_t& a3 = *list_at(atoms, aidx[2]);
 	// pick 3 vertex distances
 	vector<int> didx = random_choose_few(3, dTarget.size());
-	// loop over unique permutations of selected distances
-	double dvperm[3] = {
-	    dTarget[didx[0]],
-	    dTarget[didx[1]],
-	    dTarget[didx[2]] };
-	sort(dvperm, dvperm+3);
+	// loop over all permutations of selected distances
+	sort(didx.begin(), didx.end());
 	do
 	{
 	    ++nt;
-	    double r14 = dvperm[0];
-	    double r24 = dvperm[1];
-	    double r34 = dvperm[2];
+	    double r14 = dTarget[ didx[0] ];
+	    double r24 = dTarget[ didx[1] ];
+	    double r34 = dTarget[ didx[2] ];
 	    // uvi is a unit vector in a1a2 direction
 	    double uvi_val[3] = { a2.r[0]-a1.r[0], a2.r[1]-a1.r[1], a2.r[2]-a1.r[2] };
 	    valarray<double> uvi(uvi_val, 3);
@@ -1260,8 +1259,8 @@ int Molecule::push_good_pyramids(
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
 	    vta.push_back(ad3bottom);
-	    ++push_count;
-	} while (next_permutation(dvperm, dvperm+3));
+	    push_count++;
+	} while ( next_permutation(didx.begin(), didx.end()) );
     }
     return push_count;
 }
