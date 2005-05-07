@@ -73,7 +73,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
-"  -q, --quiet           do not show season details\n"
+"  -q, --quiet           suppress output of season details\n"
 "  -h, --help            display this message\n"
 "  -v, --version         show program version\n"
 "IO parameters:\n"
