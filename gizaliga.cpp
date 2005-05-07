@@ -79,7 +79,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  natoms=int            size of molecule, use with loose target distances\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
-"  frames=FILE           save intermediate structures to FILE.liga_round\n"
+"  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
@@ -319,10 +319,9 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 
 struct RunVar_t
 {
-    RunVar_t() : liga_round(0), full_liga(false), exiting(false)
+    RunVar_t() : season(0), exiting(false)
     { }
-    int liga_round;
-    bool full_liga;
+    int season;
     bool exiting;
 };
 
@@ -460,7 +459,7 @@ void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
        )
 	return;
     ostringstream oss;
-    oss << rp.frames << "." << rv.liga_round;
+    oss << rp.frames << "." << rv.season;
     mol.WriteAtomEye(oss.str().c_str());
     last_frame = mol;
     cnt = 0;
@@ -488,7 +487,7 @@ int main(int argc, char *argv[])
     // put initial molecule to its division
     PMOL first_team = new Molecule(mol);
     cout << "Initial team" << endl;
-    cout << rv.liga_round << " I " << first_team->NAtoms() << ' '
+    cout << rv.season << " I " << first_team->NAtoms() << ' '
 	<< first_team->NormBadness() << endl;
     liga[mol.NAtoms()].push_back(first_team);
     // fill lower divisions
@@ -498,18 +497,18 @@ int main(int argc, char *argv[])
         PMOL parent_team = liga[level+1].back();
         PMOL lower_team = new Molecule(*parent_team);
         lower_team->Degenerate(1);
-	cout << rv.liga_round << " L " << lower_team->NAtoms() << ' '
+	cout << rv.season << " L " << lower_team->NAtoms() << ' '
 	    << lower_team->NormBadness() << endl;
         liga[level].push_back(lower_team);
     }
     cout << "Done" << endl;
     // the first world champion is the initial molecule
     PMOL world_champ = first_team;
-    cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
+    cout << rv.season << " WC " << world_champ->NAtoms() << ' '
 	<< world_champ->NormBadness() << endl;
     // save the best team ever:
     Molecule best_champ(*world_champ);
-    cout << rv.liga_round << " BC " << best_champ.NAtoms() << ' '
+    cout << rv.season << " BC " << best_champ.NAtoms() << ' '
 	<< best_champ.NormBadness() << endl;
     cout << endl << "Starting the game ... now." << endl;
     // watch for HUP
@@ -522,7 +521,7 @@ int main(int argc, char *argv[])
 	    break;
 	if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
 	    break;
-        ++rv.liga_round;
+        ++rv.season;
 	typedef vector<Division_t>::iterator VDit;
 	int lo_level = 0;
 	for (VDit lo_div = liga.begin();
@@ -565,14 +564,14 @@ int main(int argc, char *argv[])
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
-	    cout << rv.liga_round;
-	    cout << " A " <<
-		lo_level << ' ' << adv_bad0 << ' ' <<
-		hi_level << ' ' << advancing->NormBadness() << "    ";
-	    cout << " D " <<
-		hi_level << ' ' << desc_bad0 << ' ' <<
-		lo_level << ' ' << descending->NormBadness() << endl;
-	    // no need to finish round if we found champion
+	    cout << rv.season;
+		cout << " A " <<
+		    lo_level << ' ' << adv_bad0 << ' ' <<
+		    hi_level << ' ' << advancing->NormBadness() << "    ";
+		cout << " D " <<
+		    hi_level << ' ' << desc_bad0 << ' ' <<
+		    lo_level << ' ' << descending->NormBadness() << endl;
+	    // no need to finish the season if we found champion
 	    if (advancing->Full() && advancing->NormBadness() < rp.tol_bad)
 		break;
 	    if (SIGHUP_received)
@@ -592,14 +591,14 @@ int main(int argc, char *argv[])
 		}
 	    }
 	}
-	cout << rv.liga_round << " WC " << world_champ->NAtoms() << ' '
+	cout << rv.season << " WC " << world_champ->NAtoms() << ' '
 	    << world_champ->NormBadness() << endl;
 	if (    world_champ->NAtoms() > best_champ.NAtoms() ||
 		world_champ->NormBadness() < best_champ.NormBadness()
 	   )
 	{
 	    best_champ = *world_champ;
-	    cout << rv.liga_round << " BC " << best_champ.NAtoms() << ' '
+	    cout << rv.season << " BC " << best_champ.NAtoms() << ' '
 		<< best_champ.NormBadness() << endl;
 	}
         save_outstru(best_champ, rp, rv);
