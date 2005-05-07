@@ -1051,7 +1051,7 @@ int Molecule::push_good_triangles(
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     // (N over 3)*4 plane orientations and possible triangle vertices
-    int max_ntrials = 4*NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 1;
+    int max_ntrials = 4*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 2);
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
@@ -1158,7 +1158,7 @@ int Molecule::push_good_pyramids(
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     // (N over 3)*6*2 pyramid base permutations
-    int max_ntrials = 12*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6);
+    int max_ntrials = 12*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 2);
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
