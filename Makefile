@@ -52,9 +52,9 @@ mcfitdist: mcfitdist.o $(OBJECTS) $(HEADERS)
 
 test: gizaliga-test-solids gizaliga-test-shapes
 	@echo
-	@echo "-------------"
-	@echo "All passed!!!"
-	@echo "-------------"
+	@echo "-----------------"
+	@echo "All tests passed!"
+	@echo "-----------------"
 
 gizaliga-test-solids:
 	./gizaliga maxcputime=1 solids/tetrahedron.dst
