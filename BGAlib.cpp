@@ -1074,7 +1074,7 @@ int Molecule::push_good_triangles(
 	double xlong[2] = { xl0, r12-xl0 };
 	// get and store both possible values of xperp
 	double xp2 = r13*r13 - xlong[0]*xlong[0];
-	double xp = sqrt(fabs(xp));
+	double xp = sqrt(fabs(xp2));
 	if (xp < eps_d)
 	    xp = 0.0;
 	else if (xp2 < 0.0)
