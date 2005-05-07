@@ -20,6 +20,8 @@ struct RunPar_t
 {
     RunPar_t();
     Molecule ProcessArguments(int argc, char * argv[]);
+    // Output option
+    bool quiet;
     // IO parameters
     string distfile;
     string inistru;
@@ -71,6 +73,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
+"  -q, --quiet           do not show season details\n"
 "  -h, --help            display this message\n"
 "  -v, --version         show program version\n"
 "IO parameters:\n"
@@ -114,10 +117,11 @@ string RunPar_t::version_string(string quote)
 Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 {
     char *short_options =
-        "p:hv";
+        "p:qhv";
     // parameters and options
     option long_options[] = {
         {"parfile", 1, 0, 'p'},
+        {"quiet", 0, 0, 'q'},
         {"help", 0, 0, 'h'},
         {"version", 0, 0, 'v'},
         {0, 0, 0, 0}
@@ -154,6 +158,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     }
+    quiet = a.isopt("q");
     try {
 	a.ValidatePars(validpars);
     }
@@ -564,6 +569,8 @@ int main(int argc, char *argv[])
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
+	    if (!rp.quiet)
+	    {
 	    cout << rv.season;
 		cout << " A " <<
 		    lo_level << ' ' << adv_bad0 << ' ' <<
@@ -571,6 +578,7 @@ int main(int argc, char *argv[])
 		cout << " D " <<
 		    hi_level << ' ' << desc_bad0 << ' ' <<
 		    lo_level << ' ' << descending->NormBadness() << endl;
+	    }
 	    // no need to finish the season if we found champion
 	    if (advancing->Full() && advancing->NormBadness() < rp.tol_bad)
 		break;
