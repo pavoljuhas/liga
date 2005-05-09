@@ -108,6 +108,8 @@ gizaliga-1m     1.32        1.195       2005-05-06
 gizaliga-1n     1.36        1.199       2005-05-06
     Reverted back to doing all distance permutations and getting all vertices
     in push_good_triangles() and push_good_pyramids().  This appears to work
-    better and is simpler to code.  Added -q,--quiet option to gizaliga.
-    Removed nasty bug from push_good_triangles().
+    better and is simpler to code.  
+    Removed nasty bug from push_good_triangles().  Increased low limit for
+    max_ntrials in push_good_triangles(), push_good_pyramids().
+    Added -q,--quiet option to gizaliga.
 
