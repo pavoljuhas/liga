@@ -1,0 +1,19 @@
+Priority classification:
+1   next release
+2   as soon as possible
+3   nice to have
+4   consider including
+
+Conformation search:
+1   add Reassign pairs operator, that searchs for best assignment of target
+    distances
+1   check where does Badness() become smaller than BGA::eps_badness
+2   implement global structure relaxation 
+3   make Pair_t lock-able - allow fast molecule copying and destruction
+3   come up with a nice library name
+4   use fast hash table instead of maps for pairs storage
+4   redesign classes - make a base atom and molecule class; molecule should
+    be a container of atoms
+
+Input output:
+2   add reading of atomeye structure format
