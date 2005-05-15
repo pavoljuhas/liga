@@ -8,6 +8,9 @@ Conformation search:
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
 1   check where does Badness() become smaller than BGA::eps_badness
+1   prevent LM not converged messages
+1   simplify, remove alternative penalty definitions
+2   try simplex minimization, compare with LM minimizer
 2   implement global structure relaxation 
 3   make Pair_t lock-able - allow fast molecule copying and destruction
 3   come up with a nice library name
