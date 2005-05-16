@@ -45,8 +45,8 @@ gizaliga-test-shapes { comment = test on 4 polygons } :
     @for f in ("square.dst", "hexagon.dst", "heptagon.dst", "octagon.dst"):
         :sys {log} ./gizaliga maxcputime=1 pyr_trials=0 shapes/$f
 
-install-py:
-    :sys install -m 755 coord.py dvar.py ${HOME}/bin
+install-py { comment = install python scripts } :
+    :sys install -m 755 coord.py dvar.py $${HOME}/bin
 
 # ifdef FAST
 # # FAST version runs about 2 times faster
