@@ -1062,7 +1062,8 @@ int Molecule::push_good_triangles(
 	Atom_t& a1 = *list_at(atoms, aidx[0]);
 	Atom_t& a2 = *list_at(atoms, aidx[1]);
 	// pick 2 vertex distances
-	vector<int> didx = random_choose_few(2, dTarget.size());
+	bool with_repeat = (tol_dd <= 0.0);
+	vector<int> didx = random_choose_few(2, dTarget.size(), with_repeat);
 	double r13 = dTarget[didx[0]];
 	double r23 = dTarget[didx[1]];
 	double r12 = dist(a1, a2);
@@ -1169,7 +1170,8 @@ int Molecule::push_good_pyramids(
 	Atom_t& a2 = *list_at(atoms, aidx[1]);
 	Atom_t& a3 = *list_at(atoms, aidx[2]);
 	// pick 3 vertex distances
-	vector<int> didx = random_choose_few(3, dTarget.size());
+	bool with_repeat = (tol_dd <= 0.0);
+	vector<int> didx = random_choose_few(3, dTarget.size(), with_repeat);
 	// loop over all permutations of selected distances
 	sort(didx.begin(), didx.end());
 	do
@@ -1379,9 +1381,16 @@ Molecule& Molecule::Degenerate(int Npop)
     return *this;
 }
 
-vector<int> random_choose_few(int K, int Np)
+vector<int> random_choose_few(int K, int Np, bool with_repeat)
 {
     vector<int> vec(K);
+    if (with_repeat)
+    {
+	for (int i = 0; i < K; ++i)
+	    vec[i] = gsl_rng_uniform_int(BGA::rng, Np);
+	return vec;
+    }
+    // no repeats allowed here
     if (K > Np)
     {
 	cerr << "random_wt_choose(): too many items to choose" << endl;
