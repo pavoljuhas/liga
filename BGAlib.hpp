@@ -45,7 +45,7 @@ struct OrderedPair : pair<T,T>
 	    swap(pair<T,T>::first, pair<T,T>::second);
     }
 };
-vector<int> random_choose_few(int K, int Np);
+vector<int> random_choose_few(int K, int Np, bool with_repeat = false);
 vector<int> random_wt_choose(int K, const double *p, int Np);
 
 /* declaration of BGA objects */
