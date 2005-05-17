@@ -38,14 +38,18 @@ test { comment = test gizaliga on shapes and solids } : \
         :print  All tests passed!
         :print  -----------------
 
+GL=./gizaliga
+@if Build == "fast":
+    GL=./gizaliga-fast
+
 gizaliga-test-solids { comment = test on 5 Plato solids } :
     @for f in ("tetrahedron.dst", "octahedron.dst", "cube.dst", \
             "icosahedron.dst", "dodecahedron.dst"):
-        :sys {log} ./gizaliga maxcputime=1 solids/$f
+        :sys {log} $GL maxcputime=1 solids/$f
 
 gizaliga-test-shapes { comment = test on 4 polygons } :
     @for f in ("square.dst", "hexagon.dst", "heptagon.dst", "octagon.dst"):
-        :sys {log} ./gizaliga maxcputime=1 pyr_trials=0 shapes/$f
+        :sys {log} $GL maxcputime=1 pyr_trials=0 shapes/$f
 
 install-py { comment = install python scripts } :
     :sys install -m 755 coord.py dvar.py $${HOME}/bin
