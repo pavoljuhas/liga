@@ -503,10 +503,10 @@ bool operator==(const Molecule& m1, const Molecule& m2)
 
 void Molecule::Set_max_NAtoms(int s)
 {
-    if (s > dTarget.NAtoms)
+    if (s > dTarget.NAtoms && tol_dd > 0.0)
     {
-	cerr << "E: max_NAtoms = " << s <<
-	    " is too large for distance table" << endl;
+	cerr << "E: not enough distances for max_NAtoms = " << s << '.' <<
+	    "  Did you forget tol_dd = 0?" << endl;
 	throw InvalidMolecule();
     }
     else if (s < 1)
