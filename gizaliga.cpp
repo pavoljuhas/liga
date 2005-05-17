@@ -25,14 +25,14 @@ struct RunPar_t
     // IO parameters
     string distfile;
     string inistru;
-    int natoms;
     string outstru;
     int saverate;
     string frames;
     int framesrate;
-    // Walk parameters
+    // Liga parameters
     double tol_dd;
     double tol_bad;
+    int natoms;
     double maxcputime;
     int seed;
     double evolve_frac;
@@ -53,9 +53,9 @@ private:
 RunPar_t::RunPar_t()
 {
     char *pnames[] = {
-	"distfile", "inistru", "natoms",
+	"distfile", "inistru",
 	"outstru", "saverate", "frames", "framesrate",
-	"tol_dd", "tol_bad", "maxcputime", "seed",
+	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
 	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
@@ -79,7 +79,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "IO parameters:\n"
 "  distfile=FILE         target distance table\n"
 "  inistru=FILE          initial structure [empty box]\n"
-"  natoms=int            size of molecule, use with loose target distances\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
@@ -87,6 +86,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
+"  natoms=int            use with loose distfiles or when tol_dd==0\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
@@ -213,22 +213,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    exit(EXIT_FAILURE);
 	}
     }
-    // natoms
-    if (a.ispar("natoms"))
-    {
-	try {
-	    natoms = a.GetPar<int>("natoms");
-	    cout << "natoms=" << natoms << endl;
-	    mol.Set_max_NAtoms(natoms);
-	}
-        catch (ParseArgsError(e)) {
-            cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
-	}
-	catch (InvalidMolecule) {
-	    exit(EXIT_FAILURE);
-	}
-    }
     // outstru
     if (a.ispar("outstru"))
     {
@@ -255,6 +239,18 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
 	cout << "tol_bad=" << tol_bad << endl;
 	mol.tol_nbad = tol_bad;
+	// natoms must be set after tol_dd
+	if (a.ispar("natoms"))
+	{
+	    try {
+		natoms = a.GetPar<int>("natoms");
+		cout << "natoms=" << natoms << endl;
+		mol.Set_max_NAtoms(natoms);
+	    }
+	    catch (InvalidMolecule) {
+		exit(EXIT_FAILURE);
+	    }
+	}
 	// maxcputime
 	maxcputime = a.GetPar<double>("maxcputime", 0.0);
 	if (maxcputime > 0.0)
