@@ -12,6 +12,7 @@ Conformation search:
 1   simplify, remove alternative penalty definitions
 2   try simplex minimization, compare with LM minimizer
 2   implement global structure relaxation 
+2   get rid of sign-compare warnings
 3   make Pair_t lock-able - allow fast molecule copying and destruction
 3   come up with a nice library name
 4   use fast hash table instead of maps for pairs storage
