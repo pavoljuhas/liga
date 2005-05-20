@@ -93,7 +93,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  evolve_relax=bool     [false] relax the worst atom after addition\n"
 "  degenerate_relax=bool [false] relax the worst atom after removal\n"
 "  ligasize=int          [10] number of teams per division\n"
-"  stopgame=double       [0.025] skip division when winner is worse\n"
+"  stopgame=double       [0.0025] skip division when winner is worse\n"
 "  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
