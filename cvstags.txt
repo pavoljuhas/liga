@@ -113,7 +113,7 @@ gizaliga-1n     1.36        1.199       2005-05-06
     max_ntrials in push_good_triangles(), push_good_pyramids().
     Added -q,--quiet option to gizaliga.
 
-gizaliga-1o     1.37        1.201       2005-05-17
+gizaliga-1o     1.38        1.201       2005-05-17
     target distance tables can now be made infinite by setting tol_dd=0.  In
     that case natoms can have arbitrary value.  Otherwise it should be the
     same as gizaliga-1n
