@@ -125,6 +125,26 @@ def getDistancesFrom(filename):
     file.close()
     return dlist
 
+def findNearest(x, c):
+    """find nearest item in the sorted list x to constant c
+    returns index to the nearest value"""
+    lo = 0; hi = len(x)-1
+    while x[lo] < c < x[hi] and lo < hi-1:
+        mi = (lo+hi)/2
+        if x[mi] < c:
+            lo = mi
+        else:
+            hi = mi
+    if c < x[lo] and lo > 0 and c-x[lo-1] < x[lo]-c:
+        idx = lo - 1
+    elif c > x[hi] and hi+1 < len(x) and c-x[hi] < x[hi+1]-c:
+        idx = hi+1
+    elif c-x[lo] <= x[hi]-c:
+        idx = lo
+    else:
+        idx = hi
+    return idx
+
 def dvar(dTarget, dTest, rescale = True):
     """calculate variance of two sorted distance lists
     return float"""
@@ -137,8 +157,7 @@ def dvar(dTarget, dTest, rescale = True):
         dtgt1 = []
         dtgt0 = list(dTarget)
         for t in dTest:
-            dtg = [abs(t-d) for d in dtgt0]
-            i = dtg.index(min(dtg))
+            i = findNearest(dtgt0, t)
             dtgt1.append( dtgt0.pop(i) )
     # here we need to compare dTest and dtgt1
     # default scale is 1.0
