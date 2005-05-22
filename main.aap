@@ -13,6 +13,9 @@ LD = $CXX
 LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 Sources = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
+Scripts = dvar.py coord.py
+prefix ?= `os.environ['HOME']`
+PREFIX = $prefix
 BDIR = AAPDIR/$BDIR
 
 all: gizaliga
@@ -52,7 +55,7 @@ gizaliga-test-shapes { comment = test on 4 polygons } :
         :sys {log} $GL maxcputime=1 pyr_trials=0 shapes/$f
 
 install-py { comment = install python scripts } :
-    :sys install -m 755 coord.py dvar.py $${HOME}/bin
+    @install_files('bin', _no.Scripts, '0755')
 
 # ifdef FAST
 # # FAST version runs about 2 times faster
