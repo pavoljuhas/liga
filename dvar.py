@@ -8,6 +8,7 @@ coordinates in plain or atomeye format.  Number of distances in target.dst
 can be larger than in test.dst.
 
 Options:
+  -m, --multiple  allow arbitrary multiplicity for test distances
   -n, --noscale   do not scale test to target distances
   -h, --help      display this message
   -v, --version   show script version
@@ -145,11 +146,17 @@ def findNearest(x, c):
         idx = hi
     return idx
 
-def dvar(dTarget, dTest, rescale = True):
+def dvar(dTarget, dTest, rescale = True, multiple = False):
     """calculate variance of two sorted distance lists
     return float"""
     dTest.sort()
-    if len(dTarget) < len(dTest):
+    if multiple:
+        # get a unique list of distances
+        dtgt0 = dict(zip(dTarget, [1]*len(dTarget)))
+        dtgt0 = dtgt0.keys()
+        dtgt0.sort()
+        dtgt1 = [ dtgt0[findNearest(dtgt0,t)] for t in dTest ]
+    elif len(dTarget) < len(dTest):
         raise RuntimeError, "test distance list too long"
     elif len(dTarget) == len(dTest):
         dtgt1 = dTarget
@@ -192,13 +199,16 @@ import getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "nhv", ["noscale", "help", "version"])
+        opts, args = getopt.getopt(argv, "mnhv", \
+                ["multiple", "noscale", "help", "version"])
     except getopt.GetoptError, errmsg:
         print >> sys.stderr, errmsg
         sys.exit(2)
     # process options
-    rescale = True
+    multiple, rescale = (False, True)
     for o, a in opts:
+        if o in ("-m", "--multiple"):
+            multiple = True
         if o in ("-n", "--noscale"):
             rescale = False
         elif o in ("-h", "--help"):
@@ -218,7 +228,7 @@ def main(argv):
     maxflen = max([ len(a) for a in args[1:] ])
     for f in args[1:]:
         try:
-            v = dvar(dTarget, getDistancesFrom(f), rescale)
+            v = dvar(dTarget, getDistancesFrom(f), rescale, multiple)
             if len(args) > 2:
                 print f.ljust(maxflen+1), v
             else:
