@@ -45,12 +45,12 @@ GL=./gizaliga
 @if Build == "fast":
     GL=./gizaliga-fast
 
-gizaliga-test-solids { comment = test on 5 Plato solids } :
+gizaliga-test-solids :
     @for f in ("tetrahedron.dst", "octahedron.dst", "cube.dst", \
             "icosahedron.dst", "dodecahedron.dst"):
         :sys {log} $GL maxcputime=1 solids/$f
 
-gizaliga-test-shapes { comment = test on 4 polygons } :
+gizaliga-test-shapes :
     @for f in ("square.dst", "hexagon.dst", "heptagon.dst", "octagon.dst"):
         :sys {log} $GL maxcputime=1 pyr_trials=0 shapes/$f
 
