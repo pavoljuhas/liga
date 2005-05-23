@@ -562,6 +562,13 @@ int main(int argc, char *argv[])
 		*descending = *advancing;
 	    }
 	    descending->Degenerate(hi_level-lo_level);
+	    // revert to the original winner in case of bad descent
+	    if (descending->NormBadness() > adv_bad0)
+	    {
+		*descending = *advancing;
+		for (int nlast = hi_level; nlast > lo_level; --nlast)
+		    descending->Pop(nlast-1);
+	    }
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
