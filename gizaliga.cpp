@@ -569,6 +569,18 @@ int main(int argc, char *argv[])
 		for (int nlast = hi_level; nlast > lo_level; --nlast)
 		    descending->Pop(nlast-1);
 	    }
+// pj: temporary code
+#ifdef LIGADUMP
+	    ostringstream adumpss, ddumpss;
+	    adumpss << "A" << rv.season << '-' <<
+		lo_level << ',' << winner_idx << '-' <<
+		hi_level << ',' << looser_idx << ".eye";
+	    ddumpss << "D" << rv.season << '-' <<
+		hi_level << ',' << looser_idx << '-' <<
+		lo_level << ',' << winner_idx << ".eye";
+	    advancing->WriteAtomEye(adumpss.str().c_str());
+	    descending->WriteAtomEye(ddumpss.str().c_str());
+#endif
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
