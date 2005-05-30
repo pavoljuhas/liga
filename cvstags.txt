@@ -118,3 +118,5 @@ gizaliga-1o     1.38        1.201       2005-05-17
     that case natoms can have arbitrary value.  Otherwise it should be the
     same as gizaliga-1n
 
+gizaliga-1p	1.41	    1.201	2005-05-30
+    keep the original winner if the demoted team is worse
