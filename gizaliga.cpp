@@ -478,6 +478,8 @@ int main(int argc, char *argv[])
     RunVar_t rv;
     Molecule mol = rp.ProcessArguments(argc, argv);
 
+    mol.center_size = 0;
+
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
     for (int i = 0; i <= mol.max_NAtoms(); ++i)
@@ -572,10 +574,10 @@ int main(int argc, char *argv[])
 // pj: temporary code
 #ifdef LIGADUMP
 	    ostringstream adumpss, ddumpss;
-	    adumpss << "A" << rv.season << '-' <<
+	    adumpss << rv.season << "A" << '-' <<
 		lo_level << ',' << winner_idx << '-' <<
 		hi_level << ',' << looser_idx << ".eye";
-	    ddumpss << "D" << rv.season << '-' <<
+	    ddumpss << rv.season << "D" << '-' <<
 		hi_level << ',' << looser_idx << '-' <<
 		lo_level << ',' << winner_idx << ".eye";
 	    advancing->WriteAtomEye(adumpss.str().c_str());
