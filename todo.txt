@@ -5,7 +5,9 @@ Priority classification:
 4   consider including
 
 Conformation search:
-1   check the effect of keeping original good winner (gizaliga 1.39)
+1   make it keep the original winner only when it is 2 times better than the
+    looser and both of them are above eps, should the same parameter be
+    used also for winner cloning?
 1   add option for dumping all teams
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
