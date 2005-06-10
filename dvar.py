@@ -28,26 +28,22 @@ def coordinatesToDist(r):
     d.sort()
     return d
 
-def readXYZ(file, headlines=0):
-    """read plain coordinates from open file
+def parseXYZ(lines):
+    """parse list of line strings
     return list of coordinates"""
     rlist = []
-    file.seek(0)
-    nr = 0
-    for l in file:
-        nr += 1
-        if l[0] == '#' or nr <= headlines:
-            continue
+    for l in lines:
         rlist.append( [ float(w) for w in l.split()[0:3] ] )
     return rlist
 
-def readAtomEye(file):
-    """read coordinates from open atomeye file
+def parseAtomEye(lines):
+    """parse a list of lines obtained from atomeye file
     return list of coordinates"""
     metrics = [  [ None, None, None ]  for i in range(3)  ]
-    file.seek(0)
     import re
-    for l in file:
+    lstart = 0
+    for l in lines[lstart:]:
+        lstart += 1
         l = l.rstrip()
         if re.match('#', l):
             continue
@@ -62,7 +58,7 @@ def readAtomEye(file):
             break
     # here we should be at start of coordinates
     rlist = []
-    for l in file:
+    for l in lines[lstart:]:
         l = l.rstrip()
         w = l.split()
         if len(w) == 1:
@@ -81,49 +77,42 @@ def readAtomEye(file):
     # all done here
     return rlist
 
-def readDistanceList(file):
-    """read list of distances from a plain file
-    return sorted list of distances"""
-    dlist = []
-    file.seek(0)
-    for l in file:
-        if l[0] == '#':
-            continue
-        dlist.append( float(l.split()[0]) )
-    dlist.sort()
-    return dlist
-
 def getDistancesFrom(filename):
     """open and detect format of specified distance or coordinate file
     return sorted list of distances"""
     file = open(filename)
-    lhead = file.readlines(2000)
-    lhead = [ l.rstrip() for l in lhead[0:-1] ]
-    file.seek(0)
+    lines = file.readlines()
     import re
-    if re.search('^Number of particles', '\n'.join(lhead), re.M):
-        dlist = coordinatesToDist(readAtomEye(file))
+    if [ l for l in lines[:1000] if re.match('Number of particles', l) ]:
+        dlist = coordinatesToDist(parseAtomEye(lines))
     else:
-        headlines = 0
-        for l in lhead:
-            numbercount = 0
-            for w in l.split():
-                try:
-                    x = float(w)
-                    numbercount += 1
-                except ValueError:
-                    numbercount = 0
-                    break
-            if numbercount:
+        last = len(lines)
+        for first in range(last):
+            try:
+                xl = [ float(w) for w in lines[first].split() ]
+            except ValueError:
+                xl = []
+            if len(xl):
                 break
-            headlines += 1
-        if numbercount == 1:
-            dlist = readDistanceList(file)
-        elif numbercount == 3:
-            dlist = coordinatesToDist(readXYZ(file, headlines))
+        # check if we have dumb XYZ file
+        if len(xl) == 1 and xl[0] == round(xl[0]) and first+1 < last:
+            try:
+                xl1 = [ float(w) for w in lines[first+1].split() ]
+            except:
+                raise RuntimeError, "invalid data format at line %i" % \
+                        (first+2, )
+            # here the first line is number of records
+            if len(xl1) > 1:
+                first += 1
+                last = first + int(xl[0])
+                xl = xl1
+        if len(xl) == 1:
+            dlist = [ float(l) for l in lines[first:last] ]
+            dlist.sort()
+        elif len(xl) in (2, 3):
+            dlist = coordinatesToDist(parseXYZ(lines[first:last]))
         else:
             raise RuntimeError, "invalid data format in " + filename
-    file.close()
     return dlist
 
 def findNearest(x, c):
