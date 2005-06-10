@@ -33,31 +33,36 @@ def getCoordinatesFrom(filename):
     return list of coordinates"""
     import dvar
     file = open(filename)
-    lhead = file.readlines(2000)
-    lhead = [ l.rstrip() for l in lhead[0:-1] ]
-    file.seek(0)
+    lines = file.readlines()
+    file.close()
     import re
-    if re.search('^Number of particles', '\n'.join(lhead), re.M):
-        r = dvar.readAtomEye(file)
+    if [ l for l in lines[:1000] if re.match('Number of particles', l) ]:
+        r = dvar.parseAtomEye(lines)
     else:
-        headlines = 0
-        for l in lhead:
-            numbercount = 0
-            for w in l.split():
-                try:
-                    x = float(w)
-                    numbercount += 1
-                except ValueError:
-                    numbercount = 0
-                    break
-            if numbercount:
+        last = len(lines)
+        for first in range(last):
+            try:
+                xl = [ float(w) for w in lines[first].split() ]
+            except ValueError:
+                xl = []
+            if len(xl):
                 break
-            headlines += 1
-        if numbercount == 3:
-            r = dvar.readXYZ(file, headlines)
+        # check if we have dumb XYZ file
+        if len(xl) == 1 and xl[0] == round(xl[0]) and first+1 < last:
+            try:
+                xl1 = [ float(w) for w in lines[first+1].split() ]
+            except:
+                raise RuntimeError, "invalid data format at line %i" % \
+                        (first+2, )
+            # here the first line is number of records
+            if len(xl1) > 1:
+                first += 1
+                last = first + int(xl[0])
+                xl = xl1
+        if len(xl) in (2, 3):
+            r = dvar.parseXYZ(lines[first:last])
         else:
             raise RuntimeError, "invalid data format in " + filename
-    file.close()
     return r
 
 def usage(style = None):
