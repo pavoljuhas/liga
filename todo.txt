@@ -26,3 +26,7 @@ Conformation search:
 
 Input output:
 2   add reading of atomeye structure format
+
+Monte Carlo search
+
+1   implement worst-atom relaxation, do benchmarks for Platonic Solids
