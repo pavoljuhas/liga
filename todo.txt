@@ -6,6 +6,7 @@ Priority classification:
 
 Conformation search:
 1   add option for dumping all teams
+1   recalculate atom badness by permuting atom ordering
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
 1   check where does Badness() become smaller than BGA::eps_badness
