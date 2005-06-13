@@ -40,7 +40,6 @@ struct RunPar_t
     bool degenerate_relax;
     int ligasize;
     double stopgame;
-    string penalty;
     int dist_trials;
     int tri_trials;
     int pyr_trials;
@@ -58,7 +57,7 @@ RunPar_t::RunPar_t()
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
-	"penalty", "dist_trials", "tri_trials", "pyr_trials" };
+	"dist_trials", "tri_trials", "pyr_trials" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
 }
@@ -94,7 +93,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "  degenerate_relax=bool [false] relax the worst atom after removal\n"
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.0025] skip division when winner is worse\n"
-"  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
 "  pyr_trials=int        [1000] good pyramid atoms to try\n"
@@ -280,20 +278,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	// stopgame
 	stopgame = a.GetPar<double>("stopgame", 0.0025);
 	cout << "stopgame=" << stopgame << endl;
-	// penalty
-	penalty = a.GetPar<string>("penalty", "pow2");
-	if (penalty == "pow2")
-	    mol.penalty = BGA::pow2;
-	else if (penalty == "well")
-	    mol.penalty = BGA::well;
-	else if (penalty == "fabs")
-	    mol.penalty = fabs;
-	else
-	{
-	    cerr << "Invalid value of penalty parameter" << endl;
-	    exit(EXIT_FAILURE);
-	}
-	cout << "penalty=" << penalty << endl;
 	// dist_trials
 	dist_trials = a.GetPar("dist_trials", 10);
 	cout << "dist_trials=" << dist_trials << endl;

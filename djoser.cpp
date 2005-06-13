@@ -58,7 +58,6 @@ void print_help(ParseArgs& a)
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
 "  pop_max=int           [5] maximum number of removed atoms\n"
 "  pop_rand=bool         [false] randomize number of removed atoms\n"
-"  penalty=string        dd penalty function [pow2], fabs, well\n"
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
 "  pyr_trials=int        [1000] good pyramid atoms to try\n"
@@ -240,19 +239,6 @@ Molecule process_arguments(RunPar_t& rp, int argc, char *argv[])
     cout << "pop_max=" << rp.pop_max << endl;
     rp.pop_rand = a.GetPar<bool>("pop_rand", false);
     cout << "pop_rand=" << rp.pop_rand << endl;
-    rp.penalty = a.GetPar<string>("penalty", "pow2");
-    if (rp.penalty == "pow2")
-        mol.penalty = BGA::pow2;
-    else if (rp.penalty == "well")
-        mol.penalty = BGA::well;
-    else if (rp.penalty == "fabs")
-        mol.penalty = fabs;
-    else
-    {
-        cerr << "Invalid value of penalty parameter" << endl;
-        exit(EXIT_FAILURE);
-    }
-    cout << "penalty=" << rp.penalty << endl;
     rp.dist_trials = a.GetPar("dist_trials", 10);
     cout << "dist_trials=" << rp.dist_trials << endl;
     rp.tri_trials = a.GetPar("tri_trials", 20);
