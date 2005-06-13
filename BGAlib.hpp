@@ -46,6 +46,21 @@ struct OrderedPair : pair<T,T>
 vector<int> random_choose_few(int K, int Np, bool with_repeat = false);
 vector<int> random_wt_choose(int K, const double *p, int Np);
 
+inline bool eps_eq(double x, double y)
+{
+    return fabs(x-y) < BGA::eps_badness;
+}
+
+inline bool eps_gt(double x, double y)
+{
+    return x > y + BGA::eps_badness;
+}
+
+inline bool eps_lt(double x, double y)
+{
+    return x < y - BGA::eps_badness;
+}
+
 /* declaration of BGA objects */
 class DistanceTable : public vector<double>
 {
