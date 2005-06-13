@@ -924,9 +924,12 @@ void Molecule::relax_atom(Atom_t& ta)
 	    status = gsl_multifit_fdfsolver_iterate(lms);
 	    if (status)
 	    {
-		if (status != GSL_ETOLF && status != GSL_ETOLX)
-		    cerr << "LM solver status = " <<
+		if ( status != GSL_ETOLF && status != GSL_ETOLX &&
+			status != GSL_CONTINUE )
+		{
+		    cerr << "LM solver status = " << status << " " <<
 			gsl_strerror(status) << endl;
+		}
 		break;
 	    }
 	    // scale f_i with atom fitness
