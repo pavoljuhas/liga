@@ -323,13 +323,6 @@ bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
-namespace BGA {
-    double pow2(double x) {return x*x;}
-    double well(double x) {return fabs(x)<Molecule::tol_dd ? 0.0 : 1.0;}
-}
-//double (*Molecule::penalty)(double) = BGA::well;
-//double (*Molecule::penalty)(double) = fabs;
-double (*Molecule::penalty)(double) = BGA::pow2;
 
 Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 {
@@ -420,6 +413,11 @@ Molecule::~Molecule()
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
+
+double Molecule::penalty(double dd)
+{
+    return dd*dd;
+}
 
 void Molecule::Recalculate()
 {

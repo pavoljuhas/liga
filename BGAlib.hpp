@@ -24,8 +24,6 @@ namespace BGA
 {
     extern gsl_rng* rng;
     extern double eps_badness;
-    double pow2(double x);
-    double well(double x);
 };
 
 // exceptions
@@ -137,7 +135,7 @@ public:
     static bool degenerate_relax;
     static double evolve_frac;
     static int center_size;
-    static double (*penalty)(double);
+    double penalty(double);
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
