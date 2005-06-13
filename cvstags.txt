@@ -121,7 +121,7 @@ gizaliga-1o     1.38        1.201       2005-05-17
 gizaliga-1p	1.41	    1.201	2005-05-30
     keep the original winner if the demoted team is worse
 
-gizaliga-1q	1.44	    1.203	2005-06-12
+gizaliga-1q	1.45	    1.203	2005-06-12
     now preserving the best team from low division by cloning to low looser;
     this happens only when demoted team is worse,
     fixed typo in relax_atom() where iteration stop flags were ignored
