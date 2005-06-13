@@ -5,15 +5,10 @@ Priority classification:
 4   consider including
 
 Conformation search:
-1   make it keep the original winner only when it is 2 times better than the
-    looser and both of them are above eps, should the same parameter be
-    used also for winner cloning?
 1   add option for dumping all teams
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
 1   check where does Badness() become smaller than BGA::eps_badness
-1   prevent LM not converged messages
-1   simplify, remove alternative penalty definitions
 1   allow starting configuration to have more atoms then natoms
 2   implement badness evaluation with permuted atom order
 2   try simplex minimization, compare with LM minimizer
@@ -33,5 +28,4 @@ Monte Carlo search
 
 Other
 1   fix dvar.py to include partial contributions
-1   make dvar calculation the same as in BGA Molecule,
-    add option for comparing sorted list of distances
+1   make dvar calculation the same as in BGA Molecule
