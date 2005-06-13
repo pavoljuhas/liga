@@ -9,7 +9,7 @@ can be larger than in test.dst.
 
 Options:
   -m, --multiple  allow arbitrary multiplicity for test distances
-  -n, --noscale   do not scale test to target distances
+  -r, --rescale   apply least squares scaling of test to target distances
   -h, --help      display this message
   -v, --version   show script version
 """
@@ -135,7 +135,7 @@ def findNearest(x, c):
         idx = hi
     return idx
 
-def dvar(dTarget, dTest, rescale = True, multiple = False):
+def dvar(dTarget, dTest, rescale = False, multiple = False):
     """calculate variance of two sorted distance lists
     return float"""
     dTest.sort()
@@ -188,18 +188,18 @@ import getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "mnhv", \
-                ["multiple", "noscale", "help", "version"])
+        opts, args = getopt.getopt(argv, "mrhv", \
+                ["multiple", "rescale", "help", "version"])
     except getopt.GetoptError, errmsg:
         print >> sys.stderr, errmsg
         sys.exit(2)
     # process options
-    multiple, rescale = (False, True)
+    multiple, rescale = (False, False)
     for o, a in opts:
         if o in ("-m", "--multiple"):
             multiple = True
-        if o in ("-n", "--noscale"):
-            rescale = False
+        if o in ("-r", "--rescale"):
+            rescale = True
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
