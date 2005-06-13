@@ -28,5 +28,9 @@ Input output:
 2   add reading of atomeye structure format
 
 Monte Carlo search
-
 1   implement worst-atom relaxation, do benchmarks for Platonic Solids
+
+Other
+1   fix dvar.py to include partial contributions
+1   make dvar calculation the same as in BGA Molecule,
+    add option for comparing sorted list of distances
