@@ -520,6 +520,7 @@ int main(int argc, char *argv[])
 	    PMOL advancing = lo_div->at(winner_idx);
 	    if (! (advancing->NormBadness() < rp.stopgame) )
 		continue;
+	    bool advancing_best = (advancing == lo_div->best());
 	    double adv_bad0 = advancing->NormBadness();
 	    if (! lo_div->full() )
 	    {
@@ -543,18 +544,11 @@ int main(int argc, char *argv[])
 		hi_div->push_back(looser_clone);
 	    }
 	    // clone winner if he made a good advance
-	    if (descending->NormBadness() > advancing->NormBadness())
+	    if (eps_gt(descending->NormBadness(), advancing->NormBadness()))
 	    {
 		*descending = *advancing;
 	    }
 	    descending->Degenerate(hi_level-lo_level);
-	    // revert to the original winner in case of bad descent
-	    if (descending->NormBadness() > adv_bad0)
-	    {
-		*descending = *advancing;
-		for (int nlast = hi_level; nlast > lo_level; --nlast)
-		    descending->Pop(nlast-1);
-	    }
 // pj: temporary code
 #ifdef LIGADUMP
 	    ostringstream adumpss, ddumpss;
@@ -570,6 +564,14 @@ int main(int argc, char *argv[])
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
+	    // make sure the original best cluster is preserved
+	    if (advancing_best && eps_gt(descending->NormBadness(), adv_bad0))
+	    {
+		PMOL lo_looser = lo_div->at(lo_div->find_looser());
+		*lo_looser = *advancing;
+		for (int nlast = hi_level-1; nlast >= lo_level; --nlast)
+		    lo_looser->Pop(nlast);
+	    }
 	    if (!rp.quiet)
 	    {
 	    cout << rv.season;
@@ -603,7 +605,7 @@ int main(int argc, char *argv[])
 	cout << rv.season << " WC " << world_champ->NAtoms() << ' '
 	    << world_champ->NormBadness() << endl;
 	if (    world_champ->NAtoms() > best_champ.NAtoms() ||
-		world_champ->NormBadness() < best_champ.NormBadness()
+		eps_lt(world_champ->NormBadness(), best_champ.NormBadness())
 	   )
 	{
 	    best_champ = *world_champ;
