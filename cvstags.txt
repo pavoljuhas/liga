@@ -118,11 +118,16 @@ gizaliga-1o     1.38        1.201       2005-05-17
     that case natoms can have arbitrary value.  Otherwise it should be the
     same as gizaliga-1n
 
-gizaliga-1p	1.41	    1.201	2005-05-30
+gizaliga-1p     1.41        1.201       2005-05-30
     keep the original winner if the demoted team is worse
 
-gizaliga-1q	1.45	    1.203	2005-06-12
+gizaliga-1q     1.45        1.203       2005-06-12
     now preserving the best team from low division by cloning to low looser;
-    this happens only when demoted team is worse,
+    this happens only when the new best team is worse
     fixed typo in relax_atom() where iteration stop flags were ignored
     removed penalty parameter, other penalty functions were never used
+
+gizaliga-1r     1.47        1.203       2005-06-13
+    best advanced team is now preserved only when best team in low division
+    would get worse than spoil_factor=10.0 times
+    added option for saving all liga levels
