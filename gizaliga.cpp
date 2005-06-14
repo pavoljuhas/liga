@@ -30,6 +30,7 @@ struct RunPar_t
     bool saveall;
     string frames;
     int framesrate;
+    int centersize;
     // Liga parameters
     double tol_dd;
     double tol_bad;
@@ -54,7 +55,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "saveall", "frames", "framesrate",
+	"outstru", "saverate", "saveall", "frames", "framesrate", "centersize",
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
@@ -84,6 +85,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
+"  centersize=int        [0] shift smaller molecules to the origin\n"
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
@@ -230,6 +232,13 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         cout << "frames=" << frames << endl;
         framesrate = a.GetPar<int>("framesrate", 10);
         cout << "framesrate=" << framesrate << endl;
+    }
+    // centersize
+    centersize = a.GetPar<int>("centersize", 0);
+    mol.center_size = centersize;
+    if (a.ispar("centersize"))
+    {
+	cout << "centersize=" << centersize << endl;
     }
     // liga parameters
     try {
@@ -487,8 +496,6 @@ int main(int argc, char *argv[])
     RunPar_t rp;
     RunVar_t rv;
     Molecule mol = rp.ProcessArguments(argc, argv);
-
-    mol.center_size = 0;
 
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
