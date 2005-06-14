@@ -27,6 +27,7 @@ struct RunPar_t
     string inistru;
     string outstru;
     int saverate;
+    bool saveall;
     string frames;
     int framesrate;
     // Liga parameters
@@ -53,7 +54,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "frames", "framesrate",
+	"outstru", "saverate", "saveall", "frames", "framesrate",
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
@@ -80,6 +81,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  inistru=FILE          initial structure [empty box]\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
+"  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
 "Liga parameters:\n"
@@ -211,13 +213,15 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    exit(EXIT_FAILURE);
 	}
     }
-    // outstru
+    // outstru, saverate, saveall
     if (a.ispar("outstru"))
     {
         outstru = a.pars["outstru"];
         cout << "outstru=" << outstru << endl;
         saverate = a.GetPar<int>("saverate", 10);
         cout << "saverate=" << saverate << endl;
+	saveall = a.GetPar<bool>("saveall", false);
+	cout << "saveall=" << saveall << endl;
     }
     // frames, framesrate
     if (a.ispar("frames"))
@@ -417,19 +421,41 @@ void SIGHUP_handler(int signum)
 // Output helpers
 ////////////////////////////////////////////////////////////////////////
 
-void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
+void save_outstru(vector<Division_t>& liga, RunPar_t& rp, RunVar_t& rv)
 {
     static int cnt = 0;
     double dbmax = numeric_limits<double>().max();
-    static valarray<double> bestMNB(dbmax, mol.max_NAtoms()+1);
+    static valarray<double> bestMNB(dbmax, liga.size());
     if (  rp.outstru.size() == 0 || rp.saverate == 0 ||
 	    (++cnt < rp.saverate && !rv.exiting) )
 	return;
-    if (mol.NormBadness() < bestMNB[mol.NAtoms()])
+    // start saving from the largest non-empty division
+    for (int level = liga.size() - 1; level > 0; --level)
     {
-	bestMNB[mol.NAtoms()] = mol.NormBadness();
-	mol.WriteAtomEye(rp.outstru.c_str());
+	if ( ! liga[level].size() )
+	    continue;
+	PMOL level_champ = liga[level].best();
+	// save only when there is clear improvement
+	if ( eps_lt(level_champ->NormBadness(), bestMNB[level]) )
+	    bestMNB[level] = level_champ->NormBadness();
+	else if (rp.saveall)
+	    continue;
+	else
+	    break;
+	// here we have something to save
 	cnt = 0;
+	// obtain file name
+	string fname = rp.outstru;
+	if ( rp.saveall )
+	{
+	    ostringstream oss;
+	    oss << ".L" << level_champ->NAtoms();
+	    fname.append( oss.str() );
+	}
+	level_champ->WriteAtomEye(fname.c_str());
+	// jump out if we are not saving all divisions
+	if ( ! rp.saveall )
+	    break;
     }
 }
 
@@ -602,7 +628,7 @@ int main(int argc, char *argv[])
 	    cout << rv.season << " BC " << best_champ.NAtoms() << ' '
 		<< best_champ.NormBadness() << endl;
 	}
-        save_outstru(best_champ, rp, rv);
+        save_outstru(liga, rp, rv);
         save_frames(best_champ, rp, rv);
     }
     cout << endl;
@@ -625,7 +651,7 @@ int main(int argc, char *argv[])
     BGA::cnt.PrintRunStats();
     // save last frame
     rv.exiting = true;
-    save_outstru(best_champ, rp, rv);
+    save_outstru(liga, rp, rv);
     save_frames(best_champ, rp, rv);
     if (SIGHUP_received)
 	exit(exit_code);
