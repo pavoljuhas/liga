@@ -5,7 +5,6 @@ Priority classification:
 4   consider including
 
 Conformation search:
-1   add option for dumping all teams, use eps_lt() in save_outstru
 1   recalculate atom badness by permuting atom ordering
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
