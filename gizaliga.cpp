@@ -552,9 +552,10 @@ int main(int argc, char *argv[])
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
-	    // make sure the original best cluster is preserved
-	    if (advancing_best &&
-		    eps_gt(lo_div->best()->NormBadness(), adv_bad0) )
+	    // make sure the original best cluster is not too spoiled
+	    const double spoil_factor = 10.0;
+	    if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
+			spoil_factor*adv_bad0) )
 	    {
 		PMOL lo_looser = lo_div->at(lo_div->find_looser());
 		*lo_looser = *advancing;
