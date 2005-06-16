@@ -5,12 +5,12 @@ Priority classification:
 4   consider including
 
 Conformation search:
-1   recalculate atom badness by permuting atom ordering
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
 1   check where does Badness() become smaller than BGA::eps_badness
 1   allow starting configuration to have more atoms then natoms
-2   implement badness evaluation with permuted atom order
+1   implement DistanceTable as double array, do erase/insert via memmove,
+    compare speed with builtin vector
 2   try simplex minimization, compare with LM minimizer
 2   implement global structure relaxation 
 2   get rid of sign-compare warnings
