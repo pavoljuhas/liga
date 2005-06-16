@@ -29,4 +29,3 @@ Monte Carlo search
 Other
 1   fix dvar.py to include partial contributions
 1   make dvar calculation the same as in BGA Molecule
-
