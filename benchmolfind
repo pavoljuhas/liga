@@ -90,11 +90,14 @@ do
     float -F3 AVGvalentinoT=$(( cpuscale * ${UT%s} / REPEATS ))
     float -F3 STDvalentinoT=$(( cpuscale * $(
 	    grep '^UserCPUtime' $TMPLOG |
-	    awk '{ n++; x = 0.0+$3; sx += x; sxx += x*x; }
-		 END {
-		     sigma = (n>1)  ?  sqrt( (sxx - 1.0*sx*sx/n)/((n-1)*n) )  :  0.0;
-		     print sigma;
-		 }'
+	    awk	'{ n++; x = 0.0+$3; sx += x; sxx += x*x; }
+		END {
+		    sigma = 0.0;
+		    if (n>1) {
+			sigma = sqrt( (sxx - 1.0*sx*sx/n)/((n-1)*n) );
+		    }
+		    print sigma;
+		}'
     ) ))
     results=( $results ${df:t} $AVGvalentinoT "(${STDvalentinoT})" )
 done
