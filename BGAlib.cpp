@@ -824,12 +824,33 @@ int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
     return status;
 }
 
-void Molecule::relax_atom(Atom_t& ta)
+Molecule& Molecule::RelaxAtom(list<Atom_t>::iterator ai)
+{
+    Atom_t& ta = *ai;
+    Pop(ai);
+    RelaxExternalAtom(ta);
+    Add(ta);
+    return *this;
+}
+
+Molecule& Molecule::RelaxAtom(const int cidx)
+{
+    if (cidx < 0 || cidx >= NAtoms())
+    {
+	throw range_error("in Molecule::RelaxAtom(list<int>)");
+    }
+    list<Atom_t>::iterator ai = list_at(atoms, cidx);
+    RelaxAtom(ai);
+    return *this;
+}
+
+void Molecule::RelaxExternalAtom(Atom_t& ta)
 {
     // pj: this seems to be crashing when NAtoms() < 3
     if (NAtoms() < 3)
 	return;
     const int max_iter = 500;
+    // find if it is a member atom:
     // dTarget is not changed in this function
     int dTsize = dTarget.size();
     bool dUsed[dTsize];
@@ -1331,12 +1352,9 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	{
 	    LAit worst = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness);
-	    Atom_t wa = *worst;
-	    if (wa.Badness() != 0.0)
+	    if (eps_gt(worst->Badness(), 0.0))
 	    {
-		Pop(worst);
-		relax_atom(wa);
-		Add(wa);
+		RelaxAtom(worst);
 	    }
 	}
 	if (NAtoms() == max_NAtoms() || !evolve_jump)
@@ -1369,12 +1387,9 @@ Molecule& Molecule::Degenerate(int Npop)
     {
 	LAit worst = max_element(atoms.begin(), atoms.end(),
 		comp_Atom_Badness);
-	Atom_t wa = *worst;
-	if (wa.Badness() != 0.0)
+	if (eps_gt(worst->Badness(), 0.0))
 	{
-	    Pop(worst);
-	    relax_atom(wa);
-	    Add(wa);
+	    RelaxAtom(worst);
 	}
     }
     if (NAtoms() < center_size)
