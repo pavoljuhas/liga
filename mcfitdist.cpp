@@ -26,7 +26,6 @@ struct RunPar_t
     string outstru;
     int saverate;
     int lograte;
-    int centersize;
     // MC parameters
     double tol_bad;
     double delta_x;
@@ -43,7 +42,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "lograte", "centersize",
+	"outstru", "saverate", "lograte",
 	"delta_x", "kbt", "relax", "tol_bad", "seed",
     };
     validpars.insert(validpars.end(),
@@ -68,7 +67,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10000] minimum steps between outstru updates\n"
 "  lograte=int           [100] minimum steps between log printout\n"
-"  centersize=int        [50] shift smaller molecules to the origin\n"
 "MC parameters\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  delta_x=double        [0.5] size of box of possible MC step\n"
@@ -203,13 +201,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     //  lograte
     lograte = a.GetPar<int>("lograte", 100);
     cout << "lograte=" << lograte << endl;
-    // centersize
-    centersize = a.GetPar<int>("centersize", 50);
-    mol.center_size = centersize;
-    if (a.ispar("centersize"))
-    {
-	cout << "centersize=" << centersize << endl;
-    }
     // MC parameters
     try {
 	// tol_bad
@@ -347,6 +338,7 @@ int main(int argc, char *argv[])
 	}
 	if ( eps_lt(nb1, best_mol.NormBadness()) )
 	{
+	    mol.Center();
 	    best_mol = mol;
 	    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
 		<< best_mol.NormBadness() << endl;
