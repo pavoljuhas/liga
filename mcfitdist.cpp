@@ -27,7 +27,7 @@ struct RunPar_t
     int saverate;
     int lograte;
     // MC parameters
-    double boxsize;
+    double delta_x;
     double kbt;
     double tol_bad;
     int seed;
@@ -42,7 +42,7 @@ RunPar_t::RunPar_t()
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "saverate", "lograte", 
-	"boxsize", "kbt", "tol_bad", "seed",
+	"delta_x", "kbt", "tol_bad", "seed",
     };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
@@ -66,10 +66,10 @@ void RunPar_t::print_help(ParseArgs& a)
 "  outstru=FILE          where to save the best full molecule\n"
 "  saverate=int          [10] minimum steps between outstru updates\n"
 "  lograte=int           [100] minimum steps between log printout\n"
-"Liga parameters\n"
-"  boxsize=double        [0.1] size of box of possible MC step\n"
-"  kbt=double            [0.001] Boltzman factor\n"
+"MC parameters\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
+"  delta_x=double        [0.1] size of box of possible MC step\n"
+"  kbt=double            [0.001] Boltzman factor for atom dvar share\n"
 "  seed=int              seed of random number generator\n"
 ;
 }
@@ -201,9 +201,9 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     cout << "lograte=" << lograte << endl;
     // MC parameters
     try {
-	// boxsize
-	boxsize = a.GetPar<double>("boxsize", 0.1);
-	cout << "boxsize=" << boxsize << endl;
+	// delta_x
+	delta_x = a.GetPar<double>("delta_x", 0.1);
+	cout << "delta_x=" << delta_x << endl;
 	// kbt
 	kbt = a.GetPar<double>("kbt", 0.001);
 	cout << "kbt=" << kbt << endl;
@@ -307,9 +307,9 @@ int main(int argc, char *argv[])
 	Atom_t a0 = mol.Atom(aidx);
 	// apply random shift to a copy
 	double r1[3];
-	r1[0] = a0.r[0] + rp.boxsize * (gsl_rng_uniform(BGA::rng) - 0.5);
-	r1[1] = a0.r[1] + rp.boxsize * (gsl_rng_uniform(BGA::rng) - 0.5);
-	r1[2] = a0.r[2] + rp.boxsize * (gsl_rng_uniform(BGA::rng) - 0.5);
+	r1[0] = a0.r[0] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);
+	r1[1] = a0.r[1] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);
+	r1[2] = a0.r[2] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);
 	Atom_t a1(r1);
 	// replace original atom with a new copy
 	mol.Pop(aidx).Add(a1);
