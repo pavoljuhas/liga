@@ -158,15 +158,18 @@ public:
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
-    // remove atom(s)
-    Molecule& Pop(list<Atom_t>::iterator ai);
+    // atom operations
+    Atom_t Atom(const int cidx);	// get copy of specified atom
+    Molecule& Pop(list<Atom_t>::iterator ai);		// erase
     Molecule& Pop(const int cidx);
     Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(double rx0, double ry0, double rz0);	// add single atom
     Molecule& Add(Atom_t a);				// add single atom
-    Atom_t Atom(const int cidx);	// obtain specified atom
+    Molecule& RelaxAtom(list<Atom_t>::iterator ai);	// relax internal atom
+    Molecule& RelaxAtom(const int cidx);
+    void RelaxExternalAtom(Atom_t& a);
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
@@ -203,8 +206,6 @@ private:
     void calc_test_badness(Atom_t& a);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double lo_abad);
-public:
-    void relax_atom(Atom_t& a);
 private:
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
