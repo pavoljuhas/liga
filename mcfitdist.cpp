@@ -27,9 +27,10 @@ struct RunPar_t
     int saverate;
     int lograte;
     // MC parameters
+    double tol_bad;
     double delta_x;
     double kbt;
-    double tol_bad;
+    bool relax;
     int seed;
 private:
     void print_help(ParseArgs& a);
@@ -42,7 +43,7 @@ RunPar_t::RunPar_t()
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "saverate", "lograte", 
-	"delta_x", "kbt", "tol_bad", "seed",
+	"delta_x", "kbt", "relax", "tol_bad", "seed",
     };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
@@ -70,6 +71,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  delta_x=double        [0.1] size of box of possible MC step\n"
 "  kbt=double            [0.001] Boltzman factor for atom dvar share\n"
+"  relax=bool            [true] relax atom after MC step\n"
 "  seed=int              seed of random number generator\n"
 ;
 }
@@ -201,16 +203,19 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     cout << "lograte=" << lograte << endl;
     // MC parameters
     try {
+	// tol_bad
+	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
+	cout << "tol_bad=" << tol_bad << endl;
+	mol.tol_nbad = tol_bad;
 	// delta_x
 	delta_x = a.GetPar<double>("delta_x", 0.1);
 	cout << "delta_x=" << delta_x << endl;
 	// kbt
 	kbt = a.GetPar<double>("kbt", 0.001);
 	cout << "kbt=" << kbt << endl;
-	// tol_bad
-	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
-	cout << "tol_bad=" << tol_bad << endl;
-	mol.tol_nbad = tol_bad;
+	// relax
+	relax = !!a.GetPar<bool>("relax", true);
+	cout << "relax=" << relax << endl;
 	// seed
 	seed = a.GetPar<int>("seed", 0);
 	if (seed)
@@ -311,8 +316,11 @@ int main(int argc, char *argv[])
 	r1[1] = a0.r[1] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);
 	r1[2] = a0.r[2] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);
 	Atom_t a1(r1);
-	// replace original atom with a new copy
-	mol.Pop(aidx).Add(a1);
+	// remove original atom
+	mol.Pop(aidx);
+	if (rp.relax)
+	    mol.RelaxExternalAtom(a1);
+	mol.Add(a1);
 	double nb1 = mol.NormBadness();
 	// accept according to Metropolis algorithm
 	if (nb1 < nb0 || gsl_rng_uniform(BGA::rng) < exp(-(nb1-nb0)/rp.kbt) )
