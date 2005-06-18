@@ -271,7 +271,7 @@ void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     if (  rp.outstru.size() == 0 || rp.saverate == 0 ||
 	    (++cnt < rp.saverate && !rv.exiting) )
 	return;
-    if (mol.NormBadness() < bestMNB)
+    if ( eps_lt(mol.NormBadness(), bestMNB) )
     {
 	bestMNB = mol.NormBadness();
 	mol.WriteAtomEye(rp.outstru.c_str());
