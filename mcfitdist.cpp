@@ -31,7 +31,6 @@ struct RunPar_t
     double kbt;
     double tol_bad;
     int seed;
-    string penalty;
 private:
     void print_help(ParseArgs& a);
     string version_string(string quote = "");
@@ -44,7 +43,7 @@ RunPar_t::RunPar_t()
 	"distfile", "inistru",
 	"outstru", "saverate", "lograte", 
 	"boxsize", "kbt", "tol_bad", "seed",
-	"penalty" };
+    };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
 }
@@ -72,7 +71,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "  kbt=double            [0.001] Boltzman factor\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  seed=int              seed of random number generator\n"
-"  penalty=string        dd penalty function [pow2], fabs, well\n"
 ;
 }
 
@@ -220,20 +218,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    gsl_rng_set(BGA::rng, seed);
 	    cout << "seed=" << seed << endl;
 	}
-	// penalty
-	penalty = a.GetPar<string>("penalty", "pow2");
-	if (penalty == "pow2")
-	    mol.penalty = BGA::pow2;
-	else if (penalty == "well")
-	    mol.penalty = BGA::well;
-	else if (penalty == "fabs")
-	    mol.penalty = fabs;
-	else
-	{
-	    cerr << "Invalid value of penalty parameter" << endl;
-	    exit(EXIT_FAILURE);
-	}
-	cout << "penalty=" << penalty << endl;
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
