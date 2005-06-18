@@ -87,7 +87,6 @@ struct RunPar_t
     double evolve_frac;
     int pop_max;
     bool pop_rand;
-    string penalty;
     int dist_trials;
     int tri_trials;
     int pyr_trials;
