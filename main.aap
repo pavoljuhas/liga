@@ -31,9 +31,17 @@ all: gizaliga
         CXXFLAGS += -ffast-math
         EXESUF = -fast
 
-:program gizaliga : gizaliga.cpp $Sources
+:program gizaliga \
+        {comment = soccer league of pyramid builders} : \
+        gizaliga.cpp $Sources
 
-:program djoser : djoser.cpp $Sources
+:program djoser \
+        {comment = clunky pyramid builder} : \
+        djoser.cpp $Sources
+
+:program mcfitdist \
+        {comment = MC shuffling of atoms} : \
+        mcfitdist.cpp $Sources
 
 test { comment = test gizaliga on shapes and solids } : \
     gizaliga-test-solids gizaliga-test-shapes
