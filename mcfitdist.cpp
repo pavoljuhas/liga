@@ -26,6 +26,7 @@ struct RunPar_t
     string outstru;
     int saverate;
     int lograte;
+    int centersize;
     // MC parameters
     double tol_bad;
     double delta_x;
@@ -42,7 +43,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "lograte", 
+	"outstru", "saverate", "lograte", "centersize",
 	"delta_x", "kbt", "relax", "tol_bad", "seed",
     };
     validpars.insert(validpars.end(),
@@ -65,12 +66,13 @@ void RunPar_t::print_help(ParseArgs& a)
 "  distfile=FILE         target distance table - required\n"
 "  inistru=FILE          initial structure - required\n"
 "  outstru=FILE          where to save the best full molecule\n"
-"  saverate=int          [10] minimum steps between outstru updates\n"
+"  saverate=int          [10000] minimum steps between outstru updates\n"
 "  lograte=int           [100] minimum steps between log printout\n"
+"  centersize=int        [50] shift smaller molecules to the origin\n"
 "MC parameters\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
-"  delta_x=double        [0.1] size of box of possible MC step\n"
-"  kbt=double            [0.001] Boltzman factor for atom dvar share\n"
+"  delta_x=double        [0.5] size of box of possible MC step\n"
+"  kbt=double            [0.1] Boltzman factor for NormBadness\n"
 "  relax=bool            [true] relax atom after MC step\n"
 "  seed=int              seed of random number generator\n"
 ;
@@ -195,12 +197,19 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     {
         outstru = a.pars["outstru"];
         cout << "outstru=" << outstru << endl;
-        saverate = a.GetPar<int>("saverate", 10);
+        saverate = a.GetPar<int>("saverate", 10000);
         cout << "saverate=" << saverate << endl;
     }
     //  lograte
     lograte = a.GetPar<int>("lograte", 100);
     cout << "lograte=" << lograte << endl;
+    // centersize
+    centersize = a.GetPar<int>("centersize", 50);
+    mol.center_size = centersize;
+    if (a.ispar("centersize"))
+    {
+	cout << "centersize=" << centersize << endl;
+    }
     // MC parameters
     try {
 	// tol_bad
@@ -336,9 +345,8 @@ int main(int argc, char *argv[])
 	    cout << rv.totsteps << ' ' << rv.accsteps << " L "
 		<< mol.NormBadness() << endl;
 	}
-	if (nb1 < best_mol.NormBadness())
+	if ( eps_lt(nb1, best_mol.NormBadness()) )
 	{
-	    mol.Center();
 	    best_mol = mol;
 	    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
 		<< best_mol.NormBadness() << endl;
