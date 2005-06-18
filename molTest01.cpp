@@ -58,10 +58,7 @@ int main()
     cout << endl;
     // try to relax invalid atom
     cout << "relaxing atom 3" << endl;
-    square2.Pop(3);
-    Atom_t a(px2[3], py2[3], pz2[3]);
-    square2.relax_atom(a);
-    square2.Add(a);
+    square2.RelaxAtom(3);
     cout << square2;
     cout << "NormBadness() = " << square2.NormBadness() << endl;
     square2.PrintBadness();
