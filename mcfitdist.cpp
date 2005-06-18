@@ -71,7 +71,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  delta_x=double        [0.5] size of box of possible MC step\n"
 "  kbt=double            [0.1] Boltzman factor for NormBadness\n"
-"  relax=bool            [true] relax atom after MC step\n"
+"  relax=int             [1] relax one atom, relax>=2 refines all atoms\n"
 "  seed=int              seed of random number generator\n"
 ;
 }
@@ -214,7 +214,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	kbt = a.GetPar<double>("kbt", 0.001);
 	cout << "kbt=" << kbt << endl;
 	// relax
-	relax = !!a.GetPar<bool>("relax", true);
+	relax = !!a.GetPar<int>("relax", 1);
 	cout << "relax=" << relax << endl;
 	// seed
 	seed = a.GetPar<int>("seed", 0);
@@ -317,10 +317,23 @@ int main(int argc, char *argv[])
 	r1[2] = a0.r[2] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);
 	Atom_t a1(r1);
 	// remove original atom
-	mol.Pop(aidx);
 	if (rp.relax)
+	{
+	    mol.Pop(aidx);
+	    double nbr0 = mol.NormBadness();
 	    mol.RelaxExternalAtom(a1);
-	mol.Add(a1);
+	    mol.Add(a1);
+	    while ( rp.relax >= 2 && eps_lt(mol.NormBadness(), nbr0) )
+	    {
+		nbr0 = mol.NormBadness();
+		aidx = (aidx+1) % mol.NAtoms();
+		mol.RelaxAtom(aidx);
+	    }
+	}
+	else
+	{
+	    mol.Pop(aidx).Add(a1);
+	}
 	double nb1 = mol.NormBadness();
 	// accept according to Metropolis algorithm
 	if (nb1 < nb0 || gsl_rng_uniform(BGA::rng) < exp(-(nb1-nb0)/rp.kbt) )
