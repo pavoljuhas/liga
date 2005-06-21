@@ -29,18 +29,17 @@ if [[ $# == 0 || -n "${(M)*:#--help}" ]]; then
     exit
 fi
 
-# calibrated cpu times
 typeset -A bghost_cputimes
+# calibrated cpu times from cputime20050619.dat
 bghost_cputimes=(
+    romaioi.pa.msu.edu       0.792
+    poirot.pa.msu.edu        0.860
+    bg.pa.msu.edu            0.907
+    emperor.pa.msu.edu       0.932
+    donut.pa.msu.edu         0.933
+    wobble.pa.msu.edu        0.938
+    kneesave.pa.msu.edu      0.960
     valentino.pa.msu.edu     1.000
-    romaioi.pa.msu.edu       0.821
-    poirot.pa.msu.edu        0.952
-    emperor.pa.msu.edu       0.984
-    donut.pa.msu.edu         0.991
-    bg.pa.msu.edu            0.991
-    kneesave.pa.msu.edu      1.024
-    wobble.pa.msu.edu        1.026
-    sunrise.pa.msu.edu       6.243
 )
 if [[ ${+bghost_cputimes[$HOST]} == 0 ]]; then
     print -u2 "CPU time not calibrated on $HOST"
