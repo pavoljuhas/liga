@@ -24,6 +24,7 @@ struct RunPar_t
     string distfile;
     string inistru;
     string outstru;
+    string outfmt;
     int saverate;
     int lograte;
     // MC parameters
@@ -42,7 +43,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "lograte",
+	"outstru", "outfmt", "saverate", "lograte",
 	"delta_x", "kbt", "relax", "tol_bad", "seed",
     };
     validpars.insert(validpars.end(),
@@ -62,9 +63,10 @@ void RunPar_t::print_help(ParseArgs& a)
 "  -h, --help            display this message\n"
 "  -v, --version         show program version\n"
 "IO parameters:\n"
-"  distfile=FILE         target distance table - required\n"
-"  inistru=FILE          initial structure - required\n"
+"  distfile=FILE         target distance table, required\n"
+"  inistru=FILE          initial structure [random points in a box]\n"
 "  outstru=FILE          where to save the best full molecule\n"
+"  outfmt=string         [xyz], atomeye - outstru file format\n"
 "  saverate=int          [10000] minimum steps between outstru updates\n"
 "  lograte=int           [100] minimum steps between log printout\n"
 "MC parameters\n"
@@ -195,6 +197,19 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     {
         outstru = a.pars["outstru"];
         cout << "outstru=" << outstru << endl;
+	// outfmt
+	outfmt = a.GetPar<string>("outfmt", "xyz");
+	if (outfmt == "xyz")
+	    mol.OutFmtXYZ();
+	else if (outfmt == "atomeye")
+	    mol.OutFmtAtomEye();
+	else
+	{
+	    cerr << "Invalid value of outfmt parameter" << endl;
+	    exit(EXIT_FAILURE);
+	}
+	cout << "outfmt=" << outfmt << endl;
+	// saverate
         saverate = a.GetPar<int>("saverate", 10000);
         cout << "saverate=" << saverate << endl;
     }
