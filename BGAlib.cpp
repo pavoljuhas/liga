@@ -1597,14 +1597,14 @@ bool Molecule::ReadXYZ(const char* file)
     return result;
 }
 
-bool write_file(const char* file, Molecule& M)
+bool Molecule::WriteFile(const char* file)
 {
     // test if file is writeable
     ofstream fid(file, ios_base::out|ios_base::ate );
     if (!fid)
     {
 	ostringstream oss;
-	oss << "write_file(): unable to write to '" << file << "'";
+	oss << "WriteFile(): unable to write to '" << file << "'";
 	cerr << oss.str() << endl;
 	throw IOError(oss.str());
     }
@@ -1616,7 +1616,7 @@ bool write_file(const char* file, Molecule& M)
     memset(writefile+filelen, 'X', 6);
     writefile[filelen+6] = '\0';
     mktempofstream(fid, writefile);
-    bool result = (fid << M);
+    bool result = (fid << *this);
     fid.close();
     rename(writefile, file);
     return result;
@@ -1626,7 +1626,7 @@ bool Molecule::WriteXYZ(const char* file)
 {
     file_fmt_type org_ofmt = output_format;
     OutFmtXYZ();
-    bool result = write_file(file, *this);
+    bool result = WriteFile(file);
     output_format = org_ofmt;
     return result;
 }
@@ -1635,7 +1635,7 @@ bool Molecule::WriteAtomEye(const char* file)
 {
     file_fmt_type org_ofmt = output_format;
     OutFmtAtomEye();
-    bool result = write_file(file, *this);
+    bool result = WriteFile(file);
     output_format = org_ofmt;
     return result;
 }
