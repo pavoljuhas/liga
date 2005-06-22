@@ -32,6 +32,7 @@ struct RunPar_t
     double delta_x;
     double kbt;
     bool relax;
+    double maxcputime;
     int seed;
 private:
     void print_help(ParseArgs& a);
@@ -44,7 +45,7 @@ RunPar_t::RunPar_t()
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "outfmt", "saverate", "lograte",
-	"delta_x", "kbt", "relax", "tol_bad", "seed",
+	"delta_x", "kbt", "relax", "tol_bad", "maxcputime", "seed"
     };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
@@ -74,6 +75,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  delta_x=double        [0.5] size of box of possible MC step\n"
 "  kbt=double            [0.1] Boltzman factor for NormBadness\n"
 "  relax=int             [1] relax one atom, relax>=2 refines all atoms\n"
+"  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
 ;
 }
@@ -229,6 +231,10 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	// relax
 	relax = !!a.GetPar<int>("relax", 1);
 	cout << "relax=" << relax << endl;
+	// maxcputime
+	maxcputime = a.GetPar<double>("maxcputime", 0.0);
+	if (maxcputime > 0.0)
+	    cout << "maxcputime=" << maxcputime << endl;
 	// seed
 	seed = a.GetPar<int>("seed", 0);
 	if (seed)
@@ -327,6 +333,8 @@ int main(int argc, char *argv[])
     {
 	if (SIGHUP_received)
 	    break;
+	else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+	    break;
         ++rv.totsteps;
 	// store original normalized badnees
 	double nb0 = mol.NormBadness();
@@ -382,15 +390,27 @@ int main(int argc, char *argv[])
         save_outstru(best_mol, rp, rv);
     }
     cout << endl;
+    int exit_code;
     if (SIGHUP_received)
+    {
 	cout << "Received SIGHUP, graceful death." << endl << endl;
+	exit_code = SIGHUP+128;
+    }
+    else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+    {
+	cout << "Exceeded maxcputime." << endl << endl;
+	exit_code = 1;
+    }
     else
+    {
 	cout << "Solution found!!!" << endl << endl;
+	exit_code = EXIT_SUCCESS;
+    }
     BGA::cnt.PrintRunStats();
     // save last molecule
     rv.exiting = true;
     save_outstru(best_mol, rp, rv);
     if (SIGHUP_received)
-	exit(SIGHUP+128);
-    return EXIT_SUCCESS;
+	exit(exit_code);
+    return exit_code;
 }
