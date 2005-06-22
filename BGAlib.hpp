@@ -174,6 +174,7 @@ public:
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
     bool ReadXYZ(const char*); 		// read real coordinates
+    bool WriteFile(const char*); 	// save in current output_format
     bool WriteXYZ(const char*); 	// save real coordinates
     bool WriteAtomEye(const char*);	// export in AtomEye format
     Molecule& OutFmtXYZ();		// output format for operator>>
@@ -187,6 +188,7 @@ public:
     inline int NAtoms() const { return atoms.size(); }
     inline int max_NAtoms() const { return val_max_NAtoms; }
     void Set_max_NAtoms(int s);
+    inline double max_dTarget() const { return dTarget.back(); }
 private:
     // constructor helper
     void init();
