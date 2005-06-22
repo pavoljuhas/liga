@@ -156,11 +156,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         cerr << "Distance file not defined" << endl;
         exit(EXIT_FAILURE);
     }
-    if (!a.ispar("inistru"))
-    {
-        cerr << "Initial structure not defined" << endl;
-        exit(EXIT_FAILURE);
-    }
     // intro messages
     string hashsep(72, '#');
     cout << hashsep << endl;
@@ -184,13 +179,16 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     }
     Molecule mol(*dtab);
     // inistru
-    inistru = a.pars["inistru"];
-    cout << "inistru=" << inistru << endl;
-    try {
-	mol.ReadXYZ(inistru.c_str());
-    }
-    catch (IOError) {
-	exit(EXIT_FAILURE);
+    if (a.ispar("inistru"))
+    {
+	inistru = a.pars["inistru"];
+	cout << "inistru=" << inistru << endl;
+	try {
+	    mol.ReadXYZ(inistru.c_str());
+	}
+	catch (IOError) {
+	    exit(EXIT_FAILURE);
+	}
     }
     // outstru
     if (a.ispar("outstru"))
@@ -245,6 +243,16 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     }
     // done
     cout << hashsep << endl << endl;
+    // generate random initial structure when inistru is not defined
+    // this needs to be done after seed is parsed
+    if (! a.ispar("inistru"))
+    {
+	for (int i = 0; i < mol.max_NAtoms(); ++i)
+	    mol.Add(
+		    (2*gsl_rng_uniform(BGA::rng)-1.0)*mol.max_dTarget(),
+		    (2*gsl_rng_uniform(BGA::rng)-1.0)*mol.max_dTarget(),
+		    (2*gsl_rng_uniform(BGA::rng)-1.0)*mol.max_dTarget()  );
+    }
     return mol;
 }
 
@@ -289,7 +297,7 @@ void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     if ( eps_lt(mol.NormBadness(), bestMNB) )
     {
 	bestMNB = mol.NormBadness();
-	mol.WriteAtomEye(rp.outstru.c_str());
+	mol.WriteFile(rp.outstru.c_str());
 	cnt = 0;
     }
 }
