@@ -80,7 +80,11 @@ do
 		p=( "${(@)p/DISTFILE/$df}" )
 		print "#bm $i of $REPEATS timings for $df"
 		print "#bm $CMD $p"
-		$CMD "${(@)p}" || exit $?
+		$CMD "${(@)p}"
+		status=$?
+		if [[ $status -gt 128 ]]; then
+		    exit $status
+		fi
 	    done 1>&3 2>&4 1>&5
 	    )
 	) || break
