@@ -81,9 +81,9 @@ do
 		print "#bm $i of $REPEATS timings for $df"
 		print "#bm $CMD $p"
 		$CMD "${(@)p}"
-		status=$?
-		if [[ $status -gt 128 ]]; then
-		    exit $status
+		EXITCODE=$?
+		if [[ $EXITCODE -gt 128 ]]; then
+		    exit $EXITCODE
 		fi
 	    done 1>&3 2>&4 1>&5
 	    )
