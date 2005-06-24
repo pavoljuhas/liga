@@ -1,0 +1,58 @@
+#!/u24/local/bin/zsh -f
+
+setopt no_bgnice extended_glob numeric_glob_sort
+
+# defaults:
+mcfitdist=( ${0:h}/mcfitdist*-fast(.xN) ${0:h}/mcfitdist*~*fast*(.xN) )
+mcfitdist=${mcfitdist[1]}
+kbt=( 0.1 0.01 0.001 )
+maxcputime=120
+randseed=1
+outstru=
+
+########################################################################
+print_help()
+{
+    print -r "\
+      usage: ${0:t} [DISTFILE] [inistru] [par1=val1...]
+      run parallel-tempering mcfitdist fits using distances from DISTFILE.
+      Arguments are passed to mcfitdist with the exception of special
+      parameters that set parallel tempering:"
+    print -aC2 \
+      "mcfitdist=FILE"    "[${mcfitdist}]" \
+      "kbt=CSV"		  "[${(j:,:)kbt}] array of annealing temperatures" \
+      "maxcputime=double" "[${maxcputime}] maximum time at one temperature" \
+      "randseed=bool"	  "[${randseed}] apply random seed"
+}
+
+########################################################################
+parse_args()
+{
+    typeset -ga mcfitdist_args
+    for a; do
+	if [[ $a == ?=* ]]; then
+	    local par=${a%%=*}
+	    local val=${a#${par}=}
+	    case $par in
+	    (mcfitdist|kbt|maxcputime|outstru)
+		eval $a
+		continue
+		;;
+	    (randseed)
+		if [[ ${(L)val} == (0|n|no|false) ]]; then
+		    randseed=
+		else
+		    randseed=1
+		fi
+		continue
+		;;
+	    (kbt)
+		kbt=( ${(s:,:)val} )
+		continue
+		;;
+	    esac
+	fi
+	mcfitdist_args+=$a
+    done
+    mcpt_outstru=( ${outstru:h}/${0:t}$$-{1..${#kbt}} )
+}
