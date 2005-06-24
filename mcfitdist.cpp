@@ -12,6 +12,7 @@
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 
+const int EXIT_ARGS_ERROR = 2;
 ////////////////////////////////////////////////////////////////////////
 // RunPar_t
 ////////////////////////////////////////////////////////////////////////
@@ -109,7 +110,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         a.Parse();
     }
     catch (ParseArgsError) {
-        exit(EXIT_FAILURE);
+        exit(EXIT_ARGS_ERROR);
     }
     if (a.isopt("h") || argc == 1)
     {
@@ -128,12 +129,12 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         }
         catch (IOError(e)) {
             cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
+            exit(EXIT_ARGS_ERROR);
         }
         catch (ParseArgsError(e)) {
             cerr << "invalid syntax in parameter file" << endl;
             cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
+            exit(EXIT_ARGS_ERROR);
         }
     }
     try {
@@ -141,7 +142,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_FAILURE);
+	exit(EXIT_ARGS_ERROR);
     }
     // assign required parameters, distfile and inistru
     if (a.args.size() > 0)
@@ -151,12 +152,12 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     if (a.args.size() > 2)
     {
 	cerr << argv[0] << ": too many file arguments" << endl;
-	exit(EXIT_FAILURE);
+	exit(EXIT_ARGS_ERROR);
     }
     if (!a.ispar("distfile"))
     {
         cerr << "Distance file not defined" << endl;
-        exit(EXIT_FAILURE);
+        exit(EXIT_ARGS_ERROR);
     }
     // intro messages
     string hashsep(72, '#');
@@ -177,7 +178,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         dtab = new DistanceTable(distfile.c_str());
     }
     catch (IOError) {
-        exit(EXIT_FAILURE);
+        exit(EXIT_ARGS_ERROR);
     }
     Molecule mol(*dtab);
     // inistru
@@ -189,7 +190,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    mol.ReadXYZ(inistru.c_str());
 	}
 	catch (IOError) {
-	    exit(EXIT_FAILURE);
+	    exit(EXIT_ARGS_ERROR);
 	}
     }
     // outstru
@@ -206,7 +207,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	else
 	{
 	    cerr << "Invalid value of outfmt parameter" << endl;
-	    exit(EXIT_FAILURE);
+	    exit(EXIT_ARGS_ERROR);
 	}
 	cout << "outfmt=" << outfmt << endl;
 	// saverate
@@ -245,7 +246,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_FAILURE);
+	exit(EXIT_ARGS_ERROR);
     }
     // done
     cout << hashsep << endl << endl;
