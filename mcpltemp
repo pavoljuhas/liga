@@ -1,6 +1,7 @@
 #!/u24/local/bin/zsh -f
 
 setopt no_bgnice extended_glob numeric_glob_sort
+PROGNAME=${0:t}
 
 # defaults:
 mcfitdist=( ${0:h}/mcfitdist*-fast(.xN) ${0:h}/mcfitdist*~*fast*(.xN) )
@@ -13,16 +14,16 @@ outstru=
 ########################################################################
 print_help()
 {
-    print -r "\
-      usage: ${0:t} [DISTFILE] [inistru] [par1=val1...]
-      run parallel-tempering mcfitdist fits using distances from DISTFILE.
-      Arguments are passed to mcfitdist with the exception of special
-      parameters that set parallel tempering:"
+    print -l \
+      "usage: ${PROGNAME} [DISTFILE] [inistru] [par1=val1...]" \
+      "run parallel-tempering mcfitdist fits using distances from DISTFILE." \
+      "Arguments are passed to mcfitdist with the exception of special" \
+      "parameters for parallel tempering:"
     print -aC2 \
-      "mcfitdist=FILE"    "[${mcfitdist}]" \
-      "kbt=CSV"		  "[${(j:,:)kbt}] array of annealing temperatures" \
-      "maxcputime=double" "[${maxcputime}] maximum time at one temperature" \
-      "randseed=bool"	  "[${randseed}] apply random seed"
+      "  mcfitdist=FILE"    "[${mcfitdist}]" \
+      "  kbt=CSV"		  "[${(j:,:)kbt}] array of annealing temperatures" \
+      "  maxcputime=double" "[${maxcputime}] maximum time at one temperature" \
+      "  randseed=bool"	  "[${randseed}] apply random seed"
 }
 
 ########################################################################
@@ -30,9 +31,9 @@ parse_args()
 {
     typeset -ga mcfitdist_args
     for a; do
-	if [[ $a == ?=* ]]; then
-	    local par=${a%%=*}
-	    local val=${a#${par}=}
+	if [[ $a == ?*=* ]]; then
+	    local par=${a%%[=]*}
+	    local val=${a#${par}[=]}
 	    case $par in
 	    (mcfitdist|kbt|maxcputime|outstru)
 		eval $a
@@ -54,5 +55,23 @@ parse_args()
 	fi
 	mcfitdist_args+=$a
     done
-    mcpt_outstru=( ${outstru:h}/${0:t}$$-{1..${#kbt}} )
+    mcpt_outstru=( ${outstru:h}/${PROGNAME}$$-kbt{1..${#kbt}} )
 }
+
+########################################################################
+# main
+########################################################################
+
+if [[ -n ${(M)*:#(-h|--help)} ]]; then
+    print_help
+    exit
+fi
+
+parse_args "$@"
+print "mcfitdist=$mcfitdist"
+print "mcfitdist_args=( $mcfitdist_args )"
+print "kbt=( $kbt )"
+print "maxcputime=$maxcputime"
+print "randseed=$randseed"
+print "outstru=$outstru"
+print "mcpt_outstru=( ${mcpt_outstru} )"
