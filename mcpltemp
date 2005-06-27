@@ -1,5 +1,13 @@
 #!/u24/local/bin/zsh -f
 
+########################################################################
+# Short Title: MC parallel tempering script
+#
+# Comments: zsh wrapper for running mcfitdist with parallel tempering
+#
+# $Id$
+########################################################################
+
 setopt no_bgnice extended_glob numeric_glob_sort
 PROGNAME=${0:t}
 
@@ -20,10 +28,10 @@ print_help()
       "Arguments are passed to mcfitdist with the exception of special" \
       "parameters for parallel tempering:"
     print -aC2 \
-      "  mcfitdist=FILE"    "[${mcfitdist}]" \
-      "  kbt=CSV"		  "[${(j:,:)kbt}] array of annealing temperatures" \
+      "  mcfitdist=EXEFILE" "[${mcfitdist}]" \
+      "  kbt=CSV"           "[${(j:,:)kbt}] array of annealing temperatures" \
       "  maxcputime=double" "[${maxcputime}] maximum time at one temperature" \
-      "  randseed=bool"	  "[${randseed}] apply random seed"
+      "  randseed=bool"     "[${randseed}] apply random seed"
 }
 
 ########################################################################
@@ -31,29 +39,29 @@ parse_args()
 {
     typeset -ga mcfitdist_args
     for a; do
-	if [[ $a == ?*=* ]]; then
-	    local par=${a%%[=]*}
-	    local val=${a#${par}[=]}
-	    case $par in
-	    (mcfitdist|kbt|maxcputime|outstru)
-		eval $a
-		continue
-		;;
-	    (randseed)
-		if [[ ${(L)val} == (0|n|no|false) ]]; then
-		    randseed=
-		else
-		    randseed=1
-		fi
-		continue
-		;;
-	    (kbt)
-		kbt=( ${(s:,:)val} )
-		continue
-		;;
-	    esac
-	fi
-	mcfitdist_args+=$a
+        if [[ $a == ?*=* ]]; then
+            local par=${a%%[=]*}
+            local val=${a#${par}[=]}
+            case $par in
+            (mcfitdist|kbt|maxcputime|outstru)
+                eval $a
+                continue
+                ;;
+            (randseed)
+                if [[ ${(L)val} == (0|n|no|false) ]]; then
+                    randseed=
+                else
+                    randseed=1
+                fi
+                continue
+                ;;
+            (kbt)
+                kbt=( ${(s:,:)val} )
+                continue
+                ;;
+            esac
+        fi
+        mcfitdist_args+=$a
     done
     mcpt_outstru=( ${outstru:h}/${PROGNAME}$$-kbt{1..${#kbt}} )
 }
@@ -75,3 +83,8 @@ print "maxcputime=$maxcputime"
 print "randseed=$randseed"
 print "outstru=$outstru"
 print "mcpt_outstru=( ${mcpt_outstru} )"
+
+########################################################################
+# Too see what people have been up to just run:
+#   cvs log
+########################################################################
