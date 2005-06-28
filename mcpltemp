@@ -17,6 +17,8 @@ mcfitdist=${mcfitdist[1]}
 kbt=( 0.1 0.01 0.001 )
 maxcputime=120
 randseed=1
+distfile=
+inistru=
 outstru=
 
 ########################################################################
@@ -59,10 +61,29 @@ parse_args()
                 kbt=( ${(s:,:)val} )
                 continue
                 ;;
+	    (distfile)
+		eval $a
+		;;
+	    (inistru)
+		eval $a
+		continue
+		;;
             esac
+	elif [[ $a == (-h|--help) ]]; then
+	    print_help
+	    exit
+	elif [[ -z $distfile ]]; then
+	    distfile=$a
+	else
+	    inistru=$a
+	    continue
         fi
         mcfitdist_args+=$a
     done
+    if [[ -z $outstru ]]; then
+	print -u2 'outstru not defined'
+	exit 2
+    fi
     mcpt_outstru=( ${outstru:h}/${PROGNAME}$$-kbt{1..${#kbt}} )
 }
 
@@ -70,19 +91,92 @@ parse_args()
 # main
 ########################################################################
 
-if [[ -n ${(M)*:#(-h|--help)} ]]; then
-    print_help
-    exit
+parse_args "$@"
+
+if [[ -n $inistru ]]; then
+    <$inistru tee $mcpt_outstru >/dev/null || exit 1
 fi
 
-parse_args "$@"
-print "mcfitdist=$mcfitdist"
-print "mcfitdist_args=( $mcfitdist_args )"
-print "kbt=( $kbt )"
-print "maxcputime=$maxcputime"
-print "randseed=$randseed"
-print "outstru=$outstru"
-print "mcpt_outstru=( ${mcpt_outstru} )"
+# do the initial run, thus make sure all mcpt_outstru files are created
+integer tidx
+for tidx in {1..${#kbt}};
+do
+    # build a full list of arguments
+    all_args=(
+	$mcfitdist_args
+	${inistru}
+	kbt=${kbt[tidx]}
+	maxcputime=$maxcputime
+	outstru=${mcpt_outstru[tidx]}
+	${randseed:+"randseed=$RANDOM"}
+    )
+    $mcfitdist $all_args
+    MCSTATUS=$?
+    if [[ $MCSTATUS == 0 ]]; then
+	cp ${mcpt_outstru[tidx]} $outstru
+	rm ${mcpt_outstru}
+	exit
+    elif [[ $MCSTATUS != 1 ]]; then
+	exit $MCSTATUS
+    fi
+done
+
+# main loop
+integer tround=0
+while true;
+do
+    (( tround++ ))
+    # perform parallel tempering
+    dvar=( $( dvar.py $distfile $mcpt_outstru | sed 's/.*[[:blank:]]//' ) )
+    integer min_idx=1
+    float min_val=${dvar[1]}
+    for i in {1..${#kbt}}; do
+	if (( ${dvar[i]} < min_val )); then
+	    min_val=${dvar[i]}
+	    min_idx=$i
+	fi
+    done
+    print "$tround BT ${dvar[$i]}"
+    cp ${mcpt_outstru[$i]} $outstru
+    # compare results at different temperature
+    integer idxthi idxtlo
+    for idxthi in {1..$(( ${#kbt}-1 ))};
+    do
+	(( idxtlo = idxthi + 1 ))
+	if (( ${dvar[idxthi]} < ${dvar[idxtlo]} ));
+	then
+	    print "$tround PT $idxtlo ${dvar[idxtlo]} $idxthi ${dvar[idxthi]}"
+	    cp ${mcpt_outstru[$idxthi]} ${mcpt_outstru[$idxtlo]}
+	else
+	    print "$tround PT $idxthi ${dvar[idxthi]} $idxtlo ${dvar[idxtlo]}"
+	    cp ${mcpt_outstru[$idxtlo]} ${mcpt_outstru[$idxthi]}
+	fi
+    done
+    # perform MC runs at fixed temperature
+    for tidx in {1..${#kbt}};
+    do
+	# build a full list of arguments
+	all_args=(
+	    $mcfitdist_args
+	    kbt=${kbt[tidx]}
+	    maxcputime=$maxcputime
+	    inistru=${mcpt_outstru[tidx]}
+	    outstru=${mcpt_outstru[tidx]}
+	)
+	if [[ -n $randseed ]]; then
+	    all_args=( $all_args seed=$RANDOM )
+	fi
+	$mcfitdist $all_args
+	MCSTATUS=$?
+	if [[ $MCSTATUS == 0 ]]; then
+	    cp ${mcpt_outstru[tidx]} $outstru
+	    rm ${mcpt_outstru}
+	    exit
+	elif [[ $MCSTATUS != 1 ]]; then
+	    exit $MCSTATUS
+	fi
+    done
+done
 
 ########################################################################
 # Too see what people have been up to just run:
