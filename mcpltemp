@@ -10,12 +10,13 @@
 
 setopt no_bgnice extended_glob numeric_glob_sort
 PROGNAME=${0:t}
+PROGCVSID='$Id$'
 
 # defaults:
 mcfitdist=( ${0:h}/mcfitdist*-fast(.xN) ${0:h}/mcfitdist*~*fast*(.xN) )
 mcfitdist=${mcfitdist[1]}
-kbt=( 0.1 0.01 0.001 )
-maxcputime=120
+kbt=( 0.1 0.05 0.02 0.01 0.005 0.002 0.001 )
+maxcputime=30
 randseed=1
 distfile=
 inistru=
@@ -27,19 +28,52 @@ print_help()
     print -l \
       "usage: ${PROGNAME} [DISTFILE] [inistru] [par1=val1...]" \
       "run parallel-tempering mcfitdist fits using distances from DISTFILE." \
-      "Arguments are passed to mcfitdist with the exception of special" \
-      "parameters for parallel tempering:"
+      "Arguments are passed to mcfitdist with the exception of parameters" \
+      "for parallel tempering." \
+      "Options:" \
+      "  -h, --help         display this message" \
+      "  -v, --version      show program version" \
+      "Tempering parameters:"
     print -aC2 \
       "  mcfitdist=EXEFILE" "[${mcfitdist}]" \
-      "  kbt=CSV"           "[${(j:,:)kbt}] array of annealing temperatures" \
+      "  kbt=T1,T2,..."     "[${(j:, :)kbt}] " \
+      "" 		    "array of annealing temperatures" \
       "  maxcputime=double" "[${maxcputime}] maximum time at one temperature" \
       "  randseed=bool"     "[${randseed}] apply random seed"
+}
+
+########################################################################
+print_version()
+{
+    print $PROGCVSID
+}
+
+########################################################################
+print_pars()
+{
+    HASHLINE=${(l:72::#:):-}
+    print $HASHLINE
+    print    "# $PROGNAME"
+    print    "# $PROGCVSID"
+    print    "# $HOST"
+    print -P "# %D{%c}"
+    print $HASHLINE
+    print    "mcfitdist=${mcfitdist}"
+    print    "kbt=${(j:,:)kbt}"
+    print    "maxcputime=$maxcputime"
+    print    "randseed=$randseed"
+    print $HASHLINE
+    print
 }
 
 ########################################################################
 parse_args()
 {
     typeset -ga mcfitdist_args
+    if [[ $# == 0 ]]; then
+	print_help
+	exit
+    fi
     for a; do
         if [[ $a == ?*=* ]]; then
             local par=${a%%[=]*}
@@ -72,6 +106,9 @@ parse_args()
 	elif [[ $a == (-h|--help) ]]; then
 	    print_help
 	    exit
+	elif [[ $a == (-v|--version) ]]; then
+	    print_version
+	    exit
 	elif [[ -z $distfile ]]; then
 	    distfile=$a
 	else
@@ -80,11 +117,7 @@ parse_args()
         fi
         mcfitdist_args+=$a
     done
-    if [[ -z $outstru ]]; then
-	print -u2 'outstru not defined'
-	exit 2
-    fi
-    mcpt_outstru=( ${outstru:h}/${PROGNAME}$$-kbt{1..${#kbt}} )
+    mcpt_outstru=( ${outstru:h}/${PROGNAME}$$-kbt{1..${#kbt}}.tmp )
 }
 
 ########################################################################
@@ -92,10 +125,7 @@ parse_args()
 ########################################################################
 
 parse_args "$@"
-
-if [[ -n $inistru ]]; then
-    <$inistru tee $mcpt_outstru >/dev/null || exit 1
-fi
+print_pars
 
 # do the initial run, thus make sure all mcpt_outstru files are created
 integer tidx
@@ -108,17 +138,18 @@ do
 	kbt=${kbt[tidx]}
 	maxcputime=$maxcputime
 	outstru=${mcpt_outstru[tidx]}
-	${randseed:+"randseed=$RANDOM"}
+	${randseed:+"seed=$RANDOM"}
     )
     $mcfitdist $all_args
     MCSTATUS=$?
     if [[ $MCSTATUS == 0 ]]; then
-	cp ${mcpt_outstru[tidx]} $outstru
-	rm ${mcpt_outstru}
+	[[ -n $outstru ]] && cp ${mcpt_outstru[tidx]} $outstru
+	rm -f ${mcpt_outstru}
 	exit
     elif [[ $MCSTATUS != 1 ]]; then
 	exit $MCSTATUS
     fi
+    print
 done
 
 # main loop
@@ -136,8 +167,9 @@ do
 	    min_idx=$i
 	fi
     done
-    print "$tround BT ${dvar[$i]}"
-    cp ${mcpt_outstru[$i]} $outstru
+    print "Tempering exchange"
+    print "$tround BT $i ${dvar[$i]}"
+    [[ -n $outstru ]] && cp ${mcpt_outstru[$i]} $outstru
     # compare results at different temperature
     integer idxthi idxtlo
     for idxthi in {1..$(( ${#kbt}-1 ))};
@@ -152,6 +184,7 @@ do
 	    cp ${mcpt_outstru[$idxtlo]} ${mcpt_outstru[$idxthi]}
 	fi
     done
+    print
     # perform MC runs at fixed temperature
     for tidx in {1..${#kbt}};
     do
@@ -162,19 +195,18 @@ do
 	    maxcputime=$maxcputime
 	    inistru=${mcpt_outstru[tidx]}
 	    outstru=${mcpt_outstru[tidx]}
+	    ${randseed:+"seed=$RANDOM"}
 	)
-	if [[ -n $randseed ]]; then
-	    all_args=( $all_args seed=$RANDOM )
-	fi
 	$mcfitdist $all_args
 	MCSTATUS=$?
 	if [[ $MCSTATUS == 0 ]]; then
-	    cp ${mcpt_outstru[tidx]} $outstru
-	    rm ${mcpt_outstru}
+	    [[ -n $outstru ]] && cp ${mcpt_outstru[tidx]} $outstru
+	    rm -f ${mcpt_outstru}
 	    exit
 	elif [[ $MCSTATUS != 1 ]]; then
 	    exit $MCSTATUS
 	fi
+	print
     done
 done
 
