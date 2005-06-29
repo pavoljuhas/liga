@@ -52,7 +52,7 @@ bool read_header(istream& fid, string& header)
     return !(fid.rdstate() & ios::badbit);
 }
 
-inline bool read_header(istream& fid)
+bool read_header(istream& fid)
 {
     string dummy;
     return read_header(fid, dummy);
@@ -1693,7 +1693,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
     switch (M.output_format)
     {
 	case Molecule::XYZ:
-	    fid << "# BGA molecule format = xy" << endl;
+	    fid << "# BGA molecule format = xyz" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
