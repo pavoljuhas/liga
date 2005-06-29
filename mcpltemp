@@ -13,8 +13,8 @@ PROGNAME=${0:t}
 PROGCVSID='$Id$'
 
 # defaults:
-mcfitdist=( ${0:h}/mcfitdist*-fast(.xN) ${0:h}/mcfitdist*~*fast*(.xN) )
-mcfitdist=${mcfitdist[1]}
+mcfitdist=( ${0:h}/mcfitdist*~*fast*(.xN) ${0:h}/mcfitdist*-fast(.xN) )
+mcfitdist=${mcfitdist[-1]}
 kbt=( 0.1 0.05 0.02 0.01 0.005 0.002 0.001 )
 maxcputime=30
 randseed=1
@@ -37,9 +37,8 @@ print_help()
     print -aC2 \
       "  mcfitdist=EXEFILE" "[${mcfitdist}]" \
       "  kbt=T1,T2,..."     "[${(j:, :)kbt}] " \
-      "" 		    "array of annealing temperatures" \
       "  maxcputime=double" "[${maxcputime}] maximum time at one temperature" \
-      "  randseed=bool"     "[${randseed}] apply random seed"
+      "  randseed=bool"     "[${randseed}] randomize random seed"
 }
 
 ########################################################################
