@@ -27,6 +27,7 @@ struct RunPar_t
     string outstru;
     string outfmt;
     int saverate;
+    bool savebest;
     int lograte;
     // MC parameters
     double tol_bad;
@@ -45,7 +46,7 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "outfmt", "saverate", "lograte",
+	"outstru", "outfmt", "saverate", "savebest", "lograte",
 	"delta_x", "kbt", "relax", "tol_bad", "maxcputime", "seed"
     };
     validpars.insert(validpars.end(),
@@ -69,7 +70,8 @@ void RunPar_t::print_help(ParseArgs& a)
 "  inistru=FILE          initial structure [random points in a box]\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  outfmt=string         [xyz], atomeye - outstru file format\n"
-"  saverate=int          [10000] minimum steps between outstru updates\n"
+"  saverate=int          [50000] minimum steps between outstru updates\n"
+"  savebest=bool         [false] save the best, if not last structure\n"
 "  lograte=int           [100] minimum steps between log printout\n"
 "MC parameters\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
@@ -211,8 +213,11 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	}
 	cout << "outfmt=" << outfmt << endl;
 	// saverate
-        saverate = a.GetPar<int>("saverate", 10000);
+        saverate = a.GetPar<int>("saverate", 50000);
         cout << "saverate=" << saverate << endl;
+	// savebest
+        savebest = a.GetPar<bool>("savebest", false);
+        cout << "savebest=" << savebest << endl;
     }
     //  lograte
     lograte = a.GetPar<int>("lograte", 100);
@@ -294,16 +299,27 @@ void SIGHUP_handler(int signum)
 // Output helpers
 ////////////////////////////////////////////////////////////////////////
 
-void save_outstru(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
+void save_outstru(Molecule& mol, Molecule& best_mol,
+	RunPar_t& rp, RunVar_t& rv)
 {
     static int cnt = 0;
     static double bestMNB = numeric_limits<double>().max();
     if (  rp.outstru.size() == 0 || rp.saverate == 0 ||
 	    (++cnt < rp.saverate && !rv.exiting) )
 	return;
-    if ( eps_lt(mol.NormBadness(), bestMNB) )
+    if (rp.savebest)
     {
-	bestMNB = mol.NormBadness();
+	if ( eps_lt(best_mol.NormBadness(), bestMNB) )
+	{
+	    bestMNB = best_mol.NormBadness();
+	    best_mol.WriteFile(rp.outstru.c_str());
+	    cnt = 0;
+	}
+	else
+	    return;
+    }
+    else
+    {
 	mol.WriteFile(rp.outstru.c_str());
 	cnt = 0;
     }
@@ -351,8 +367,8 @@ int main(int argc, char *argv[])
 	// remove original atom
 	if (rp.relax)
 	{
-	    mol.Pop(aidx);
 	    double nbr0 = mol.NormBadness();
+	    mol.Pop(aidx);
 	    mol.RelaxExternalAtom(a1);
 	    mol.Add(a1);
 	    while ( rp.relax >= 2 && eps_lt(mol.NormBadness(), nbr0) )
@@ -388,7 +404,7 @@ int main(int argc, char *argv[])
 	    cout << rv.totsteps << ' ' << rv.accsteps << " BC "
 		<< best_mol.NormBadness() << endl;
 	}
-        save_outstru(best_mol, rp, rv);
+        save_outstru(mol, best_mol, rp, rv);
     }
     cout << endl;
     int exit_code;
@@ -410,7 +426,7 @@ int main(int argc, char *argv[])
     BGA::cnt.PrintRunStats();
     // save last molecule
     rv.exiting = true;
-    save_outstru(best_mol, rp, rv);
+    save_outstru(mol, best_mol, rp, rv);
     if (SIGHUP_received)
 	exit(exit_code);
     return exit_code;
