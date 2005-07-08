@@ -5,13 +5,14 @@ Priority classification:
 4   consider including
 
 Conformation search:
+1   improve formula for ntrials cutoff
+1   simplify Pair_t object, Recalculate(), Clear() and ~Molecule() functions
+1   convert atoms list to vector of pointers
 1   should there be weighting in RelaxAtom ?
 1   add Reassign pairs operator, that searchs for best assignment of target
     distances
 1   check where does Badness() become smaller than BGA::eps_badness
 1   allow starting configuration to have more atoms then natoms
-1   implement DistanceTable as double array, do erase/insert via memmove,
-    compare speed with builtin vector
 2   try simplex minimization, compare with LM minimizer
 2   implement global structure relaxation 
 2   get rid of sign-compare warnings
@@ -23,6 +24,7 @@ Conformation search:
 
 Input output:
 2   add reading of atomeye structure format
+2   clean up and optimize IO functions
 
 Monte Carlo search
 1   implement worst-atom relaxation, do benchmarks for Platonic Solids
