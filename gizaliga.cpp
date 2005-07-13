@@ -26,6 +26,7 @@ struct RunPar_t
     string distfile;
     string inistru;
     string outstru;
+    string outfmt;
     int saverate;
     bool saveall;
     string frames;
@@ -55,7 +56,8 @@ RunPar_t::RunPar_t()
 {
     char *pnames[] = {
 	"distfile", "inistru",
-	"outstru", "saverate", "saveall", "frames", "framesrate", "centersize",
+	"outstru", "outfmt", "saverate", "saveall",
+	"frames", "framesrate", "centersize",
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
@@ -81,6 +83,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  distfile=FILE         target distance table\n"
 "  inistru=FILE          initial structure [empty box]\n"
 "  outstru=FILE          where to save the best full molecule\n"
+"  outfmt=string         [xyz], atomeye - outstru file format\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
@@ -220,6 +223,19 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     {
         outstru = a.pars["outstru"];
         cout << "outstru=" << outstru << endl;
+	// outfmt
+	outfmt = a.GetPar<string>("outfmt", "xyz");
+	if (outfmt == "xyz")
+	    mol.OutFmtXYZ();
+	else if (outfmt == "atomeye")
+	    mol.OutFmtAtomEye();
+	else
+	{
+	    cerr << "Invalid value of outfmt parameter" << endl;
+	    exit(EXIT_FAILURE);
+	}
+	cout << "outfmt=" << outfmt << endl;
+	// saverate
         saverate = a.GetPar<int>("saverate", 10);
         cout << "saverate=" << saverate << endl;
 	saveall = a.GetPar<bool>("saveall", false);
@@ -461,7 +477,7 @@ void save_outstru(vector<Division_t>& liga, RunPar_t& rp, RunVar_t& rv)
 	    oss << ".L" << level_champ->NAtoms();
 	    fname.append( oss.str() );
 	}
-	level_champ->WriteAtomEye(fname.c_str());
+	level_champ->WriteFile(fname.c_str());
 	// jump out if we are not saving all divisions
 	if ( ! rp.saveall )
 	    break;
