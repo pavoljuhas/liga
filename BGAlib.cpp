@@ -1699,8 +1699,8 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    for (LAit ai = afirst; ai != alast; ++ai)
 	    {
 		fid <<
-		    ai->r[0] << '\t' <<
-		    ai->r[1] << '\t' <<
+		    ai->r[0] << " " <<
+		    ai->r[1] << " " <<
 		    ai->r[2] << endl;
 	    }
 	    break;
