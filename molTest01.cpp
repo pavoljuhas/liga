@@ -16,6 +16,9 @@ int main()
     // line distance table
     double pdLine[1] = {1.0};
     DistanceTable dtLine(pdLine, 1);
+    cout << "dtLine.NAtoms = " << dtLine.NAtoms << endl;
+    cout << "dtLine.Nuniqd = " << dtLine.Nuniqd << endl;
+    cout << endl;
     // unit line coordinates
     double px0[2] = {-.5,  .5};
     double py0[2] = { .0,  .0};
@@ -32,6 +35,9 @@ int main()
     // square distance table
     double pdSquare[6] = {1.0, 1.0, sqrt(2.0), sqrt(2.0), 1.0, 1.0};
     DistanceTable dtSquare(pdSquare, 6);
+    cout << "dtSquare.NAtoms = " << dtSquare.NAtoms << endl;
+    cout << "dtSquare.Nuniqd = " << dtSquare.Nuniqd << endl;
+    cout << endl;
     // build correct square molecule
     double px1[4] = {-.5,  .5,  .5, -.5};
     double py1[4] = {-.5, -.5,  .5,  .5};
