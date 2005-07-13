@@ -826,7 +826,7 @@ int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
 
 Molecule& Molecule::RelaxAtom(list<Atom_t>::iterator ai)
 {
-    Atom_t& ta = *ai;
+    Atom_t ta = *ai;
     Pop(ai);
     RelaxExternalAtom(ta);
     Add(ta);
@@ -846,6 +846,7 @@ Molecule& Molecule::RelaxAtom(const int cidx)
 
 void Molecule::RelaxExternalAtom(Atom_t& ta)
 {
+    const int maximum_relaxations = 20;
     // pj: this seems to be crashing when NAtoms() < 3
     if (NAtoms() < 3)
 	return;
@@ -870,7 +871,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     Atom_t rta(ta);
     // loop while badness is improved
     double lo_abad = numeric_limits<double>().max();
-    while (true)
+    for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
 	list<int> dUsedIdx;
 	double *pad0 = &ad0[0];
@@ -907,7 +908,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    dUsed[*ii] = false;
 	}
 	// get out if lo_abad did not improve
-	if (tbad < lo_abad)
+	if ( eps_lt(tbad, lo_abad) )
 	{
 	    lo_abad = tbad;
 	    ta = rta;
