@@ -267,6 +267,7 @@ DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
     resize(d0.size());
     copy(d0.begin(), d0.end(), begin());
     NAtoms = d0.NAtoms;
+    Nuniqd = d0.Nuniqd;
     max_d = d0.max_d;
     return *this;
 }
@@ -292,6 +293,7 @@ void DistanceTable::init()
     if (size() == 0)
     {
 	NAtoms = 1;
+	Nuniqd = 0;
 	max_d = 1.0;
 	return;
     }
@@ -306,6 +308,16 @@ void DistanceTable::init()
 	    "d[0]=" << at(0) << endl;
 	throw InvalidDistanceTable();
     }
+    // calculate Nuniqd
+    double eps_dd = sqrt(BGA::eps_badness);
+    Nuniqd = 1;
+    // here size() > 0
+    for (iterator ilo = begin(), ihi = begin()+1; ihi != end(); ++ilo, ++ihi)
+    {
+	if ( (*ihi - *ilo) > eps_dd )
+	    ++Nuniqd;
+    }
+    // max_d is very simple
     max_d = back();
 }
 

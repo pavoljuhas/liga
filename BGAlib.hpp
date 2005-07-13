@@ -78,6 +78,7 @@ public:
     vector<double>::iterator return_back(const double&);
     // data members
     mutable int NAtoms;   	// target number of atoms
+    mutable int Nuniqd;   	// number of unique distances
     mutable double max_d;
 private:
     void init();
