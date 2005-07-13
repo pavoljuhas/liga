@@ -6,6 +6,8 @@ Priority classification:
 
 Conformation search:
 1   improve formula for ntrials cutoff
+1   should we use lo_abad = tol_nbad*NAtoms()?
+1   improve filter_good_atoms to look a step ahead
 1   simplify Pair_t object, Recalculate(), Clear() and ~Molecule() functions
 1   convert atoms list to vector of pointers
 1   should there be weighting in RelaxAtom ?
