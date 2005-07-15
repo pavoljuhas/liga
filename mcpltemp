@@ -116,7 +116,7 @@ parse_args()
         fi
         mcfitdist_args+=$a
     done
-    mcpt_outstru=( ${outstru:h}/${PROGNAME}$$-kbt{1..${#kbt}}.tmp )
+    mcpt_outstru=( ${outstru:h}/${PROGNAME}${HOST}$$-kbt{1..${#kbt}}.tmp )
 }
 
 ########################################################################
