@@ -34,6 +34,7 @@ typeset -A bghost_cputimes
 bghost_cputimes=(
     romaioi.pa.msu.edu       0.792
     poirot.pa.msu.edu        0.860
+    vozd.pa.msu.edu	     0.885
     bg.pa.msu.edu            0.907
     emperor.pa.msu.edu       0.932
     donut.pa.msu.edu         0.933
