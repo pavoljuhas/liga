@@ -13,6 +13,22 @@
 #include "BGAlib.hpp"
 
 ////////////////////////////////////////////////////////////////////////
+// helper types: TeamId_t, Verbosity_t
+////////////////////////////////////////////////////////////////////////
+
+struct TeamId_t
+{
+    int season;
+    int level;
+    int id;
+};
+
+enum MessageStyle_t
+{
+    QUIET, NORMAL, VERBOSE
+};
+
+////////////////////////////////////////////////////////////////////////
 // RunPar_t
 ////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +37,7 @@ struct RunPar_t
     RunPar_t();
     Molecule ProcessArguments(int argc, char * argv[]);
     // Output option
-    bool quiet;
+    MessageStyle_t msgstyle;
     // IO parameters
     string distfile;
     string inistru;
@@ -31,6 +47,7 @@ struct RunPar_t
     bool saveall;
     string frames;
     int framesrate;
+    vector<RunPar_t> frameselection;
     int centersize;
     // Liga parameters
     double tol_dd;
@@ -54,10 +71,11 @@ private:
 
 RunPar_t::RunPar_t()
 {
+    msgstyle = NORMAL;
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "outfmt", "saverate", "saveall",
-	"frames", "framesrate", "centersize",
+	"frames", "framesrate", "frameselection", "centersize",
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
@@ -76,9 +94,10 @@ void RunPar_t::print_help(ParseArgs& a)
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
-"  -q, --quiet           suppress output of season details\n"
+"  -q, --quiet           restrict output to champion quality\n"
+"  -v, --verbose         show all match details\n"
 "  -h, --help            display this message\n"
-"  -v, --version         show program version\n"
+"  -V, --version         show program version\n"
 "IO parameters:\n"
 "  distfile=FILE         target distance table\n"
 "  inistru=FILE          initial structure [empty box]\n"
@@ -88,6 +107,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
+"  frameselection=array  [] 3*n integers specifying season, level, id\n"
 "  centersize=int        [0] shift smaller molecules to the origin\n"
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
@@ -122,13 +142,14 @@ string RunPar_t::version_string(string quote)
 Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 {
     char *short_options =
-        "p:qhv";
+        "p:qvhV";
     // parameters and options
     option long_options[] = {
         {"parfile", 1, 0, 'p'},
         {"quiet", 0, 0, 'q'},
+        {"verbose", 0, 0, 'v'},
         {"help", 0, 0, 'h'},
-        {"version", 0, 0, 'v'},
+        {"version", 0, 0, 'V'},
         {0, 0, 0, 0}
     };
     ParseArgs a(argc, argv, short_options, long_options);
@@ -143,7 +164,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         print_help(a);
         exit(EXIT_SUCCESS);
     }
-    else if (a.isopt("v"))
+    else if (a.isopt("V"))
     {
 	cout << version_string();
         exit(EXIT_SUCCESS);
@@ -163,7 +184,11 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     }
-    quiet = a.isopt("q");
+    // let -v,--verobse override -q
+    if (a.isopt("q"))
+	msgstyle = QUIET;
+    if (a.isopt("v"))
+	msgstyle = VERBOSE;
     try {
 	a.ValidatePars(validpars);
     }
@@ -611,7 +636,7 @@ int main(int argc, char *argv[])
 		for (int nlast = hi_level-1; nlast >= lo_level; --nlast)
 		    lo_looser->Pop(nlast);
 	    }
-	    if (!rp.quiet)
+	    if (rp.msgstyle != QUIET)
 	    {
 	    cout << rv.season;
 		cout << " A " <<
