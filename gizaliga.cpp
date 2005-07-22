@@ -20,7 +20,7 @@ struct TeamId_t
 {
     int season;
     int level;
-    int id;
+    int place;
 };
 
 enum MessageStyle_t
@@ -47,7 +47,7 @@ struct RunPar_t
     bool saveall;
     string frames;
     int framesrate;
-    vector<RunPar_t> frameselection;
+    vector<TeamId_t> frameselection;
     int centersize;
     // Liga parameters
     double tol_dd;
@@ -269,10 +269,53 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     // frames, framesrate
     if (a.ispar("frames"))
     {
-        frames = a.pars["frames"];
-        cout << "frames=" << frames << endl;
-        framesrate = a.GetPar<int>("framesrate", 10);
-        cout << "framesrate=" << framesrate << endl;
+	frames = a.pars["frames"];
+	cout << "frames=" << frames << endl;
+	if (a.ispar("frameselection"))
+	{
+	    framesrate = 0;
+	    vector<int> stp = a.GetParVec<int>("frameselection");
+	    if (stp.size() % 3)
+	    {
+		cerr << "frameselection must have 3n entries" << endl;
+		exit(EXIT_FAILURE);
+	    }
+	    // check if seasons in stp are ordered
+	    for (int i = 3; i < stp.size(); i += 3)
+	    {
+		if (stp[i] < stp[i-3])
+		{
+		    cerr << "frameselection seasons must be sorted" << endl;
+		    exit(EXIT_FAILURE);
+		}
+	    }
+	    TeamId_t tid;
+	    for (int i = 0; i < stp.size(); i += 3)
+	    {
+		tid.season = stp[i];
+		tid.level = stp[i+1];
+		tid.place = stp[i+2];
+		frameselection.push_back(tid);
+	    }
+	    if (frameselection.size() != 0)
+	    {
+		cout << "frameselection=";
+		for (vector<TeamId_t>::iterator ii = frameselection.begin();
+			ii != frameselection.end(); ++ii)
+		{
+		    cout << " \\" << endl;
+		    cout << "    " << ii->season
+			<< ' ' << ii->level << ' ' << ii->place;
+		}
+		cout << endl;
+	    }
+	}
+	// parse framesrate only if frameselection is empty
+	if (frameselection.size() == 0)
+	{
+	    framesrate = a.GetPar<int>("framesrate", 10);
+	    cout << "framesrate=" << framesrate << endl;
+	}
     }
     // centersize
     centersize = a.GetPar<int>("centersize", 0);
