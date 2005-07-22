@@ -105,29 +105,54 @@ void ParseArgs::ReadPars(const char *file)
     fid.close();
 }
 
+bool check_backslash(string& s)
+{
+    string::reverse_iterator rii;
+    // count backslashes at the end of string
+    int nbs = 0;
+    for (rii = s.rbegin(); rii != s.rend() && *rii == '\\'; ++rii)
+	++nbs;
+    bool line_continues = (nbs % 2 != 0);
+    if (nbs > 0)
+    {
+	string::size_type pend;
+	pend = s.size() - nbs/2 - (line_continues);
+	s.erase(pend);
+    }
+    return line_continues;
+}
+
 istream& ParseArgs::ReadPars(istream& fid)
 {
-    const char *blank = " \t\n";
-    string line;
-    for (int nr = 1; !fid.eof() && getline(fid, line); ++nr)
+    const char *blank = " \t\r\n";
+    string pline, fline;
+    bool line_continues = false;
+    for (int nr = 1; !fid.eof() && getline(fid, fline); ++nr)
     {
+	if (!line_continues)
+	    pline.clear();
+	line_continues = check_backslash(fline);
+	pline += fline;
+	if (line_continues)
+	    continue;
+	// here we should have complete pline
 	string::size_type lb, le;
-	lb = line.find_first_not_of(blank);
-	le = line.find_last_not_of(blank)+1;
-	line = (lb == string::npos) ? "" : line.substr(lb, le-lb);
-	if (line.length() == 0 || line[0] == '#')
+	lb = pline.find_first_not_of(blank);
+	le = pline.find_last_not_of(blank)+1;
+	pline = (lb == string::npos) ? "" : pline.substr(lb, le-lb);
+	if (pline.length() == 0 || pline[0] == '#')
 	    continue;
 	string::size_type eq, pe, vb;
-	eq = line.find('=');
+	eq = pline.find('=');
 	if (eq == string::npos)
 	{
 	    ostringstream oss;
 	    oss << nr << ": missing equal symbol";
 	    throw ParseArgsError(oss.str());
 	}
-	pe = line.find_last_not_of(string(blank) + "=", eq);
+	pe = pline.find_last_not_of(string(blank) + "=", eq);
 	pe = (pe == string::npos) ? eq : pe+1;
-	string par = line.substr(0, pe);
+	string par = pline.substr(0, pe);
 	bool ispar = isalpha(par[0]);
 	for (   string::iterator ii = par.begin();
 		ii != par.begin() && ispar; ++ii)
@@ -142,8 +167,8 @@ istream& ParseArgs::ReadPars(istream& fid)
 	}
 	if (cmdl_par.count(par))
 	    continue;
-	vb = line.find_first_not_of(blank, eq+1);
-	pars[par] = (vb == string::npos) ? "" : line.substr(vb);
+	vb = pline.find_first_not_of(blank, eq+1);
+	pars[par] = (vb == string::npos) ? "" : pline.substr(vb);
     }
     return fid;
 }
