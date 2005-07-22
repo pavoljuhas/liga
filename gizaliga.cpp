@@ -637,6 +637,7 @@ int main(int argc, char *argv[])
 	    PMOL advancing = lo_div->at(winner_idx);
 	    if (! (advancing->NormBadness() < rp.stopgame) )
 		continue;
+	    ostringstream ossverbose;
 	    bool advancing_best = (advancing == lo_div->best());
 	    double adv_bad0 = advancing->NormBadness();
 	    if (! lo_div->full() )
@@ -644,13 +645,23 @@ int main(int argc, char *argv[])
 		// save clone of advancing winner
 		PMOL winner_clone = new Molecule(*advancing);
 		lo_div->push_back(winner_clone);
+		ossverbose << rv.season
+		    << " PUSH " << lo_level << ' ' << winner_idx
+		    << " TO " << lo_level << ' ' << lo_div->size()-1
+		    << endl;
 	    }
 	    // advance as far as possible
 	    advancing->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
 	    int hi_level = advancing->NAtoms();
 	    VDit hi_div = liga.begin() + hi_level;
 	    if (hi_div->size() == 0)
+	    {
 		hi_div->push_back(new Molecule(*advancing));
+		ossverbose << rv.season
+		    << " PUSH " << lo_level << ' ' << winner_idx
+		    << " TO " << hi_level << ' ' << hi_div->size()-1
+		    << endl;
+	    }
 	    int looser_idx = hi_div->find_looser();
 	    PMOL descending = hi_div->at(looser_idx);
 	    double desc_bad0 = descending->NormBadness();
@@ -659,16 +670,28 @@ int main(int argc, char *argv[])
 		// save clone of descending looser
 		PMOL looser_clone = new Molecule(*descending);
 		hi_div->push_back(looser_clone);
+		ossverbose << rv.season
+		    << " PUSH " << hi_level << ' ' << looser_idx
+		    << " TO " << hi_level << ' ' << hi_div->size()-1
+		    << endl;
 	    }
 	    // clone winner if he made a good advance
 	    if (eps_gt(descending->NormBadness(), advancing->NormBadness()))
 	    {
 		*descending = *advancing;
+		ossverbose << rv.season
+		    << " PUSH " << lo_level << ' ' << winner_idx
+		    << " TO " << hi_level << ' ' << looser_idx
+		    << endl;
 	    }
 	    descending->Degenerate(hi_level-lo_level);
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
+	    ossverbose << rv.season
+		<< " SWAP " << lo_level << ' ' << winner_idx
+		<< " WITH " << hi_level << ' ' << looser_idx
+		<< endl;
 	    // make sure the original best cluster is not too spoiled
 	    const double spoil_factor = 10.0;
 	    if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
@@ -678,16 +701,24 @@ int main(int argc, char *argv[])
 		*lo_looser = *advancing;
 		for (int nlast = hi_level-1; nlast >= lo_level; --nlast)
 		    lo_looser->Pop(nlast);
+		ossverbose << rv.season
+		    << " PUSH " << hi_level << ' ' << looser_idx
+		    << " TO " << lo_level << ' ' << lo_div->find_looser()
+		    << endl;
 	    }
-	    if (rp.msgstyle != QUIET)
-	    {
-	    cout << rv.season;
-		cout << " A " <<
-		    lo_level << ' ' << adv_bad0 << ' ' <<
-		    hi_level << ' ' << advancing->NormBadness() << "    ";
-		cout << " D " <<
-		    hi_level << ' ' << desc_bad0 << ' ' <<
-		    lo_level << ' ' << descending->NormBadness() << endl;
+	    switch (rp.msgstyle) {
+		case VERBOSE:
+		    cout << ossverbose.str();
+		case NORMAL:
+		    cout << rv.season;
+		    cout << " A " <<
+			lo_level << ' ' << adv_bad0 << ' ' <<
+			hi_level << ' ' << advancing->NormBadness() << "    ";
+		    cout << " D " <<
+			hi_level << ' ' << desc_bad0 << ' ' <<
+			lo_level << ' ' << descending->NormBadness() << endl;
+		case QUIET:
+		    ;
 	    }
 	    // no need to finish the season if we found champion
 	    if (advancing->Full() && advancing->NormBadness() < rp.tol_bad)
