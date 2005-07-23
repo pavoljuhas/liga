@@ -13,7 +13,7 @@ Options:
   -r, --rescale   apply least squares scaling of test to target distances
   -s, --sortfull  compare sorted list of distances for full structures
   -h, --help      display this message
-  -v, --version   show script version
+  -V, --version   show script version
 """
 
 __id__ = "$Id$"
@@ -214,7 +214,7 @@ import getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "mprshv", \
+        opts, args = getopt.getopt(argv, "mprshV", \
                 ["multiple", "partials", "rescale", "sortfull",
                 "help", "version"])
     except getopt.GetoptError, errmsg:
@@ -234,7 +234,7 @@ def main(argv):
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
-        elif o in ("-v", "--version"):
+        elif o in ("-V", "--version"):
             print __id__
             sys.exit()
     if len(args) < 2:
