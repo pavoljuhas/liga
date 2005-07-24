@@ -134,6 +134,7 @@ class Molecule
 {
 public:
     // constructors
+    Molecule();
     Molecule(const DistanceTable&);
     Molecule(const DistanceTable&, const int s, const double *px,
 	    const double *py, const double *pz);

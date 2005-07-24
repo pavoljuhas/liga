@@ -336,6 +336,11 @@ bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
 
+Molecule::Molecule()
+{
+    init();
+}
+
 Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 {
     init();
