@@ -574,7 +574,7 @@ void save_frames_trace(PMOL advancing, PMOL descending, RunPar_t& rp,
     {
 	int trace_no = int(ti - rp.framestrace.begin()) + 1;
 	ostringstream oss;
-	oss << rp.frames << "." << rv.season << ',' << (trace_no+1);
+	oss << rp.frames << "." << rv.season << ',' << trace_no;
 	advancing->WriteAtomEye(oss.str().c_str());
 	if (++ti == rp.framestrace.end())
 	    return;
@@ -583,7 +583,7 @@ void save_frames_trace(PMOL advancing, PMOL descending, RunPar_t& rp,
     {
 	int trace_no = int(ti - rp.framestrace.begin()) + 1;
 	ostringstream oss;
-	oss << rp.frames << "." << rv.season << ',' << (trace_no+1);
+	oss << rp.frames << "." << rv.season << ',' << trace_no;
 	descending->WriteAtomEye(oss.str().c_str());
 	if (++ti == rp.framestrace.end())
 	    return;
