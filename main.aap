@@ -13,7 +13,7 @@ LD = $CXX
 LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
 
 Sources = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
-Scripts = dvar.py coord.py traceliga.py
+Scripts = dvar.py coord.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 BDIR = AAPDIR/$BDIR
