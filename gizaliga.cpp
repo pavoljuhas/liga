@@ -13,19 +13,14 @@
 #include "BGAlib.hpp"
 
 ////////////////////////////////////////////////////////////////////////
-// helper types: TeamId_t, Verbosity_t
+// helper types: TraceId_t
 ////////////////////////////////////////////////////////////////////////
 
-struct TeamId_t
+struct TraceId_t
 {
     int season;
-    int level;
-    int place;
-};
-
-enum MessageStyle_t
-{
-    QUIET, NORMAL, VERBOSE
+    int ini_level;
+    int fin_level;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -37,7 +32,8 @@ struct RunPar_t
     RunPar_t();
     Molecule ProcessArguments(int argc, char * argv[]);
     // Output option
-    MessageStyle_t msgstyle;
+    bool quiet;
+    bool trace;
     // IO parameters
     string distfile;
     string inistru;
@@ -47,7 +43,7 @@ struct RunPar_t
     bool saveall;
     string frames;
     int framesrate;
-    vector<TeamId_t> frameselection;
+    vector<TraceId_t> framestrace;
     int centersize;
     // Liga parameters
     double tol_dd;
@@ -71,11 +67,10 @@ private:
 
 RunPar_t::RunPar_t()
 {
-    msgstyle = NORMAL;
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "outfmt", "saverate", "saveall",
-	"frames", "framesrate", "frameselection", "centersize",
+	"frames", "framesrate", "framestrace", "centersize",
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
@@ -95,7 +90,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
 "  -q, --quiet           restrict output to champion quality\n"
-"  -v, --verbose         show all match details\n"
+"  -t, --trace           keep and show frame trace of the champion\n"
 "  -h, --help            display this message\n"
 "  -V, --version         show program version\n"
 "IO parameters:\n"
@@ -107,7 +102,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
-"  frameselection=array  [] 3*n integers specifying season, level, id\n"
+"  framestrace=array     [] triples of (season, initial, final level)\n"
 "  centersize=int        [0] shift smaller molecules to the origin\n"
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
@@ -142,12 +137,12 @@ string RunPar_t::version_string(string quote)
 Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 {
     char *short_options =
-        "p:qvhV";
+        "p:qthV";
     // parameters and options
     option long_options[] = {
         {"parfile", 1, 0, 'p'},
         {"quiet", 0, 0, 'q'},
-        {"verbose", 0, 0, 'v'},
+        {"trace", 0, 0, 't'},
         {"help", 0, 0, 'h'},
         {"version", 0, 0, 'V'},
         {0, 0, 0, 0}
@@ -184,11 +179,8 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     }
-    // let -v,--verobse override -q
-    if (a.isopt("q"))
-	msgstyle = QUIET;
-    if (a.isopt("v"))
-	msgstyle = VERBOSE;
+    quiet = a.isopt("q");
+    trace = a.isopt("t");
     try {
 	a.ValidatePars(validpars);
     }
@@ -271,13 +263,13 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     {
 	frames = a.pars["frames"];
 	cout << "frames=" << frames << endl;
-	if (a.ispar("frameselection"))
+	if (a.ispar("framestrace"))
 	{
 	    framesrate = 0;
-	    vector<int> stp = a.GetParVec<int>("frameselection");
+	    vector<int> stp = a.GetParVec<int>("framestrace");
 	    if (stp.size() % 3)
 	    {
-		cerr << "frameselection must have 3n entries" << endl;
+		cerr << "framestrace must have 3n entries" << endl;
 		exit(EXIT_FAILURE);
 	    }
 	    // check if seasons in stp are ordered
@@ -285,33 +277,33 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    {
 		if (stp[i] < stp[i-3])
 		{
-		    cerr << "frameselection seasons must be sorted" << endl;
+		    cerr << "framestrace seasons must be sorted" << endl;
 		    exit(EXIT_FAILURE);
 		}
 	    }
-	    TeamId_t tid;
+	    TraceId_t tid;
 	    for (int i = 0; i < stp.size(); i += 3)
 	    {
 		tid.season = stp[i];
-		tid.level = stp[i+1];
-		tid.place = stp[i+2];
-		frameselection.push_back(tid);
+		tid.ini_level = stp[i+1];
+		tid.fin_level = stp[i+2];
+		framestrace.push_back(tid);
 	    }
-	    if (frameselection.size() != 0)
+	    if (framestrace.size() != 0)
 	    {
-		cout << "frameselection=";
-		for (vector<TeamId_t>::iterator ii = frameselection.begin();
-			ii != frameselection.end(); ++ii)
+		cout << "framestrace=";
+		for (vector<TraceId_t>::iterator ii = framestrace.begin();
+			ii != framestrace.end(); ++ii)
 		{
 		    cout << " \\" << endl;
 		    cout << "    " << ii->season
-			<< ' ' << ii->level << ' ' << ii->place;
+			<< ' ' << ii->ini_level << ' ' << ii->fin_level;
 		}
 		cout << endl;
 	    }
 	}
-	// parse framesrate only if frameselection is empty
-	if (frameselection.size() == 0)
+	// parse framesrate only if framestrace is empty
+	if (framestrace.size() == 0)
 	{
 	    framesrate = a.GetPar<int>("framesrate", 10);
 	    cout << "framesrate=" << framesrate << endl;
@@ -569,6 +561,35 @@ void save_frames(Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     cnt = 0;
 }
 
+// convert to Liga_t member
+void save_frames_trace(PMOL advancing, PMOL descending, RunPar_t& rp,
+	RunVar_t& rv)
+{
+    static vector<TraceId_t>::iterator ti = rp.framestrace.begin();
+    if (ti == rp.framestrace.end())
+	return;
+    if (rv.season != ti->season)
+	return;
+    if (ti->ini_level < ti->fin_level && ti->fin_level == advancing->NAtoms())
+    {
+	int trace_no = int(ti - rp.framestrace.begin()) + 1;
+	ostringstream oss;
+	oss << rp.frames << "." << rv.season << ',' << (trace_no+1);
+	advancing->WriteAtomEye(oss.str().c_str());
+	if (++ti == rp.framestrace.end())
+	    return;
+    }
+    if (ti->ini_level > ti->fin_level && ti->fin_level == descending->NAtoms())
+    {
+	int trace_no = int(ti - rp.framestrace.begin()) + 1;
+	ostringstream oss;
+	oss << rp.frames << "." << rv.season << ',' << (trace_no+1);
+	descending->WriteAtomEye(oss.str().c_str());
+	if (++ti == rp.framestrace.end())
+	    return;
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // MAIN
@@ -637,7 +658,6 @@ int main(int argc, char *argv[])
 	    PMOL advancing = lo_div->at(winner_idx);
 	    if (! (advancing->NormBadness() < rp.stopgame) )
 		continue;
-	    ostringstream ossverbose;
 	    bool advancing_best = (advancing == lo_div->best());
 	    double adv_bad0 = advancing->NormBadness();
 	    if (! lo_div->full() )
@@ -645,23 +665,19 @@ int main(int argc, char *argv[])
 		// save clone of advancing winner
 		PMOL winner_clone = new Molecule(*advancing);
 		lo_div->push_back(winner_clone);
-		ossverbose << rv.season
-		    << " PUSH " << lo_level << ' ' << winner_idx
-		    << " TO " << lo_level << ' ' << lo_div->size()-1
-		    << endl;
 	    }
 	    // advance as far as possible
 	    advancing->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
 	    int hi_level = advancing->NAtoms();
+	    if (rp.trace)
+	    {
+		advancing->trace.push_back(rv.season);
+		advancing->trace.push_back(lo_level);
+		advancing->trace.push_back(hi_level);
+	    }
 	    VDit hi_div = liga.begin() + hi_level;
 	    if (hi_div->size() == 0)
-	    {
 		hi_div->push_back(new Molecule(*advancing));
-		ossverbose << rv.season
-		    << " PUSH " << lo_level << ' ' << winner_idx
-		    << " TO " << hi_level << ' ' << hi_div->size()-1
-		    << endl;
-	    }
 	    int looser_idx = hi_div->find_looser();
 	    PMOL descending = hi_div->at(looser_idx);
 	    double desc_bad0 = descending->NormBadness();
@@ -670,28 +686,27 @@ int main(int argc, char *argv[])
 		// save clone of descending looser
 		PMOL looser_clone = new Molecule(*descending);
 		hi_div->push_back(looser_clone);
-		ossverbose << rv.season
-		    << " PUSH " << hi_level << ' ' << looser_idx
-		    << " TO " << hi_level << ' ' << hi_div->size()-1
-		    << endl;
 	    }
 	    // clone winner if he made a good advance
 	    if (eps_gt(descending->NormBadness(), advancing->NormBadness()))
 	    {
 		*descending = *advancing;
-		ossverbose << rv.season
-		    << " PUSH " << lo_level << ' ' << winner_idx
-		    << " TO " << hi_level << ' ' << looser_idx
-		    << endl;
 	    }
 	    descending->Degenerate(hi_level-lo_level);
+	    if (rp.trace)
+	    {
+		if (lo_level == 0)
+		    descending->trace.clear();
+		else
+		{
+		    descending->trace.push_back(rv.season);
+		    descending->trace.push_back(hi_level);
+		    descending->trace.push_back(lo_level);
+		}
+	    }
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
-	    ossverbose << rv.season
-		<< " SWAP " << lo_level << ' ' << winner_idx
-		<< " WITH " << hi_level << ' ' << looser_idx
-		<< endl;
 	    // make sure the original best cluster is not too spoiled
 	    const double spoil_factor = 10.0;
 	    if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
@@ -701,25 +716,18 @@ int main(int argc, char *argv[])
 		*lo_looser = *advancing;
 		for (int nlast = hi_level-1; nlast >= lo_level; --nlast)
 		    lo_looser->Pop(nlast);
-		ossverbose << rv.season
-		    << " PUSH " << hi_level << ' ' << looser_idx
-		    << " TO " << lo_level << ' ' << lo_div->find_looser()
-		    << endl;
 	    }
-	    switch (rp.msgstyle) {
-		case VERBOSE:
-		    cout << ossverbose.str();
-		case NORMAL:
-		    cout << rv.season;
-		    cout << " A " <<
-			lo_level << ' ' << adv_bad0 << ' ' <<
-			hi_level << ' ' << advancing->NormBadness() << "    ";
-		    cout << " D " <<
-			hi_level << ' ' << desc_bad0 << ' ' <<
-			lo_level << ' ' << descending->NormBadness() << endl;
-		case QUIET:
-		    ;
+	    if (!rp.quiet)
+	    {
+		cout << rv.season;
+		cout << " A " <<
+		    lo_level << ' ' << adv_bad0 << ' ' <<
+		    hi_level << ' ' << advancing->NormBadness() << "    ";
+		cout << " D " <<
+		    hi_level << ' ' << desc_bad0 << ' ' <<
+		    lo_level << ' ' << descending->NormBadness() << endl;
 	    }
+	    save_frames_trace(advancing, descending, rp, rv);
 	    // no need to finish the season if we found champion
 	    if (advancing->Full() && advancing->NormBadness() < rp.tol_bad)
 		break;
@@ -769,6 +777,19 @@ int main(int argc, char *argv[])
     {
 	cout << "Solution found!!!" << endl << endl;
 	exit_code = EXIT_SUCCESS;
+    }
+    if (rp.trace)
+    {
+	// needs clean up
+	for ( list<int>::iterator ii = best_champ.trace.begin();
+		ii != best_champ.trace.end(); )
+	{
+	    cout << "TR";
+	    for (int n = 0; n != 3 && ii != best_champ.trace.end(); ++n)
+		cout << ' ' << *(ii++);
+	    cout << endl;
+	}
+	cout << endl;
     }
     BGA::cnt.PrintRunStats();
     // save last frame
