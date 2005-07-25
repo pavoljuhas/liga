@@ -170,7 +170,8 @@ def dvar(dTarget, dTest, rescale = False, multiple = False):
     v = 0.0
     for i in range(len(dTest)):
         v += pow(scale*dTest[i] - dtgt1[i], 2)
-    v /= len(dTest)
+    if len(dTest):
+        v /= len(dTest)
     return v
 
 def usage(style = None):
