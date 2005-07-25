@@ -191,6 +191,8 @@ public:
     inline int max_NAtoms() const { return val_max_NAtoms; }
     void Set_max_NAtoms(int s);
     inline double max_dTarget() const { return dTarget.back(); }
+    // history trace
+    list<int> trace;
 private:
     // constructor helper
     void init();
@@ -210,7 +212,6 @@ private:
     void calc_test_badness(Atom_t& a);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double lo_abad);
-private:
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;

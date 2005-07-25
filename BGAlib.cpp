@@ -409,6 +409,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     // IO helpers
     output_format = M.output_format;
     opened_file = M.opened_file;
+    trace = M.trace;
     return *this;
 }
 
