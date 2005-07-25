@@ -9,9 +9,7 @@ can be larger than in test.dst.
 
 Options:
   -m, --multiple  allow arbitrary multiplicity for test distances
-  -p, --partials  list unscaled partial contributions of atoms to dvar
   -r, --rescale   apply least squares scaling of test to target distances
-  -s, --sortfull  compare sorted list of distances for full structures
   -h, --help      display this message
   -V, --version   show script version
 """
@@ -22,14 +20,13 @@ def coordinatesToDist(r):
     """calculate sorted list of distances from a given coordinate matrix
     return builtin list"""
     from math import sqrt
-    dTest = []
-    pairIdx = []
+    d = []
     for i in range(len(r)):
         for j in range(i+1,len(r)):
             dij2 = sum([ pow(xi-xj,2) for (xi,xj) in zip(r[i], r[j]) ])
-            dTest.append(sqrt(dij2))
-            pairIdx.append( (i, j) )
-    return dTest, pairIdx
+            d.append(sqrt(dij2))
+    d.sort()
+    return d
 
 def parseXYZ(lines):
     """parse list of line strings
@@ -87,7 +84,7 @@ def getDistancesFrom(filename):
     lines = file.readlines()
     import re
     if [ l for l in lines[:1000] if re.match('Number of particles', l) ]:
-        dlist, pairIdx = coordinatesToDist(parseAtomEye(lines))
+        dlist = coordinatesToDist(parseAtomEye(lines))
     else:
         last = len(lines)
         for first in range(last):
@@ -112,12 +109,11 @@ def getDistancesFrom(filename):
         if len(xl) == 1:
             dlist = [ float(l) for l in lines[first:last] ]
             dlist.sort()
-            pairIdx = []
         elif len(xl) in (2, 3):
-            dlist, pairIdx = coordinatesToDist(parseXYZ(lines[first:last]))
+            dlist = coordinatesToDist(parseXYZ(lines[first:last]))
         else:
             raise RuntimeError, "invalid data format in " + filename
-    return dlist, pairIdx
+    return dlist
 
 def findNearest(x, c):
     """find nearest item in the sorted list x to constant c
@@ -139,26 +135,11 @@ def findNearest(x, c):
         idx = hi
     return idx
 
-class DvarOptions:
-    def __init__(self):
-        self.rescale = False
-        self.multiple = False
-        self.partials = False
-        self.sortFull = False
-        return
-
-class DvarResult:
-    def __init__(self, Natoms = 0):
-        self.total = 0.0
-        self.part = [0.0] * Natoms
-        self.sigmapart = [0.0] * Natoms
-        return
-
-def dvar(dTarget, dTest, pairIdx = [], opt = DvarOptions() ):
+def dvar(dTarget, dTest, rescale = False, multiple = False):
     """calculate variance of two sorted distance lists
     return float"""
     dTest.sort()
-    if opt.multiple:
+    if multiple:
         # get a unique list of distances
         dtgt0 = dict(zip(dTarget, [1]*len(dTarget)))
         dtgt0 = dtgt0.keys()
@@ -166,9 +147,8 @@ def dvar(dTarget, dTest, pairIdx = [], opt = DvarOptions() ):
         dtgt1 = [ dtgt0[findNearest(dtgt0,t)] for t in dTest ]
     elif len(dTarget) < len(dTest):
         raise RuntimeError, "test distance list too long"
-    elif len(dTarget) == len(dTest) and opt.sortFull:
+    elif len(dTarget) == len(dTest):
         dtgt1 = dTarget
-        dtgt1.sort()
     else:
         dtgt1 = []
         dtgt0 = list(dTarget)
@@ -179,7 +159,7 @@ def dvar(dTarget, dTest, pairIdx = [], opt = DvarOptions() ):
     # default scale is 1.0
     scale = 1.0
     # if required update scale
-    if opt.rescale:
+    if rescale:
         sxy = sxx = 0.0
         for i in range(len(dTest)):
             sxy += dTest[i]*dtgt1[i]
@@ -187,16 +167,10 @@ def dvar(dTarget, dTest, pairIdx = [], opt = DvarOptions() ):
         if sxx > 0.0:
             scale = sxy/sxx
     # now we can calculate dvar
-    from math import sqrt
-    NAtoms = int(0.5 + sqrt(1 + 8.0*len(dTest))/2.0)
-    v = DvarResult(NAtoms)
+    v = 0.0
     for i in range(len(dTest)):
-        vpair = pow(scale*dTest[i] - dtgt1[i], 2)
-        v.total += vpair
-        if pairIdx:
-            v.part[pairIdx[i][0]] += vpair/2.0
-            v.part[pairIdx[i][1]] += vpair/2.0
-    v.total /= len(dTest)
+        v += pow(scale*dTest[i] - dtgt1[i], 2)
+    v /= len(dTest)
     return v
 
 def usage(style = None):
@@ -214,23 +188,18 @@ import getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "mprshV", \
-                ["multiple", "partials", "rescale", "sortfull",
-                "help", "version"])
+        opts, args = getopt.getopt(argv, "mrhV", \
+                ["multiple", "rescale", "help", "version"])
     except getopt.GetoptError, errmsg:
         print >> sys.stderr, errmsg
         sys.exit(2)
     # process options
-    dvopts = DvarOptions()
+    multiple, rescale = (False, False)
     for o, a in opts:
         if o in ("-m", "--multiple"):
-            dvopts.multiple = True
-        elif o in ("-p", "--partials"):
-            dvopts.partials = True
-        elif o in ("-r", "--rescale"):
-            dvopts.rescale = True
-        elif o in ("-s", "--sortfull"):
-            dvopts.sortFull = True
+            multiple = True
+        if o in ("-r", "--rescale"):
+            rescale = True
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
@@ -241,26 +210,18 @@ def main(argv):
         usage('brief')
         sys.exit()
     try:
-        dTarget = getDistancesFrom(args[0])[0]
+        dTarget = getDistancesFrom(args[0])
     except IOError, (errno, errmsg):
         print >> sys.stderr, "%s: %s" % (args[0], errmsg)
         sys.exit(1)
     maxflen = max([ len(a) for a in args[1:] ])
     for f in args[1:]:
         try:
-            dTest, pairIdx = getDistancesFrom(f)
-            v = dvar(dTarget, dTest, pairIdx, dvopts)
-            if dvopts.partials:
-                if len(args) > 2:
-                    print f
-                print "%.8g" % v.total
-                for i in range(len(v.part)):
-                    print "%-6i%g" % ( i, v.part[i] )
+            v = dvar(dTarget, getDistancesFrom(f), rescale, multiple)
+            if len(args) > 2:
+                print f.ljust(maxflen+1), v
             else:
-                if len(args) > 2:
-                    print f.ljust(maxflen+1), v.total
-                else:
-                    print "%.8g" % v.total
+                print "%.8g" % v
         except RuntimeError, errmsg:
             print >> sys.stderr, "%s: %s" % (f, errmsg)
             sys.exit(1)
