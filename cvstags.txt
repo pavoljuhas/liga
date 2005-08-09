@@ -131,3 +131,6 @@ gizaliga-1r     1.47        1.203       2005-06-13
     best advanced team is now preserved only when best team in low division
     would get worse than spoil_factor=10.0 times
     added option for saving all liga levels
+
+gizaliga-1s     1.55        1.212       2005-07-26
+    bug fixes, slightly improved interface, added trace logging and saving
