@@ -162,14 +162,14 @@ public:
     Molecule& Center();	  // center w/r to the center of mass
     // atom operations
     Atom_t Atom(const int cidx);	// get copy of specified atom
-    Molecule& Pop(list<Atom_t>::iterator ai);		// erase
-    Molecule& Pop(const int cidx);
+//    Molecule& Pop(list<Atom_t>::iterator ai);		// erase
+    Molecule& Pop(const int cidx);	// erase
     Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
     Molecule& Add(Molecule& M);		// add specified molecule
     Molecule& Add(double rx0, double ry0, double rz0);	// add single atom
     Molecule& Add(Atom_t a);				// add single atom
-    Molecule& RelaxAtom(list<Atom_t>::iterator ai);	// relax internal atom
+    Molecule& RelaxAtom(vector<Atom_t*>::iterator);	// relax internal atom
     Molecule& RelaxAtom(const int cidx);
     void RelaxExternalAtom(Atom_t& a);
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
@@ -200,7 +200,7 @@ private:
     DistanceTable dTarget;
     int val_max_NAtoms;
     // atoms must precede pairs
-    list<Atom_t> atoms;			// list of all atoms
+    vector<Atom_t*> atoms;		      // vector of pointers to atoms
     map<OrderedPair<Atom_t*>,Pair_t*> pairs;  // map Atom_t* to Pair_t objects
     friend class Pair_t;
     friend bool operator==(const Molecule&, const Molecule&);
