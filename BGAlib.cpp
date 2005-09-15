@@ -558,25 +558,6 @@ Molecule& Molecule::Center()
     return *this;
 }
 
-//pj: toto asi netreba
-/*
-Molecule& Molecule::Pop(list<Atom_t>::iterator api)
-{
-    // delete all pairs containing *api
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ii = atoms.begin(); ii != atoms.end(); ++ii)
-    {
-	if (ii == api)  continue;
-	OrderedPair<Atom_t*> key(&(*ii), &(*api));
-	Pair_t *pp = pairs[key];
-	delete pp;
-	pairs.erase(key);
-    }
-    atoms.erase(api);
-    return *this;
-}
-*/
-
 Molecule& Molecule::Pop(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())

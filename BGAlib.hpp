@@ -162,7 +162,6 @@ public:
     Molecule& Center();	  // center w/r to the center of mass
     // atom operations
     Atom_t Atom(const int cidx);	// get copy of specified atom
-//    Molecule& Pop(list<Atom_t>::iterator ai);		// erase
     Molecule& Pop(const int cidx);	// erase
     Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
