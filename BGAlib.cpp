@@ -386,16 +386,23 @@ Molecule& Molecule::operator=(const Molecule& M)
     // Clear() must be the first statement
     Clear();
     dTarget = M.dTarget;
-    atoms = M.atoms;
-    val_max_NAtoms = M.val_max_NAtoms;
-    // map of src atoms to this.atoms
-    map<const Atom_t*, Atom_t*> pclone;
-    list<Atom_t>::const_iterator src;
-    list<Atom_t>::iterator clone;
-    for (src = M.atoms.begin(), clone = atoms.begin();
-	    src != M.atoms.end();  ++src, ++clone)
+    // duplicate source atoms
+    atoms.resize(M.atoms.size());
+    vector<Atom_t*>::const_iterator asrc;
+    vector<Atom_t*>::iterator adup;
+    for (asrc = M.atoms.begin(), adup = atoms.begin();
+	    asrc != M.atoms.end(); ++asrc, ++adup)
     {
-	pclone[&(*src)] = &(*clone);
+	*adup = new Atom_t(**asrc);
+    }
+    // finished duplication
+    val_max_NAtoms = M.val_max_NAtoms;
+    // map source atom pointers to this atom pointers
+    map<const Atom_t*, Atom_t*> pclone;
+    for (asrc = M.atoms.begin(), adup = atoms.begin();
+	    asrc != M.atoms.end();  ++asrc, ++adup)
+    {
+	pclone[*asrc] = *adup;
     }
     typedef map<OrderedPair<Atom_t*>,Pair_t*>::const_iterator MAPcit;
     for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
@@ -454,18 +461,17 @@ void Molecule::Recalculate()
     // molecule parameters
     badness = 0;
     // reset all atoms
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	ai->ResetBadness();
+	(*pai)->ResetBadness();
     }
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	LAit aj = ai;
-	for (++aj; aj != atoms.end(); ++aj)
+	for (VPAit paj = pai+1; paj != atoms.end(); ++paj)
 	{
-	    OrderedPair<Atom_t*> key(&(*ai), &(*aj));
-	    pairs[key] = new Pair_t(this, &(*ai), &(*aj));
+	    OrderedPair<Atom_t*> key(*pai, *paj);
+	    pairs[key] = new Pair_t(this, *pai, *paj);
 	}
     }
 }
@@ -482,24 +488,9 @@ double Molecule::NormBadness() const
     return NDist() == 0 ? 0.0 : Badness()/NDist();
 }
 
-bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
+bool comp_Atom_Badness(const Atom_t* lhs, const Atom_t* rhs)
 {
-    return lhs.Badness() < rhs.Badness();
-}
-
-bool comp_Atom_r0(const Atom_t& lhs, const Atom_t& rhs)
-{
-    return lhs.r[0] < rhs.r[0];
-}
-
-bool comp_Atom_r1(const Atom_t& lhs, const Atom_t& rhs)
-{
-    return lhs.r[1] < rhs.r[1];
-}
-
-bool comp_Atom_r2(const Atom_t& lhs, const Atom_t& rhs)
-{
-    return lhs.r[2] < rhs.r[2];
+    return lhs->Badness() < rhs->Badness();
 }
 
 
@@ -540,11 +531,12 @@ void Molecule::Set_max_NAtoms(int s)
 
 Molecule& Molecule::Shift(double dx, double dy, double dz)
 {
-    for (list<Atom_t>::iterator ai = atoms.begin(); ai != atoms.end(); ++ai)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	ai->r[0] += dx;
-	ai->r[1] += dy;
-	ai->r[2] += dz;
+	(*pai)->r[0] += dx;
+	(*pai)->r[1] += dy;
+	(*pai)->r[2] += dz;
     }
     return *this;
 }
@@ -552,12 +544,12 @@ Molecule& Molecule::Shift(double dx, double dy, double dz)
 Molecule& Molecule::Center()
 {
     double avg_rx = 0.0, avg_ry = 0.0, avg_rz = 0.0;
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	avg_rx += ai->r[0];
-	avg_ry += ai->r[1];
-	avg_rz += ai->r[2];
+	avg_rx += (*pai)->r[0];
+	avg_ry += (*pai)->r[1];
+	avg_rz += (*pai)->r[2];
     }
     avg_rx /= NAtoms();
     avg_ry /= NAtoms();
@@ -566,6 +558,8 @@ Molecule& Molecule::Center()
     return *this;
 }
 
+//pj: toto asi netreba
+/*
 Molecule& Molecule::Pop(list<Atom_t>::iterator api)
 {
     // delete all pairs containing *api
@@ -581,23 +575,33 @@ Molecule& Molecule::Pop(list<Atom_t>::iterator api)
     atoms.erase(api);
     return *this;
 }
+*/
 
 Molecule& Molecule::Pop(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
     {
-	throw range_error("in Molecule::Pop(list<int>)");
+	throw range_error("in Molecule::Pop(const int cidx)");
     }
-    list<Atom_t>::iterator apop = list_at(atoms, cidx);
-    Pop(apop);
+    typedef vector<Atom_t*>::iterator VPAit;
+    VPAit popped = atoms.begin() + cidx;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    {
+	if (pai == popped)  continue;
+	OrderedPair<Atom_t*> key(*pai, *popped);
+	Pair_t *pp = pairs[key];
+	delete pp;
+	pairs.erase(key);
+    }
+    delete *popped;
+    atoms.erase(popped);
     return *this;
 }
 
 Molecule& Molecule::Pop(const list<int>& cidx)
 {
-    typedef list<Atom_t>::iterator LAit;
-    list<LAit> atoms2pop;
-    // build a list of iterators to atoms to be popped
+    list<int> atoms2pop;
+    // build a list of indices of atoms to be popped
     for ( list<int>::const_iterator ii = cidx.begin();
 	    ii != cidx.end(); ++ii )
     {
@@ -606,13 +610,15 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 	    cerr << "index out of range in Molecule::Pop(list<int>)" << endl;
 	    throw range_error("in Molecule::Pop(list<int>)");
 	}
-	atoms2pop.push_back( list_at(atoms, *ii) );
+	atoms2pop.push_back(*ii);
     }
-    // now pop those atoms
-    for ( list<LAit>::iterator ii = atoms2pop.begin();
-	    ii != atoms2pop.end(); ++ii )
+    // now pop those atoms going from the highest index down
+    atoms2pop.sort();
+    atoms2pop.unique();
+    for ( list<int>::reverse_iterator rii = atoms2pop.rbegin();
+	    rii != atoms2pop.rend(); ++rii )
     {
-	Pop(*ii);
+	Pop(*rii);
     }
     return *this;
 }
@@ -626,6 +632,11 @@ Molecule& Molecule::Clear()
 	delete ii->second;
     }
     pairs.clear();
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    {
+	delete *pai;
+    }
     atoms.clear();
     badness = 0;
     return *this;
@@ -633,10 +644,10 @@ Molecule& Molecule::Clear()
 
 Molecule& Molecule::Add(Molecule& M)
 {
-    for ( list<Atom_t>::iterator ai = M.atoms.begin();
-	    ai != M.atoms.end(); ++ai )
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
     {
-	Add(*ai);
+	Add(**pai);
     }
     return *this;
 }
@@ -654,14 +665,16 @@ Molecule& Molecule::Add(Atom_t atom)
 	cerr << "E: molecule too large in Add()" << endl;
 	throw InvalidMolecule();
     }
-    list<Atom_t>::iterator this_atom, ai;
-    this_atom = atoms.insert(atoms.end(), atom);
+    Atom_t *this_atom;
+    this_atom = new Atom_t(atom);
     this_atom->ResetBadness();
+    atoms.push_back(this_atom);
     // this_atom is at the end of the list
-    for (ai = atoms.begin(); ai != this_atom; ++ai)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); *pai != this_atom; ++pai)
     {
-	OrderedPair<Atom_t*> key(&(*ai), &(*this_atom));
-	pairs[key] = new Pair_t(this, &(*ai), &(*this_atom));
+	OrderedPair<Atom_t*> key(*pai, this_atom);
+	pairs[key] = new Pair_t(this, *pai, this_atom);
     }
     return *this;
 }
@@ -672,8 +685,7 @@ Atom_t Molecule::Atom(const int cidx)
     {
 	throw range_error("in Molecule::Pop(list<int>)");
     }
-    list<Atom_t>::iterator ai = list_at(atoms, cidx);
-    return *ai;
+    return *(atoms[cidx]);
 }
 
 void Molecule::calc_test_badness(Atom_t& ta)
@@ -686,10 +698,10 @@ void Molecule::calc_test_badness(Atom_t& ta)
     double tbad = 0;
     typedef vector<double>::iterator VDit;
     DistanceTable local_dTarget(dTarget);
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	double d = dist(*ai, ta);
+	double d = dist(**pai, ta);
 	VDit dnear = local_dTarget.find_nearest(d);
 	double dd = *dnear - d;
 	tbad += penalty(dd);
@@ -717,7 +729,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     fill(ldUsed, ldUsed+ldTsize, false);
     double hi_abad = lo_abad + evolve_range;
     typedef vector<Atom_t>::iterator VAit;
-    typedef list<Atom_t>::iterator LAit;
+    typedef vector<Atom_t*>::iterator VPAit;
     typedef vector<double>::iterator VDit;
     // loop over all test atoms
     for (VAit ta = vta.begin(); ta != vta.end(); ++ta)
@@ -725,10 +737,10 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	double tbad = ta->Badness();
 	list<int> ldUsedIdx;
 	// fast, possibly incomplete badness evaluation
-	for (   LAit ma = atoms.begin();
-		ma != atoms.end() && tbad <= hi_abad; ++ma )
+	for (   VPAit pai = atoms.begin();
+		pai != atoms.end() && tbad <= hi_abad; ++pai )
 	{
-	    double d = dist(*ma, *ta);
+	    double d = dist(**pai, *ta);
 	    int idx = ldTarget.find_nearest(d) - ldTarget.begin();
 	    if (ldUsed[idx])
 	    {
@@ -775,9 +787,9 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 
 struct rxa_par
 {
-    typedef list<Atom_t> LA;
+    typedef vector<Atom_t*> VPA;
     typedef valarray<double> VAD;
-    LA *atoms;
+    VPA *atoms;
     VAD *ad0;
     VAD *wt;
 };
@@ -788,23 +800,23 @@ int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
     ta.r[0] = gsl_vector_get(x, 0);
     ta.r[1] = gsl_vector_get(x, 1);
     ta.r[2] = gsl_vector_get(x, 2);
-    typedef list<Atom_t> LA;
+    typedef vector<Atom_t*> VPA;
     typedef valarray<double> VAD;
-    LA& atoms = *( ((struct rxa_par *)params)->atoms );
+    VPA& atoms = *( ((struct rxa_par *)params)->atoms );
     VAD& ad0 = *( ((struct rxa_par *)params)->ad0 );
     VAD& wt = *( ((struct rxa_par *)params)->wt );
     VAD ad(ad0.size());
-    typedef list<Atom_t>::iterator LAit;
+    typedef vector<Atom_t*>::iterator VPAit;
     int idx = 0;
     gsl_matrix_set_zero(J);
-    for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma, ++idx)
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++idx)
     {
-	ad[idx] = dist(ta, *ma);
+	ad[idx] = dist(ta, **pai);
 	double fi = wt[idx]*(ad[idx] - ad0[idx]);
 	gsl_vector_set(f, idx, fi);
 	for (int jdx = 0; ad[idx] != 0.0 && jdx < 3; ++jdx)
 	    gsl_matrix_set(J, idx, jdx,
-		    wt[idx]*(ta.r[jdx] - ma->r[jdx])/ad[idx]);
+		    wt[idx]*(ta.r[jdx] - (*pai)->r[jdx])/ad[idx]);
     }
     return GSL_SUCCESS;
 }
@@ -815,16 +827,16 @@ int rxa_f(const gsl_vector *x, void *params, gsl_vector *f)
     ta.r[0] = gsl_vector_get(x, 0);
     ta.r[1] = gsl_vector_get(x, 1);
     ta.r[2] = gsl_vector_get(x, 2);
-    typedef list<Atom_t> LA;
+    typedef vector<Atom_t*> VPA;
     typedef valarray<double> VAD;
-    LA& atoms = *( ((struct rxa_par *)params)->atoms );
+    VPA& atoms = *( ((struct rxa_par *)params)->atoms );
     VAD& ad0 = *( ((struct rxa_par *)params)->ad0 );
     VAD& wt = *( ((struct rxa_par *)params)->wt );
-    typedef list<Atom_t>::iterator LAit;
+    typedef vector<Atom_t*>::iterator VPAit;
     int idx = 0;
-    for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma, ++idx)
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++idx)
     {
-	double fi = wt[idx]*(dist(ta, *ma) - ad0[idx]);
+	double fi = wt[idx]*(dist(ta, **pai) - ad0[idx]);
 	gsl_vector_set(f, idx, fi);
     }
     return GSL_SUCCESS;
@@ -832,9 +844,9 @@ int rxa_f(const gsl_vector *x, void *params, gsl_vector *f)
 
 int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
 {
-    typedef list<Atom_t> LA;
+    typedef vector<Atom_t*> VPA;
     typedef valarray<double> VAD;
-    LA& atoms = *( ((struct rxa_par *)params)->atoms );
+    VPA& atoms = *( ((struct rxa_par *)params)->atoms );
     // just use rxa_fdf ignoring function values
     gsl_vector *fignore = gsl_vector_alloc(atoms.size());
     int status = rxa_fdf(x, params, fignore, J);
@@ -842,12 +854,9 @@ int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
     return status;
 }
 
-Molecule& Molecule::RelaxAtom(list<Atom_t>::iterator ai)
+Molecule& Molecule::RelaxAtom(vector<Atom_t*>::iterator pai)
 {
-    Atom_t ta = *ai;
-    Pop(ai);
-    RelaxExternalAtom(ta);
-    Add(ta);
+    RelaxAtom(pai - atoms.begin());
     return *this;
 }
 
@@ -857,8 +866,10 @@ Molecule& Molecule::RelaxAtom(const int cidx)
     {
 	throw range_error("in Molecule::RelaxAtom(list<int>)");
     }
-    list<Atom_t>::iterator ai = list_at(atoms, cidx);
-    RelaxAtom(ai);
+    Atom_t ta = *(atoms[cidx]);
+    Pop(cidx);
+    RelaxExternalAtom(ta);
+    Add(ta);
     return *this;
 }
 
@@ -877,10 +888,10 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     // prepare valarrays for rxa_* functions
     valarray<double> wt(1.0, NAtoms());
     double *pd = &wt[0];
-    typedef list<Atom_t>::iterator LAit;
+    typedef vector<Atom_t*>::iterator VPAit;
     // first fill the array with badness
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pd)
-	*pd = ai->Badness();
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
+	*pd = (*pai)->Badness();
     // convert to square root of fitness
     wt = sqrt(vdrecipw0(wt));
     // array for target distances
@@ -894,9 +905,10 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	list<int> dUsedIdx;
 	double *pad0 = &ad0[0];
 	double tbad = 0.0;
-	for (LAit ma = atoms.begin(); ma != atoms.end(); ++ma)
+	typedef vector<Atom_t*>::iterator VPAit;
+	for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
 	{
-	    double d = dist(*ma, rta);
+	    double d = dist(**pai, rta);
 	    int idx = dTarget.find_nearest(d) - dTarget.begin();
 	    if (dUsed[idx])
 	    {
@@ -937,8 +949,6 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    break;
 //	cout << "original tbad = " << tbad << endl;
 	// parameter pair for minimizer functions
-	typedef list<Atom_t> LA;
-	typedef valarray<double> VAD;
 	struct rxa_par rxap = { &atoms, &ad0, &wt };
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
@@ -1028,13 +1038,13 @@ int Molecule::push_good_distances(
     for (int nt = 0; nt < ntrials; ++nt)
     {
 	vector<int> aidx = random_wt_choose(min(NAtoms(),2), afit, NAtoms());
-	Atom_t& a1 = *list_at(atoms, aidx[0]);
+	Atom_t& a0 = *atoms[aidx[0]];
 	valarray<double> rdir(0.0, 3);
 	if (NAtoms() > 1)
 	{
-	    Atom_t& a2 = *list_at(atoms, aidx[1]);
+	    Atom_t& a1 = *atoms[aidx[1]];
 	    for (int i = 0; i < 3; ++i)
-		rdir[i] = a2.r[i] - a1.r[i];
+		rdir[i] = a1.r[i] - a0.r[i];
 	}
 	// normalize rdir if defined
 	bool lattice_rdir;
@@ -1062,7 +1072,7 @@ int Molecule::push_good_distances(
 	// add front atom
 	double nr[3];
 	for (int i = 0; i < 3; ++i)
-	    nr[i] = a1.r[i] + rdir[i]*radius;
+	    nr[i] = a0.r[i] + rdir[i]*radius;
 	Atom_t ad1front(nr[0], nr[1], nr[2]);
 	vta.push_back(ad1front);
 	++push_count;
@@ -1072,7 +1082,7 @@ int Molecule::push_good_distances(
 	{
 	    ++nt;
 	    for (int i = 0; i < 3; ++i)
-		nr[i] = a1.r[i] - rdir[i]*radius;
+		nr[i] = a0.r[i] - rdir[i]*radius;
 	    Atom_t ad1back(nr[0], nr[1], nr[2]);
 	    vta.push_back(ad1back);
 	    ++push_count;
@@ -1098,7 +1108,7 @@ int Molecule::push_good_triangles(
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     // ntrials
-    // (N over 3)*4*Nuniqd**2 plane orientations and possible triangles
+    // (N over 3)*4*Nuniqd^2 plane orientations and possible triangles
     // check for int overflow
     double xmax_ntrials = min(
 	    4.0*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 *
@@ -1113,14 +1123,14 @@ int Molecule::push_good_triangles(
 	// pick 2 atoms for base and 3rd for plane orientation
 	int nchoose = NAtoms() > 2 ? 3 : 2;
 	vector<int> aidx = random_wt_choose(nchoose, afit, NAtoms());
-	Atom_t& a1 = *list_at(atoms, aidx[0]);
-	Atom_t& a2 = *list_at(atoms, aidx[1]);
+	Atom_t& a0 = *atoms[aidx[0]];
+	Atom_t& a1 = *atoms[aidx[1]];
 	// pick 2 vertex distances
 	bool with_repeat = (tol_dd <= 0.0);
 	vector<int> didx = random_choose_few(2, dTarget.size(), with_repeat);
 	double r13 = dTarget[didx[0]];
 	double r23 = dTarget[didx[1]];
-	double r12 = dist(a1, a2);
+	double r12 = dist(a0, a1);
 	// is triangle base reasonably large?
 	if (r12 < eps_d)
 	    continue;
@@ -1138,14 +1148,14 @@ int Molecule::push_good_triangles(
 	// find direction along triangle base:
 	valarray<double> longdir(3);
 	for (int i = 0; i < 3; ++i)
-	    longdir[i] = (a2.r[i] - a1.r[i])/r12;
+	    longdir[i] = (a1.r[i] - a0.r[i])/r12;
 	// generate direction perpendicular to longdir
 	valarray<double> perpdir(0.0, 3);
 	if (nchoose > 2)
 	{
-	    Atom_t& a3 = *list_at(atoms, aidx[2]);
+	    Atom_t& a2 = *atoms[aidx[2]];
 	    for (int i = 0; i < 3; ++i)
-		perpdir[i] = a3.r[i] - a1.r[i];
+		perpdir[i] = a2.r[i] - a0.r[i];
 	    perpdir -= longdir*vddot(longdir, perpdir);
 	}
 	// normalize perpdir if defined
@@ -1171,8 +1181,8 @@ int Molecule::push_good_triangles(
 	    perpdir = cos(phi)*pdir1 + sin(phi)*pdir2;
 	    lattice_plane = false;
 	}
-	// allocate vallarays for positions of a1 and vertex P
-	valarray<double> Pa1(a1.r, 3);
+	// allocate vallarays for positions of a0 and vertex P
+	valarray<double> Pa0(a0.r, 3);
 	valarray<double> P(3);
 	// if vertex search has already failed above, nt would increase by 1
 	// here we want nt to count number of added vertices
@@ -1183,7 +1193,7 @@ int Molecule::push_good_triangles(
 	    for (double *pxp = xperp; pxp != xperp+2; ++pxp)
 	    {
 		++nt;
-		P = Pa1 + (*pxl)*longdir + (*pxp)*perpdir;
+		P = Pa0 + (*pxl)*longdir + (*pxp)*perpdir;
 		Atom_t ad2(P[0], P[1], P[2]);
 		vta.push_back(ad2);
 		++push_count;
@@ -1213,7 +1223,7 @@ int Molecule::push_good_pyramids(
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     // ntrials
-    // (N over 3)*6*2*Nuniqd**3 possible pyramids
+    // (N over 3)*6*2*Nuniqd^3 possible pyramids
     // check for int overflow
     double xmax_ntrials = min(
 	    12.0*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 *
@@ -1227,9 +1237,9 @@ int Molecule::push_good_pyramids(
     {
 	// pick 3 base atoms
 	vector<int> aidx = random_wt_choose(3, afit, NAtoms());
-	Atom_t& a1 = *list_at(atoms, aidx[0]);
-	Atom_t& a2 = *list_at(atoms, aidx[1]);
-	Atom_t& a3 = *list_at(atoms, aidx[2]);
+	Atom_t& a0 = *atoms[aidx[0]];
+	Atom_t& a1 = *atoms[aidx[1]];
+	Atom_t& a2 = *atoms[aidx[2]];
 	// pick 3 vertex distances
 	bool with_repeat = (tol_dd <= 0.0);
 	vector<int> didx = random_choose_few(3, dTarget.size(), with_repeat);
@@ -1241,24 +1251,24 @@ int Molecule::push_good_pyramids(
 	    double r14 = dTarget[ didx[0] ];
 	    double r24 = dTarget[ didx[1] ];
 	    double r34 = dTarget[ didx[2] ];
-	    // uvi is a unit vector in a1a2 direction
-	    double uvi_val[3] = { a2.r[0]-a1.r[0], a2.r[1]-a1.r[1], a2.r[2]-a1.r[2] };
+	    // uvi is a unit vector in a0a1 direction
+	    double uvi_val[3] = { a1.r[0]-a0.r[0], a1.r[1]-a0.r[1], a1.r[2]-a0.r[2] };
 	    valarray<double> uvi(uvi_val, 3);
 	    double r12 = vdnorm(uvi);
 	    if (r12 < eps_d)
 		continue;
 	    uvi /= r12;
-	    // v13 is a1a3 vector
-	    double v13_val[3] = { a3.r[0]-a1.r[0], a3.r[1]-a1.r[1], a3.r[2]-a1.r[2] };
+	    // v13 is a0a2 vector
+	    double v13_val[3] = { a2.r[0]-a0.r[0], a2.r[1]-a0.r[1], a2.r[2]-a0.r[2] };
 	    valarray<double> v13(v13_val, 3);
-	    // uvj lies in a1a2a3 plane and is perpendicular to uvi
+	    // uvj lies in a0a1a2 plane and is perpendicular to uvi
 	    valarray<double> uvj = v13;
 	    uvj -= uvi*vddot(uvi, uvj);
 	    double nm_uvj = vdnorm(uvj);
 	    if (nm_uvj < eps_d)
 		continue;
 	    uvj /= nm_uvj;
-	    // uvk is a unit vector perpendicular to a1a2a3 plane
+	    // uvk is a unit vector perpendicular to a0a1a2 plane
 	    valarray<double> uvk = vdcross(uvi, uvj);
 	    double xP1 = -0.5/(r12)*(r12*r12 + r14*r14 - r24*r24);
 	    // Pn are coordinates in pyramid coordinate system
@@ -1266,9 +1276,9 @@ int Molecule::push_good_pyramids(
 	    P1[0] = xP1; P1[1] = P1[2] = 0.0;
 	    // vT is translation from pyramid to normal system
 	    valarray<double> vT(3);
-	    vT[0] = a1.r[0] - xP1*uvi[0];
-	    vT[1] = a1.r[1] - xP1*uvi[1];
-	    vT[2] = a1.r[2] - xP1*uvi[2];
+	    vT[0] = a0.r[0] - xP1*uvi[0];
+	    vT[1] = a0.r[1] - xP1*uvi[1];
+	    vT[2] = a0.r[2] - xP1*uvi[2];
 	    // obtain coordinates of P3
 	    valarray<double> P3 = P1;
 	    P3[0] += vddot(uvi, v13);
@@ -1279,10 +1289,10 @@ int Molecule::push_good_pyramids(
 	    // find pyramid vertices
 	    valarray<double> P4(0.0, 3);
 	    double h2 = r14*r14 - xP1*xP1;
-	    // does P4 belong to a1a2 line?
+	    // does P4 belong to a0a1 line?
 	    if (fabs(h2) < eps_d)
 	    {
-		// is vertex on a1a2
+		// is vertex on a0a1
 		if (fabs(vdnorm(P3) - r14) > eps_d)
 		    continue;
 		P4 = vT;
@@ -1297,7 +1307,7 @@ int Molecule::push_good_pyramids(
 	    }
 	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r34*r34);
 	    double z2P4 = h2 - yP4*yP4;
-	    // does P4 belong to a1a2a3 plane?
+	    // does P4 belong to a0a1a2 plane?
 	    if (fabs(z2P4) < eps_d)
 	    {
 		P4 = yP4*uvj + vT;
@@ -1352,10 +1362,10 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     // otherwise we need to build array of atom fitnesses
     valarray<double> vafit(NAtoms());
     double *pd = &vafit[0];
-    typedef list<Atom_t>::iterator LAit;
     // first fill the array with badness
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pd)
-	*pd = ai->Badness();
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
+	*pd = (*pai)->Badness();
     // then get the reciprocal value
     vafit = vdrecipw0(vafit);
     double *afit = &vafit[0];
@@ -1389,9 +1399,9 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	vta.erase(vta.begin()+idx);
 	if (evolve_relax)
 	{
-	    LAit worst = max_element(atoms.begin(), atoms.end(),
+	    VPAit worst = max_element(atoms.begin(), atoms.end(),
 		    comp_Atom_Badness);
-	    if (eps_gt(worst->Badness(), 0.0))
+	    if (eps_gt((*worst)->Badness(), 0.0))
 	    {
 		RelaxAtom(worst);
 	    }
@@ -1413,10 +1423,10 @@ Molecule& Molecule::Degenerate(int Npop)
     // build array of atom badnesses
     double abad[NAtoms()];
     double *pb = abad;
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pb)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pb)
     {
-	*pb = ai->Badness();
+	*pb = (*pai)->Badness();
     }
     // generate list of atoms to pop
     vector<int> ipop_vector = random_wt_choose(Npop, abad, NAtoms());
@@ -1424,9 +1434,9 @@ Molecule& Molecule::Degenerate(int Npop)
     Pop(ipop);
     if (degenerate_relax && NAtoms() > 1)
     {
-	LAit worst = max_element(atoms.begin(), atoms.end(),
+	VPAit worst = max_element(atoms.begin(), atoms.end(),
 		comp_Atom_Badness);
-	if (eps_gt(worst->Badness(), 0.0))
+	if (eps_gt((*worst)->Badness(), 0.0))
 	{
 	    RelaxAtom(worst);
 	}
@@ -1726,20 +1736,20 @@ istream& operator>>(istream& fid, Molecule& M)
 
 ostream& operator<<(ostream& fid, Molecule& M)
 {
-    typedef list<Atom_t>::iterator LAit;
-    LAit afirst = M.atoms.begin();
-    LAit alast = M.atoms.end();
+    typedef vector<Atom_t*>::iterator VPAit;
+    VPAit afirst = M.atoms.begin();
+    VPAit alast = M.atoms.end();
     switch (M.output_format)
     {
 	case Molecule::XYZ:
 	    fid << "# BGA molecule format = xyz" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
-	    for (LAit ai = afirst; ai != alast; ++ai)
+	    for (VPAit pai = afirst; pai != alast; ++pai)
 	    {
 		fid <<
-		    ai->r[0] << " " <<
-		    ai->r[1] << " " <<
-		    ai->r[2] << endl;
+		    (*pai)->r[0] << " " <<
+		    (*pai)->r[1] << " " <<
+		    (*pai)->r[2] << endl;
 	    }
 	    break;
 	case Molecule::ATOMEYE:
@@ -1749,20 +1759,21 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    if (M.NAtoms() > 0)
 	    {
 		const double scale = 1.01;
-		double xyz_extremes[10] = {
-		    -M.dTarget.max_d,
-		    scale * min_element(afirst, alast, comp_Atom_r0)->r[0],
-		    scale * min_element(afirst, alast, comp_Atom_r1)->r[1],
-		    scale * min_element(afirst, alast, comp_Atom_r2)->r[2],
-		    +M.dTarget.max_d,
-		    scale * max_element(afirst, alast, comp_Atom_r0)->r[0],
-		    scale * max_element(afirst, alast, comp_Atom_r1)->r[1],
-		    scale * max_element(afirst, alast, comp_Atom_r2)->r[2],
-		    // make atomeye happy
-		    -1.75, 1.75,
-		};
-		xyz_lo = *min_element(xyz_extremes, xyz_extremes+10);
-		xyz_hi = *max_element(xyz_extremes, xyz_extremes+10);
+		list<double> xyz_extremes;
+		xyz_extremes.push_back(-M.dTarget.max_d);
+		xyz_extremes.push_back(+M.dTarget.max_d);
+		for (VPAit pai = afirst; pai != alast; ++pai)
+		{
+		    for (double* pr = (*pai)->r; pr != (*pai)->r + 2; ++pr)
+		    {
+			xyz_extremes.push_back(*pr * scale);
+		    }
+		}
+		// make atomeye happy
+		xyz_extremes.push_back(-1.75);
+		xyz_extremes.push_back(+1.75);
+		xyz_lo = *min_element(xyz_extremes.begin(), xyz_extremes.end());
+		xyz_hi = *max_element(xyz_extremes.begin(), xyz_extremes.end());
 		xyz_range = xyz_hi - xyz_lo;
 	    }
 	    double xyz_med = (xyz_hi + xyz_lo)/2.0;
@@ -1787,13 +1798,13 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    // pj: now it only works for a single Carbon atom in the molecule
 	    fid << "12.0111" << endl;
 	    fid << "C" << endl;
-	    for (LAit ai = afirst; ai != alast; ++ai)
+	    for (VPAit pai = afirst; pai != alast; ++pai)
 	    {
 		fid <<
-		    (ai->r[0] - xyz_med) / xyz_range + 0.5 << " " <<
-		    (ai->r[1] - xyz_med) / xyz_range + 0.5 << " " <<
-		    (ai->r[2] - xyz_med) / xyz_range + 0.5 << " " <<
-		    ai->Badness() << endl;
+		    ((*pai)->r[0] - xyz_med) / xyz_range + 0.5 << " " <<
+		    ((*pai)->r[1] - xyz_med) / xyz_range + 0.5 << " " <<
+		    ((*pai)->r[2] - xyz_med) / xyz_range + 0.5 << " " <<
+		    (*pai)->Badness() << endl;
 	    }
 	    break;
     }
@@ -1803,19 +1814,19 @@ ostream& operator<<(ostream& fid, Molecule& M)
 void Molecule::PrintBadness()
 {
     cout << "ABadness() =";
-    double mab = max_element(atoms.begin(), atoms.end(),
-		    comp_Atom_Badness) -> Badness();
+    double mab = (*max_element(atoms.begin(), atoms.end(),
+		    comp_Atom_Badness)) -> Badness();
     bool marked = false;
-    typedef list<Atom_t>::iterator LAit;
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai)
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
 	cout << ' ';
-	if (!marked && ai->Badness() == mab)
+	if (!marked && (*pai)->Badness() == mab)
 	{
 	    cout << '+';
 	    marked = true;
 	}
-	cout << ai->Badness();
+	cout << (*pai)->Badness();
     }
     cout << endl;
 }
@@ -1824,10 +1835,10 @@ void Molecule::PrintFitness()
 {
     valarray<double> vafit(NAtoms());
     double *pd = &vafit[0];
-    typedef list<Atom_t>::iterator LAit;
+    typedef vector<Atom_t*>::iterator VPAit;
     // first fill the array with badness
-    for (LAit ai = atoms.begin(); ai != atoms.end(); ++ai, ++pd)
-	*pd = ai->Badness();
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
+	*pd = (*pai)->Badness();
     // then get the reciprocal value
     vafit = vdrecipw0(vafit);
     cout << "AFitness() =";
