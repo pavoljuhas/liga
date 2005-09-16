@@ -7,6 +7,7 @@ AAPDIR
 core.*
 a.out
 ssTest[0-9][0-9]
+memTest[0-9][0-9]
 molTest[0-9][0-9]
 popTest[0-9][0-9]
 libTest[0-9][0-9]
