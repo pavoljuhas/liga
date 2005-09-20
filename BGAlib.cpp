@@ -144,66 +144,44 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Pair_t definitions
+// PairDistance_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2) :
-    owner(pM), atom1(a1), atom2(a2)
+void PairDistance_t::lockto(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
-    d = dist(*atom1, *atom2);
-    vector<double>::iterator dnear = owner->dTarget.find_nearest(d);
+    d = dist(*pa1, *pa2);
+    vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = owner->penalty(dd);
+    badness = pM->penalty(dd);
     BGA::cnt.penalty_calls++;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
-    if (fabs(dd) < owner->tol_dd)
+    if (fabs(dd) < pM->tol_dd)
     {
 	dUsed = *dnear;
-	owner->dTarget.erase(dnear);
+	pM->dTarget.erase(dnear);
     }
     else
-	dUsed = -1.0;
+    {
+	dUsed = -1.0 * (*dnear);
+    }
     double badnesshalf = badness/2.0;
-    atom1->IncBadness(badnesshalf);
-    atom2->IncBadness(badnesshalf);
-    owner->badness += badness;
+    pa1->IncBadness(badnesshalf);
+    pa2->IncBadness(badnesshalf);
+    pM->badness += badness;
 }
 
-// this constructor should be used only in Molecule operator=()
-Pair_t::Pair_t(Molecule *pM, Atom_t *a1, Atom_t *a2, const Pair_t& p0) :
-    owner(pM), atom1(a1), atom2(a2)
-{
-    if (owner == p0.owner)
-	throw runtime_error("cloning Pair_t() of the same molecule");
-    badness = p0.badness;
-    dUsed = p0.dUsed;
-}
-
-Pair_t::Pair_t(const Pair_t& pair0)
-{
-    cerr << "call to Pair_t() copy constructor" << endl;
-    throw runtime_error("call to Pair_t() copy constructor");
-}
-
-Pair_t& Pair_t::operator=(const Pair_t&)
-{
-    cerr << "call to Pair_t operator=()" << endl;
-    throw runtime_error("call to Pair_t operator=()");
-}
-
-Pair_t::~Pair_t()
+void PairDistance_t::release(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
     double badnesshalf = badness/2.0;
-    atom1->DecBadness(badnesshalf);
-    atom2->DecBadness(badnesshalf);
-    owner->badness -= badness;
-    if (owner->badness < BGA::eps_badness)
-	owner->badness = 0.0;
+    pa1->DecBadness(badnesshalf);
+    pa2->DecBadness(badnesshalf);
+    pM->badness -= badness;
+    if (pM->badness < BGA::eps_badness)
+	pM->badness = 0.0;
     if (dUsed > 0.0)
-	owner->dTarget.return_back(dUsed);
+	pM->dTarget.return_back(dUsed);
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 // DistanceTable definitions
@@ -398,19 +376,19 @@ Molecule& Molecule::operator=(const Molecule& M)
     // finished duplication
     val_max_NAtoms = M.val_max_NAtoms;
     // map source atom pointers to this atom pointers
-    map<const Atom_t*, Atom_t*> pclone;
+    map<const Atom_t*, Atom_t*> patom_clone;
     for (asrc = M.atoms.begin(), adup = atoms.begin();
 	    asrc != M.atoms.end();  ++asrc, ++adup)
     {
-	pclone[*asrc] = *adup;
+	patom_clone[*asrc] = *adup;
     }
-    typedef map<OrderedPair<Atom_t*>,Pair_t*>::const_iterator MAPcit;
+    typedef map<OrderedPair<Atom_t*>,PairDistance_t>::const_iterator MAPcit;
     for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
     {
-	Atom_t *a1 = pclone[ii->first.first];
-	Atom_t *a2 = pclone[ii->first.second];
+	Atom_t *a1 = patom_clone[ii->first.first];
+	Atom_t *a2 = patom_clone[ii->first.second];
 	OrderedPair<Atom_t*> key(a1, a2);
-	pairs[key] = new Pair_t(this, a1, a2, *(ii->second));
+	pairs[key] = ii->second;
     }
     badness = M.badness;
     // IO helpers
@@ -430,7 +408,7 @@ void Molecule::init()
 
 Molecule::~Molecule()
 {
-    // we must call Clear() to delete Pair_t objects
+    // we must call Clear() to delete Atom_t objects
     Clear();
 }
 
@@ -444,21 +422,24 @@ double Molecule::penalty(double dd)
     return dd*dd;
 }
 
+namespace MoleculeRecalculate
+{
+    typedef map<OrderedPair<Atom_t*>,PairDistance_t>::iterator MAPit;
+    bool comp_PairDistanceIt_Distance(const MAPit& lhs, const MAPit& rhs)
+    {
+	return lhs->second.d < rhs->second.d;
+    }
+}
+
 void Molecule::Recalculate()
 {
+    using namespace MoleculeRecalculate;
     if (NAtoms() > max_NAtoms())
     {
 	cerr << "E: molecule too large in Recalculate()" << endl;
 	throw InvalidMolecule();
     }
-    // destroy all pairs
-    typedef map<OrderedPair<Atom_t*>,Pair_t*>::iterator MAPit;
-    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii)
-    {
-	delete ii->second;
-    }
-    pairs.clear();
-    // molecule parameters
+    // reset molecule
     badness = 0;
     // reset all atoms
     typedef vector<Atom_t*>::iterator VPAit;
@@ -466,13 +447,23 @@ void Molecule::Recalculate()
     {
 	(*pai)->ResetBadness();
     }
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    // order pair iterators by distance for accurate summation
+    // first create array with a copy of all iterators
+    MAPit ordered_pits[pairs.size()];
+    MAPit* popit = ordered_pits;
+    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii, ++popit)
     {
-	for (VPAit paj = pai+1; paj != atoms.end(); ++paj)
-	{
-	    OrderedPair<Atom_t*> key(*pai, *paj);
-	    pairs[key] = new Pair_t(this, *pai, *paj);
-	}
+	*popit = ii;
+    }
+    // sort iterator array
+    sort(ordered_pits, ordered_pits + pairs.size(),
+	    comp_PairDistanceIt_Distance);
+    // sum over sorted iterators
+    for (popit = ordered_pits; popit != ordered_pits + pairs.size(); ++popit)
+    {
+	Atom_t* a1 = (*popit)->first.first;
+	Atom_t* a2 = (*popit)->first.second;
+	(*popit)->second.lockto(this, a1, a2);
     }
 }
 
@@ -564,15 +555,17 @@ Molecule& Molecule::Pop(const int cidx)
     {
 	throw range_error("in Molecule::Pop(const int cidx)");
     }
+    typedef map<OrderedPair<Atom_t*>,PairDistance_t>::iterator MAPit;
     typedef vector<Atom_t*>::iterator VPAit;
     VPAit popped = atoms.begin() + cidx;
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
 	if (pai == popped)  continue;
 	OrderedPair<Atom_t*> key(*pai, *popped);
-	Pair_t *pp = pairs[key];
-	delete pp;
-	pairs.erase(key);
+	MAPit pit = pairs.find(key);
+	PairDistance_t& pd = pit->second;
+	pd.release(this, *pai, *popped);
+	pairs.erase(pit);
     }
     delete *popped;
     atoms.erase(popped);
@@ -606,12 +599,6 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 
 Molecule& Molecule::Clear()
 {
-    // pairs must be destroyed before atoms;
-    typedef map<OrderedPair<Atom_t*>,Pair_t*>::iterator MAPit;
-    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii)
-    {
-	delete ii->second;
-    }
     pairs.clear();
     typedef vector<Atom_t*>::iterator VPAit;
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
@@ -619,7 +606,7 @@ Molecule& Molecule::Clear()
 	delete *pai;
     }
     atoms.clear();
-    badness = 0;
+    badness = 0.0;
     return *this;
 }
 
@@ -646,16 +633,18 @@ Molecule& Molecule::Add(Atom_t atom)
 	cerr << "E: molecule too large in Add()" << endl;
 	throw InvalidMolecule();
     }
-    Atom_t *this_atom;
-    this_atom = new Atom_t(atom);
-    this_atom->ResetBadness();
-    atoms.push_back(this_atom);
-    // this_atom is at the end of the list
+    Atom_t *pnew_atom;
+    pnew_atom = new Atom_t(atom);
+    pnew_atom->ResetBadness();
+    atoms.push_back(pnew_atom);
+    // pnew_atom is at the end of the list
     typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); *pai != this_atom; ++pai)
+    for (VPAit pai = atoms.begin(); *pai != pnew_atom; ++pai)
     {
-	OrderedPair<Atom_t*> key(*pai, this_atom);
-	pairs[key] = new Pair_t(this, *pai, this_atom);
+	Atom_t* pmol_atom = *pai;
+	OrderedPair<Atom_t*> key(pmol_atom, pnew_atom);
+	PairDistance_t& new_pair = pairs[key];
+	new_pair.lockto(this, pmol_atom, pnew_atom);
     }
     return *this;
 }
