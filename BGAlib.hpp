@@ -111,21 +111,11 @@ inline double dist(const Atom_t& a1, const Atom_t& a2)
 
 class Molecule;
 
-struct Pair_t
+struct PairDistance_t
 {
-public:
-    Pair_t(Molecule *M, Atom_t *a1, Atom_t *a2);
-    Pair_t(Molecule *M, Atom_t *a1, Atom_t *a2, const Pair_t&);
-    ~Pair_t();
-    // do not allow copying or assignment
-    Pair_t(const Pair_t& pair0);
-    Pair_t& operator=(const Pair_t&);
-    //
-    mutable double d;
-private:
-    friend class Molecule;
-    Molecule *owner;
-    Atom_t *atom1, *atom2;
+    void lockto(Molecule *M, Atom_t *a1, Atom_t *a2);
+    void release(Molecule *M, Atom_t *a1, Atom_t *a2);
+    double d;
     double dUsed;
     double badness;
 };
@@ -200,8 +190,9 @@ private:
     int val_max_NAtoms;
     // atoms must precede pairs
     vector<Atom_t*> atoms;		      // vector of pointers to atoms
-    map<OrderedPair<Atom_t*>,Pair_t*> pairs;  // map Atom_t* to Pair_t objects
-    friend class Pair_t;
+    map<OrderedPair<Atom_t*>,PairDistance_t> pairs;
+    friend void PairDistance_t::lockto(Molecule*, Atom_t*, Atom_t*);
+    friend void PairDistance_t::release(Molecule*, Atom_t*, Atom_t*);
     friend bool operator==(const Molecule&, const Molecule&);
     // badness evaluation
     mutable double badness;		// molecular badness
