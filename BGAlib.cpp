@@ -149,7 +149,7 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 
 void PairDistance_t::LockTo(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
 {
-    d = dist(*pa1, *pa2);
+    double d = dist(*pa1, *pa2);
     vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
     double dd = *dnear - d;
     double badness = pM->penalty(dd);
@@ -172,8 +172,7 @@ void PairDistance_t::LockTo(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
 
 void PairDistance_t::Release(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
 {
-    double dd = fabs(dUsed) - d;
-    double badness = pM->penalty(dd);
+    double badness = Badness(pM, pa1, pa2);
     double badnesshalf = badness/2.0;
     pa1->DecBadness(badnesshalf);
     pa2->DecBadness(badnesshalf);
@@ -183,6 +182,12 @@ void PairDistance_t::Release(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
     if (dUsed > 0.0)
 	pM->dTarget.return_back(dUsed);
 }
+
+double PairDistance_t::Badness(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
+{
+    return pM->penalty( fabs(dUsed) - dist(*pa1, *pa2) );
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // DistanceTable definitions
@@ -427,11 +432,15 @@ double Molecule::penalty(double dd)
 namespace MoleculeRecalculate
 {
     typedef map<OrderedPair<Atom_t*>,PairDistance_t>::iterator MAPit;
-    bool comp_PairDistanceIt_dd(const MAPit& lhs, const MAPit& rhs)
+    struct BadnessWithMAPit_t
     {
-	double lhsdd = lhs->second.d - fabs(lhs->second.dUsed);
-	double rhsdd = rhs->second.d - fabs(rhs->second.dUsed);
-	return fabs(lhsdd) < fabs(rhsdd);
+	double badness;
+	MAPit  iter;
+    };
+    bool comp_BadnessWithMAPit_t_Badness(const BadnessWithMAPit_t& lhs,
+	    const BadnessWithMAPit_t& rhs)
+    {
+	return lhs.badness < rhs.badness;
     }
 }
 
@@ -451,23 +460,30 @@ void Molecule::Recalculate()
     {
 	(*pai)->ResetBadness();
     }
-    // order pair iterators by distance for accurate summation
-    // first create array with a copy of all iterators
-    MAPit ordered_pits[pairs.size()];
-    MAPit* popit = ordered_pits;
-    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii, ++popit)
+    // order pair iterators by corresponding badness for accurate summation
+    // first create and fill array of BadnessWithMAPit_t
+    BadnessWithMAPit_t ordered_bwi[pairs.size()];
+    BadnessWithMAPit_t* pbwi = ordered_bwi;
+    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii, ++pbwi)
     {
-	*popit = ii;
+	Atom_t* pa1 = ii->first.first;
+	Atom_t* pa2 = ii->first.second;
+	PairDistance_t& pd = ii->second;
+	pbwi->badness = pd.Badness(this, pa1, pa2);
+	pbwi->iter = ii;
     }
-    // sort iterator array
-    sort(ordered_pits, ordered_pits + pairs.size(),
-	    comp_PairDistanceIt_dd);
+    // sort by badness
+    sort(ordered_bwi, ordered_bwi + pairs.size(),
+	    comp_BadnessWithMAPit_t_Badness);
     // sum over sorted iterators
-    for (popit = ordered_pits; popit != ordered_pits + pairs.size(); ++popit)
+    for (pbwi = ordered_bwi; pbwi != ordered_bwi + pairs.size(); ++pbwi)
     {
-	Atom_t* a1 = (*popit)->first.first;
-	Atom_t* a2 = (*popit)->first.second;
-	(*popit)->second.LockTo(this, a1, a2);
+	Atom_t* pa1 = pbwi->iter->first.first;
+	Atom_t* pa2 = pbwi->iter->first.second;
+	double badnesshalf = pbwi->badness/2.0;
+	badness += pbwi->badness;
+	pa1->IncBadness(badnesshalf);
+	pa2->IncBadness(badnesshalf);
     }
 }
 

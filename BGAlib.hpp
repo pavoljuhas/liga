@@ -115,7 +115,7 @@ struct PairDistance_t
 {
     void LockTo(Molecule* M, Atom_t* a1, Atom_t* a2);
     void Release(Molecule* M, Atom_t* a1, Atom_t* a2);
-    double d;
+    double Badness(Molecule* M, Atom_t* a1, Atom_t* a2);
     double dUsed;
 };
 
