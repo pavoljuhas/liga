@@ -147,7 +147,7 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 // PairDistance_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-void PairDistance_t::lockto(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
+void PairDistance_t::LockTo(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
     d = dist(*pa1, *pa2);
     vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
@@ -171,7 +171,7 @@ void PairDistance_t::lockto(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
     pM->badness += badness;
 }
 
-void PairDistance_t::release(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
+void PairDistance_t::Release(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
     double dd = fabs(dUsed) - d;
     double badness = pM->penalty(dd);
@@ -468,7 +468,7 @@ void Molecule::Recalculate()
     {
 	Atom_t* a1 = (*popit)->first.first;
 	Atom_t* a2 = (*popit)->first.second;
-	(*popit)->second.lockto(this, a1, a2);
+	(*popit)->second.LockTo(this, a1, a2);
     }
 }
 
@@ -569,7 +569,7 @@ Molecule& Molecule::Pop(const int cidx)
 	OrderedPair<Atom_t*> key(*pai, *popped);
 	MAPit pit = pairs.find(key);
 	PairDistance_t& pd = pit->second;
-	pd.release(this, *pai, *popped);
+	pd.Release(this, *pai, *popped);
 	pairs.erase(pit);
     }
     delete *popped;
@@ -649,7 +649,7 @@ Molecule& Molecule::Add(Atom_t atom)
 	Atom_t* pmol_atom = *pai;
 	OrderedPair<Atom_t*> key(pmol_atom, pnew_atom);
 	PairDistance_t& new_pair = pairs[key];
-	new_pair.lockto(this, pmol_atom, pnew_atom);
+	new_pair.LockTo(this, pmol_atom, pnew_atom);
     }
     return *this;
 }

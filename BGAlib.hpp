@@ -113,8 +113,8 @@ class Molecule;
 
 struct PairDistance_t
 {
-    void lockto(Molecule *M, Atom_t *a1, Atom_t *a2);
-    void release(Molecule *M, Atom_t *a1, Atom_t *a2);
+    void LockTo(Molecule *M, Atom_t *a1, Atom_t *a2);
+    void Release(Molecule *M, Atom_t *a1, Atom_t *a2);
     double d;
     double dUsed;
 };
@@ -190,8 +190,8 @@ private:
     // atoms must precede pairs
     vector<Atom_t*> atoms;		      // vector of pointers to atoms
     map<OrderedPair<Atom_t*>,PairDistance_t> pairs;
-    friend void PairDistance_t::lockto(Molecule*, Atom_t*, Atom_t*);
-    friend void PairDistance_t::release(Molecule*, Atom_t*, Atom_t*);
+    friend void PairDistance_t::LockTo(Molecule*, Atom_t*, Atom_t*);
+    friend void PairDistance_t::Release(Molecule*, Atom_t*, Atom_t*);
     friend bool operator==(const Molecule&, const Molecule&);
     // badness evaluation
     mutable double badness;		// molecular badness
