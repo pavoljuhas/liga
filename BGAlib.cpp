@@ -147,7 +147,7 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 // PairDistance_t definitions
 ////////////////////////////////////////////////////////////////////////
 
-void PairDistance_t::LockTo(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
+void PairDistance_t::LockTo(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
 {
     d = dist(*pa1, *pa2);
     vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
@@ -170,7 +170,7 @@ void PairDistance_t::LockTo(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
     pM->badness += badness;
 }
 
-void PairDistance_t::Release(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
+void PairDistance_t::Release(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
 {
     double dd = fabs(dUsed) - d;
     double badness = pM->penalty(dd);
@@ -326,7 +326,7 @@ Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
 }
 
 Molecule::Molecule(const DistanceTable& dtab,
-	const int s, const double *px, const double *py, const double *pz
+	const int s, const double* px, const double* py, const double* pz
 	) : dTarget(dtab)
 {
     init();
@@ -386,8 +386,8 @@ Molecule& Molecule::operator=(const Molecule& M)
     typedef map<OrderedPair<Atom_t*>,PairDistance_t>::const_iterator MAPcit;
     for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
     {
-	Atom_t *a1 = patom_clone[ii->first.first];
-	Atom_t *a2 = patom_clone[ii->first.second];
+	Atom_t* a1 = patom_clone[ii->first.first];
+	Atom_t* a2 = patom_clone[ii->first.second];
 	OrderedPair<Atom_t*> key(a1, a2);
 	pairs[key] = ii->second;
     }
@@ -637,7 +637,7 @@ Molecule& Molecule::Add(Atom_t atom)
 	cerr << "E: molecule too large in Add()" << endl;
 	throw InvalidMolecule();
     }
-    Atom_t *pnew_atom;
+    Atom_t* pnew_atom;
     pnew_atom = new Atom_t(atom);
     pnew_atom->ResetBadness();
     atoms.push_back(pnew_atom);
@@ -761,12 +761,12 @@ struct rxa_par
 {
     typedef vector<Atom_t*> VPA;
     typedef valarray<double> VAD;
-    VPA *atoms;
-    VAD *ad0;
-    VAD *wt;
+    VPA* atoms;
+    VAD* ad0;
+    VAD* wt;
 };
 
-int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
+int rxa_fdf(const gsl_vector* x, void* params, gsl_vector* f, gsl_matrix* J)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
     ta.r[0] = gsl_vector_get(x, 0);
@@ -793,7 +793,7 @@ int rxa_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
     return GSL_SUCCESS;
 }
 
-int rxa_f(const gsl_vector *x, void *params, gsl_vector *f)
+int rxa_f(const gsl_vector* x, void* params, gsl_vector* f)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
     ta.r[0] = gsl_vector_get(x, 0);
@@ -814,13 +814,13 @@ int rxa_f(const gsl_vector *x, void *params, gsl_vector *f)
     return GSL_SUCCESS;
 }
 
-int rxa_df(const gsl_vector *x, void *params, gsl_matrix *J)
+int rxa_df(const gsl_vector* x, void* params, gsl_matrix* J)
 {
     typedef vector<Atom_t*> VPA;
     typedef valarray<double> VAD;
     VPA& atoms = *( ((struct rxa_par *)params)->atoms );
     // just use rxa_fdf ignoring function values
-    gsl_vector *fignore = gsl_vector_alloc(atoms.size());
+    gsl_vector* fignore = gsl_vector_alloc(atoms.size());
     int status = rxa_fdf(x, params, fignore, J);
     gsl_vector_free(fignore);
     return status;
@@ -859,7 +859,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     fill(dUsed, dUsed+dTsize, false);
     // prepare valarrays for rxa_* functions
     valarray<double> wt(1.0, NAtoms());
-    double *pd = &wt[0];
+    double* pd = &wt[0];
     typedef vector<Atom_t*>::iterator VPAit;
     // first fill the array with badness
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
@@ -875,7 +875,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
 	list<int> dUsedIdx;
-	double *pad0 = &ad0[0];
+	double* pad0 = &ad0[0];
 	double tbad = 0.0;
 	typedef vector<Atom_t*>::iterator VPAit;
 	for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
@@ -932,11 +932,11 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	// bind rta coordinates to vector x
 	gsl_vector_view x = gsl_vector_view_array(rta.r, 3);
 	// allocate solver
-	gsl_multifit_fdfsolver *lms = gsl_multifit_fdfsolver_alloc(
+	gsl_multifit_fdfsolver* lms = gsl_multifit_fdfsolver_alloc(
 		gsl_multifit_fdfsolver_lmsder, NAtoms(), 3);
 	gsl_multifit_fdfsolver_set(lms, &f, &x.vector);
 	// allocate vector for gradient test
-	gsl_vector *G = gsl_vector_alloc(3);
+	gsl_vector* G = gsl_vector_alloc(3);
 	// minimize atom badness
 	int iter = 0, status;
 	do
@@ -980,7 +980,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 }
 
 int Molecule::push_good_distances(
-	vector<Atom_t>& vta, double *afit, int ntrials
+	vector<Atom_t>& vta, double* afit, int ntrials
 	)
 {
     // add new atom in direction defined by 2 atoms
@@ -1062,7 +1062,7 @@ int Molecule::push_good_distances(
 }
 
 int Molecule::push_good_triangles(
-	vector<Atom_t>& vta, double *afit, int ntrials
+	vector<Atom_t>& vta, double* afit, int ntrials
 	)
 {
     // generate randomly oriented triangles
@@ -1158,9 +1158,9 @@ int Molecule::push_good_triangles(
 	// here we want nt to count number of added vertices
 	--nt;
 	// loops over all 4 vertices in case of lattice_plane
-	for (double *pxl = xlong; pxl != xlong+2; ++pxl)
+	for (double* pxl = xlong; pxl != xlong+2; ++pxl)
 	{
-	    for (double *pxp = xperp; pxp != xperp+2; ++pxp)
+	    for (double* pxp = xperp; pxp != xperp+2; ++pxp)
 	    {
 		++nt;
 		P = Pa0 + (*pxl)*longdir + (*pxp)*perpdir;
@@ -1178,7 +1178,7 @@ int Molecule::push_good_triangles(
 }
 
 int Molecule::push_good_pyramids(
-	vector<Atom_t>& vta, double *afit, int ntrials
+	vector<Atom_t>& vta, double* afit, int ntrials
 	)
 {
     if (NAtoms() == max_NAtoms())
@@ -1331,14 +1331,14 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     }
     // otherwise we need to build array of atom fitnesses
     valarray<double> vafit(NAtoms());
-    double *pd = &vafit[0];
+    double* pd = &vafit[0];
     // first fill the array with badness
     typedef vector<Atom_t*>::iterator VPAit;
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
 	*pd = (*pai)->Badness();
     // then get the reciprocal value
     vafit = vdrecipw0(vafit);
-    double *afit = &vafit[0];
+    double* afit = &vafit[0];
     // and push appropriate numbers of test atoms
     // here NAtoms() >= 2
     push_good_distances(vta, afit, ntd1);
@@ -1358,7 +1358,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
 	// first fill the array with badness
-	double *pd = &vtafit[0];
+	double* pd = &vtafit[0];
 	for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pd)
 	    *pd = ai->Badness();
 	// then get the reciprocal value
@@ -1392,7 +1392,7 @@ Molecule& Molecule::Degenerate(int Npop)
     if (Npop == 0)  return *this;
     // build array of atom badnesses
     double abad[NAtoms()];
-    double *pb = abad;
+    double* pb = abad;
     typedef vector<Atom_t*>::iterator VPAit;
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pb)
     {
@@ -1456,7 +1456,7 @@ vector<int> random_choose_few(int K, int Np, bool with_repeat)
     return vec;
 }
 
-vector<int> random_wt_choose(int K, const double *p, int Np)
+vector<int> random_wt_choose(int K, const double* p, int Np)
 {
     vector<int> vec(K);
     if (K > Np)
@@ -1500,14 +1500,14 @@ vector<int> random_wt_choose(int K, const double *p, int Np)
 	// otherwise we can normalize cumprob
 	else
 	{
-	    for (double *pcp = cumprob; pcp != cumprob+Nprob; ++pcp)
+	    for (double* pcp = cumprob; pcp != cumprob+Nprob; ++pcp)
 	    {
 		*pcp /= cumprob[Nprob-1];
 	    }
 	}
 	// now let's do binary search on cumprob:
 	double r = gsl_rng_uniform(BGA::rng);
-	double *pcp = upper_bound(cumprob, cumprob+Nprob, r);
+	double* pcp = upper_bound(cumprob, cumprob+Nprob, r);
 	int idx = pcp - cumprob;
 	*(vecit++) = val[idx];
 	// overwrite this element with the last number
@@ -1552,10 +1552,10 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
 }
 
 template<typename T> bool Molecule::ParseHeader::read_token(
-	const char *token, T& value
+	const char* token, T& value
 	)
 {
-    const char *fieldsep = ":= ";
+    const char* fieldsep = ":= ";
     int ltoken = strlen(token);
     string::size_type sp;
     const string::size_type npos = string::npos;
@@ -1804,7 +1804,7 @@ void Molecule::PrintBadness()
 void Molecule::PrintFitness()
 {
     valarray<double> vafit(NAtoms());
-    double *pd = &vafit[0];
+    double* pd = &vafit[0];
     typedef vector<Atom_t*>::iterator VPAit;
     // first fill the array with badness
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)

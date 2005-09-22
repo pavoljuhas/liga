@@ -44,7 +44,7 @@ struct OrderedPair : pair<T,T>
     }
 };
 vector<int> random_choose_few(int K, int Np, bool with_repeat = false);
-vector<int> random_wt_choose(int K, const double *p, int Np);
+vector<int> random_wt_choose(int K, const double* p, int Np);
 
 inline bool eps_eq(double x, double y)
 {
@@ -113,8 +113,8 @@ class Molecule;
 
 struct PairDistance_t
 {
-    void LockTo(Molecule *M, Atom_t *a1, Atom_t *a2);
-    void Release(Molecule *M, Atom_t *a1, Atom_t *a2);
+    void LockTo(Molecule* M, Atom_t* a1, Atom_t* a2);
+    void Release(Molecule* M, Atom_t* a1, Atom_t* a2);
     double d;
     double dUsed;
 };
@@ -125,8 +125,8 @@ public:
     // constructors
     Molecule();
     Molecule(const DistanceTable&);
-    Molecule(const DistanceTable&, const int s, const double *px,
-	    const double *py, const double *pz);
+    Molecule(const DistanceTable&, const int s, const double* px,
+	    const double* py, const double* pz);
     Molecule(const DistanceTable&, const vector<double>& vx,
 	    const vector<double>& vy, const vector<double>& vz);
     Molecule(const Molecule& M);		// copy constructor
@@ -195,9 +195,9 @@ private:
     friend bool operator==(const Molecule&, const Molecule&);
     // badness evaluation
     mutable double badness;		// molecular badness
-    int push_good_distances(vector<Atom_t>& vta, double *afit, int ntrials);
-    int push_good_triangles(vector<Atom_t>& vta, double *afit, int ntrials);
-    int push_good_pyramids(vector<Atom_t>& vta, double *afit, int ntrials);
+    int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
+    int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
+    int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
     void calc_test_badness(Atom_t& a);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double lo_abad);
@@ -219,7 +219,7 @@ public:
     operator bool() {return state;}
 private:
     bool state;
-    template<typename T> bool read_token(const char *token, T& value);
+    template<typename T> bool read_token(const char* token, T& value);
     const string& header;
 };
 
