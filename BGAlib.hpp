@@ -117,7 +117,6 @@ struct PairDistance_t
     void release(Molecule *M, Atom_t *a1, Atom_t *a2);
     double d;
     double dUsed;
-    double badness;
 };
 
 class Molecule
