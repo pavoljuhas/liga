@@ -153,7 +153,6 @@ void PairDistance_t::LockTo(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
     vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
     double dd = *dnear - d;
     double badness = pM->penalty(dd);
-    BGA::cnt.penalty_calls++;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
     if (fabs(dd) < pM->tol_dd)
@@ -175,7 +174,6 @@ void PairDistance_t::Release(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
     double dd = fabs(dUsed) - d;
     double badness = pM->penalty(dd);
-    BGA::cnt.penalty_calls++;
     double badnesshalf = badness/2.0;
     pa1->DecBadness(badnesshalf);
     pa2->DecBadness(badnesshalf);
@@ -422,6 +420,7 @@ Molecule::~Molecule()
 
 double Molecule::penalty(double dd)
 {
+    BGA::cnt.penalty_calls++;
     return dd*dd;
 }
 
@@ -680,7 +679,6 @@ void Molecule::calc_test_badness(Atom_t& ta)
 	VDit dnear = local_dTarget.find_nearest(d);
 	double dd = *dnear - d;
 	tbad += penalty(dd);
-	BGA::cnt.penalty_calls++;
 	if (fabs(dd) < tol_dd)
 	{
 	    local_dTarget.erase(dnear);
@@ -730,7 +728,6 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	    }
 	    double dd = ldTarget[idx] - d;
 	    tbad += penalty(dd);
-	    BGA::cnt.penalty_calls++;
 	    if (fabs(dd) < tol_dd)
 	    {
 		ldUsed[idx] = true;
@@ -899,7 +896,6 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    *(pad0++) = dTarget[idx];
 	    double dd = dTarget[idx] - d;
 	    tbad += penalty(dd);
-	    BGA::cnt.penalty_calls++;
 	    if (fabs(dd) < tol_dd)
 	    {
 		dUsed[idx] = true;
@@ -973,7 +969,6 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	for (int i = 0; i < NAtoms(); ++i)
 	{
 	    tbad += penalty(gsl_vector_get(lms->f, i));
-	    BGA::cnt.penalty_calls++;
 	}
 	// and update lo_abad before reassigning the distances
 	lo_abad = min(lo_abad, tbad);
