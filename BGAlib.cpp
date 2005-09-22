@@ -152,13 +152,13 @@ void PairDistance_t::lockto(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
     d = dist(*pa1, *pa2);
     vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    badness = pM->penalty(dd);
+    double badness = pM->penalty(dd);
     BGA::cnt.penalty_calls++;
     if (badness < BGA::eps_badness)
 	badness = 0.0;
     if (fabs(dd) < pM->tol_dd)
     {
-	dUsed = *dnear;
+	dUsed = +1.0 * (*dnear);
 	pM->dTarget.erase(dnear);
     }
     else
@@ -173,6 +173,9 @@ void PairDistance_t::lockto(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 
 void PairDistance_t::release(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
+    double dd = fabs(dUsed) - d;
+    double badness = pM->penalty(dd);
+    BGA::cnt.penalty_calls++;
     double badnesshalf = badness/2.0;
     pa1->DecBadness(badnesshalf);
     pa2->DecBadness(badnesshalf);
@@ -425,9 +428,11 @@ double Molecule::penalty(double dd)
 namespace MoleculeRecalculate
 {
     typedef map<OrderedPair<Atom_t*>,PairDistance_t>::iterator MAPit;
-    bool comp_PairDistanceIt_Distance(const MAPit& lhs, const MAPit& rhs)
+    bool comp_PairDistanceIt_dd(const MAPit& lhs, const MAPit& rhs)
     {
-	return lhs->second.d < rhs->second.d;
+	double lhsdd = lhs->second.d - fabs(lhs->second.dUsed);
+	double rhsdd = rhs->second.d - fabs(rhs->second.dUsed);
+	return fabs(lhsdd) < fabs(rhsdd);
     }
 }
 
@@ -457,7 +462,7 @@ void Molecule::Recalculate()
     }
     // sort iterator array
     sort(ordered_pits, ordered_pits + pairs.size(),
-	    comp_PairDistanceIt_Distance);
+	    comp_PairDistanceIt_dd);
     // sum over sorted iterators
     for (popit = ordered_pits; popit != ordered_pits + pairs.size(); ++popit)
     {
