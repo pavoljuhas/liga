@@ -16,6 +16,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <limits>
 #include <gsl/gsl_rng.h>
 #include "BGAutils.hpp"
 
@@ -108,8 +109,42 @@ inline double dist(const Atom_t& a1, const Atom_t& a2)
     return sqrt(1.0*dist2(a1, a2));
 }
 
-
 class Molecule;
+
+class AtomFilter_t
+{
+public:
+    AtomFilter_t(Molecule* pm) : pM(pm) { }
+    virtual bool Check(Atom_t&, double* atom_distances) = 0;
+private:
+    Molecule* pM;
+};
+
+class AtomBadnessFilter_t : public AtomFilter_t
+{
+public:
+    AtomBadnessFilter_t(Molecule* pm) :
+	AtomFilter_t(pm),
+	hi_abad( numeric_limits<double>().max() )
+    { }
+    bool Check(Atom_t&, double* atom_distances);
+    double hi_abad;
+};
+
+class BondAngleFilter_t : public AtomFilter_t
+{
+public:
+    BondAngleFilter_t(Molecule* pm, double maxblen) :
+	AtomFilter_t(pm),
+	max_blen(max_blen),
+	lo_bangle( numeric_limits<double>().max() ),
+	hi_bangle( numeric_limits<double>().max() )
+    { }
+    bool Check(Atom_t&, double* atom_distances);
+    double max_blen;
+    double lo_bangle;
+    double hi_bangle;
+};
 
 struct PairDistance_t
 {
@@ -142,6 +177,7 @@ public:
     static double evolve_frac;
     static int center_size;
     double penalty(double);
+    static vector<AtomFilter_t> evolve_filters;
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
