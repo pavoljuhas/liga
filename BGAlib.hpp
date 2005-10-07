@@ -172,7 +172,7 @@ public:
     static double evolve_frac;
     static int center_size;
     double penalty(double);
-    static vector<AtomFilter_t> evolve_filters;
+    static vector<AtomFilter_t> atom_filters;
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
