@@ -147,46 +147,6 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 
 bool AtomBadnessFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
 {
-//    typedef vector<double>::iterator VDit;
-    typedef map<int,bool>::iterator USEit;
-    map<int,bool> used;
-    for (   double* pd = adist;
-	    pd != adist+pm->NAtoms() && pa->Badness() <= hi_abad; ++pd )
-    {
-	double& d = *pd;
-	int idx = pm->dTarget.find_nearest(d) - pm->dTarget.begin();
-	if (used.count(idx))
-	{
-	    int hi, lo, nidx = -1;
-	    int dtsize = pm->dTarget.size();
-	    USEit idx_used_it = used.find(idx);
-	    USEit hi_used_it = idx_used_it;
-	    for (   hi = idx+1, ++hi_used_it;
-		    hi < dtsize && hi_used_it != used.end() &&
-		    hi == hi_used_it->first;  ++hi, ++hi_used_it )
-	    { }
-	    if (hi < dtsize)
-		nidx = hi;
-	    USEit lo_used_it;
-	    for (   lo = idx, lo_used_it = idx_used_it;
-		    lo >= 0 && lo == lo_used_it->first; 
-		    --lo, --lo_used_it )
-	    {
-		if (lo_used_it == used.begin())
-		    break;
-	    }
-	    if (    lo >= 0 &&
-		    (nidx < 0 || d - pm->dTarget[lo] < pm->dTarget[nidx] - d) )
-		nidx = lo;
-	    idx = nidx;
-	}
-	double dd = pm->dTarget[idx] - d;
-	pa->IncBadness(pm->penalty(dd));
-	if (fabs(dd) < pm->tol_dd)
-	{
-	    used[idx] = true;
-	}
-    }
     return pa->Badness() <= hi_abad;
 }
 
@@ -371,6 +331,7 @@ bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
+AtomBadnessFilter_t Molecule::abad_filter;
 vector<AtomFilter_t> Molecule::atom_filters;
 
 Molecule::Molecule()
@@ -552,7 +513,12 @@ double Molecule::NormBadness() const
     return NDist() == 0 ? 0.0 : Badness()/NDist();
 }
 
-bool comp_Atom_Badness(const Atom_t* lhs, const Atom_t* rhs)
+bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
+{
+    return lhs.Badness() < rhs.Badness();
+}
+
+bool comp_pAtom_Badness(const Atom_t* lhs, const Atom_t* rhs)
 {
     return lhs->Badness() < rhs->Badness();
 }
@@ -731,96 +697,90 @@ Atom_t Molecule::Atom(const int cidx)
     return *(atoms[cidx]);
 }
 
-void Molecule::calc_test_badness(Atom_t& ta)
+void Molecule::add_test_badness(Atom_t& ta)
 {
     if (NAtoms() == max_NAtoms())
     {
-	cerr << "E: Molecule too large in calc_test_badness()" << endl;
+	cerr << "E: Molecule too large in add_test_badness()" << endl;
 	throw InvalidMolecule();
     }
-    double tbad = 0;
-    typedef vector<double>::iterator VDit;
-    DistanceTable local_dTarget(dTarget);
+    map<int,bool> used;
     typedef vector<Atom_t*>::iterator VPAit;
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	double d = dist(**pai, ta);
-	VDit dnear = local_dTarget.find_nearest(d);
-	double dd = *dnear - d;
-	tbad += penalty(dd);
+	double d = dist(ta, **pai);
+	int idx = dTarget.find_nearest(d) - dTarget.begin();
+	if (used.count(idx))
+	{
+	    int hi, lo, nidx = -1;
+	    int dtsize = dTarget.size();
+	    typedef map<int,bool>::iterator USEit;
+	    USEit idx_used_it = used.find(idx);
+	    USEit hi_used_it = idx_used_it;
+	    for (   hi = idx+1, ++hi_used_it;
+		    hi < dtsize && hi_used_it != used.end() &&
+		    hi == hi_used_it->first;  ++hi, ++hi_used_it )
+	    { }
+	    if (hi < dtsize)
+		nidx = hi;
+	    typedef map<int,bool>::reverse_iterator USErit;
+	    USErit lo_used_rit(idx_used_it);
+	    for (   lo = idx; lo >= 0 && lo_used_rit != used.rend() &&
+		    lo == lo_used_rit->first; --lo, ++lo_used_rit )
+	    { }
+	    if (lo >= 0 && (nidx < 0 || d-dTarget[lo] < dTarget[nidx]-d))
+		nidx = lo;
+	    idx = nidx;
+	}
+	double dd = dTarget[idx] - d;
+	ta.IncBadness(penalty(dd));
 	if (fabs(dd) < tol_dd)
 	{
-	    local_dTarget.erase(dnear);
+	    used[idx] = true;
 	}
     }
-    ta.ResetBadness(tbad);
 }
 
-void Molecule::filter_good_atoms(vector<Atom_t>& vta,
-	double evolve_range, double lo_abad)
+void Molecule::filter_good_atoms(vector<Atom_t>& vta)
 {
     if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: Molecule too large in filter_good_atoms()" << endl;
 	throw InvalidMolecule();
     }
-    // local copy of dTarget
-    DistanceTable ldTarget(dTarget);
-    int ldTsize = ldTarget.size();
-    bool ldUsed[ldTsize];
-    fill(ldUsed, ldUsed+ldTsize, false);
-    double hi_abad = lo_abad + evolve_range;
     typedef vector<Atom_t>::iterator VAit;
     typedef vector<Atom_t*>::iterator VPAit;
     typedef vector<double>::iterator VDit;
+    bool goodatom[vta.size()];
     // loop over all test atoms
-    for (VAit ta = vta.begin(); ta != vta.end(); ++ta)
+    for (int aidx = 0; aidx != vta.size(); ++aidx)
     {
-	double tbad = ta->Badness();
-	list<int> ldUsedIdx;
-	// fast, possibly incomplete badness evaluation
-	for (   VPAit pai = atoms.begin();
-		pai != atoms.end() && tbad <= hi_abad; ++pai )
+	bool& isgood = goodatom[aidx];
+	Atom_t& ta = vta[aidx];
+	isgood = abad_filter.Check(&ta);
+	// do not calculate distances when not necessary
+	if (atom_filters.empty() || ! isgood)
+	    continue;
+	// here we need to calculate distances between test and molecule atoms
+	double adist[NAtoms()];
+	double* pd = adist;
+	for (   VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
 	{
-	    double d = dist(**pai, *ta);
-	    int idx = ldTarget.find_nearest(d) - ldTarget.begin();
-	    if (ldUsed[idx])
-	    {
-		int hi, lo, nidx = -1;
-		for (hi = idx; hi != ldTsize && ldUsed[hi]; ++hi) { };
-		if (hi != ldTsize)
-		    nidx = hi;
-		for (lo = idx; lo >= 0 && ldUsed[lo]; --lo) { };
-		if (lo >= 0  && (nidx < 0 || d-ldTarget[lo] < ldTarget[nidx]-d))
-		    nidx = lo;
-		idx = nidx;
-	    }
-	    double dd = ldTarget[idx] - d;
-	    tbad += penalty(dd);
-	    if (fabs(dd) < tol_dd)
-	    {
-		ldUsed[idx] = true;
-		ldUsedIdx.push_back(idx);
-	    }
+	    *pd = dist(**pai, ta);
 	}
-	ta->ResetBadness(tbad);
-	if (tbad < lo_abad)
+	typedef vector<AtomFilter_t>::iterator VAFit;
+	for (   VAFit flti = atom_filters.begin();
+		flti != atom_filters.end() && isgood; ++flti )
 	{
-	    lo_abad = tbad;
-	    hi_abad = lo_abad + evolve_range;
-	}
-	// restore ldUsed
-	for (   list<int>::iterator ii = ldUsedIdx.begin();
-		ii != ldUsedIdx.end(); ++ii  )
-	{
-	    ldUsed[*ii] = false;
+	    isgood = flti->Check(&ta, this, adist);
 	}
     }
     // now keep only good atoms
     VAit gai = vta.begin();
-    for (VAit ta = vta.begin(); ta != vta.end(); ++ta)
+    bool* pgood = goodatom;
+    for (   VAit ta = vta.begin(); ta != vta.end(); ++ta, ++pgood )
     {
-	if (ta->Badness() <= hi_abad)
+	if (*pgood)
 	    *(gai++) = *ta;
     }
     vta.erase(gai, vta.end());
@@ -1416,30 +1376,37 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     if (!vta.size())   return *this;
     // set badness range from min_badness
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
+    // reset filter
+    abad_filter.hi_abad = numeric_limits<double>().max();
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
-    double lo_abad = numeric_limits<double>().max();
     while (true)
     {
-	filter_good_atoms(vta, evolve_range, lo_abad);
+	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
+	    add_test_badness(*ai);
+	double lo_abad = min_element( vta.begin(), vta.end(),
+		comp_Atom_Badness ) -> Badness();
+	if (lo_abad + evolve_frac < abad_filter.hi_abad)
+	    abad_filter.hi_abad = lo_abad + evolve_frac;
+	filter_good_atoms(vta);
 	if (vta.size() == 0)
 	    break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
 	// first fill the array with badness
-	double* pd = &vtafit[0];
-	for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pd)
-	    *pd = ai->Badness();
+	double* pfit = &vtafit[0];
+	for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pfit)
+	    *pfit = ai->Badness();
 	// then get the reciprocal value
 	vtafit = vdrecipw0(vtafit);
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
-	lo_abad = vta[idx].Badness();
+	abad_filter.hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
 	if (evolve_relax)
 	{
 	    VPAit worst = max_element(atoms.begin(), atoms.end(),
-		    comp_Atom_Badness);
+		    comp_pAtom_Badness);
 	    if (eps_gt((*worst)->Badness(), 0.0))
 	    {
 		RelaxAtom(worst);
@@ -1474,7 +1441,7 @@ Molecule& Molecule::Degenerate(int Npop)
     if (degenerate_relax && NAtoms() > 1)
     {
 	VPAit worst = max_element(atoms.begin(), atoms.end(),
-		comp_Atom_Badness);
+		comp_pAtom_Badness);
 	if (eps_gt((*worst)->Badness(), 0.0))
 	{
 	    RelaxAtom(worst);
@@ -1854,7 +1821,7 @@ void Molecule::PrintBadness()
 {
     cout << "ABadness() =";
     double mab = (*max_element(atoms.begin(), atoms.end(),
-		    comp_Atom_Badness)) -> Badness();
+		    comp_pAtom_Badness)) -> Badness();
     bool marked = false;
     typedef vector<Atom_t*>::iterator VPAit;
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
