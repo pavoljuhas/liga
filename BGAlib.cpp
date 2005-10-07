@@ -145,11 +145,6 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 // AtomFilter_t - definitions of subclasses
 ////////////////////////////////////////////////////////////////////////
 
-bool AtomBadnessFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
-{
-    return pa->Badness() <= hi_abad;
-}
-
 bool BondAngleFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
 {
     return false;
@@ -331,7 +326,6 @@ bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
-AtomBadnessFilter_t Molecule::abad_filter;
 vector<AtomFilter_t> Molecule::atom_filters;
 
 Molecule::Molecule()
@@ -697,25 +691,29 @@ Atom_t Molecule::Atom(const int cidx)
     return *(atoms[cidx]);
 }
 
-void Molecule::add_test_badness(Atom_t& ta)
+double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 {
+    // badness is calculated exactly only when <= hi_abad
     if (NAtoms() == max_NAtoms())
     {
-	cerr << "E: Molecule too large in add_test_badness()" << endl;
+	cerr << "E: Molecule too large in calc_test_badness()" << endl;
 	throw InvalidMolecule();
     }
+    double tbad = ta.Badness();
     map<int,bool> used;
     typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    for (   VPAit pai = atoms.begin();
+	    pai != atoms.end() && tbad <= hi_abad; ++pai )
     {
 	double d = dist(ta, **pai);
 	int idx = dTarget.find_nearest(d) - dTarget.begin();
-	if (used.count(idx))
+	typedef map<int,bool>::iterator USEit;
+	// adjust idx if it is already used
+	USEit idx_used_it = used.find(idx);
+	if (idx_used_it != used.end())
 	{
 	    int hi, lo, nidx = -1;
 	    int dtsize = dTarget.size();
-	    typedef map<int,bool>::iterator USEit;
-	    USEit idx_used_it = used.find(idx);
 	    USEit hi_used_it = idx_used_it;
 	    for (   hi = idx+1, ++hi_used_it;
 		    hi < dtsize && hi_used_it != used.end() &&
@@ -733,58 +731,52 @@ void Molecule::add_test_badness(Atom_t& ta)
 	    idx = nidx;
 	}
 	double dd = dTarget[idx] - d;
-	ta.IncBadness(penalty(dd));
+	tbad += penalty(dd);
 	if (fabs(dd) < tol_dd)
 	{
 	    used[idx] = true;
 	}
     }
+    return tbad;
 }
 
-void Molecule::filter_good_atoms(vector<Atom_t>& vta)
+void Molecule::filter_good_atoms(vector<Atom_t>& vta,
+	double evolve_range, double hi_abad)
 {
     if (NAtoms() == max_NAtoms())
     {
 	cerr << "E: Molecule too large in filter_good_atoms()" << endl;
 	throw InvalidMolecule();
     }
+    double lo_abad = hi_abad - evolve_range;
     typedef vector<Atom_t>::iterator VAit;
     typedef vector<Atom_t*>::iterator VPAit;
-    typedef vector<double>::iterator VDit;
-    bool goodatom[vta.size()];
-    // loop over all test atoms
-    for (int aidx = 0; aidx != vta.size(); ++aidx)
+    // obtain badness of every test atom and adjust hi_abad cutoff
+    // badness is exact only when <= hi_abad
+    for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
-	bool& isgood = goodatom[aidx];
-	Atom_t& ta = vta[aidx];
-	isgood = abad_filter.Check(&ta);
-	// do not calculate distances when not necessary
-	if (atom_filters.empty() || ! isgood)
-	    continue;
-	// here we need to calculate distances between test and molecule atoms
-	double adist[NAtoms()];
-	double* pd = adist;
-	for (   VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
+	// initial atom badness is the badness sum of base atoms
+	// in the next round it is 0; in any case we can use IncBadness
+	double tbad = calc_test_badness(*tai, hi_abad);
+	tai->IncBadness(tbad);
+	if (tai->Badness() < lo_abad)
 	{
-	    *pd = dist(**pai, ta);
-	}
-	typedef vector<AtomFilter_t>::iterator VAFit;
-	for (   VAFit flti = atom_filters.begin();
-		flti != atom_filters.end() && isgood; ++flti )
-	{
-	    isgood = flti->Check(&ta, this, adist);
+	    lo_abad = tai->Badness();
+	    hi_abad = lo_abad + evolve_range;
 	}
     }
-    // now keep only good atoms
+    // hi_abad has a correct value here
+    // let us keep only good atoms
     VAit gai = vta.begin();
-    bool* pgood = goodatom;
-    for (   VAit ta = vta.begin(); ta != vta.end(); ++ta, ++pgood )
+    for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
-	if (*pgood)
-	    *(gai++) = *ta;
+	if (tai->Badness() <= hi_abad)
+	    *(gai++) = *tai;
     }
     vta.erase(gai, vta.end());
 }
+
+//pj:	isgood = abad_filter.Check(&tai);
 
 struct rxa_par
 {
@@ -1376,19 +1368,12 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     if (!vta.size())   return *this;
     // set badness range from min_badness
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
-    // reset filter
-    abad_filter.hi_abad = numeric_limits<double>().max();
+    double hi_abad = DOUBLE_MAX;
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
     while (true)
     {
-	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
-	    add_test_badness(*ai);
-	double lo_abad = min_element( vta.begin(), vta.end(),
-		comp_Atom_Badness ) -> Badness();
-	if (lo_abad + evolve_frac < abad_filter.hi_abad)
-	    abad_filter.hi_abad = lo_abad + evolve_frac;
-	filter_good_atoms(vta);
+	filter_good_atoms(vta, evolve_range, hi_abad);
 	if (vta.size() == 0)
 	    break;
 	// calculate fitness of test atoms
@@ -1401,7 +1386,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	vtafit = vdrecipw0(vtafit);
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
-	abad_filter.hi_abad = vta[idx].Badness() + evolve_range;
+	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
 	if (evolve_relax)
 	{
