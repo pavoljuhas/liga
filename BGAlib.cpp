@@ -371,7 +371,7 @@ bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
-vector<AtomFilter_t> Molecule::atom_filters();
+vector<AtomFilter_t> Molecule::atom_filters;
 
 Molecule::Molecule()
 {
