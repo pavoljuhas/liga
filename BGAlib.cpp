@@ -9,7 +9,6 @@
 ***********************************************************************/
 
 #include <sstream>
-#include <limits>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
@@ -142,6 +141,59 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }
 
+////////////////////////////////////////////////////////////////////////
+// AtomFilter_t - definitions of subclasses
+////////////////////////////////////////////////////////////////////////
+
+bool AtomBadnessFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
+{
+//    typedef vector<double>::iterator VDit;
+    typedef map<int,bool>::iterator USEit;
+    map<int,bool> used;
+    for (   double* pd = adist;
+	    pd != adist+pm->NAtoms() && pa->Badness() <= hi_abad; ++pd )
+    {
+	double& d = *pd;
+	int idx = pm->dTarget.find_nearest(d) - pm->dTarget.begin();
+	if (used.count(idx))
+	{
+	    int hi, lo, nidx = -1;
+	    int dtsize = pm->dTarget.size();
+	    USEit idx_used_it = used.find(idx);
+	    USEit hi_used_it = idx_used_it;
+	    for (   hi = idx+1, ++hi_used_it;
+		    hi < dtsize && hi_used_it != used.end() &&
+		    hi == hi_used_it->first;  ++hi, ++hi_used_it )
+	    { }
+	    if (hi < dtsize)
+		nidx = hi;
+	    USEit lo_used_it;
+	    for (   lo = idx, lo_used_it = idx_used_it;
+		    lo >= 0 && lo == lo_used_it->first; 
+		    --lo, --lo_used_it )
+	    {
+		if (lo_used_it == used.begin())
+		    break;
+	    }
+	    if (    lo >= 0 &&
+		    (nidx < 0 || d - pm->dTarget[lo] < pm->dTarget[nidx] - d) )
+		nidx = lo;
+	    idx = nidx;
+	}
+	double dd = pm->dTarget[idx] - d;
+	pa->IncBadness(pm->penalty(dd));
+	if (fabs(dd) < pm->tol_dd)
+	{
+	    used[idx] = true;
+	}
+    }
+    return pa->Badness() <= hi_abad;
+}
+
+bool BondAngleFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
+{
+    return false;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // PairDistance_t definitions
@@ -319,6 +371,7 @@ bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
+vector<AtomFilter_t> Molecule::evolve_filters(1, AtomBadnessFilter_t());
 
 Molecule::Molecule()
 {
