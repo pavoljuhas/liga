@@ -114,33 +114,28 @@ class Molecule;
 class AtomFilter_t
 {
 public:
-    AtomFilter_t(Molecule* pm) : pM(pm) { }
-    virtual bool Check(Atom_t&, double* atom_distances) = 0;
-private:
-    Molecule* pM;
+    bool Check(Atom_t*, Molecule*, double* adist);
 };
 
 class AtomBadnessFilter_t : public AtomFilter_t
 {
 public:
-    AtomBadnessFilter_t(Molecule* pm) :
-	AtomFilter_t(pm),
+    AtomBadnessFilter_t() : AtomFilter_t(),
 	hi_abad( numeric_limits<double>().max() )
     { }
-    bool Check(Atom_t&, double* atom_distances);
+    bool Check(Atom_t*, Molecule*, double* adist);
     double hi_abad;
 };
 
 class BondAngleFilter_t : public AtomFilter_t
 {
 public:
-    BondAngleFilter_t(Molecule* pm, double maxblen) :
-	AtomFilter_t(pm),
+    BondAngleFilter_t(double maxblen) : AtomFilter_t(),
 	max_blen(max_blen),
 	lo_bangle( numeric_limits<double>().max() ),
 	hi_bangle( numeric_limits<double>().max() )
     { }
-    bool Check(Atom_t&, double* atom_distances);
+    bool Check(Atom_t*, Molecule*, double* adist);
     double max_blen;
     double lo_bangle;
     double hi_bangle;
@@ -229,6 +224,7 @@ private:
     friend void PairDistance_t::LockTo(Molecule*, Atom_t*, Atom_t*);
     friend void PairDistance_t::Release(Molecule*, Atom_t*, Atom_t*);
     friend bool operator==(const Molecule&, const Molecule&);
+    friend bool AtomBadnessFilter_t::Check(Atom_t*, Molecule*, double*);
     // badness evaluation
     mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
