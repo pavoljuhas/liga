@@ -65,6 +65,9 @@ inline bool eps_lt(double x, double y)
     return x < y - BGA::eps_badness;
 }
 
+/* cost function for distance mismatch */
+double penalty(double dd);
+
 /* declaration of BGA objects */
 class DistanceTable : public vector<double>
 {
@@ -165,7 +168,6 @@ public:
     static bool degenerate_relax;
     static double evolve_frac;
     static int center_size;
-    double penalty(double);
     static vector<AtomFilter_t> atom_filters;
     // fitness/badness functions
     double Badness() const;	// total badness

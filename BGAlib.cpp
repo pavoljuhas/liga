@@ -70,6 +70,12 @@ template<typename T> bool read_data(istream& fid, vector<T>& v)
 }
 
 
+double penalty(double dd)
+{
+    BGA::cnt.penalty_calls++;
+    return dd*dd;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Atom_t definitions
 ////////////////////////////////////////////////////////////////////////
@@ -141,6 +147,7 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // AtomFilter_t - definitions of subclasses
 ////////////////////////////////////////////////////////////////////////
@@ -149,6 +156,7 @@ bool BondAngleFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
 {
     return false;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // PairDistance_t definitions
@@ -159,7 +167,7 @@ void PairDistance_t::LockTo(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
     double d = dist(*pa1, *pa2);
     vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
     double dd = *dnear - d;
-    double badness = pM->penalty(dd);
+    double badness = penalty(dd);
     if (badness < BGA::eps_badness)
 	badness = 0.0;
     if (fabs(dd) < pM->tol_dd)
@@ -192,7 +200,7 @@ void PairDistance_t::Release(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
 
 double PairDistance_t::Badness(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
 {
-    return pM->penalty( fabs(dUsed) - dist(*pa1, *pa2) );
+    return penalty( fabs(dUsed) - dist(*pa1, *pa2) );
 }
 
 
@@ -430,12 +438,6 @@ Molecule::~Molecule()
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
-
-double Molecule::penalty(double dd)
-{
-    BGA::cnt.penalty_calls++;
-    return dd*dd;
-}
 
 namespace MoleculeRecalculate
 {
