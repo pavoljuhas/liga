@@ -32,6 +32,9 @@ struct InvalidDistanceTable { };
 struct InvalidMolecule { };
 struct InvalidPopulation { };
 
+// constants
+const double DOUBLE_MAX = numeric_limits<double>().max();
+
 using namespace std;
 
 // helper objects/functions
@@ -114,18 +117,8 @@ class Molecule;
 class AtomFilter_t
 {
 public:
-    bool Check(Atom_t*, Molecule*, double* adist)
+    virtual bool Check(Atom_t*, Molecule* pm = NULL, double* adist = NULL)
     { return true; }
-};
-
-class AtomBadnessFilter_t : public AtomFilter_t
-{
-public:
-    AtomBadnessFilter_t() : AtomFilter_t(),
-	hi_abad( numeric_limits<double>().max() )
-    { }
-    bool Check(Atom_t* pa, Molecule* pm = NULL, double* adist = NULL);
-    double hi_abad;
 };
 
 class BondAngleFilter_t : public AtomFilter_t
@@ -133,10 +126,10 @@ class BondAngleFilter_t : public AtomFilter_t
 public:
     BondAngleFilter_t(double maxblen) : AtomFilter_t(),
 	max_blen(max_blen),
-	lo_bangle( numeric_limits<double>().max() ),
-	hi_bangle( numeric_limits<double>().max() )
+	lo_bangle(0.0),
+	hi_bangle(DOUBLE_MAX)
     { }
-    bool Check(Atom_t*, Molecule*, double* adist);
+    bool Check(Atom_t*, Molecule* pm = NULL, double* adist = NULL);
     double max_blen;
     double lo_bangle;
     double hi_bangle;
@@ -225,15 +218,15 @@ private:
     friend void PairDistance_t::LockTo(Molecule*, Atom_t*, Atom_t*);
     friend void PairDistance_t::Release(Molecule*, Atom_t*, Atom_t*);
     friend bool operator==(const Molecule&, const Molecule&);
-    friend bool AtomBadnessFilter_t::Check(Atom_t*, Molecule*, double*);
-    static AtomBadnessFilter_t abad_filter;
+    friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*, double*);
     // badness evaluation
     mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
-    void add_test_badness(Atom_t& a);
-    void filter_good_atoms(vector<Atom_t>& vta);
+    double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
+    void filter_good_atoms(vector<Atom_t>& vta,
+	    double evolve_range, double hi_abad);
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
