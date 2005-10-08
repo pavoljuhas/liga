@@ -725,7 +725,11 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 		nidx = hi;
 	    typedef map<int,bool>::reverse_iterator USErit;
 	    USErit lo_used_rit(idx_used_it);
-	    for (   lo = idx; lo >= 0 && lo_used_rit != used.rend() &&
+	    // reverse_iterator converted from forward iterator points to element
+	    // before idx_used_it  [because reverse_iterator(end()) is rbegin()]
+	    --lo_used_rit;
+	    for (   lo = idx - 1, ++lo_used_rit;
+		    lo >= 0 && lo_used_rit != used.rend() &&
 		    lo == lo_used_rit->first; --lo, ++lo_used_rit )
 	    { }
 	    if (lo >= 0 && (nidx < 0 || d-dTarget[lo] < dTarget[nidx]-d))
