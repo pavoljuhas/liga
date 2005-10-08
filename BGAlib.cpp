@@ -701,39 +701,36 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 	cerr << "E: Molecule too large in calc_test_badness()" << endl;
 	throw InvalidMolecule();
     }
+    static valarray<bool> used;
+    int dtsize = dTarget.size();
+    if (dtsize != used.size())
+    {
+	used.resize(dtsize, false);
+    }
+    list<int> used_idx;
     double tbad = ta.Badness();
-    map<int,bool> used;
     typedef vector<Atom_t*>::iterator VPAit;
     for (   VPAit pai = atoms.begin();
 	    pai != atoms.end() && tbad <= hi_abad; ++pai )
     {
 	double d = dist(ta, **pai);
 	int idx = dTarget.find_nearest(d) - dTarget.begin();
-	typedef map<int,bool>::iterator USEit;
 	// adjust idx if it is already used
-	USEit idx_used_it = used.find(idx);
-	if (idx_used_it != used.end())
+	if (used[idx])
 	{
 	    int hi, lo, nidx = -1;
-	    int dtsize = dTarget.size();
-	    USEit hi_used_it = idx_used_it;
-	    for (   hi = idx+1, ++hi_used_it;
-		    hi < dtsize && hi_used_it != used.end() &&
-		    hi == hi_used_it->first;  ++hi, ++hi_used_it )
+	    for (hi = idx+1; hi < dtsize && used[hi]; ++hi)
 	    { }
 	    if (hi < dtsize)
+	    {
 		nidx = hi;
-	    typedef map<int,bool>::reverse_iterator USErit;
-	    USErit lo_used_rit(idx_used_it);
-	    // reverse_iterator converted from forward iterator points to element
-	    // before idx_used_it  [because reverse_iterator(end()) is rbegin()]
-	    --lo_used_rit;
-	    for (   lo = idx - 1, ++lo_used_rit;
-		    lo >= 0 && lo_used_rit != used.rend() &&
-		    lo == lo_used_rit->first; --lo, ++lo_used_rit )
+	    }
+	    for (lo = idx - 1; lo >= 0 && used[lo]; --lo)
 	    { }
 	    if (lo >= 0 && (nidx < 0 || d-dTarget[lo] < dTarget[nidx]-d))
+	    {
 		nidx = lo;
+	    }
 	    idx = nidx;
 	}
 	double dd = dTarget[idx] - d;
@@ -741,7 +738,14 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 	if (fabs(dd) < tol_dd)
 	{
 	    used[idx] = true;
+	    used_idx.push_back(idx);
 	}
+    }
+    // resest all values in array used to false
+    for (   list<int>::iterator ii = used_idx.begin();
+	    ii != used_idx.end(); ++ii )
+    {
+	used[*ii] = false;
     }
     return tbad;
 }
