@@ -93,8 +93,15 @@ template <typename T> vector<T> ParseArgs::GetParVec(string par)
 	oss << "parameter '" << par << "' is not defined";
 	throw ParseArgsError(oss.str());
     }
+    // replace all commas in par with <space>
+    string values(pars[par]);
+    for (   string::size_type pcomma = values.find(',');
+	    pcomma != string::npos; pcomma = values.find(',', pcomma) )
+    {
+	values[pcomma] = ' ';
+    }
     vector<T> v;
-    istringstream iss(pars[par]);
+    istringstream iss(values);
     T val;
     while (iss >> val)
 	v.push_back(val);
