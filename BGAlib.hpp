@@ -120,19 +120,19 @@ class Molecule;
 class AtomFilter_t
 {
 public:
-    virtual bool Check(Atom_t*, Molecule* pm = NULL, double* adist = NULL)
+    virtual bool Check(Atom_t*, Molecule* pm = NULL)
     { return true; }
 };
 
 class BondAngleFilter_t : public AtomFilter_t
 {
 public:
-    BondAngleFilter_t(double maxblen) : AtomFilter_t(),
+    BondAngleFilter_t(double _max_blen) :
 	max_blen(max_blen),
 	lo_bangle(0.0),
 	hi_bangle(DOUBLE_MAX)
     { }
-    bool Check(Atom_t*, Molecule* pm = NULL, double* adist = NULL);
+    bool Check(Atom_t*, Molecule* pm);
     double max_blen;
     double lo_bangle;
     double hi_bangle;
@@ -220,7 +220,7 @@ private:
     friend void PairDistance_t::LockTo(Molecule*, Atom_t*, Atom_t*);
     friend void PairDistance_t::Release(Molecule*, Atom_t*, Atom_t*);
     friend bool operator==(const Molecule&, const Molecule&);
-    friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*, double*);
+    friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);
     // badness evaluation
     mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
