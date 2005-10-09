@@ -128,7 +128,7 @@ class BondAngleFilter_t : public AtomFilter_t
 {
 public:
     BondAngleFilter_t(double _max_blen) :
-	max_blen(max_blen),
+	max_blen(_max_blen),
 	lo_bangle(0.0),
 	hi_bangle(DOUBLE_MAX)
     { }
@@ -168,7 +168,7 @@ public:
     static bool degenerate_relax;
     static double evolve_frac;
     static int center_size;
-    static vector<AtomFilter_t> atom_filters;
+    static vector<AtomFilter_t*> atom_filters;
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
