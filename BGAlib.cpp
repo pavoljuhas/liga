@@ -152,38 +152,66 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 // AtomFilter_t - definitions of subclasses
 ////////////////////////////////////////////////////////////////////////
 
-bool BondAngleFilter_t::Check(Atom_t* pa, Molecule* pm)
+bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
 {
-    list<Atom_t*> ligands;
-    list<double>  bond_lengths;
-    // find all ligands and corresponding bond lengths
+    // first neighbors are closer than max_blen
+    list<Atom_t*> first_neighbors;
+    list<double>  first_distances;
+    // second neighbors are closer than 2*max_blen
+    list<Atom_t*> second_neighbors;
+    list<double>  second_distances;
+    // find first and second neighbors and corresponding distances
     typedef vector<Atom_t*>::iterator VPAit;
     for (VPAit pmai = pm->atoms.begin(); pmai != pm->atoms.end(); ++pmai)
     {
-	double blen = dist(*pa, **pmai);
-	if (0.0 < blen && blen < max_blen)
+	double blen = dist(*pta, **pmai);
+	if (0.0 < blen && blen < 2*max_blen)
 	{
-	    ligands.push_back(*pmai);
-	    bond_lengths.push_back(blen);
+	    second_neighbors.push_back(*pmai);
+	    second_distances.push_back(blen);
+	    if (blen < max_blen)
+	    {
+		first_neighbors.push_back(*pmai);
+		first_distances.push_back(blen);
+	    }
 	}
     }
-    // now check all bond angles
+    // check all new bond angles formed by test atom
     typedef list<Atom_t*>::iterator LPAit;
     typedef list<double>::iterator LDit;
-    LPAit pl1i, pl2i;
-    LDit bl1i, bl2i;
-    for (   pl1i = ligands.begin(), bl1i = bond_lengths.begin();
-	    pl1i != ligands.end();  ++pl1i, ++bl1i )
+    LPAit pfn1i, pfn2i;
+    LDit dfn1i, dfn2i;
+    for (   pfn1i = first_neighbors.begin(), dfn1i = first_distances.begin();
+	    pfn1i != first_neighbors.end();  ++pfn1i, ++dfn1i )
     {
-	pl2i = pl1i; ++pl2i;
-	bl2i = bl1i; ++bl2i;
-	for (; pl2i != ligands.end(); ++pl2i, ++bl2i)
+	// check test atom angles, ta_angle
+	pfn2i = pfn1i; ++pfn2i;
+	dfn2i = dfn1i; ++dfn2i;
+	for (; pfn2i != first_neighbors.end(); ++pfn2i, ++dfn2i)
 	{
-	    double dneib2 = dist2(**pl1i, **pl2i);
-	    double bangle = 180.0 / M_PI * acos(
-		    ((*bl1i)*(*bl1i) + (*bl2i)*(*bl2i) - dneib2) /
-		    (2*(*bl1i)*(*bl2i))  );
-	    if (bangle < lo_bangle || bangle > hi_bangle)
+	    double dsqneib = dist2(**pfn1i, **pfn2i);
+	    double ta_angle = 180.0 / M_PI * acos(
+		    ((*dfn1i)*(*dfn1i) + (*dfn2i)*(*dfn2i) - dsqneib) /
+		    (2.0*(*dfn1i)*(*dfn2i))  );
+	    if (ta_angle < lo_bangle || ta_angle > hi_bangle)
+	    {
+		return false;
+	    }
+	}
+	// check neighbor atom angles, na_angle
+	LPAit psni = second_neighbors.begin();
+	LDit dsni = second_distances.begin();
+	for (; psni != second_neighbors.end(); ++psni, ++dsni)
+	{
+	    double dneib = dist(**pfn1i, **psni);
+	    if (dneib == 0.0 || !(dneib < max_blen))
+	    {
+		continue;
+	    }
+	    double na_angle = 180.0 / M_PI * acos(
+		    (*dfn1i)*(*dfn1i) + dneib*dneib - (*dsni)*(*dsni) /
+		    (2.0*(*dfn1i)*dneib)  );
+	    if (na_angle < lo_bangle || na_angle > hi_bangle)
 	    {
 		return false;
 	    }
@@ -369,7 +397,7 @@ bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
 int    Molecule::center_size = 40;
-vector<AtomFilter_t> Molecule::atom_filters;
+vector<AtomFilter_t*> Molecule::atom_filters;
 
 Molecule::Molecule()
 {
@@ -830,22 +858,23 @@ void Molecule::apply_atom_filters(vector<Atom_t>& vta)
 	return;
     }
     typedef vector<Atom_t>::iterator VAit;
-    typedef vector<AtomFilter_t>::iterator VAFit;
+    typedef vector<AtomFilter_t*>::iterator VPAFit;
     // keep only good atoms, gai is good atom iterator
     VAit gai = vta.begin();
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
 	bool isgood = true;
-	for (   VAFit afi = atom_filters.begin();
-		afi != atom_filters.end() && isgood; ++afi )
+	for (   VPAFit pafi = atom_filters.begin();
+		pafi != atom_filters.end() && isgood; ++pafi )
 	{
-	    isgood = afi->Check(&(*tai), this);
+	    isgood = (*pafi)->Check(&(*tai), this);
 	}
 	if (isgood)
 	{
 	    *(gai++) = *tai;
 	}
     }
+    vta.erase(gai, vta.end());
 }
 
 struct rxa_par
