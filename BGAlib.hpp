@@ -229,6 +229,7 @@ private:
     double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double hi_abad);
+    void apply_atom_filters(vector<Atom_t>& vta);
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
