@@ -59,6 +59,9 @@ struct RunPar_t
     int dist_trials;
     int tri_trials;
     int pyr_trials;
+    // Constrains
+    vector<double> bangle_range;
+
 private:
     void print_help(ParseArgs& a);
     string version_string(string quote = "");
@@ -74,7 +77,7 @@ RunPar_t::RunPar_t()
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
-	"dist_trials", "tri_trials", "pyr_trials" };
+	"dist_trials", "tri_trials", "pyr_trials", "bangle_range" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
 }
@@ -118,6 +121,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
 "  pyr_trials=int        [1000] good pyramid atoms to try\n"
+"  bangle_range=array    [] constrain bond angles (max_blen, low[, high])\n"
 ;
 }
 
@@ -263,6 +267,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     {
 	frames = a.pars["frames"];
 	cout << "frames=" << frames << endl;
+	// framestrace
 	if (a.ispar("framestrace"))
 	{
 	    framesrate = 0;
@@ -376,6 +381,30 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	// pyr_trials
 	pyr_trials = a.GetPar("pyr_trials", 1000);
 	cout << "pyr_trials=" << pyr_trials << endl;
+	// bangle_range
+	if (a.ispar("bangle_range"))
+	{
+	    vector<double> mxlohi = a.GetParVec<double>("bangle_range");
+	    if (mxlohi.size() != 2 && mxlohi.size() != 3)
+	    {
+		cerr << "bangle_range must have 2 or 3 arguments" << endl;
+		exit(EXIT_FAILURE);
+	    }
+	    double max_blen = mxlohi[0];
+	    BondAngleFilter_t baf(max_blen);
+	    baf.lo_bangle = mxlohi[1];
+	    if (mxlohi.size() == 3)
+	    {
+		baf.hi_bangle = mxlohi[2];
+	    }
+	    mol.atom_filters.push_back(baf);
+	    cout << "bangle_range=" << mxlohi[0];
+	    for (int i = 1; i < mxlohi.size(); ++i)
+	    {
+		cout << ' ' << mxlohi[i];
+	    }
+	    cout << endl;
+	}
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
