@@ -44,7 +44,7 @@ all: gizaliga
         mcfitdist.cpp $Sources
 
 test { comment = test gizaliga on shapes and solids } : \
-    gizaliga-test-solids gizaliga-test-shapes
+    gizaliga-test-solids gizaliga-test-shapes gizaliga-test-bangle_range
         :print  -----------------
         :print  All tests passed!
         :print  -----------------
@@ -61,6 +61,11 @@ gizaliga-test-solids :
 gizaliga-test-shapes :
     @for f in ("square.dst", "hexagon.dst", "heptagon.dst", "octagon.dst"):
         :sys {log} $GL maxcputime=1 pyr_trials=0 shapes/$f
+
+gizaliga-test-bangle_range :
+    :sys {log} $GL maxcputime=1 shapes/square.dst bangle_range=1.5,80
+    @pass
+    :sys {log} $GL maxcputime=1 shapes/hexagon.dst bangle_range=1.5,110
 
 install-py { comment = install python scripts } :
     @install_files('bin', _no.Scripts, '0755')
