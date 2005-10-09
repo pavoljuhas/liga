@@ -152,9 +152,44 @@ double dist2(const Atom_t& a1, const Atom_t& a2)
 // AtomFilter_t - definitions of subclasses
 ////////////////////////////////////////////////////////////////////////
 
-bool BondAngleFilter_t::Check(Atom_t* pa, Molecule* pm, double* adist)
+bool BondAngleFilter_t::Check(Atom_t* pa, Molecule* pm)
 {
-    return false;
+    list<Atom_t*> ligands;
+    list<double>  bond_lengths;
+    // find all ligands and corresponding bond lengths
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pmai = pm->atoms.begin(); pmai != pm->atoms.end(); ++pmai)
+    {
+	double blen = dist(*pa, **pmai);
+	if (0.0 < blen && blen < max_blen)
+	{
+	    ligands.push_back(*pmai);
+	    bond_lengths.push_back(blen);
+	}
+    }
+    // now check all bond angles
+    typedef list<Atom_t*>::iterator LPAit;
+    typedef list<double>::iterator LDit;
+    LPAit pl1i, pl2i;
+    LDit bl1i, bl2i;
+    for (   pl1i = ligands.begin(), bl1i = bond_lengths.begin();
+	    pl1i != ligands.end();  ++pl1i, ++bl1i )
+    {
+	pl2i = pl1i; ++pl2i;
+	bl2i = bl1i; ++bl2i;
+	for (; pl2i != ligands.end(); ++pl2i, ++bl2i)
+	{
+	    double dneib2 = dist2(**pl1i, **pl2i);
+	    double bangle = 180.0 / M_PI * acos(
+		    ((*bl1i)*(*bl1i) + (*bl2i)*(*bl2i) - dneib2) /
+		    (2*(*bl1i)*(*bl2i))  );
+	    if (bangle < lo_bangle || bangle > hi_bangle)
+	    {
+		return false;
+	    }
+	}
+    }
+    return true;
 }
 
 
