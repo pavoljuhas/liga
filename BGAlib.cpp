@@ -816,12 +816,37 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
 	if (tai->Badness() <= hi_abad)
+	{
 	    *(gai++) = *tai;
+	}
     }
     vta.erase(gai, vta.end());
 }
 
-//pj:	isgood = abad_filter.Check(&tai);
+void Molecule::apply_atom_filters(vector<Atom_t>& vta)
+{
+    if (atom_filters.empty())
+    {
+	return;
+    }
+    typedef vector<Atom_t>::iterator VAit;
+    typedef vector<AtomFilter_t>::iterator VAFit;
+    // keep only good atoms, gai is good atom iterator
+    VAit gai = vta.begin();
+    for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
+    {
+	bool isgood = true;
+	for (   VAFit afi = atom_filters.begin();
+		afi != atom_filters.end() && isgood; ++afi )
+	{
+	    isgood = afi->Check(&(*tai), this);
+	}
+	if (isgood)
+	{
+	    *(gai++) = *tai;
+	}
+    }
+}
 
 struct rxa_par
 {
@@ -1419,6 +1444,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     while (true)
     {
 	filter_good_atoms(vta, evolve_range, hi_abad);
+	apply_atom_filters(vta);
 	if (vta.size() == 0)
 	    break;
 	// calculate fitness of test atoms
