@@ -391,13 +391,13 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	    }
 	    double max_blen = mxlohi[0];
-	    BondAngleFilter_t baf(max_blen);
-	    baf.lo_bangle = mxlohi[1];
+	    BondAngleFilter_t* pbaf = new BondAngleFilter_t(max_blen);
+	    pbaf->lo_bangle = mxlohi[1];
 	    if (mxlohi.size() == 3)
 	    {
-		baf.hi_bangle = mxlohi[2];
+		pbaf->hi_bangle = mxlohi[2];
 	    }
-	    mol.atom_filters.push_back(baf);
+	    mol.atom_filters.push_back(pbaf);
 	    cout << "bangle_range=" << mxlohi[0];
 	    for (int i = 1; i < mxlohi.size(); ++i)
 	    {
