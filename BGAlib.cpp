@@ -191,7 +191,7 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
 	{
 	    double dsqneib = dist2(**pfn1i, **pfn2i);
 	    double ta_angle = 180.0 / M_PI * acos(
-		    ((*dfn1i)*(*dfn1i) + (*dfn2i)*(*dfn2i) - dsqneib) /
+		    ( (*dfn1i)*(*dfn1i) + (*dfn2i)*(*dfn2i) - dsqneib ) /
 		    (2.0*(*dfn1i)*(*dfn2i))  );
 	    if (ta_angle < lo_bangle || ta_angle > hi_bangle)
 	    {
@@ -209,7 +209,7 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
 		continue;
 	    }
 	    double na_angle = 180.0 / M_PI * acos(
-		    (*dfn1i)*(*dfn1i) + dneib*dneib - (*dsni)*(*dsni) /
+		    ( (*dfn1i)*(*dfn1i) + dneib*dneib - (*dsni)*(*dsni) ) /
 		    (2.0*(*dfn1i)*dneib)  );
 	    if (na_angle < lo_bangle || na_angle > hi_bangle)
 	    {
