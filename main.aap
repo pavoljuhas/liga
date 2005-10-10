@@ -8,9 +8,13 @@
 
 ########################################################################
 CXXFLAGS += -Wall -Wno-sign-compare
-INCLUDE = -I/u24/local/include
 LD = $CXX
-LDFLAGS = -L/u24/local/lib -lgsl -lgslcblas
+
+@if not 'clean' in TARGETARG:
+    # check if pkg-config can find gsl
+    :sys pkg-config --exists gsl
+    INCLUDE = `redir_system("pkg-config --cflags gsl", 0)[1]`
+    LDFLAGS = `redir_system("pkg-config --libs gsl", 0)[1]`
 
 Sources = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
 Scripts = dvar.py coord.py
