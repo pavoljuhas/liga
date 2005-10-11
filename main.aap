@@ -7,14 +7,6 @@
 ########################################################################
 
 ########################################################################
-CXXFLAGS += -Wall -Wno-sign-compare
-LD = $CXX
-
-@if not 'clean' in TARGETARG:
-    # check if pkg-config can find gsl
-    :sys pkg-config --exists gsl
-    INCLUDE = `redir_system("pkg-config --cflags gsl", 0)[1]`
-    LDFLAGS = `redir_system("pkg-config --libs gsl", 0)[1]`
 
 Sources = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
 Scripts = dvar.py coord.py
@@ -22,17 +14,35 @@ prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 BDIR = AAPDIR/$BDIR
 
+@from os import uname
+@from socket import gethostname
+@if gethostname() in ('white','green') and uname()[-1] == 'ia64':
+    :toolsearch intelcc gcc
+@else:
+    :usetool gcc
+
+:syseval gsl-config --cflags | :assign INCLUDE
+:syseval gsl-config --libs | :assign LIBS
+@if C_COMPILE_ACTION == "compile_gcc":
+    CXXFLAGS += -Wall -Wno-sign-compare
+    EXTRA_DEBUG = -gstabs+
+    EXTRA_OPTIM = -ffast-math
+@elif C_COMPILE_ACTION == "compile_intelcc":
+    CXXFLAGS += -Wall
+    EXTRA_DEBUG =
+    EXTRA_OPTIM = -fast
+
 all: gizaliga
 
 :variant Build
     debug
         OPTIMIZE = 0
         DEBUG = yes
-        CXXFLAGS += -gstabs+
+        CXXFLAGS += $EXTRA_DEBUG
 
     fast
         OPTIMIZE = 3
-        CXXFLAGS += -ffast-math
+        CXXFLAGS += $EXTRA_OPTIM
         EXESUF = -fast
 
 :program gizaliga \
