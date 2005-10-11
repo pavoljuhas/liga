@@ -535,7 +535,7 @@ void Molecule::Recalculate()
     }
     // order pair iterators by corresponding badness for accurate summation
     // first create and fill array of BadnessWithMAPit_t
-    BadnessWithMAPit_t ordered_bwi[pairs.size()];
+    BadnessWithMAPit_t* ordered_bwi = new BadnessWithMAPit_t[pairs.size()];
     BadnessWithMAPit_t* pbwi = ordered_bwi;
     for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii, ++pbwi)
     {
@@ -558,6 +558,7 @@ void Molecule::Recalculate()
 	pa1->IncBadness(badnesshalf);
 	pa2->IncBadness(badnesshalf);
     }
+    delete[] ordered_bwi;
 }
 
 //void Molecule::ReassignPairs()
