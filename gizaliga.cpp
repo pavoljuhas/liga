@@ -121,7 +121,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
 "  pyr_trials=int        [1000] good pyramid atoms to try\n"
-"  bangle_range=array    [] constrain bond angles (max_blen, low[, high])\n"
+"  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
 ;
 }
 
