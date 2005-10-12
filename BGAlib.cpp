@@ -1116,7 +1116,10 @@ int Molecule::push_good_distances(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // ntrials
+    // ntrials reverted to formula in 1.209
+    // N*(N-1) possible directions
+    int max_ntrials = NAtoms()*(NAtoms()-1) + 1;
+    /*
     // N*(N-1) possible directions, Nuniqd lengths
     // check for int overflow
     double xmax_ntrials = min(
@@ -1124,6 +1127,7 @@ int Molecule::push_good_distances(
 	    double( numeric_limits<int>().max() )
 	    );
     int max_ntrials = int(xmax_ntrials);
+    */
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
@@ -1198,7 +1202,10 @@ int Molecule::push_good_triangles(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // ntrials
+    // ntrials reverted to formula in 1.209
+    // (N over 3)*4 plane orientations and possible triangle vertices
+    int max_ntrials = 4*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 2);
+    /*
     // (N over 3)*4*Nuniqd^2 plane orientations and possible triangles
     // check for int overflow
     double xmax_ntrials = min(
@@ -1207,6 +1214,7 @@ int Molecule::push_good_triangles(
 	    double( numeric_limits<int>().max() )
 	    );
     int max_ntrials = int(xmax_ntrials);
+    */
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
@@ -1313,7 +1321,10 @@ int Molecule::push_good_pyramids(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // ntrials
+    // ntrials reverted to formula in 1.209
+    // (N over 3)*6*2 pyramid base permutations
+    int max_ntrials = 12*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 2);
+    /*
     // (N over 3)*6*2*Nuniqd^3 possible pyramids
     // check for int overflow
     double xmax_ntrials = min(
@@ -1322,6 +1333,7 @@ int Molecule::push_good_pyramids(
 	    double( numeric_limits<int>().max() )
 	    );
     int max_ntrials = int(xmax_ntrials);
+    */
     ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
