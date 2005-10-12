@@ -135,6 +135,6 @@ gizaliga-1r     1.47        1.203       2005-06-13
 gizaliga-1s     1.55        1.212       2005-07-26
     bug fixes, slightly improved interface, added trace logging and saving
 
-gizaliga-1t     1.57        1.234       2005-10-12
+gizaliga-1t     1.58        1.234       2005-10-12
     improved memory usage in PairDistance_t, cleaned up code in BGAlib
     added bond angle constrain bangle_range
