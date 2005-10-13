@@ -814,6 +814,33 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
     return tbad;
 }
 
+valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
+{
+    valarray<int> cnt(0, vta.size());
+    // high limit for badness of a pair with good neighbor
+    double hi_pbad = tol_nbad +
+	min_element(vta.begin(), vta.end(), comp_Atom_Badness) -> Badness();
+    typedef vector<Atom_t>::const_iterator VAcit;
+    VAcit a1i, a2i;
+    int* pcnt1; int* pcnt2;
+    for (  a1i = vta.begin(), pcnt1 = &(cnt[0]);
+	    a1i != vta.end(); ++a1i, ++pcnt1 )
+    {
+	for (   a2i = a1i+1, pcnt2 = pcnt1+1; a2i != vta.end();
+		++a2i, ++pcnt2 )
+	{
+	    double d = dist(*a1i, *a2i);
+	    double dd = *(dTarget.find_nearest(d)) - d;
+	    if (penalty(dd) < hi_pbad)
+	    {
+		++(*pcnt1);
+		++(*pcnt2);
+	    }
+	}
+    }
+    return cnt;
+}
+
 void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	double evolve_range, double hi_abad)
 {
@@ -1355,15 +1382,15 @@ int Molecule::push_good_pyramids(
 	    double r24 = dTarget[ didx[1] ];
 	    double r34 = dTarget[ didx[2] ];
 	    // uvi is a unit vector in a0a1 direction
-	    double uvi_val[3] = { a1.r[0]-a0.r[0], a1.r[1]-a0.r[1], a1.r[2]-a0.r[2] };
-	    valarray<double> uvi(uvi_val, 3);
+	    valarray<double> uvi(3);
+	    for (int i = 0; i != 3; ++i) { uvi[i] = a1.r[i] - a0.r[i]; }
 	    double r12 = vdnorm(uvi);
 	    if (r12 < eps_d)
 		continue;
 	    uvi /= r12;
 	    // v13 is a0a2 vector
-	    double v13_val[3] = { a2.r[0]-a0.r[0], a2.r[1]-a0.r[1], a2.r[2]-a0.r[2] };
-	    valarray<double> v13(v13_val, 3);
+	    valarray<double> v13(3);
+	    for (int i = 0; i != 3; ++i) { v13[i] = a2.r[i] - a0.r[i]; }
 	    // uvj lies in a0a1a2 plane and is perpendicular to uvi
 	    valarray<double> uvj = v13;
 	    uvj -= uvi*vddot(uvi, uvj);
@@ -1497,6 +1524,21 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    *pfit = ai->Badness();
 	// then get the reciprocal value
 	vtafit = vdrecipw0(vtafit);
+	// Look-ahead procedure - scale each fitness with a number of fellow
+	// test atoms at a good distance, this should catch lumps of good
+	// atoms.  This makes sense when there are 2 or more atoms to add.
+	if (NAtoms() < max_NAtoms()-1)
+	{
+	    // scale by cnt+1
+	    valarray<int> cnt = good_neighbors_count(vta);
+//	    int max_cnt = cnt.max();
+	    double* pfit = &vtafit[0];
+	    int* pcnt = &cnt[0];
+	    for ( ; pfit != &vtafit[vtafit.size()]; ++pfit, ++pcnt)
+	    {
+		*pfit *= (*pcnt + 1.0);
+	    }
+	}
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
 	hi_abad = vta[idx].Badness() + evolve_range;
