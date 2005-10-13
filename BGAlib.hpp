@@ -161,8 +161,8 @@ public:
     ~Molecule();		// destructor
     // fit parameters
     static double tol_dd;
-    static double tol_nbad;
-    static double tol_r;
+    static double tol_nbad;	// tolerance of normalized badness
+    static double tol_r;	// position tolerance in RelaxAtom
     static bool evolve_jump;
     static bool evolve_relax;
     static bool degenerate_relax;
@@ -227,6 +227,7 @@ private:
     int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
     double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
+    valarray<int> good_neighbors_count(const vector<Atom_t>& vta);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double hi_abad);
     void apply_atom_filters(vector<Atom_t>& vta);
