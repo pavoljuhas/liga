@@ -226,6 +226,8 @@ private:
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
+    int push_second_atoms(vector<Atom_t>& vta, int ntrials);
+    int push_third_atoms(vector<Atom_t>& vta, int ntrials);
     double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
     valarray<int> good_neighbors_count(const vector<Atom_t>& vta);
     void filter_good_atoms(vector<Atom_t>& vta,
