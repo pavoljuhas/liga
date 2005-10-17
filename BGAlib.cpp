@@ -1534,6 +1534,102 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
     return push_count;
 }
 
+int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
+{
+    if (NAtoms() != 2)
+    {
+	cerr << "E: push_third_atoms() must be called with 2-atom molecule"
+	    << endl;
+	throw InvalidMolecule();
+    }
+    // build list of distances from the base atoms
+    list<double> d0, d1;
+    if (ntrials > 2 * dTarget.Nuniqd * dTarget.Nuniqd)
+    {
+	// we can push all the unique triangles
+	typedef vector<double>::iterator VDit;
+	vector<double> dtu = dTarget.unique();
+	for (VDit ui0 = dtu.begin(); ui0 != dtu.end(); ++ui0)
+	{
+	    for (VDit ui1 = dtu.begin(); ui1 != dtu.end(); ++ui1)
+	    {
+		d0.push_back(*ui0);
+		d1.push_back(*ui1);
+	    }
+	}
+    }
+    else
+    {
+	// distances will be picked randomly
+	bool with_repeat = (tol_dd <= 0.0);
+	for (int i = 0; i < ntrials; ++i)
+	{
+	    vector<int> didx;
+	    didx = random_choose_few(2, dTarget.size(), with_repeat);
+	    d0.push_back(dTarget[didx[0]]);
+	    d1.push_back(dTarget[didx[1]]);
+	}
+    }
+    // define some constants and base atoms
+    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
+    int push_count = 0;
+    Atom_t a0 = *atoms[0];
+    Atom_t a1 = *atoms[1];
+    double r01 = dist(a0, a1);
+    // longitudinal direction along triangle base
+    valarray<double> longdir(3);
+    for (int i = 0; i < 3; ++i)
+    {
+	longdir[i] = (a1.r[i] - a0.r[i])/r01;
+    }
+    // perpendicular direction to longdir is a cross product of x with longdir
+    valarray<double> ux(0.0, 3);
+    ux[0] = 1.0;
+    valarray<double> perpdir = vdcross(ux, longdir);
+    double nm_perpdir = vdnorm(perpdir);
+    if (nm_perpdir == 0.0)
+    {
+	// longdir is ux, let us set perpdir = uy
+	perpdir = 0.0;
+	perpdir[1] = 1.0;
+    }
+    else
+    {
+	perpdir /= nm_perpdir;
+    }
+    // now loop over list of distances
+    typedef list<double>::iterator LDit;
+    for (   LDit d0i = d0.begin(), d1i = d1.begin();
+	    d0i != d0.end() && d1i != d1.end(); ++d0i, ++d1i )
+    {
+	double& r02 = *d0i;
+	double& r12 = *d1i;
+	// is triangle base reasonably large?
+	if (r01 < eps_d)
+	    continue;
+	// calculate xlong
+	double xlong = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
+	// calculate xperp
+	double xp2 = r02*r02 - xlong*xlong;
+	double xperp = sqrt(fabs(xp2));
+	if (xperp < eps_d)
+	    xperp = 0.0;
+	else if (xp2 < 0.0)
+	    continue;
+	else if (gsl_rng_uniform_int(BGA::rng, 2) == 0)
+	    xperp = -xperp;
+	// add atom
+	double nr[3];
+	for (int i = 0; i < 2; ++i)
+	{
+	    nr[i] = a0.r[i] + xlong*longdir[i] + xperp*perpdir[i];
+	}
+	vta.push_back(Atom_t(nr));
+	++push_count;
+    }
+    return push_count;
+}
+
 Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 {
     if (NAtoms() == max_NAtoms())
@@ -1604,13 +1700,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
-	// first check whether all atoms are good
-	bool all_atoms_good = true;
-	for (VAit ai = vta.begin(); ai != vta.end() && all_atoms_good; ++ai)
-	{ 
-	    all_atoms_good = ai->Badness() < BGA::eps_badness;
-	}
-	if (!all_atoms_good)
+	if (NAtoms() == 2 || NAtoms() == 3)
 	{
 	    // calculate fitness as the number of good neighbors
 	    valarray<int> cnt = good_neighbors_count(vta);
