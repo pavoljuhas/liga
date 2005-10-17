@@ -1475,7 +1475,20 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	cerr << "E: full-sized molecule cannot Evolve()" << endl;
 	throw InvalidMolecule();
     }
+    // containter for test atoms
     vector<Atom_t> vta;
+    // calculate array of atom fitnesses
+    valarray<double> vafit(NAtoms());
+    double* pd = &vafit[0];
+    // first fill the array with badness
+    typedef vector<Atom_t*>::iterator VPAit;
+    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
+    {
+	*pd = (*pai)->Badness();
+    }
+    // finally get the reciprocal value
+    vafit = vdrecipw0(vafit);
+    double* afit = &vafit[0];
     // evolution is trivial for empty or 1-atom molecule
     switch (NAtoms())
     {
@@ -1483,29 +1496,36 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    Add(0, 0, 0);
 	    return *this;
 	case 1:
-	    double afit1 = 1.0;
-	    push_good_distances(vta, &afit1, 1);
-	    Add(vta[0]);
-	    Center();
-	    return *this;
+	    if (gsl_rng_uniform(BGA::rng) < 0.5)
+	    {
+		push_good_distances(vta, afit, 1);
+		Add(vta[0]);
+		return *this;
+	    }
+	    else
+	    {
+		push_second_atoms(vta, ntd1+ntd2+ntd3);
+	    }
+	    break;
+	case 2:
+	    if (gsl_rng_uniform(BGA::rng) < 0.5)
+	    {
+		push_good_distances(vta, afit, ntd1);
+		push_good_triangles(vta, afit, ntd2);
+	    }
+	    else
+	    {
+		push_third_atoms(vta, ntd1+ntd2+ntd3);
+	    }
+	    break;
+	case 3:
+	    // add here push_fourth_atoms
+	default:
+	    push_good_distances(vta, afit, ntd1);
+	    push_good_triangles(vta, afit, ntd2);
+	    push_good_pyramids(vta, afit, ntd2);
     }
-    // otherwise we need to build array of atom fitnesses
-    valarray<double> vafit(NAtoms());
-    double* pd = &vafit[0];
-    // first fill the array with badness
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
-	*pd = (*pai)->Badness();
-    // then get the reciprocal value
-    vafit = vdrecipw0(vafit);
-    double* afit = &vafit[0];
-    // and push appropriate numbers of test atoms
-    // here NAtoms() >= 2
-    push_good_distances(vta, afit, ntd1);
-    push_good_triangles(vta, afit, ntd2);
-    if (NAtoms() > 2)  push_good_pyramids(vta, afit, ntd3);
-    if (!vta.size())   return *this;
-    // set badness range from min_badness
+    // set badness range from desired badness
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
     double hi_abad = DOUBLE_MAX;
     // try to add as many atoms as possible
@@ -1518,27 +1538,36 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
-	// first fill the array with badness
-	double* pfit = &vtafit[0];
-	for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pfit)
-	    *pfit = ai->Badness();
-	// then get the reciprocal value
-	vtafit = vdrecipw0(vtafit);
-	// Look-ahead procedure - scale each fitness with a number of fellow
-	// test atoms at a good distance, this should catch lumps of good
-	// atoms.  This makes sense when there are 2 or more atoms to add.
-	if (NAtoms() < max_NAtoms()-1)
+	// first check whether all atoms are good
+	bool all_atoms_good = true;
+	for (VAit ai = vta.begin(); ai != vta.end() && all_atoms_good; ++ai)
+	{ 
+	    all_atoms_good = ai->Badness() < BGA::eps_badness;
+	}
+	if (!all_atoms_good)
 	{
-	    // scale by cnt+1
+	    // calculate fitness as the number of good neighbors
 	    valarray<int> cnt = good_neighbors_count(vta);
-//	    int max_cnt = cnt.max();
 	    double* pfit = &vtafit[0];
 	    int* pcnt = &cnt[0];
 	    for ( ; pfit != &vtafit[vtafit.size()]; ++pfit, ++pcnt)
 	    {
-		*pfit *= (*pcnt + 1.0);
+		*pfit = *pcnt + 0.0;
 	    }
 	}
+	else
+	{
+	    // calculate fitness as reciprocal value of badness
+	    // fill the vtafit array with badness
+	    double* pfit = &vtafit[0];
+	    for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pfit)
+	    {
+		*pfit = ai->Badness();
+	    }
+	    // then get the reciprocal value
+	    vtafit = vdrecipw0(vtafit);
+	}
+	// vtafit is ready here
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
 	hi_abad = vta[idx].Badness() + evolve_range;
