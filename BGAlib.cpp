@@ -350,6 +350,23 @@ vector<double>::iterator DistanceTable::return_back(const double& dback)
     return insert(ii, dback);
 }
 
+vector<double> DistanceTable::unique()
+{
+    vector<double> dtu(Nuniqd);
+    vector<double>::iterator dui = dtu.begin();
+    double eps_dd = sqrt(BGA::eps_badness);
+    double d0 = -1.0;
+    for (iterator di = begin(); di != end() && dui != dtu.end(); ++di)
+    {
+	if ( (*di - d0) > eps_dd )
+	{
+	    *(dui++) = *di;
+	    d0 = *di;
+	}
+    }
+    return dtu;
+}
+
 void DistanceTable::init()
 {
     if (size() == 0)
@@ -1472,7 +1489,7 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 {
     if (NAtoms() != 1)
     {
-	cerr << "E: push_second_atoms() must be called with 1-atom molecules"
+	cerr << "E: push_second_atoms() must be called with 1-atom molecule"
 	    << endl;
 	throw InvalidMolecule();
     }
@@ -1485,17 +1502,15 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
     if (ntrials > 2*dTarget.Nuniqd)
     {
 	// we can push all the unique distances in both directions
-	double eps_dd = sqrt(BGA::eps_badness);
-	double d0 = -1.0;
 	typedef vector<double>::iterator VDit;
-	for (VDit di = dTarget.begin(); di != dTarget.end(); ++ di)
+	vector<double> dtu = dTarget.unique();
+	for (VDit dui = dtu.begin(); dui != dtu.end(); ++dui)
 	{
-	    if ( (*di - d0) < eps_dd )  continue;
 	    // top atom
-	    nr[2] = a0.r[2] + *di;
+	    nr[2] = a0.r[2] + *dui;
 	    vta.push_back(Atom_t(nr));
 	    // bottom atom
-	    nr[2] = a0.r[2] - *di;
+	    nr[2] = a0.r[2] - *dui;
 	    vta.push_back(Atom_t(nr));
 	    push_count += 2;
 	}
