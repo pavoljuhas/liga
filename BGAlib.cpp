@@ -1468,6 +1468,57 @@ int Molecule::push_good_pyramids(
     return push_count;
 }
 
+int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
+{
+    if (NAtoms() != 1)
+    {
+	cerr << "E: push_second_atoms() must be called with 1-atom molecules"
+	    << endl;
+	throw InvalidMolecule();
+    }
+    // second atoms will be pushed along z-direction from a0
+    Atom_t& a0 = *atoms[0];
+    // new position
+    double nr[3];
+    copy(a0.r, a0.r+3, nr);
+    int push_count = 0;
+    if (ntrials > 2*dTarget.Nuniqd)
+    {
+	// we can push all the unique distances in both directions
+	double eps_dd = sqrt(BGA::eps_badness);
+	double d0 = -1.0;
+	typedef vector<double>::iterator VDit;
+	for (VDit di = dTarget.begin(); di != dTarget.end(); ++ di)
+	{
+	    if ( (*di - d0) < eps_dd )  continue;
+	    // top atom
+	    nr[2] = a0.r[2] + *di;
+	    vta.push_back(Atom_t(nr));
+	    // bottom atom
+	    nr[2] = a0.r[2] - *di;
+	    vta.push_back(Atom_t(nr));
+	    push_count += 2;
+	}
+    }
+    else
+    {
+	// distances will be picked randomly
+	for (push_count = 0; push_count < ntrials; ++push_count)
+	{
+	    int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
+	    double dz = dTarget[didx];
+	    // randomize direction
+	    if (gsl_rng_uniform_int(BGA::rng, 2) == 0)
+	    {
+		dz = -dz;
+	    }
+	    nr[2] = a0.r[2] + dz;
+	    vta.push_back(Atom_t(nr));
+	}
+    }
+    return push_count;
+}
+
 Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 {
     if (NAtoms() == max_NAtoms())
