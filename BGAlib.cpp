@@ -1700,7 +1700,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     while (true)
     {
 	filter_good_atoms(vta, evolve_range, hi_abad);
-	apply_atom_filters(vta);
+//	apply_atom_filters(vta);
 	if (vta.size() == 0)
 	    break;
 	// calculate fitness of test atoms
@@ -1764,6 +1764,26 @@ Molecule& Molecule::Degenerate(int Npop)
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pb)
     {
 	*pb = (*pai)->Badness();
+    }
+    // increase abad for atoms that do not pass atom_filters
+    double max_abad = *( max_element(abad, abad+NAtoms()) );
+    if (eps_eq(max_abad, 0.0))
+    {
+	max_abad = 1.0;
+    }
+    for (int i = 0; i != atoms.size(); ++i)
+    {
+	Atom_t* pa = atoms[i];
+	bool isgood = true;
+	for (   vector<AtomFilter_t*>::iterator pafi = atom_filters.begin();
+		pafi != atom_filters.end() && isgood; ++pafi )
+	{
+	    isgood = (*pafi)->Check(pa, this);
+	}
+	if (!isgood)
+	{
+	    abad[i] += 10.0 * max_abad;
+	}
     }
     // generate list of atoms to pop
     vector<int> ipop_vector = random_wt_choose(Npop, abad, NAtoms());
