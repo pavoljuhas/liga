@@ -98,6 +98,14 @@ Atom_t::Atom_t(double r0[3], double bad0) :
     age = 1;
 }
 
+Atom_t::Atom_t(valarray<double>& r0, double bad0) :
+    badness(bad0)
+{
+    copy(&r0[0], &r0[3], r);
+    badness_sum = badness;
+    age = 1;
+}
+
 double Atom_t::Badness() const
 {
     return badness;
@@ -835,8 +843,7 @@ valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
 {
     valarray<int> cnt(0, vta.size());
     // high limit for badness of a pair with good neighbor
-    double hi_pbad = tol_nbad +
-	min_element(vta.begin(), vta.end(), comp_Atom_Badness) -> Badness();
+    double hi_pbad = tol_nbad / 10.0;
     typedef vector<Atom_t>::const_iterator VAcit;
     VAcit a1i, a2i;
     int* pcnt1; int* pcnt2;
@@ -1578,7 +1585,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     double r01 = dist(a0, a1);
     // longitudinal direction along triangle base
     valarray<double> longdir(3);
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i != 3; ++i)
     {
 	longdir[i] = (a1.r[i] - a0.r[i])/r01;
     }
@@ -1597,6 +1604,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     {
 	perpdir /= nm_perpdir;
     }
+    valarray<double> Pa0(a0.r, 3);
     // now loop over list of distances
     typedef list<double>::iterator LDit;
     for (   LDit d0i = d0.begin(), d1i = d1.begin();
@@ -1619,12 +1627,9 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	else if (gsl_rng_uniform_int(BGA::rng, 2) == 0)
 	    xperp = -xperp;
 	// add atom
-	double nr[3];
-	for (int i = 0; i < 2; ++i)
-	{
-	    nr[i] = a0.r[i] + xlong*longdir[i] + xperp*perpdir[i];
-	}
-	vta.push_back(Atom_t(nr));
+	valarray<double> Pn(3);
+	Pn = Pa0 + xlong*longdir + xperp*perpdir;
+	vta.push_back(Atom_t(Pn));
 	++push_count;
     }
     return push_count;
@@ -1655,10 +1660,10 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
     switch (NAtoms())
     {
 	case 0:
-	    Add(0, 0, 0);
+	    Add(0.0, 0.0, 0.0);
 	    return *this;
 	case 1:
-	    if (gsl_rng_uniform(BGA::rng) < 0.5)
+	    if (gsl_rng_uniform(BGA::rng) < 0.99)
 	    {
 		push_good_distances(vta, afit, 1);
 		Add(vta[0]);
@@ -1666,18 +1671,18 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    }
 	    else
 	    {
-		push_second_atoms(vta, ntd1+ntd2+ntd3);
+		push_second_atoms(vta, 1500);
 	    }
 	    break;
 	case 2:
-	    if (gsl_rng_uniform(BGA::rng) < 0.5)
+	    if (gsl_rng_uniform(BGA::rng) < 0.99)
 	    {
 		push_good_distances(vta, afit, ntd1);
 		push_good_triangles(vta, afit, ntd2);
 	    }
 	    else
 	    {
-		push_third_atoms(vta, ntd1+ntd2+ntd3);
+		push_third_atoms(vta, 1500);
 	    }
 	    break;
 	case 3:
@@ -1685,7 +1690,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	default:
 	    push_good_distances(vta, afit, ntd1);
 	    push_good_triangles(vta, afit, ntd2);
-	    push_good_pyramids(vta, afit, ntd2);
+	    push_good_pyramids(vta, afit, ntd3);
     }
     // set badness range from desired badness
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
@@ -1700,15 +1705,16 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
-	if (NAtoms() == 2 || NAtoms() == 3)
+	if (NAtoms() == 1 || NAtoms() == 2)
 	{
 	    // calculate fitness as the number of good neighbors
 	    valarray<int> cnt = good_neighbors_count(vta);
+	    int max_cnt = cnt.max();
 	    double* pfit = &vtafit[0];
 	    int* pcnt = &cnt[0];
 	    for ( ; pfit != &vtafit[vtafit.size()]; ++pfit, ++pcnt)
 	    {
-		*pfit = *pcnt + 0.0;
+		*pfit = (*pcnt < max_cnt/2) ? 0.0 : *pcnt;
 	    }
 	}
 	else
