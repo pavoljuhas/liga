@@ -9,7 +9,7 @@
 ########################################################################
 
 Sources = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
-Scripts = dvar.py coord.py
+Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 BDIR = AAPDIR/$BDIR
