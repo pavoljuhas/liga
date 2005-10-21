@@ -228,6 +228,23 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
     return true;
 }
 
+bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
+{
+    // atom is never alone with respect to empty molecule
+    if (pm->NAtoms() == 0)
+    {
+	return false;
+    }
+    // find whether any atom in the molecule is closer than max_dist
+    bool isalone = true;
+    for (   vector<Atom_t*>::iterator pmai = pm->atoms.begin();
+	    pmai != pm->atoms.end() && isalone; ++pmai )
+    {
+	isalone = !(dist(*pta, **pmai) < max_dist);
+    }
+    return isalone;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // PairDistance_t definitions
@@ -1719,6 +1736,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    vtafit = vdrecipw0(vtafit);
 	}
 	// set vtafit to 0.0 for atoms that do not pass atom_filters
+	// this procedure is more sensitive to filtering of lonely atoms
+	// (which may get a company)
 	if ( !atom_filters.empty() )
 	{
 	    double* pfit = &vtafit[0];
