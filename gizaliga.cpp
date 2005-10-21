@@ -61,6 +61,7 @@ struct RunPar_t
     int pyr_trials;
     // Constrains
     vector<double> bangle_range;
+    double max_dist;
 
 private:
     void print_help(ParseArgs& a);
@@ -77,7 +78,8 @@ RunPar_t::RunPar_t()
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
-	"dist_trials", "tri_trials", "pyr_trials", "bangle_range" };
+	"dist_trials", "tri_trials", "pyr_trials",
+	"bangle_range", "max_dist" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
 }
@@ -121,7 +123,9 @@ void RunPar_t::print_help(ParseArgs& a)
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
 "  pyr_trials=int        [1000] good pyramid atoms to try\n"
+"Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
+"  max_dist=double       distance limit for rejecting lone atoms\n"
 ;
 }
 
@@ -404,6 +408,15 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 		cout << ' ' << mxlohi[i];
 	    }
 	    cout << endl;
+	}
+	// max_dist
+	if (a.ispar("max_dist"))
+	{
+	    double max_dist = a.GetPar<double>("max_dist");
+	    LoneAtomFilter_t* plaf = new LoneAtomFilter_t(max_dist);
+	    plaf->max_dist = max_dist;
+	    mol.atom_filters.push_back(plaf);
+	    cout << "max_dist=" << max_dist << endl;
 	}
     }
     catch (ParseArgsError(e)) {
