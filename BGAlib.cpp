@@ -903,7 +903,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     vta.erase(gai, vta.end());
 }
 
-bool Molecule::check_atom_filters(Atom_t& a)
+bool Molecule::check_atom_filters(Atom_t* pa)
 {
     if (atom_filters.empty())
     {
@@ -914,7 +914,7 @@ bool Molecule::check_atom_filters(Atom_t& a)
     for (   VPAFit pafi = atom_filters.begin();
 	    isgood && pafi != atom_filters.end(); ++pafi )
     {
-	isgood = (*pafi)->Check(&a, this);
+	isgood = (*pafi)->Check(pa, this);
     }
     return isgood;
 }
@@ -1718,6 +1718,18 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    // then get the reciprocal value
 	    vtafit = vdrecipw0(vtafit);
 	}
+	// set vtafit to 0.0 for atoms that do not pass atom_filters
+	if ( !atom_filters.empty() )
+	{
+	    double* pfit = &vtafit[0];
+	    for (VAit pai = vta.begin(); pai != vta.end(); ++pai, ++pfit)
+	    {
+		if ( !check_atom_filters(&(*pai)) )
+		{
+		    *pfit = 0.0;
+		}
+	    }
+	}
 	// vtafit is ready here
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
@@ -1734,8 +1746,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	}
 	if (NAtoms() == max_NAtoms() || !evolve_jump)
 	    break;
-	for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
-	    ai->ResetBadness();
+	for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
+	    pai->ResetBadness();
     }
     if (NAtoms() < center_size)
 	Center();
