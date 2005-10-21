@@ -140,6 +140,16 @@ public:
     double hi_bangle;
 };
 
+class LoneAtomFilter_t : public AtomFilter_t
+{
+public:
+    LoneAtomFilter_t(double _max_dist) :
+	max_dist(_max_dist)
+    { }
+    bool Check(Atom_t*, Molecule* pm);
+    double max_dist;
+};
+
 struct PairDistance_t
 {
     void LockTo(Molecule* M, Atom_t* a1, Atom_t* a2);
@@ -223,6 +233,7 @@ private:
     friend void PairDistance_t::Release(Molecule*, Atom_t*, Atom_t*);
     friend bool operator==(const Molecule&, const Molecule&);
     friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);
+    friend bool LoneAtomFilter_t::Check(Atom_t*, Molecule*);
     // badness evaluation
     mutable double badness;		// molecular badness
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
