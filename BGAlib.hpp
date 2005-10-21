@@ -234,7 +234,7 @@ private:
     valarray<int> good_neighbors_count(const vector<Atom_t>& vta);
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double hi_abad);
-    void apply_atom_filters(vector<Atom_t>& vta);
+    bool check_atom_filters(Atom_t&);
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     file_fmt_type output_format;
