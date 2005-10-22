@@ -230,19 +230,19 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
 
 bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
 {
-    // atom is never alone with respect to empty molecule
+    // atom is always good with respect to empty molecule
     if (pm->NAtoms() == 0)
     {
-	return false;
+	return true;
     }
     // find whether any atom in the molecule is closer than max_dist
-    bool isalone = true;
+    bool has_buddy = false;
     for (   vector<Atom_t*>::iterator pmai = pm->atoms.begin();
-	    pmai != pm->atoms.end() && isalone; ++pmai )
+	    pmai != pm->atoms.end() && !has_buddy; ++pmai )
     {
-	isalone = !(dist(*pta, **pmai) < max_dist);
+	has_buddy = (dist(*pta, **pmai) < max_dist);
     }
-    return isalone;
+    return has_buddy;
 }
 
 
