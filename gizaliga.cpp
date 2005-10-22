@@ -23,6 +23,8 @@ struct TraceId_t
     int fin_level;
 };
 
+const int EXIT_INPUT_ERROR = 2;
+
 ////////////////////////////////////////////////////////////////////////
 // RunPar_t
 ////////////////////////////////////////////////////////////////////////
@@ -66,6 +68,7 @@ struct RunPar_t
 private:
     void print_help(ParseArgs& a);
     string version_string(string quote = "");
+    void print_pars(ParseArgs& a);
     list<string> validpars;
 };
 
@@ -142,6 +145,113 @@ string RunPar_t::version_string(string quote)
     return oss.str();
 }
 
+void RunPar_t::print_pars(ParseArgs& a)
+{
+    // print out all run parameters
+    // intro messages
+    string hashsep(72, '#');
+    cout << hashsep << endl;
+    cout << "# " << a.cmd_t << endl;
+    cout << version_string("# ");
+    char hostname[255];
+    gethostname(hostname, 255);
+    cout << "# " << hostname << endl;
+    time_t cur_time = time(NULL);
+    cout << "# " << ctime(&cur_time);
+    cout << hashsep << endl;
+    // distfile
+    cout << "distfile=" << distfile << endl;
+    // inistru
+    if (a.ispar("inistru"))
+    {
+	cout << "inistru=" << inistru << endl;
+    }
+    // outstru, outfmt, saverate, saveall
+    if (a.ispar("outstru"))
+    {
+        cout << "outstru=" << outstru << endl;
+	cout << "outfmt=" << outfmt << endl;
+        cout << "saverate=" << saverate << endl;
+	cout << "saveall=" << saveall << endl;
+    }
+    // frames, framestrace, framesrate
+    if (a.ispar("frames"))
+    {
+	cout << "frames=" << frames << endl;
+	// framestrace
+	if (framestrace.size() != 0)
+	{
+	    cout << "framestrace=";
+	    for (vector<TraceId_t>::iterator ii = framestrace.begin();
+		    ii != framestrace.end(); ++ii)
+	    {
+		cout << " \\" << endl;
+		cout << "    " << ii->season;
+		cout << ' ' << ii->ini_level;
+		cout << ' ' << ii->fin_level;
+	    }
+	    cout << endl;
+	}
+	// framesrate - print only if framestrace is empty
+	else
+	{
+	    cout << "framesrate=" << framesrate << endl;
+	}
+    }
+    // centersize
+    if (a.ispar("centersize"))
+    {
+	cout << "centersize=" << centersize << endl;
+    }
+    // liga parameters
+    // tol_dd, tol_bad 
+    cout << "tol_dd=" << tol_dd << endl;
+    cout << "tol_bad=" << tol_bad << endl;
+    // natoms
+    if (a.ispar("natoms"))
+    {
+	cout << "natoms=" << natoms << endl;
+    }
+    // maxcputime
+    if (maxcputime > 0.0)
+    {
+	cout << "maxcputime=" << maxcputime << endl;
+    }
+    // seed
+    if (seed)
+    {
+	cout << "seed=" << seed << endl;
+    }
+    // evolve_frac, evolve_relax, degenerate_relax
+    cout << "evolve_frac=" << evolve_frac << endl;
+    cout << "evolve_relax=" << evolve_relax << endl;
+    cout << "degenerate_relax=" << degenerate_relax << endl;
+    // ligasize, stopgame, dist_trials, tri_trials, pyr_trials
+    cout << "ligasize=" << ligasize << endl;
+    cout << "stopgame=" << stopgame << endl;
+    cout << "dist_trials=" << dist_trials << endl;
+    cout << "tri_trials=" << tri_trials << endl;
+    cout << "pyr_trials=" << pyr_trials << endl;
+    // constraints
+    // bangle_range
+    if (a.ispar("bangle_range"))
+    {
+	cout << "bangle_range=" << bangle_range[0];
+	for (int i = 1; i < bangle_range.size(); ++i)
+	{
+	    cout << ',' << bangle_range[i];
+	}
+	cout << endl;
+    }
+    // max_dist
+    if (a.ispar("max_dist"))
+    {
+	cout << "max_dist=" << max_dist << endl;
+    }
+    // finish done
+    cout << hashsep << endl << endl;
+}
+
 Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 {
     char *short_options =
@@ -160,7 +270,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         a.Parse();
     }
     catch (ParseArgsError) {
-        exit(EXIT_FAILURE);
+        exit(EXIT_INPUT_ERROR);
     }
     if (a.isopt("h") || argc == 1)
     {
@@ -179,12 +289,12 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         }
         catch (IOError(e)) {
             cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
+            exit(EXIT_INPUT_ERROR);
         }
         catch (ParseArgsError(e)) {
             cerr << "invalid syntax in parameter file" << endl;
             cerr << e.what() << endl;
-            exit(EXIT_FAILURE);
+            exit(EXIT_INPUT_ERROR);
         }
     }
     quiet = a.isopt("q");
@@ -194,7 +304,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_FAILURE);
+	exit(EXIT_INPUT_ERROR);
     }
     // assign run parameters
     // distfile
@@ -203,12 +313,12 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     if (a.args.size() > 1)
     {
 	cerr << argv[0] << ": several DISTFILE arguments" << endl;
-	exit(EXIT_FAILURE);
+	exit(EXIT_INPUT_ERROR);
     }
     if (!a.ispar("distfile"))
     {
         cerr << "Distance file not defined" << endl;
-        exit(EXIT_FAILURE);
+        exit(EXIT_INPUT_ERROR);
     }
     distfile = a.pars["distfile"];
     DistanceTable* dtab;
@@ -216,38 +326,26 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         dtab = new DistanceTable(distfile.c_str());
     }
     catch (IOError) {
-        exit(EXIT_FAILURE);
+        exit(EXIT_INPUT_ERROR);
     }
-    // intro messages
-    string hashsep(72, '#');
-    cout << hashsep << endl;
-    cout << "# " << a.cmd_t << endl;
-    cout << version_string("# ");
-    char hostname[255];
-    gethostname(hostname, 255);
-    cout << "# " << hostname << endl;
-    time_t cur_time = time(NULL);
-    cout << "# " << ctime(&cur_time);
-    cout << hashsep << endl;
+    // create empty molecule
     Molecule mol(*dtab);
-    cout << "distfile=" << distfile << endl;
     // inistru
     if (a.ispar("inistru"))
     {
 	inistru = a.pars["inistru"];
-	cout << "inistru=" << inistru << endl;
 	try {
 	    mol.ReadXYZ(inistru.c_str());
 	}
 	catch (IOError) {
-	    exit(EXIT_FAILURE);
+	    exit(EXIT_INPUT_ERROR);
 	}
     }
-    // outstru, saverate, saveall
+    // outstru, outfmt, saverate, saveall
     if (a.ispar("outstru"))
     {
+	// outstru
         outstru = a.pars["outstru"];
-        cout << "outstru=" << outstru << endl;
 	// outfmt
 	outfmt = a.GetPar<string>("outfmt", "xyz");
 	if (outfmt == "xyz")
@@ -257,20 +355,18 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	else
 	{
 	    cerr << "Invalid value of outfmt parameter" << endl;
-	    exit(EXIT_FAILURE);
+	    exit(EXIT_INPUT_ERROR);
 	}
-	cout << "outfmt=" << outfmt << endl;
 	// saverate
         saverate = a.GetPar<int>("saverate", 10);
-        cout << "saverate=" << saverate << endl;
+	// saveall
 	saveall = a.GetPar<bool>("saveall", false);
-	cout << "saveall=" << saveall << endl;
     }
-    // frames, framesrate
+    // frames, framestrace, framesrate
     if (a.ispar("frames"))
     {
+	// frames
 	frames = a.pars["frames"];
-	cout << "frames=" << frames << endl;
 	// framestrace
 	if (a.ispar("framestrace"))
 	{
@@ -279,7 +375,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    if (stp.size() % 3)
 	    {
 		cerr << "framestrace must have 3n entries" << endl;
-		exit(EXIT_FAILURE);
+		exit(EXIT_INPUT_ERROR);
 	    }
 	    // check if seasons in stp are ordered
 	    for (int i = 3; i < stp.size(); i += 3)
@@ -287,7 +383,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 		if (stp[i] < stp[i-3])
 		{
 		    cerr << "framestrace seasons must be sorted" << endl;
-		    exit(EXIT_FAILURE);
+		    exit(EXIT_INPUT_ERROR);
 		}
 	    }
 	    TraceId_t tid;
@@ -298,133 +394,95 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 		tid.fin_level = stp[i+2];
 		framestrace.push_back(tid);
 	    }
-	    if (framestrace.size() != 0)
-	    {
-		cout << "framestrace=";
-		for (vector<TraceId_t>::iterator ii = framestrace.begin();
-			ii != framestrace.end(); ++ii)
-		{
-		    cout << " \\" << endl;
-		    cout << "    " << ii->season
-			<< ' ' << ii->ini_level << ' ' << ii->fin_level;
-		}
-		cout << endl;
-	    }
 	}
-	// parse framesrate only if framestrace is empty
+	// framesrate - parse only if framestrace is empty
 	if (framestrace.size() == 0)
 	{
 	    framesrate = a.GetPar<int>("framesrate", 10);
-	    cout << "framesrate=" << framesrate << endl;
 	}
     }
     // centersize
     centersize = a.GetPar<int>("centersize", 0);
     mol.center_size = centersize;
-    if (a.ispar("centersize"))
-    {
-	cout << "centersize=" << centersize << endl;
-    }
     // liga parameters
     try {
 	// tol_dd
 	tol_dd = a.GetPar<double>("tol_dd", 0.1);
-	cout << "tol_dd=" << tol_dd << endl;
 	mol.tol_dd = tol_dd;
 	// tol_bad
 	tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
-	cout << "tol_bad=" << tol_bad << endl;
 	mol.tol_nbad = tol_bad;
 	// natoms must be set after tol_dd
 	if (a.ispar("natoms"))
 	{
 	    try {
 		natoms = a.GetPar<int>("natoms");
-		cout << "natoms=" << natoms << endl;
 		mol.Set_max_NAtoms(natoms);
 	    }
 	    catch (InvalidMolecule) {
-		exit(EXIT_FAILURE);
+		exit(EXIT_INPUT_ERROR);
 	    }
 	}
 	// maxcputime
 	maxcputime = a.GetPar<double>("maxcputime", 0.0);
-	if (maxcputime > 0.0)
-	    cout << "maxcputime=" << maxcputime << endl;
 	// seed
 	seed = a.GetPar<int>("seed", 0);
 	if (seed)
 	{
 	    gsl_rng_set(BGA::rng, seed);
-	    cout << "seed=" << seed << endl;
 	}
 	// evolve_frac
 	evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
-	cout << "evolve_frac=" << evolve_frac << endl;
 	mol.evolve_frac = evolve_frac;
 	// evolve_relax
 	evolve_relax = a.GetPar<bool>("evolve_relax", false);
-	cout << "evolve_relax=" << evolve_relax << endl;
 	mol.evolve_relax = evolve_relax;
 	// degenerate_relax
 	degenerate_relax = a.GetPar<bool>("degenerate_relax", false);
-	cout << "degenerate_relax=" << degenerate_relax << endl;
 	mol.degenerate_relax = degenerate_relax;
 	// ligasize
 	ligasize = a.GetPar<int>("ligasize", 10);
-	cout << "ligasize=" << ligasize << endl;
 	// stopgame
 	stopgame = a.GetPar<double>("stopgame", 0.0025);
-	cout << "stopgame=" << stopgame << endl;
 	// dist_trials
 	dist_trials = a.GetPar("dist_trials", 10);
-	cout << "dist_trials=" << dist_trials << endl;
 	// tri_trials
 	tri_trials = a.GetPar("tri_trials", 20);
-	cout << "tri_trials=" << tri_trials << endl;
 	// pyr_trials
 	pyr_trials = a.GetPar("pyr_trials", 1000);
-	cout << "pyr_trials=" << pyr_trials << endl;
 	// bangle_range
 	if (a.ispar("bangle_range"))
 	{
-	    vector<double> mxlohi = a.GetParVec<double>("bangle_range");
-	    if (mxlohi.size() != 2 && mxlohi.size() != 3)
+	    bangle_range = a.GetParVec<double>("bangle_range");
+	    if (bangle_range.size() != 2 && bangle_range.size() != 3)
 	    {
 		cerr << "bangle_range must have 2 or 3 arguments" << endl;
-		exit(EXIT_FAILURE);
+		exit(EXIT_INPUT_ERROR);
 	    }
-	    double max_blen = mxlohi[0];
+	    double max_blen = bangle_range[0];
 	    BondAngleFilter_t* pbaf = new BondAngleFilter_t(max_blen);
-	    pbaf->lo_bangle = mxlohi[1];
-	    if (mxlohi.size() == 3)
+	    pbaf->lo_bangle = bangle_range[1];
+	    if (bangle_range.size() == 3)
 	    {
-		pbaf->hi_bangle = mxlohi[2];
+		pbaf->hi_bangle = bangle_range[2];
 	    }
 	    mol.atom_filters.push_back(pbaf);
-	    cout << "bangle_range=" << mxlohi[0];
-	    for (int i = 1; i < mxlohi.size(); ++i)
-	    {
-		cout << ' ' << mxlohi[i];
-	    }
-	    cout << endl;
 	}
 	// max_dist
 	if (a.ispar("max_dist"))
 	{
-	    double max_dist = a.GetPar<double>("max_dist");
+	    max_dist = a.GetPar<double>("max_dist");
 	    LoneAtomFilter_t* plaf = new LoneAtomFilter_t(max_dist);
 	    plaf->max_dist = max_dist;
 	    mol.atom_filters.push_back(plaf);
-	    cout << "max_dist=" << max_dist << endl;
 	}
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_FAILURE);
+	exit(EXIT_INPUT_ERROR);
     }
     // done
-    cout << hashsep << endl << endl;
+    print_pars(a);
     return mol;
 }
 
@@ -813,7 +871,7 @@ int main(int argc, char *argv[])
     else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
     {
 	cout << "Exceeded maxcputime." << endl << endl;
-	exit_code = 1;
+	exit_code = EXIT_FAILURE;
     }
     else
     {
@@ -839,6 +897,8 @@ int main(int argc, char *argv[])
     save_outstru(liga, rp, rv);
     save_frames(best_champ, rp, rv);
     if (SIGHUP_received)
+    {
 	exit(exit_code);
+    }
     return exit_code;
 }
