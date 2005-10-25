@@ -61,6 +61,7 @@ struct RunPar_t
     int dist_trials;
     int tri_trials;
     int pyr_trials;
+    double lookout_prob;
     // Constrains
     vector<double> bangle_range;
     double max_dist;
@@ -81,7 +82,7 @@ RunPar_t::RunPar_t()
 	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
-	"dist_trials", "tri_trials", "pyr_trials",
+	"dist_trials", "tri_trials", "pyr_trials", "lookout_prob",
 	"bangle_range", "max_dist" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
@@ -126,6 +127,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  dist_trials=int       [10] good distance atoms to try\n"
 "  tri_trials=int        [20] godd triangle atoms to try\n"
 "  pyr_trials=int        [1000] good pyramid atoms to try\n"
+"  lookout_prob=double   [0.0] lookout probability for 2nd and 3rd atoms\n"
 "Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
 "  max_dist=double       distance limit for rejecting lone atoms\n"
@@ -226,12 +228,13 @@ void RunPar_t::print_pars(ParseArgs& a)
     cout << "evolve_frac=" << evolve_frac << endl;
     cout << "evolve_relax=" << evolve_relax << endl;
     cout << "degenerate_relax=" << degenerate_relax << endl;
-    // ligasize, stopgame, dist_trials, tri_trials, pyr_trials
+    // ligasize, stopgame, dist_trials, tri_trials, pyr_trials, lookout_prob
     cout << "ligasize=" << ligasize << endl;
     cout << "stopgame=" << stopgame << endl;
     cout << "dist_trials=" << dist_trials << endl;
     cout << "tri_trials=" << tri_trials << endl;
     cout << "pyr_trials=" << pyr_trials << endl;
+    cout << "lookout_prob=" << lookout_prob << endl;
     // constraints
     // bangle_range
     if (a.ispar("bangle_range"))
@@ -450,6 +453,8 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	tri_trials = a.GetPar("tri_trials", 20);
 	// pyr_trials
 	pyr_trials = a.GetPar("pyr_trials", 1000);
+	// lookout_prob
+	lookout_prob = a.GetPar("lookout_prob", 0.0);
 	// bangle_range
 	if (a.ispar("bangle_range"))
 	{
@@ -767,7 +772,8 @@ int main(int argc, char *argv[])
 		lo_div->push_back(winner_clone);
 	    }
 	    // advance as far as possible
-	    advancing->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials);
+	    advancing->Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials,
+		    rp.lookout_prob);
 	    int hi_level = advancing->NAtoms();
 	    if (rp.trace)
 	    {
