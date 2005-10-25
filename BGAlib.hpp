@@ -199,7 +199,8 @@ public:
     Molecule& RelaxAtom(vector<Atom_t*>::iterator);	// relax internal atom
     Molecule& RelaxAtom(const int cidx);
     void RelaxExternalAtom(Atom_t& a);
-    Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=5);
+    Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=500,
+	    double lookout_prob=0.0);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
     bool ReadXYZ(const char*); 		// read real coordinates

@@ -1642,7 +1642,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     return push_count;
 }
 
-Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
+Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
 {
     if (NAtoms() == max_NAtoms())
     {
@@ -1670,26 +1670,26 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3)
 	    Add(0.0, 0.0, 0.0);
 	    return *this;
 	case 1:
-	    if (gsl_rng_uniform(BGA::rng) < 0.99)
+	    if (gsl_rng_uniform(BGA::rng) < lookout_prob)
+	    {
+		push_second_atoms(vta, 1500);
+	    }
+	    else
 	    {
 		push_good_distances(vta, afit, 1);
 		Add(vta[0]);
 		return *this;
 	    }
-	    else
-	    {
-		push_second_atoms(vta, 1500);
-	    }
 	    break;
 	case 2:
-	    if (gsl_rng_uniform(BGA::rng) < 0.99)
+	    if (gsl_rng_uniform(BGA::rng) < lookout_prob)
+	    {
+		push_third_atoms(vta, 1500);
+	    }
+	    else
 	    {
 		push_good_distances(vta, afit, ntd1);
 		push_good_triangles(vta, afit, ntd2);
-	    }
-	    else
-	    {
-		push_third_atoms(vta, 1500);
 	    }
 	    break;
 	case 3:
