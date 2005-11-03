@@ -138,3 +138,8 @@ gizaliga-1s     1.55        1.212       2005-07-26
 gizaliga-1t     1.58        1.234       2005-10-12
     improved memory usage in PairDistance_t, cleaned up code in BGAlib
     added bond angle constrain bangle_range
+
+gizaliga-1u	1.61	    1.246       2005-10-25
+    added extended lookout for 2nd and 3rd atoms in Evolve
+    added parameter max_dist, constraint for rejecting lone new atoms
+    added new parameter lookout_prob [0.0] for extended lookups
