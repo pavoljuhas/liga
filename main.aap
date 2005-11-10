@@ -73,7 +73,8 @@ gizaliga-test-solids :
         :sys {log} $GL maxcputime=1 solids/$f
 
 gizaliga-test-shapes :
-    @for f in ("square.dst", "hexagon.dst", "heptagon.dst", "octagon.dst"):
+    @for f in ("square.dst", "pentagon.dst", \
+            "hexagon.dst", "heptagon.dst", "octagon.dst"):
         :sys {log} $GL maxcputime=1 pyr_trials=0 shapes/$f
 
 gizaliga-test-bangle_range :
