@@ -48,7 +48,7 @@ import getopt
 def main(argv):
     try:
         opts, args = getopt.getopt(argv, "r:hV", \
-                ["resolution", "help", "version"])
+                ["resolution=", "help", "version"])
     except getopt.GetoptError, errmsg:
         print >> sys.stderr, errmsg
         sys.exit(2)

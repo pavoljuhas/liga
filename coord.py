@@ -81,7 +81,7 @@ import getopt
 def main(argv):
     try:
         opts, args = getopt.getopt(argv, "c:lhV", \
-                ["cutoff", "list", "help", "version"])
+                ["cutoff=", "list", "help", "version"])
     except getopt.GetoptError, errmsg:
         print >> sys.stderr, errmsg
         sys.exit(2)
