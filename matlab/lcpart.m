@@ -24,11 +24,22 @@ for i = 1:nA
         cij((i-1)*nB+j,:) = [sizeOfIntersect(sA(i,:), sB(j,:), delta), i, j];
     end
 end
+% all values in C must occur somewhere in A and B
+vA = sort(A(:)).'; vA(diff(vA)<=delta) = [];
+vB = sort(B(:)).'; vB(diff(vB)<=delta) = [];
 [ignore, idx] = sort(cij(:,1));
 idx = idx(end:-1:1);
 cij = cij(idx,:);
 n = 1;
-while n <= size(cij,1) & n <= cij(n,1)
+while n <= size(cij,1)
+    CA = A(cij(1:n,2),cij(1:n,2));
+    CB = B(cij(1:n,3),cij(1:n,3));
+    jA = fnearbin(vA, CB(end,:));
+    jB = fnearbin(vB, CA(end,:));
+    if any(abs(vA(jA)-CB(end,:)) > delta) | any(abs(vB(jB)-CA(end,:)) > delta)
+        cij(n,:) = [];
+        continue;
+    end
     remove = find( cij(n+1:end,2) == cij(n,2) | ...
         cij(n+1:end,3) == cij(n,3)) + n;
     cij(remove,:) = [];
@@ -41,19 +52,28 @@ ij = cij(:,2:3);
 CA = A(ij(:,1),ij(:,1));
 CB = B(ij(:,2),ij(:,2));
 % all values in C must occur somewhere in CA and CB
-vA = sort(CA(:)).'; vA(diff(vA)<=delta) = [];
-vB = sort(CB(:)).'; vB(diff(vB)<=delta) = [];
+vCA = sort(CA(:)).'; vCA(diff(vCA)<=delta) = [];
+vCB = sort(CB(:)).'; vCB(diff(vCB)<=delta) = [];
 
-% improve with loop, check for grid27 and grid64
-for i = size(CA,1):-1:1
-    jA = fnearbin(vA, CB(i,:));
-    jB = fnearbin(vB, CA(i,:));
-    if any(abs(vA(jA)-CB(i,:))>delta) | any(abs(vB(jB)-CA(i,:))>delta)
+while 0
+    nC = size(CA,1);
+    xor_cnt = zeros(nC, 1);
+    for i = 1:nC
+        jA = fnearbin(vCA, CB(i,:));
+        jB = fnearbin(vCB, CA(i,:));
+        xor_cnt(i) = sum(abs(vCA(jA)-CB(i,:))>delta) + ...
+            sum(abs(vCB(jB)-CA(i,:))>delta);
+    end
+    [m,i] = max(xor_cnt);
+    if m == 0
+        break
+    else
         ij(i,:) = [];
         CA(i,:) = []; CA(:,i) = [];
         CB(i,:) = []; CB(:,i) = [];
     end
 end
+
 C = CA;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
