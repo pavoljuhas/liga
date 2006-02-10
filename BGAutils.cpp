@@ -5,6 +5,8 @@
 #include <sys/times.h>
 #include "BGAutils.hpp"
 
+using namespace std;
+
 ofstream& mktempofstream(ofstream& out, char *writefile)
 {
     const int max_attempts = 10;
