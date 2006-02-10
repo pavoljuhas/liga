@@ -740,7 +740,6 @@ int main(int argc, char *argv[])
     RunVar_t rv;
     Molecule mol = rp.ProcessArguments(argc, argv);
     int base_level = mol.NFixed();
-cout << "db: mol.NFixed() = " << mol.NFixed() << endl;
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
     for (int i = 0; i <= mol.max_NAtoms(); ++i)
@@ -938,7 +937,6 @@ cout << "db: mol.NFixed() = " << mol.NFixed() << endl;
     rv.exiting = true;
     save_outstru(liga, rp, rv);
     save_frames(best_champ, rp, rv);
-cout << "db: best_champ.NFixed() = " << best_champ.NFixed() << endl;
     if (SIGHUP_received)
     {
 	exit(exit_code);
