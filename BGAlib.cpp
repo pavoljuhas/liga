@@ -16,6 +16,8 @@
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
 
+#define CHECK_ATOM_FIXED true
+
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 double BGA::eps_badness = 1.0e-10;
@@ -86,6 +88,7 @@ Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
     r[0] = rx0;
     r[1] = ry0;
     r[2] = rz0;
+    fixed = false;
     badness_sum = badness;
     age = 1;
 }
@@ -94,6 +97,7 @@ Atom_t::Atom_t(double r0[3], double bad0) :
     badness(bad0)
 {
     copy(r0, r0+3, r);
+    fixed = false;
     badness_sum = badness;
     age = 1;
 }
@@ -102,6 +106,7 @@ Atom_t::Atom_t(valarray<double>& r0, double bad0) :
     badness(bad0)
 {
     copy(&r0[0], &r0[3], r);
+    fixed = false;
     badness_sum = badness;
     age = 1;
 }
@@ -109,6 +114,11 @@ Atom_t::Atom_t(valarray<double>& r0, double bad0) :
 double Atom_t::Badness() const
 {
     return badness;
+}
+
+double Atom_t::FreeBadness() const
+{
+    return fixed ? 0.0 : badness;
 }
 
 double Atom_t::AvgBadness() const
@@ -438,7 +448,7 @@ double Molecule::evolve_frac = 0.1;
 bool   Molecule::evolve_jump = true;
 bool   Molecule::evolve_relax = false;
 bool   Molecule::degenerate_relax = false;
-int    Molecule::center_size = 40;
+int    Molecule::center_size = 0;
 vector<AtomFilter_t*> Molecule::atom_filters;
 
 Molecule::Molecule()
@@ -626,6 +636,12 @@ bool comp_pAtom_Badness(const Atom_t* lhs, const Atom_t* rhs)
 }
 
 
+bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
+{
+    return lhs->FreeBadness() < rhs->FreeBadness();
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
@@ -692,6 +708,8 @@ Molecule& Molecule::Center()
 
 Molecule& Molecule::Pop(const int cidx)
 {
+    Assert( !CHECK_ATOM_FIXED || !atoms[cidx]->fixed,
+	    runtime_error("Pop() called on fixed atom") );
     if (cidx < 0 || cidx >= NAtoms())
     {
 	throw range_error("in Molecule::Pop(const int cidx)");
@@ -723,7 +741,7 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 	if (*ii < 0 || *ii >= NAtoms())
 	{
 	    cerr << "index out of range in Molecule::Pop(list<int>)" << endl;
-	    throw range_error("in Molecule::Pop(list<int>)");
+	    throw range_error("in Molecule::Pop(const list<int>&)");
 	}
 	atoms2pop.push_back(*ii);
     }
@@ -751,10 +769,10 @@ Molecule& Molecule::Clear()
     return *this;
 }
 
-Molecule& Molecule::Add(Molecule& M)
+Molecule& Molecule::Add(const Molecule& M)
 {
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
+    typedef vector<Atom_t*>::const_iterator VPAcit;
+    for (VPAcit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
     {
 	Add(**pai);
     }
@@ -767,7 +785,7 @@ Molecule& Molecule::Add(double rx0, double ry0, double rz0)
     return *this;
 }
 
-Molecule& Molecule::Add(Atom_t atom)
+Molecule& Molecule::Add(const Atom_t& atom)
 {
     if (NAtoms() == max_NAtoms())
     {
@@ -790,11 +808,30 @@ Molecule& Molecule::Add(Atom_t atom)
     return *this;
 }
 
+Molecule& Molecule::Fix(const int cidx)
+{
+    if (cidx < 0 || cidx >= NAtoms())
+    {
+	ostringstream emsg;
+	emsg << "Molecule::Fix(const int) invalid index " << cidx;
+	throw range_error(emsg.str());
+    }
+    atoms[cidx]->fixed = true;
+    return *this;
+}
+
+inline bool pAtom_is_fixed(const Atom_t* pa) { return pa->fixed; }
+
+int Molecule::NFixed() const
+{
+    return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
+}
+
 Atom_t Molecule::Atom(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
     {
-	throw range_error("in Molecule::Pop(list<int>)");
+	throw range_error("in Molecule::Atom(const int)");
     }
     return *(atoms[cidx]);
 }
@@ -1015,9 +1052,11 @@ Molecule& Molecule::RelaxAtom(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
     {
-	throw range_error("in Molecule::RelaxAtom(list<int>)");
+	throw range_error("in Molecule::RelaxAtom(const int)");
     }
-    Atom_t ta = *(atoms[cidx]);
+    Assert( !CHECK_ATOM_FIXED || !atoms[cidx]->fixed,
+	    runtime_error("RelaxAtom() called on fixed atom") );
+    Atom_t ta = Atom(cidx);
     Pop(cidx);
     RelaxExternalAtom(ta);
     Add(ta);
@@ -1757,8 +1796,8 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
 	if (evolve_relax)
 	{
 	    VPAit worst = max_element(atoms.begin(), atoms.end(),
-		    comp_pAtom_Badness);
-	    if (eps_gt((*worst)->Badness(), 0.0))
+		    comp_pAtom_FreeBadness);
+	    if ( eps_gt((*worst)->Badness(), 0.0) && ! (*worst)->fixed )
 	    {
 		RelaxAtom(worst);
 	    }
@@ -1778,22 +1817,33 @@ Molecule& Molecule::Degenerate(int Npop)
     Npop = min(NAtoms(), Npop);
     if (Npop == 0)  return *this;
     // build array of atom badnesses
-    double abad[NAtoms()];
-    double* pb = abad;
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pb)
+    double freebad[NAtoms()];
+    int freeidx[NAtoms()];
+    int Nfree = 0;
+    for (int i = 0; i != NAtoms(); ++i)
     {
-	*pb = (*pai)->Badness();
+	Atom_t* pai = atoms[i];
+	if ( pai->fixed )  continue;
+	freebad[Nfree] = pai->Badness();
+	freeidx[Nfree] = i;
+	Nfree++;
     }
-    // generate list of atoms to pop
-    vector<int> ipop_vector = random_wt_choose(Npop, abad, NAtoms());
-    list<int> ipop(ipop_vector.begin(), ipop_vector.end());
+    if (Nfree == 0)  return *this;
+    Npop = min(Nfree, Npop);
+    // build list of indices of atoms to pop
+    vector<int> idxidx = random_wt_choose(Npop, freebad, Nfree);
+    list<int> ipop;
+    for (vector<int>::iterator ii = idxidx.begin(); ii != idxidx.end(); ++ii)
+    {
+	ipop.push_back(freeidx[*ii]);
+    }
     Pop(ipop);
+    typedef vector<Atom_t*>::iterator VPAit;
     if (degenerate_relax && NAtoms() > 1)
     {
 	VPAit worst = max_element(atoms.begin(), atoms.end(),
-		comp_pAtom_Badness);
-	if (eps_gt((*worst)->Badness(), 0.0))
+		comp_pAtom_FreeBadness);
+	if ( eps_gt((*worst)->Badness(), 0.0) && ! (*worst)->fixed )
 	{
 	    RelaxAtom(worst);
 	}
