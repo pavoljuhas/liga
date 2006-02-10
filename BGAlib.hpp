@@ -32,10 +32,10 @@ struct InvalidDistanceTable { };
 struct InvalidMolecule { };
 struct InvalidPopulation { };
 
+using namespace std;
+
 // constants
 const double DOUBLE_MAX = numeric_limits<double>().max();
-
-using namespace std;
 
 // helper objects/functions
 template <typename T>
@@ -100,10 +100,12 @@ public:
     Atom_t(valarray<double>& r0, double bad0 = 0.0);
     mutable double r[3];
     double Badness() const;
+    double FreeBadness() const;
     double AvgBadness() const;
     double IncBadness(double db);
     double DecBadness(double db);
     double ResetBadness(double b = 0.0);
+    bool fixed;
 private:
     double badness;
     double badness_sum;
@@ -193,11 +195,13 @@ public:
     Molecule& Pop(const int cidx);	// erase
     Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
-    Molecule& Add(Molecule& M);		// add specified molecule
+    Molecule& Add(const Molecule& M);	// add specified molecule
     Molecule& Add(double rx0, double ry0, double rz0);	// add single atom
-    Molecule& Add(Atom_t a);				// add single atom
-    Molecule& RelaxAtom(vector<Atom_t*>::iterator);	// relax internal atom
-    Molecule& RelaxAtom(const int cidx);
+    Molecule& Add(const Atom_t& a);			// add single atom
+    Molecule& Fix(const int cidx);		// mark atom as fixed
+    int NFixed() const;				// count fixed atoms
+    Molecule& RelaxAtom(const int cidx);	// relax internal atom
+    Molecule& RelaxAtom(vector<Atom_t*>::iterator);
     void RelaxExternalAtom(Atom_t& a);
     Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=500,
 	    double lookout_prob=0.0);
