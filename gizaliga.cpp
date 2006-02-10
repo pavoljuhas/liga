@@ -46,11 +46,12 @@ struct RunPar_t
     string frames;
     int framesrate;
     vector<TraceId_t> framestrace;
-    int centersize;
     // Liga parameters
     double tol_dd;
     double tol_bad;
     int natoms;
+    vector<int> fixed_atoms;
+    int centersize;
     double maxcputime;
     int seed;
     double evolve_frac;
@@ -78,8 +79,9 @@ RunPar_t::RunPar_t()
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "outfmt", "saverate", "saveall",
-	"frames", "framesrate", "framestrace", "centersize",
-	"tol_dd", "tol_bad", "natoms", "maxcputime", "seed",
+	"frames", "framesrate", "framestrace",
+	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "centersize",
+	"maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
 	"dist_trials", "tri_trials", "pyr_trials", "lookout_prob",
@@ -112,11 +114,12 @@ void RunPar_t::print_help(ParseArgs& a)
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [10] number of iterations between frame saves\n"
 "  framestrace=array     [] triples of (season, initial, final level)\n"
-"  centersize=int        [0] shift smaller molecules to the origin\n"
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  natoms=int            use with loose distfiles or when tol_dd==0\n"
+"  fixed_atoms=array     [] indices of fixed atoms in inistru (start at 1)\n"
+"  centersize=int        [0] shift smaller molecules to the origin\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
@@ -200,11 +203,6 @@ void RunPar_t::print_pars(ParseArgs& a)
 	    cout << "framesrate=" << framesrate << endl;
 	}
     }
-    // centersize
-    if (a.ispar("centersize"))
-    {
-	cout << "centersize=" << centersize << endl;
-    }
     // liga parameters
     // tol_dd, tol_bad 
     cout << "tol_dd=" << tol_dd << endl;
@@ -213,6 +211,21 @@ void RunPar_t::print_pars(ParseArgs& a)
     if (a.ispar("natoms"))
     {
 	cout << "natoms=" << natoms << endl;
+    }
+    // fixed_atoms
+    if (a.ispar("fixed_atoms") && !fixed_atoms.empty())
+    {
+	cout << "fixed_atoms=" << fixed_atoms[0];
+	for (int i = 1; i < fixed_atoms.size(); ++i)
+	{
+	    cout << ',' << fixed_atoms[i];
+	}
+	cout << endl;
+    }
+    // centersize
+    if (a.ispar("centersize"))
+    {
+	cout << "centersize=" << centersize << endl;
     }
     // maxcputime
     if (maxcputime > 0.0)
@@ -404,9 +417,6 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	    framesrate = a.GetPar<int>("framesrate", 10);
 	}
     }
-    // centersize
-    centersize = a.GetPar<int>("centersize", 0);
-    mol.center_size = centersize;
     // liga parameters
     try {
 	// tol_dd
@@ -426,6 +436,29 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 		exit(EXIT_INPUT_ERROR);
 	    }
 	}
+	// fixed_atoms must be set after inistru
+	if (a.ispar("fixed_atoms"))
+	{
+	    fixed_atoms = a.GetParVec<int>("fixed_atoms");
+	    sort(fixed_atoms.begin(), fixed_atoms.end());
+	    vector<int>::iterator last;
+	    last = unique(fixed_atoms.begin(), fixed_atoms.end());
+	    fixed_atoms.erase(last, fixed_atoms.end());
+	    vector<int>::const_iterator ii;
+	    try {
+		for (ii = fixed_atoms.begin(); ii != fixed_atoms.end(); ++ii)
+		{
+		    mol.Fix(*ii - 1);
+		}
+	    }
+	    catch (range_error) {
+		cerr << "fixed_atoms - invalid index " << *ii << endl;
+		exit(EXIT_INPUT_ERROR);
+	    }
+	}
+	// centersize
+	centersize = a.GetPar<int>("centersize", 0);
+	mol.center_size = centersize;
 	// maxcputime
 	maxcputime = a.GetPar<double>("maxcputime", 0.0);
 	// seed
@@ -622,7 +655,7 @@ void save_outstru(vector<Division_t>& liga, RunPar_t& rp, RunVar_t& rv)
     // start saving from the largest non-empty division
     for (int level = liga.size() - 1; level > 0; --level)
     {
-	if ( ! liga[level].size() )
+	if ( liga[level].empty() )
 	    continue;
 	PMOL level_champ = liga[level].best();
 	// save only when there is clear improvement
@@ -706,12 +739,15 @@ int main(int argc, char *argv[])
     RunPar_t rp;
     RunVar_t rv;
     Molecule mol = rp.ProcessArguments(argc, argv);
-
+    int base_level = mol.NFixed();
+cout << "db: mol.NFixed() = " << mol.NFixed() << endl;
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
     for (int i = 0; i <= mol.max_NAtoms(); ++i)
     {
-        int divsize = (i < 2) ? 1 : rp.ligasize;
+        int divsize = rp.ligasize;
+	if (i < base_level)  divsize = 0;
+	else if (i < 2)      divsize = 1;
         liga.push_back(Division_t(divsize));
     }
     // put initial molecule to its division
@@ -722,7 +758,7 @@ int main(int argc, char *argv[])
     liga[mol.NAtoms()].push_back(first_team);
     // fill lower divisions
     cout << "Filling lower divisions" << endl;
-    for (int level = mol.NAtoms()-1; level >= 0; --level)
+    for (int level = mol.NAtoms()-1; level >= base_level; --level)
     {
         PMOL parent_team = liga[level+1].back();
         PMOL lower_team = new Molecule(*parent_team);
@@ -753,9 +789,9 @@ int main(int argc, char *argv[])
 	    break;
         ++rv.season;
 	typedef vector<Division_t>::iterator VDit;
-	int lo_level = 0;
-	for (VDit lo_div = liga.begin();
-		lo_div < liga.end()-1; ++lo_div, ++lo_level)
+	VDit lo_div = liga.begin() + base_level;
+	int lo_level = base_level;
+	for ( ; lo_div < liga.end()-1; ++lo_div, ++lo_level)
 	{
 	    if (lo_div->size() == 0)
 		continue;
@@ -801,7 +837,7 @@ int main(int argc, char *argv[])
 	    descending->Degenerate(hi_level-lo_level);
 	    if (rp.trace)
 	    {
-		if (lo_level == 0)
+		if (lo_level == base_level)
 		    descending->trace.clear();
 		else
 		{
@@ -902,6 +938,7 @@ int main(int argc, char *argv[])
     rv.exiting = true;
     save_outstru(liga, rp, rv);
     save_frames(best_champ, rp, rv);
+cout << "db: best_champ.NFixed() = " << best_champ.NFixed() << endl;
     if (SIGHUP_received)
     {
 	exit(exit_code);
