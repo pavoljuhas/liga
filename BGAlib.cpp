@@ -2149,8 +2149,6 @@ ostream& operator<<(ostream& fid, Molecule& M)
     switch (M.output_format)
     {
 	case Molecule::XYZ:
-	    fid << "# BGA molecule format = xyz" << endl;
-	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    for (VPAit pai = afirst; pai != alast; ++pai)
 	    {
 		fid <<
