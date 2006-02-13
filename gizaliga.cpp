@@ -848,7 +848,8 @@ int main(int argc, char *argv[])
 	    // all set now so we can swap winner and looser
 	    (*hi_div)[looser_idx] = advancing;
 	    (*lo_div)[winner_idx] = descending;
-	    // make sure the original best cluster is not too spoiled
+	    // make sure the original best cluster was much much better than
+	    // whatever left in the low division
 	    const double spoil_factor = 10.0;
 	    if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
 			spoil_factor*adv_bad0) )
