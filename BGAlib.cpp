@@ -250,7 +250,8 @@ bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
     for (   vector<Atom_t*>::iterator pmai = pm->atoms.begin();
 	    pmai != pm->atoms.end() && !has_buddy; ++pmai )
     {
-	has_buddy = (dist(*pta, **pmai) < max_dist);
+	double d = dist(*pta, **pmai);
+	has_buddy = (0.0 < d) && (d < max_dist);
     }
     return has_buddy;
 }
@@ -930,6 +931,20 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     double lo_abad = hi_abad - evolve_range;
     typedef vector<Atom_t>::iterator VAit;
     typedef vector<Atom_t*>::iterator VPAit;
+    VAit gai;
+    // first check if atoms pass through atom_filters
+    gai = vta.begin();
+    if ( !atom_filters.empty() )
+    {
+	for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
+	{
+	    if (check_atom_filters(&(*tai)))
+	    {
+		*(gai++) = *tai;
+	    }
+	}
+	vta.erase(gai, vta.end());
+    }
     // obtain badness of every test atom and adjust hi_abad cutoff
     // badness is exact only when <= hi_abad
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
@@ -946,7 +961,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     }
     // hi_abad has a correct value here
     // let us keep only good atoms
-    VAit gai = vta.begin();
+    gai = vta.begin();
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
 	if (tai->Badness() <= hi_abad)
@@ -959,10 +974,6 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 
 bool Molecule::check_atom_filters(Atom_t* pa)
 {
-    if (atom_filters.empty())
-    {
-	return true;
-    }
     typedef vector<AtomFilter_t*>::iterator VPAFit;
     bool isgood = true;
     for (   VPAFit pafi = atom_filters.begin();
@@ -1773,20 +1784,6 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
 	    }
 	    // then get the reciprocal value
 	    vtafit = vdrecipw0(vtafit);
-	}
-	// set vtafit to 0.0 for atoms that do not pass atom_filters
-	// this procedure is more sensitive to filtering of lonely atoms
-	// (which may get a company)
-	if ( !atom_filters.empty() )
-	{
-	    double* pfit = &vtafit[0];
-	    for (VAit pai = vta.begin(); pai != vta.end(); ++pai, ++pfit)
-	    {
-		if ( !check_atom_filters(&(*pai)) )
-		{
-		    *pfit = 0.0;
-		}
-	    }
 	}
 	// vtafit is ready here
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
