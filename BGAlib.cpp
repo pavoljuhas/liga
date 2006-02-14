@@ -651,10 +651,14 @@ bool operator==(const Molecule& m1, const Molecule& m2)
 {
     if (&m1 == &m2)
 	return true;
-    bool isequal =
-	m1.max_NAtoms() == m2.max_NAtoms() &&
-	m1.atoms == m2.atoms;
-    return isequal;
+    if (m1.max_NAtoms() != m2.max_NAtoms())
+	return false;
+    vector<Atom_t*>::const_iterator pai1, pai2;
+    for (   pai1 = m1.atoms.begin(), pai2 = m2.atoms.begin();
+	    pai1 != m1.atoms.end() && pai2 != m2.atoms.end() &&
+	    **pai1 == **pai2;  ++pai1, ++pai2 )
+    { }
+    return (pai1 == m1.atoms.end() && pai2 == m2.atoms.end());
 }
 
 void Molecule::Set_max_NAtoms(int s)
