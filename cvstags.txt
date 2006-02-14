@@ -144,7 +144,7 @@ gizaliga-1u	1.61	    1.246       2005-10-25
     added parameter max_dist, constraint for rejecting lone new atoms
     added new parameter lookout_prob [0.0] for extended lookups
 
-gizaliga-1v	1.64	    1.249       2006-02-13
+gizaliga-1v	1.64	    1.250       2006-02-14
     new parameter fixed_atoms for fixing atoms in inistru
 
 ========================================================================
