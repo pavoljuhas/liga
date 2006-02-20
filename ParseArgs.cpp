@@ -58,6 +58,60 @@ void ParseArgs::Dump()
 	cout << "args[" << i << "] = '" << args[i] << "'" << endl;
 }
 
+vector<int> ParseArgs::ExpandRangePar(string par)
+{
+    if (!pars.count(par))
+    {
+	ostringstream emsg_ostream;
+	emsg_ostream << "parameter '" << par << "' is not defined";
+	throw ParseArgsError(emsg_ostream.str());
+    }
+    // replace all commas in par with <space>
+    string ranges(pars[par]);
+    for (   string::size_type pcomma = ranges.find(',');
+	    pcomma != string::npos; pcomma = ranges.find(',', pcomma) )
+    {
+	ranges[pcomma] = ' ';
+    }
+    vector<int> indices;
+    istringstream iss(ranges);
+    string word;
+    while (iss >> word)
+    {
+	// prepare error message
+	ostringstream emsg_ostream;
+	emsg_ostream << par << ": invalid range value '"
+	    << word << "'";
+	// process word
+	string::size_type prange = word.find("..");
+	if (prange == string::npos)
+	{
+	    istringstream word_istream(word);
+	    int idx;
+	    if ( !(word_istream >> idx) )
+	    {
+		throw ParseArgsError(emsg_ostream.str());
+	    }
+	    indices.push_back(idx);
+	}
+	else
+	{
+	    word.replace(prange, 2, " ");
+	    istringstream word_istream(word);
+	    int start, stop;
+	    if ( !(word_istream >> start >> stop) )
+	    {
+		throw ParseArgsError(emsg_ostream.str());
+	    }
+	    for (int idx = start; idx < stop+1; ++idx)
+	    {
+		indices.push_back(idx);
+	    }
+	}
+    }
+    return indices;
+}
+
 void ParseArgs::ValidatePars(list<string>& validpars)
 {
     list<string> invalidpars;
@@ -71,16 +125,16 @@ void ParseArgs::ValidatePars(list<string>& validpars)
     }
     if (invalidpars.size())
     {
-	ostringstream oss;
+	ostringstream emsg_ostream;
 	if (invalidpars.size() == 1)
-	    oss << "invalid parameter -- ";
+	    emsg_ostream << "invalid parameter -- ";
 	else
-	    oss << "invalid parameters -- ";
+	    emsg_ostream << "invalid parameters -- ";
 	LSit ii = invalidpars.begin();
-	oss << *ii;
+	emsg_ostream << *ii;
 	for (++ii; ii != invalidpars.end(); ++ii)
-	    oss << ", " << *ii;
-	throw ParseArgsError(oss.str());
+	    emsg_ostream << ", " << *ii;
+	throw ParseArgsError(emsg_ostream.str());
     }
 }
 
@@ -90,9 +144,9 @@ void ParseArgs::ReadPars(const char *file)
     ifstream fid(file);
     if (!fid)
     {
-	ostringstream oss;
-	oss << "Unable to read '" << file << "'";
-	throw IOError(oss.str());
+	ostringstream emsg_ostream;
+	emsg_ostream << "Unable to read '" << file << "'";
+	throw IOError(emsg_ostream.str());
     }
     try {
 	ReadPars(fid);
@@ -146,9 +200,9 @@ istream& ParseArgs::ReadPars(istream& fid)
 	eq = pline.find('=');
 	if (eq == string::npos)
 	{
-	    ostringstream oss;
-	    oss << nr << ": missing equal symbol";
-	    throw ParseArgsError(oss.str());
+	    ostringstream emsg_ostream;
+	    emsg_ostream << nr << ": missing equal symbol";
+	    throw ParseArgsError(emsg_ostream.str());
 	}
 	pe = pline.find_last_not_of(string(blank) + "=", eq);
 	pe = (pe == string::npos) ? eq : pe+1;
@@ -161,9 +215,9 @@ istream& ParseArgs::ReadPars(istream& fid)
 	}
 	if (!ispar)
 	{
-	    ostringstream oss;
-	    oss << nr << ": invalid parameter name '" << par << "'";
-	    throw ParseArgsError(oss.str());
+	    ostringstream emsg_ostream;
+	    emsg_ostream << nr << ": invalid parameter name '" << par << "'";
+	    throw ParseArgsError(emsg_ostream.str());
 	}
 	if (cmdl_par.count(par))
 	    continue;
