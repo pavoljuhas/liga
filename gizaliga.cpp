@@ -112,13 +112,13 @@ void RunPar_t::print_help(ParseArgs& a)
 "  saverate=int          [10] minimum iterations between outstru updates\n"
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
-"  framesrate=int        [10] number of iterations between frame saves\n"
+"  framesrate=int        [0] number of iterations between frame saves\n"
 "  framestrace=array     [] triples of (season, initial, final level)\n"
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  natoms=int            use with loose distfiles or when tol_dd==0\n"
-"  fixed_atoms=array     [] indices of fixed atoms in inistru (start at 1)\n"
+"  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  centersize=int        [0] shift smaller molecules to the origin\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
@@ -215,10 +215,21 @@ void RunPar_t::print_pars(ParseArgs& a)
     // fixed_atoms
     if (a.ispar("fixed_atoms") && !fixed_atoms.empty())
     {
-	cout << "fixed_atoms=" << fixed_atoms[0];
-	for (int i = 1; i < fixed_atoms.size(); ++i)
+	cout << "fixed_atoms=";
+	for (int start = 0; start < fixed_atoms.size(); )
 	{
-	    cout << ',' << fixed_atoms[i];
+	    int range = 0;
+	    for ( ; start + range < fixed_atoms.size() &&
+		    fixed_atoms[start]+range == fixed_atoms[start+range];
+		    ++range )
+	    { }
+	    if (start > 0)  cout << ',';
+	    cout << fixed_atoms[start];
+	    if (range > 1)
+	    {
+		cout << ".." << fixed_atoms[start+range-1];
+	    }
+	    start += range;
 	}
 	cout << endl;
     }
@@ -414,7 +425,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	// framesrate - parse only if framestrace is empty
 	if (framestrace.size() == 0)
 	{
-	    framesrate = a.GetPar<int>("framesrate", 10);
+	    framesrate = a.GetPar<int>("framesrate", 0);
 	}
     }
     // liga parameters
@@ -439,7 +450,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 	// fixed_atoms must be set after inistru
 	if (a.ispar("fixed_atoms"))
 	{
-	    fixed_atoms = a.GetParVec<int>("fixed_atoms");
+	    fixed_atoms = a.ExpandRangePar("fixed_atoms");
 	    sort(fixed_atoms.begin(), fixed_atoms.end());
 	    vector<int>::iterator last;
 	    last = unique(fixed_atoms.begin(), fixed_atoms.end());
