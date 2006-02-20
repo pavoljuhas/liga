@@ -48,6 +48,7 @@ public:
     void ReadPars(const char *file);
     istream& ReadPars(istream& fid = cin);
     template <typename T> T GetPar(string par);
+    std::vector<int> ExpandRangePar(string par);
     template <typename T> T GetPar(string par, T defval);
     template <typename T> vector<T> GetParVec(string par);
     void ValidatePars(list<string>& validpars);
