@@ -23,6 +23,13 @@ struct TraceId_t
     int fin_level;
 };
 
+struct SeedClusterInfo
+{
+    int level;
+    int number;
+    int trials;
+};
+
 const int EXIT_INPUT_ERROR = 2;
 
 ////////////////////////////////////////////////////////////////////////
@@ -31,8 +38,17 @@ const int EXIT_INPUT_ERROR = 2;
 
 struct RunPar_t
 {
-    RunPar_t();
-    Molecule ProcessArguments(int argc, char * argv[]);
+    RunPar_t()
+    {
+	fill_validpars();
+    }
+    RunPar_t(int argc, char * argv[])
+    {
+	fill_validpars();
+	processArguments(argc, argv);
+    }
+    void processArguments(int argc, char * argv[]);
+    int divSize(int level);
     // Output option
     bool quiet;
     bool trace;
@@ -51,6 +67,7 @@ struct RunPar_t
     double tol_bad;
     int natoms;
     vector<int> fixed_atoms;
+    vector<SeedClusterInfo> seed_clusters;
     int centersize;
     double maxcputime;
     int seed;
@@ -63,6 +80,9 @@ struct RunPar_t
     int tri_trials;
     int pyr_trials;
     double lookout_prob;
+    // generated data
+    Molecule mol;
+    int base_level;
     // Constrains
     vector<double> bangle_range;
     double max_dist;
@@ -72,16 +92,17 @@ private:
     string version_string(string quote = "");
     void print_pars(ParseArgs& a);
     list<string> validpars;
+    void fill_validpars();
 };
 
-RunPar_t::RunPar_t()
+void RunPar_t::fill_validpars()
 {
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "outfmt", "saverate", "saveall",
 	"frames", "framesrate", "framestrace",
-	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "centersize",
-	"maxcputime", "seed",
+	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "seed_clusters",
+	"centersize", "maxcputime", "seed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
 	"dist_trials", "tri_trials", "pyr_trials", "lookout_prob",
@@ -113,12 +134,13 @@ void RunPar_t::print_help(ParseArgs& a)
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [0] number of iterations between frame saves\n"
-"  framestrace=array     [] triples of (season, initial, final level)\n"
+"  framestrace=array     [] triplets of (season, initial, final level)\n"
 "Liga parameters:\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  natoms=int            use with loose distfiles or when tol_dd==0\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
+"  seed_clusters=array   [] triplets of (level, number, trials)\n"
 "  centersize=int        [0] shift smaller molecules to the origin\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  seed=int              seed of random number generator\n"
@@ -233,6 +255,20 @@ void RunPar_t::print_pars(ParseArgs& a)
 	}
 	cout << endl;
     }
+    // seed_clusters
+    if (seed_clusters.size() != 0)
+    {
+	cout << "seed_clusters=";
+	for (   vector<SeedClusterInfo>::iterator ii = seed_clusters.begin();
+		ii != seed_clusters.end(); ++ii)
+	{
+	    cout << " \\" << '\n';
+	    cout << "    " << ii->level;
+	    cout << ' ' << ii->number;
+	    cout << ' ' << ii->trials;
+	}
+	cout << endl;
+    }
     // centersize
     if (a.ispar("centersize"))
     {
@@ -279,7 +315,7 @@ void RunPar_t::print_pars(ParseArgs& a)
     cout << hashsep << endl << endl;
 }
 
-Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
+void RunPar_t::processArguments(int argc, char *argv[])
 {
     char *short_options =
         "p:qthV";
@@ -356,7 +392,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
         exit(EXIT_INPUT_ERROR);
     }
     // create empty molecule
-    Molecule mol(*dtab);
+    mol = Molecule(*dtab);
     // inistru
     if (a.ispar("inistru"))
     {
@@ -467,6 +503,38 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
 		exit(EXIT_INPUT_ERROR);
 	    }
 	}
+	base_level = mol.NFixed();
+	// seed_clusters
+	if (a.ispar("seed_clusters"))
+	{
+	    vector<int> scs = a.GetParVec<int>("seed_clusters");
+	    if (scs.size() % 3)
+	    {
+		cerr << "seed_clusters must have 3n entries" << endl;
+		exit(EXIT_INPUT_ERROR);
+	    }
+	    map<int,SeedClusterInfo> lvsc;
+	    SeedClusterInfo scid;
+	    // make sure seed_clusters are sorted and level-unique
+	    for (int i = 0; i < scs.size(); i += 3)
+	    {
+		scid.level = scs[i];
+		scid.number = scs[i+1];
+		scid.trials = scs[i+2];
+		if (scid.level <= base_level || scid.level > mol.max_NAtoms())
+		{
+		    cerr << "seed_clusters - invalid level " <<
+			scid.level << endl;
+		    exit(EXIT_INPUT_ERROR);
+		}
+		lvsc[scid.level] = scid;
+	    }
+	    for (   map<int,SeedClusterInfo>::iterator ii = lvsc.begin();
+		    ii != lvsc.end(); ++ii )
+	    {
+		seed_clusters.push_back(ii->second);
+	    }
+	}
 	// centersize
 	centersize = a.GetPar<int>("centersize", 0);
 	mol.center_size = centersize;
@@ -532,9 +600,21 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     }
     // done
     print_pars(a);
-    return mol;
 }
 
+int RunPar_t::divSize(int level)
+{
+    if (level < base_level)	return 0;
+    if (level < 2)		return 1;
+    // default is ligasize, but consult with seed_clusters
+    int sz = ligasize;
+    for (   vector<SeedClusterInfo>::iterator scii = seed_clusters.begin();
+	    scii != seed_clusters.end(); ++scii )
+    {
+	if (scii->level == level)   sz = scii->number;
+    }
+    return sz;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // RunVar_t
@@ -747,28 +827,25 @@ void save_frames_trace(PMOL advancing, PMOL descending, RunPar_t& rp,
 int main(int argc, char *argv[])
 {
     // process arguments
-    RunPar_t rp;
+    RunPar_t rp(argc, argv);
     RunVar_t rv;
-    Molecule mol = rp.ProcessArguments(argc, argv);
-    int base_level = mol.NFixed();
+    int base_level = rp.base_level;
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
-    for (int i = 0; i <= mol.max_NAtoms(); ++i)
+    for (int i = 0; i <= rp.mol.max_NAtoms(); ++i)
     {
-        int divsize = rp.ligasize;
-	if (i < base_level)  divsize = 0;
-	else if (i < 2)      divsize = 1;
+        int divsize = rp.divSize(i);
         liga.push_back(Division_t(divsize));
     }
     // put initial molecule to its division
-    PMOL first_team = new Molecule(mol);
+    PMOL first_team = new Molecule(rp.mol);
     cout << "Initial team" << endl;
     cout << rv.season << " I " << first_team->NAtoms() << ' '
 	<< first_team->NormBadness() << endl;
-    liga[mol.NAtoms()].push_back(first_team);
+    liga[first_team->NAtoms()].push_back(first_team);
     // fill lower divisions
     cout << "Filling lower divisions" << endl;
-    for (int level = mol.NAtoms()-1; level >= base_level; --level)
+    for (int level = first_team->NAtoms()-1; level >= base_level; --level)
     {
         PMOL parent_team = liga[level+1].back();
         PMOL lower_team = new Molecule(*parent_team);
@@ -776,6 +853,47 @@ int main(int argc, char *argv[])
 	cout << rv.season << " L " << lower_team->NAtoms() << ' '
 	    << lower_team->NormBadness() << endl;
         liga[level].push_back(lower_team);
+    }
+    // generate seed clusters
+    typedef vector<Division_t>::iterator VDit;
+    if (!rp.seed_clusters.empty())  cout << "Generating seed clusters\n";
+    for (   vector<SeedClusterInfo>::iterator scii = rp.seed_clusters.begin();
+	    scii != rp.seed_clusters.end(); ++scii )
+    {
+	Molecule base_team(*liga[base_level].back());
+	base_team.Set_max_NAtoms(scii->level);
+	VDit seed_div = liga.begin() + scii->level;
+	for (int nt = 0; nt < scii->trials; ++nt)
+	{
+	    // make sure base_team has correct size
+	    while (base_team.NAtoms() > base_level)
+	    {
+		base_team.Pop(base_team.NAtoms() - 1);
+	    }
+	    int addcount = scii->level - base_level;
+	    for (int k = 0; k < addcount && !base_team.Full(); k++)
+	    {
+		base_team.Evolve(rp.dist_trials, rp.tri_trials, rp.pyr_trials,
+			rp.lookout_prob);
+	    }
+	    if (!base_team.Full())  continue;
+	    if (!seed_div->full())
+	    {
+		seed_div->push_back(new Molecule(base_team));
+		continue;
+	    }
+	    // replace the worst cluster
+	    PMOL replaced = seed_div->at(seed_div->find_looser());
+	    *replaced = base_team;
+	}
+	// restore max_NAtoms
+	for (size_t i = 0; i != seed_div->size(); ++i)
+	{
+	    seed_div->at(i)->Set_max_NAtoms(first_team->max_NAtoms());
+	}
+	PMOL seed_winner = seed_div->at(seed_div->find_winner());
+	cout << rv.season << " S " << seed_winner->NAtoms() << ' '
+	    << seed_winner->NormBadness() << endl;
     }
     cout << "Done" << endl;
     // the first world champion is the initial molecule
@@ -798,7 +916,6 @@ int main(int argc, char *argv[])
 	if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
 	    break;
         ++rv.season;
-	typedef vector<Division_t>::iterator VDit;
 	VDit lo_div = liga.begin() + base_level;
 	int lo_level = base_level;
 	for ( ; lo_div < liga.end()-1; ++lo_div, ++lo_level)

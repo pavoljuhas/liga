@@ -124,6 +124,7 @@ class Molecule;
 class AtomFilter_t
 {
 public:
+    virtual ~AtomFilter_t() { }
     virtual bool Check(Atom_t*, Molecule* pm = NULL)
     { return true; }
 };
@@ -136,6 +137,7 @@ public:
 	lo_bangle(0.0),
 	hi_bangle(DOUBLE_MAX)
     { }
+    virtual ~BondAngleFilter_t() { }
     bool Check(Atom_t*, Molecule* pm);
     double max_blen;
     double lo_bangle;
@@ -148,6 +150,7 @@ public:
     LoneAtomFilter_t(double _max_dist) :
 	max_dist(_max_dist)
     { }
+    virtual ~LoneAtomFilter_t() { }
     bool Check(Atom_t*, Molecule* pm);
     double max_dist;
 };
