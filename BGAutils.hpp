@@ -38,11 +38,14 @@ typename std::list<T>::iterator list_at(std::list<T>& lst, int n)
     return ii;
 }
 
+namespace BGA {
+double CPUTime();
+}   // namespace BGA
+
 struct Counters_t
 {
     long long penalty_calls;
     long long distance_calls;
-    double CPUTime();
     void PrintRunStats();
 };
 // global instance of Counters_t

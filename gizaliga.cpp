@@ -913,7 +913,7 @@ int main(int argc, char *argv[])
 	// check special stoping conditions
 	if (SIGHUP_received)
 	    break;
-	if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+	if (rp.maxcputime > 0.0 && BGA::CPUTime() > rp.maxcputime)
 	    break;
         ++rv.season;
 	VDit lo_div = liga.begin() + base_level;
@@ -1038,7 +1038,7 @@ int main(int argc, char *argv[])
 	cout << "Received SIGHUP, graceful death." << endl << endl;
 	exit_code = SIGHUP+128;
     }
-    else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+    else if (rp.maxcputime > 0.0 && BGA::CPUTime() > rp.maxcputime)
     {
 	cout << "Exceeded maxcputime." << endl << endl;
 	exit_code = EXIT_FAILURE;

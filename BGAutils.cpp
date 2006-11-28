@@ -42,7 +42,7 @@ ofstream& mktempofstream(ofstream& out, char *writefile)
     return out;
 }
 
-double Counters_t::CPUTime()
+double BGA::CPUTime()
 {
     tms tbuf;
     times(&tbuf);
@@ -56,7 +56,7 @@ void Counters_t::PrintRunStats()
     cout << "Run statistics:" << endl;
     cout << "penalty_calls = " << penalty_calls << endl;
     cout << "distance_calls = " << distance_calls << endl;
-    cout << "UserCPUtime = " << CPUTime() << 's' << endl;
+    cout << "UserCPUtime = " << BGA::CPUTime() << 's' << endl;
     cout << "Host = " << hostname << endl;
 }
 

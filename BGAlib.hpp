@@ -19,6 +19,7 @@
 #include <limits>
 #include <gsl/gsl_rng.h>
 #include "BGAutils.hpp"
+#include "TriangulationGuru.hpp"
 
 // global random number generator
 namespace BGA
@@ -106,6 +107,7 @@ public:
     double DecBadness(double db);
     double ResetBadness(double b = 0.0);
     bool fixed;
+    triangulation_type ttp;
 private:
     double badness;
     double badness_sum;
@@ -186,6 +188,7 @@ public:
     static double evolve_frac;
     static int center_size;
     static vector<AtomFilter_t*> atom_filters;
+    static TriangulationGuru tguru;
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness

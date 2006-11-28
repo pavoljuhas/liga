@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
     {
 	if (SIGHUP_received)
 	    break;
-	else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+	else if (rp.maxcputime > 0.0 && BGA::CPUTime() > rp.maxcputime)
 	    break;
         ++rv.totsteps;
 	// store original normalized badnees
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
 	cout << "Received SIGHUP, graceful death." << endl << endl;
 	exit_code = SIGHUP+128;
     }
-    else if (rp.maxcputime > 0.0 && BGA::cnt.CPUTime() > rp.maxcputime)
+    else if (rp.maxcputime > 0.0 && BGA::CPUTime() > rp.maxcputime)
     {
 	cout << "Exceeded maxcputime." << endl << endl;
 	exit_code = 1;
