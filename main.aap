@@ -8,7 +8,10 @@
 
 ########################################################################
 
-Sources = BGAlib.cpp BGAutils.cpp ParseArgs.cpp
+Sources = \
+        BGAlib.cpp BGAutils.cpp ParseArgs.cpp TriangulationGuru.cpp \
+        Liga_t.cpp RunPar_t.cpp
+        
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
@@ -24,7 +27,7 @@ BDIR = AAPDIR/$BDIR
 :syseval gsl-config --cflags | :assign INCLUDE
 :syseval gsl-config --libs | :assign LIBS
 @if C_COMPILE_ACTION == "compile_gcc":
-    CXXFLAGS += -Wall -Wno-sign-compare
+    CXXFLAGS += -Wall
     EXTRA_DEBUG = -gstabs+
     EXTRA_OPTIM = -ffast-math
 @elif C_COMPILE_ACTION == "compile_intelcc":
@@ -79,7 +82,7 @@ gizaliga-test-solids :
 gizaliga-test-shapes :
     @for f in ("square.dst", "pentagon.dst", \
             "hexagon.dst", "heptagon.dst", "octagon.dst"):
-        :sys {log} $GL maxcputime=1 pyr_trials=0 shapes/$f
+        :sys {log} $GL maxcputime=1 ndim=2 shapes/$f
 
 gizaliga-test-bangle_range :
     :sys {log} $GL maxcputime=1 shapes/square.dst bangle_range=1.5,80
@@ -92,3 +95,5 @@ install-py { comment = install python scripts } :
 :program memTest01 \
         {comment = test of liga memory usage} : \
         memTest01.cpp BGAlib.cpp BGAutils.cpp
+
+# End of file

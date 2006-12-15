@@ -253,7 +253,7 @@ double prob_evolve(const Molecule& mol, RunPar_t& rp, RunVar_t& rv)
     double pe;
     if (rv.bust_now && mol.NormBadness() > rp.buststop*rp.tol_bad)
         rv.bust_now = false;
-    if (mol.NAtoms() == mol.max_NAtoms())
+    if (mol.NAtoms() == mol.maxNAtoms())
     {
         pe = 0.0;
         rv.bust_now = false;
@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
     Molecule mol = process_arguments(rp, argc, argv);
     // set bestMNBadness to a maximum double
     numeric_limits<double> double_info;
-    valarray<double> bestMNBadness(double_info.max(), 1+mol.max_NAtoms());
+    valarray<double> bestMNBadness(double_info.max(), 1+mol.maxNAtoms());
     RunVar_t rv;
     rv.bust_now = rv.lastframe = false;
     rv.improved.resize(rp.logsize, 1);
@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
         }
         save_snapshot(mol, rp);
         save_frames(mol, rp, rv);
-        if (mol.NAtoms() == mol.max_NAtoms() && mol.NormBadness() < rp.tol_bad)
+        if (mol.NAtoms() == mol.maxNAtoms() && mol.NormBadness() < rp.tol_bad)
         {
             cout << endl << "Solution found!!!" << endl << endl;
 	    BGA::cnt.PrintRunStats();
@@ -375,3 +375,5 @@ int main(int argc, char *argv[])
         mol.WriteAtomEye(rp.outstru.c_str());
     return EXIT_SUCCESS;
 }
+
+// End of file

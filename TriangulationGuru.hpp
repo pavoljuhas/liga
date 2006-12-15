@@ -19,12 +19,15 @@ class TriangulationGuru
 {
     public:
 
+	// Data members
+	// Calculated:
+	mutable size_t est_trials[3];
 	// Constructor
 	TriangulationGuru(size_t max_atoms=0);
 
 	// Methods
-	std::vector<size_t> shareTrials(size_t natoms, size_t n) const;
-	size_t trialsPerTime(size_t natoms, double cputime) const;
+	void shareTrials(size_t natoms, size_t n) const;
+	size_t trialsPerDistanceCalls(size_t natoms, long long dcalls) const;
 	// trial rate calibration
 	void tic();
 	void toc(size_t natoms, size_t n);
@@ -32,31 +35,36 @@ class TriangulationGuru
 	void noteTriangulation(triangulation_type ttp, size_t natoms);
 	void forgetTriangulations();
 
-    private:
-
 	// Constants
-	static const double equalbias = 100.0;
-	static const size_t mintrials = 128;
-	static const size_t maxtrials = 65536;
+	static const size_t mintrials = 256;
+	static const size_t maxtrials = 16384/16;
+	static size_t ndim;
+
+    private:
 
 	// Local helper struct
 	struct TriangInfo
 	{
 	    size_t tgcounts[3];
-	    double trial_rate;
-	    TriangInfo() : trial_rate(0.0)
+	    long long tot_trials;
+	    long long tot_dcalls;
+	    inline double trial_rate()
 	    {
-		tgcounts[0] = tgcounts[1] = tgcounts[2] = 0;
+		return tot_dcalls ? double(tot_trials)/tot_dcalls : 0.0;
+	    }
+	    TriangInfo() : tot_trials(0), tot_dcalls(0)
+	    {
+		std::fill(tgcounts, tgcounts+3, 0);
 	    }
 	};
 
 	// Data members
 	mutable std::vector<TriangInfo> tginfos;
-	double tictime;
+	long long tic_dcalls;
 
 	// Methods
 	void check_size(size_t natoms) const;
 
 };
 
-#endif		// TRIANGULATIONGURU_HPP_INCLUDED
+#endif	// TRIANGULATIONGURU_HPP_INCLUDED

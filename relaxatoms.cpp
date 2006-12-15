@@ -168,9 +168,9 @@ void RunParameters::process_args(int argc, char* argv[])
 	pmol->tol_dd = tol_dd;
 	if (tol_dd == 0.0)
 	{
-	    pmol->Set_max_NAtoms(numeric_limits<int>().max());
+	    pmol->setMaxNAtoms(numeric_limits<int>().max());
 	    pmol->ReadXYZ(inistru.c_str());
-	    pmol->Set_max_NAtoms(pmol->NAtoms());
+	    pmol->setMaxNAtoms(pmol->NAtoms());
 	}
 	else
 	{

@@ -61,7 +61,7 @@ void Counters_t::PrintRunStats()
 }
 
 // define global instance of Counters_t
-namespace BGA { Counters_t cnt; }
+Counters_t BGA::cnt;
 
 double vdnorm(const valarray<double>& v)
 {
@@ -112,3 +112,5 @@ valarray<double> vdrecipw0(const valarray<double>& v)
 	*r = (*p != 0) ? 1.0/(*p) : zero_recip_gain*1.0/min_positive;
     return recip;
 }
+
+// End of file

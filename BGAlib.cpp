@@ -7,6 +7,7 @@
 *
 * <license text>
 ***********************************************************************/
+#include "/u24/juhas/programs/liga/trunk/dbprint.h"
 
 #include <sstream>
 #include <gsl/gsl_randist.h>
@@ -446,10 +447,12 @@ double Molecule::tol_dd  = numeric_limits<double>().max();
 double Molecule::tol_nbad  = 0.05*0.05;
 double Molecule::tol_r = 1.0e-8;
 double Molecule::evolve_frac = 0.1;
-bool   Molecule::evolve_jump = true;
-bool   Molecule::evolve_relax = false;
-bool   Molecule::degenerate_relax = false;
-int    Molecule::center_size = 0;
+bool Molecule::evolve_jump = true;
+bool Molecule::evolve_relax = false;
+bool Molecule::degenerate_relax = false;
+int Molecule::center_size = 0;
+double Molecule::lookout_prob = 0.0;
+TriangulationGuru Molecule::tguru;
 vector<AtomFilter_t*> Molecule::atom_filters;
 
 Molecule::Molecule()
@@ -484,7 +487,7 @@ Molecule::Molecule(const DistanceTable& dtab,
 	cerr << "E: invalid coordinate vectors" << endl;
 	throw InvalidMolecule();
     }
-    for (int i = 0; i < vx.size(); ++i)
+    for (size_t i = 0; i != vx.size(); ++i)
     {
 	Add(vx[i], vy[i], vz[i]);
     }
@@ -512,7 +515,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 	*adup = new Atom_t(**asrc);
     }
     // finished duplication
-    val_max_NAtoms = M.val_max_NAtoms;
+    max_natoms = M.max_natoms;
     // map source atom pointers to this atom pointers
     map<const Atom_t*, Atom_t*> patom_clone;
     for (asrc = M.atoms.begin(), adup = atoms.begin();
@@ -539,7 +542,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 void Molecule::init()
 {
     badness = 0;
-    val_max_NAtoms = dTarget.NAtoms;
+    max_natoms = dTarget.NAtoms;
     // default output format
     OutFmtXYZ();
 }
@@ -573,7 +576,7 @@ namespace MoleculeRecalculate
 void Molecule::Recalculate()
 {
     using namespace MoleculeRecalculate;
-    if (NAtoms() > max_NAtoms())
+    if (NAtoms() > maxNAtoms())
     {
 	cerr << "E: molecule too large in Recalculate()" << endl;
 	throw InvalidMolecule();
@@ -651,7 +654,7 @@ bool operator==(const Molecule& m1, const Molecule& m2)
 {
     if (&m1 == &m2)
 	return true;
-    if (m1.max_NAtoms() != m2.max_NAtoms())
+    if (m1.maxNAtoms() != m2.maxNAtoms())
 	return false;
     vector<Atom_t*>::const_iterator pai1, pai2;
     for (   pai1 = m1.atoms.begin(), pai2 = m2.atoms.begin();
@@ -661,25 +664,25 @@ bool operator==(const Molecule& m1, const Molecule& m2)
     return (pai1 == m1.atoms.end() && pai2 == m2.atoms.end());
 }
 
-void Molecule::Set_max_NAtoms(int s)
+void Molecule::setMaxNAtoms(int s)
 {
     if (s > dTarget.NAtoms && tol_dd > 0.0)
     {
-	cerr << "E: not enough distances for max_NAtoms = " << s << '.' <<
+	cerr << "E: not enough distances for maxNAtoms = " << s << '.' <<
 	    "  Did you forget tol_dd = 0?" << endl;
 	throw InvalidMolecule();
     }
     else if (s < 1)
     {
-	cerr << "E: invalid value of max_NAtoms = " << s << endl;
+	cerr << "E: invalid value of maxNAtoms = " << s << endl;
 	throw InvalidMolecule();
     }
     else if (s < NAtoms())
     {
-	cerr << "E: molecule too large in Set_max_NAtoms()" << endl;
+	cerr << "E: molecule too large in setMaxNAtoms()" << endl;
 	throw InvalidMolecule();
     }
-    val_max_NAtoms = s;
+    max_natoms = s;
 }
 
 Molecule& Molecule::Shift(double dx, double dy, double dz)
@@ -792,7 +795,7 @@ Molecule& Molecule::Add(double rx0, double ry0, double rz0)
 
 Molecule& Molecule::Add(const Atom_t& atom)
 {
-    if (NAtoms() == max_NAtoms())
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: molecule too large in Add()" << endl;
 	throw InvalidMolecule();
@@ -844,14 +847,14 @@ Atom_t Molecule::Atom(const int cidx)
 double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 {
     // badness is calculated exactly only when <= hi_abad
-    if (NAtoms() == max_NAtoms())
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: Molecule too large in calc_test_badness()" << endl;
 	throw InvalidMolecule();
     }
     static valarray<bool> used;
     int dtsize = dTarget.size();
-    if (dtsize != used.size())
+    if (dtsize != int(used.size()))
     {
 	used.resize(dtsize, false);
     }
@@ -927,7 +930,7 @@ valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
 void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	double evolve_range, double hi_abad)
 {
-    if (NAtoms() == max_NAtoms())
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: Molecule too large in filter_good_atoms()" << endl;
 	throw InvalidMolecule();
@@ -1216,8 +1219,9 @@ int Molecule::push_good_distances(
 	vector<Atom_t>& vta, double* afit, int ntrials
 	)
 {
+    if (!ntrials)   return 0;
     // add new atom in direction defined by 2 atoms
-    if (NAtoms() == max_NAtoms())
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: molecule too large for finding a new position" << endl;
 	throw InvalidMolecule();
@@ -1228,19 +1232,6 @@ int Molecule::push_good_distances(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // ntrials reverted to formula in 1.209
-    // N*(N-1) possible directions
-    int max_ntrials = NAtoms()*(NAtoms()-1) + 1;
-    /*
-    // N*(N-1) possible directions, Nuniqd lengths
-    // check for int overflow
-    double xmax_ntrials = min(
-	    1.0*NAtoms()*(NAtoms()-1)*dTarget.Nuniqd + 1.0,
-	    double( numeric_limits<int>().max() )
-	    );
-    int max_ntrials = int(xmax_ntrials);
-    */
-    ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
@@ -1261,16 +1252,12 @@ int Molecule::push_good_distances(
 	    rdir /= nm_rdir;
 	    lattice_rdir = true;
 	}
-	// otherwise generate random direction
+	// otherwise orient along the z-axis
 	else
 	{
-	    // pick a random direction
-	    double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
-	    double z = 2*gsl_rng_uniform(BGA::rng) - 1.0;
-	    double w = sqrt(1 - z*z);
-	    rdir[0] = w*cos(phi);
-	    rdir[1] = w*sin(phi);
-	    rdir[2] = z;
+	    rdir[0] = 0.0;
+	    rdir[1] = 0.0;
+	    rdir[2] = 1.0;
 	    lattice_rdir = false;
 	}
 	// pick free distance
@@ -1281,6 +1268,7 @@ int Molecule::push_good_distances(
 	for (int i = 0; i < 3; ++i)
 	    nr[i] = a0.r[i] + rdir[i]*radius;
 	Atom_t ad1front(nr[0], nr[1], nr[2]);
+	ad1front.ttp = LINEAR;
 	vta.push_back(ad1front);
 	++push_count;
 	// check opposite direction when it makes sense
@@ -1291,6 +1279,7 @@ int Molecule::push_good_distances(
 	    for (int i = 0; i < 3; ++i)
 		nr[i] = a0.r[i] - rdir[i]*radius;
 	    Atom_t ad1back(nr[0], nr[1], nr[2]);
+	    ad1back.ttp = LINEAR;
 	    vta.push_back(ad1back);
 	    ++push_count;
 	}
@@ -1302,8 +1291,9 @@ int Molecule::push_good_triangles(
 	vector<Atom_t>& vta, double* afit, int ntrials
 	)
 {
+    if (!ntrials)   return 0;
     // generate randomly oriented triangles
-    if (NAtoms() == max_NAtoms())
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: molecule too large for finding a new position" << endl;
 	throw InvalidMolecule();
@@ -1314,20 +1304,6 @@ int Molecule::push_good_triangles(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // ntrials reverted to formula in 1.209
-    // (N over 3)*4 plane orientations and possible triangle vertices
-    int max_ntrials = 4*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 2);
-    /*
-    // (N over 3)*4*Nuniqd^2 plane orientations and possible triangles
-    // check for int overflow
-    double xmax_ntrials = min(
-	    4.0*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 *
-		dTarget.Nuniqd*dTarget.Nuniqd + 2),
-	    double( numeric_limits<int>().max() )
-	    );
-    int max_ntrials = int(xmax_ntrials);
-    */
-    ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
@@ -1377,19 +1353,15 @@ int Molecule::push_good_triangles(
 	    perpdir /= nm_perpdir;
 	    lattice_plane = true;
 	}
-	// otherwise generate random direction
+	// otherwise generate direction in yz plane
 	else
 	{
-	    valarray<double> pdir1(3), pdir2(3);
-	    pdir1[0] = -longdir[1];
-	    pdir1[1] = longdir[0];
-	    pdir1[2] = 0.0;
-	    if (pdir1[0] == 0 && pdir1[1] == 0)
-		pdir1[0] = 1.0;
-	    pdir1 /= vdnorm(pdir1);
-	    pdir2 = vdcross(longdir, pdir1);
-	    double phi = 2*M_PI*gsl_rng_uniform(BGA::rng);
-	    perpdir = cos(phi)*pdir1 + sin(phi)*pdir2;
+	    valarray<double> uvx(3);
+	    uvx[0] = 1.0;
+	    uvx[1] = 0.0;
+	    uvx[2] = 0.0;
+	    perpdir = vdcross(longdir, uvx);
+	    perpdir /= vdnorm(perpdir);
 	    lattice_plane = false;
 	}
 	// allocate vallarays for positions of a0 and vertex P
@@ -1406,6 +1378,7 @@ int Molecule::push_good_triangles(
 		++nt;
 		P = Pa0 + (*pxl)*longdir + (*pxp)*perpdir;
 		Atom_t ad2(P[0], P[1], P[2]);
+		ad2.ttp = PLANAR;
 		vta.push_back(ad2);
 		++push_count;
 		if (!lattice_plane)
@@ -1422,7 +1395,8 @@ int Molecule::push_good_pyramids(
 	vector<Atom_t>& vta, double* afit, int ntrials
 	)
 {
-    if (NAtoms() == max_NAtoms())
+    if (!ntrials)   return 0;
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: molecule too large for finding a new position" << endl;
 	throw InvalidMolecule();
@@ -1433,20 +1407,6 @@ int Molecule::push_good_pyramids(
 	throw InvalidMolecule();
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
-    // ntrials reverted to formula in 1.209
-    // (N over 3)*6*2 pyramid base permutations
-    int max_ntrials = 12*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 + 2);
-    /*
-    // (N over 3)*6*2*Nuniqd^3 possible pyramids
-    // check for int overflow
-    double xmax_ntrials = min(
-	    12.0*(NAtoms()*(NAtoms()-1)*(NAtoms()-2)/6 *
-		dTarget.Nuniqd*dTarget.Nuniqd*dTarget.Nuniqd + 2),
-	    double( numeric_limits<int>().max() )
-	    );
-    int max_ntrials = int(xmax_ntrials);
-    */
-    ntrials = min(ntrials, max_ntrials);
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
     {
@@ -1512,6 +1472,7 @@ int Molecule::push_good_pyramids(
 		    continue;
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
+		ad3.ttp = SPATIAL;
 		vta.push_back(ad3);
 		++push_count;
 		continue;
@@ -1527,6 +1488,7 @@ int Molecule::push_good_pyramids(
 	    {
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
+		ad3.ttp = SPATIAL;
 		vta.push_back(ad3);
 		++push_count;
 		continue;
@@ -1540,12 +1502,14 @@ int Molecule::push_good_pyramids(
 	    // top one
 	    P4 = yP4*uvj + zP4*uvk + vT;
 	    Atom_t ad3top(P4[0], P4[1], P4[2]);
+	    ad3top.ttp = SPATIAL;
 	    vta.push_back(ad3top);
 	    ++push_count;
 	    // and bottom one, which makes an extra trial
 	    ++nt;
 	    P4 = yP4*uvj - zP4*uvk + vT;
 	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
+	    ad3bottom.ttp = SPATIAL;
 	    vta.push_back(ad3bottom);
 	    push_count++;
 	} while ( next_permutation(didx.begin(), didx.end()) );
@@ -1576,10 +1540,12 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 	{
 	    // top atom
 	    nr[2] = a0.r[2] + *dui;
-	    vta.push_back(Atom_t(nr));
+	    Atom_t adtop(nr); adtop.ttp = LINEAR;
+	    vta.push_back(adtop);
 	    // bottom atom
 	    nr[2] = a0.r[2] - *dui;
-	    vta.push_back(Atom_t(nr));
+	    Atom_t adbot(nr); adbot.ttp = LINEAR;
+	    vta.push_back(adbot);
 	    push_count += 2;
 	}
     }
@@ -1596,7 +1562,8 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 		dz = -dz;
 	    }
 	    nr[2] = a0.r[2] + dz;
-	    vta.push_back(Atom_t(nr));
+	    Atom_t ad(nr); ad.ttp = LINEAR;
+	    vta.push_back(ad);
 	}
     }
     return push_count;
@@ -1690,15 +1657,16 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	// add atom
 	valarray<double> Pn(3);
 	Pn = Pa0 + xlong*longdir + xperp*perpdir;
-	vta.push_back(Atom_t(Pn));
+	Atom_t ad(Pn); ad.ttp = PLANAR;
+	vta.push_back(ad);
 	++push_count;
     }
     return push_count;
 }
 
-Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
+Molecule& Molecule::Evolve(long long dcalls)
 {
-    if (NAtoms() == max_NAtoms())
+    if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: full-sized molecule cannot Evolve()" << endl;
 	throw InvalidMolecule();
@@ -1717,6 +1685,9 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
     // finally get the reciprocal value
     vafit = vdrecipw0(vafit);
     double* afit = &vafit[0];
+    size_t ntrials;
+    tguru.tic();
+    ntrials = tguru.trialsPerDistanceCalls(NAtoms(), dcalls);
     // evolution is trivial for empty or 1-atom molecule
     switch (NAtoms())
     {
@@ -1726,37 +1697,32 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
 	case 1:
 	    if (gsl_rng_uniform(BGA::rng) < lookout_prob)
 	    {
-		push_second_atoms(vta, 1500);
+		ntrials = 1500;
+		push_second_atoms(vta, ntrials);
+		break;
 	    }
-	    else
-	    {
-		push_good_distances(vta, afit, 1);
-		Add(vta[0]);
-		return *this;
-	    }
-	    break;
+	    push_good_distances(vta, afit, 1);
+	    Add(vta[0]);
+	    return *this;
 	case 2:
 	    if (gsl_rng_uniform(BGA::rng) < lookout_prob)
 	    {
-		push_third_atoms(vta, 1500);
+		ntrials = 1500;
+		push_third_atoms(vta, ntrials);
+		break;
 	    }
-	    else
-	    {
-		push_good_distances(vta, afit, ntd1);
-		push_good_triangles(vta, afit, ntd2);
-	    }
-	    break;
-	case 3:
-	    // add here push_fourth_atoms
+//	    ntrials = 16;
 	default:
-	    push_good_distances(vta, afit, ntd1);
-	    push_good_triangles(vta, afit, ntd2);
-	    push_good_pyramids(vta, afit, ntd3);
+	    tguru.shareTrials(NAtoms(), ntrials);
+	    push_good_distances(vta, afit, tguru.est_trials[LINEAR]);
+	    push_good_triangles(vta, afit, tguru.est_trials[PLANAR]);
+	    push_good_pyramids(vta, afit, tguru.est_trials[SPATIAL]);
     }
     // set badness range from desired badness
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
     double hi_abad = DOUBLE_MAX;
     // try to add as many atoms as possible
+    size_t natoms0 = NAtoms();
     typedef vector<Atom_t>::iterator VAit;
     while (true)
     {
@@ -1792,6 +1758,7 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
 	// vtafit is ready here
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
+	tguru.noteTriangulation(vta[idx].ttp, natoms0);
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
 	if (evolve_relax)
@@ -1803,13 +1770,14 @@ Molecule& Molecule::Evolve(int ntd1, int ntd2, int ntd3, double lookout_prob)
 		RelaxAtom(worst);
 	    }
 	}
-	if (NAtoms() == max_NAtoms() || !evolve_jump)
+	if (NAtoms() == maxNAtoms() || !evolve_jump)
 	    break;
 	for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
 	    pai->ResetBadness();
     }
     if (NAtoms() < center_size)
 	Center();
+    tguru.toc(natoms0, ntrials);
     return *this;
 }
 
@@ -2031,9 +1999,9 @@ istream& Molecule::ReadXYZ(istream& fid)
 	throw IOError();
     }
     Clear();
-    for (int i = 0; i < vxyz.size(); i += 3)
+    for (vector<double>::iterator ii = vxyz.begin(); ii < vxyz.end();)
     {
-	Add(Atom_t(vxyz[i+0], vxyz[i+1], vxyz[i+2]));
+	Add(Atom_t(*ii++, *ii++, *ii++));
     }
     return fid;
 }
@@ -2262,3 +2230,5 @@ void Molecule::PrintFitness()
     }
     cout << endl;
 }
+
+// End of file

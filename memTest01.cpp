@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     Molecule mol(dtab);
     // initialize liga divisions, primitive divisions have only 1 team
     vector<Division_t> liga;
-    for (int i = 0; i <= mol.max_NAtoms(); ++i)
+    for (int i = 0; i <= mol.maxNAtoms(); ++i)
     {
         int divsize = (i < 2) ? 1 : ligasize;
         liga.push_back(Division_t(divsize));
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     // put initial molecule to the zeroth division
     liga[0].push_back(new Molecule(mol));
     // fill all the remaining levels
-    for (int level = 1; level <= mol.max_NAtoms(); ++level)
+    for (int level = 1; level <= mol.maxNAtoms(); ++level)
     {
 	PMOL lower_team = liga[level-1].back();
 	while(! liga[level].full())
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 	}
     }
     cout << "Filled liga system with ligasize = " << ligasize
-	<< " natoms = " << mol.max_NAtoms() << endl
+	<< " natoms = " << mol.maxNAtoms() << endl
 	<< "check memory usage with ps -C memTest01 -o rss,args" << endl
 	<< "and then press <Enter> to exit" << endl;
     string s;

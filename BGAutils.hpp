@@ -49,7 +49,9 @@ struct Counters_t
     void PrintRunStats();
 };
 // global instance of Counters_t
-namespace BGA { extern Counters_t cnt; }
+namespace BGA {
+extern Counters_t cnt;
+}
 
 double vdnorm(const std::valarray<double>&);
 double vddot(const std::valarray<double>&, const std::valarray<double>&);

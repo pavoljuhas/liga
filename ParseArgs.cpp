@@ -54,7 +54,7 @@ void ParseArgs::Dump()
 	cout << "opts[" << ii->first << "] = '" << ii->second << "'" << endl;
     for (MSSit ii = pars.begin(); ii != pars.end(); ++ii)
 	cout << "pars[" << ii->first << "] = '" << ii->second << "'" << endl;
-    for (int i = 0; i < args.size(); ++i)
+    for (size_t i = 0; i < args.size(); ++i)
 	cout << "args[" << i << "] = '" << args[i] << "'" << endl;
 }
 
@@ -152,9 +152,10 @@ void ParseArgs::ReadPars(const char *file)
 	ReadPars(fid);
     }
     catch (ParseArgsError(e)) {
-	string msg(file);
-	msg = msg + ":" + e.what();
-	throw ParseArgsError(msg);
+	ostringstream emsg;
+	emsg << "invalid syntax in parameter file\n" << 
+	    file << ":" << e.what();
+	throw ParseArgsError(emsg.str());
     }
     fid.close();
 }
@@ -311,3 +312,5 @@ void ParseArgs::arg_or_par(const char *s)
     else
 	args.push_back(s);
 }
+
+// End of file

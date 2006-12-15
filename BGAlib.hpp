@@ -188,11 +188,12 @@ public:
     static double evolve_frac;
     static int center_size;
     static vector<AtomFilter_t*> atom_filters;
+    static double lookout_prob;
     static TriangulationGuru tguru;
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
-    inline bool Full() const { return !(NAtoms() < max_NAtoms()); }
+    inline bool Full() const { return !(NAtoms() < maxNAtoms()); }
     // operator functions
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
@@ -209,8 +210,7 @@ public:
     Molecule& RelaxAtom(const int cidx);	// relax internal atom
     Molecule& RelaxAtom(vector<Atom_t*>::iterator);
     void RelaxExternalAtom(Atom_t& a);
-    Molecule& Evolve(int ntd1=50, int ntd2=100, int ntd3=500,
-	    double lookout_prob=0.0);
+    Molecule& Evolve(long long dcalls);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
     bool ReadXYZ(const char*); 		// read real coordinates
@@ -226,8 +226,8 @@ public:
     void Recalculate(); 	// update everything
     inline int NDist()  const { return pairs.size(); }
     inline int NAtoms() const { return atoms.size(); }
-    inline int max_NAtoms() const { return val_max_NAtoms; }
-    void Set_max_NAtoms(int s);
+    inline int maxNAtoms() const { return max_natoms; }
+    void setMaxNAtoms(int s);
     inline double max_dTarget() const { return dTarget.back(); }
     // history trace
     list<int> trace;
@@ -236,7 +236,7 @@ private:
     void init();
     // data storage
     DistanceTable dTarget;
-    int val_max_NAtoms;
+    int max_natoms;
     // atoms must precede pairs
     vector<Atom_t*> atoms;		      // vector of pointers to atoms
     map<OrderedPair<Atom_t*>,PairDistance_t> pairs;
@@ -279,4 +279,4 @@ private:
     const string& header;
 };
 
-#endif		// BGALIB_HPP_INCLUDED
+#endif	// BGALIB_HPP_INCLUDED

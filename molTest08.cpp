@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     {
 	// calculate pe
 	double pe, impr_rate;
-	if (mol.NAtoms() == mol.max_NAtoms())
+	if (mol.NAtoms() == mol.maxNAtoms())
 	{
 	    pe = 0.0;
 	    go_all_way = false;
@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
 	    cout << "  Degenerate(" << Npop << ")  NAtoms = " << mol.NAtoms() <<  endl;
 	}
 	mol.PrintBadness();
-	if (mol.NAtoms() == mol.max_NAtoms())
-	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/mol.max_NAtoms() << endl;
+	if (mol.NAtoms() == mol.maxNAtoms())
+	    cout << "mol.Badness()/NAtoms = " << mol.Badness()/mol.maxNAtoms() << endl;
 	// update lastMBadness and improved
 	int ilog = trial % logsize;
 	if (mol.Badness() < lastMBadness[mol.NAtoms()])
@@ -137,9 +137,9 @@ int main(int argc, char *argv[])
 		sprintf(fname, "%s", snapshot_file);
 		mol.WriteAtomEye(fname);
 	    }
-	    if (mol.NAtoms() == mol.max_NAtoms())
+	    if (mol.NAtoms() == mol.maxNAtoms())
 	    {
-		if (mol.Badness() < avgmb*mol.max_NAtoms())
+		if (mol.Badness() < avgmb*mol.maxNAtoms())
 		{
 		    cout << "that is solution!" << endl;
 		    break;
@@ -156,3 +156,5 @@ int main(int argc, char *argv[])
     }
     return EXIT_SUCCESS;
 }
+
+// End of file

@@ -259,7 +259,7 @@ Molecule RunPar_t::ProcessArguments(int argc, char *argv[])
     // this needs to be done after seed is parsed
     if (! a.ispar("inistru"))
     {
-	for (int i = 0; i < mol.max_NAtoms(); ++i)
+	for (int i = 0; i < mol.maxNAtoms(); ++i)
 	    mol.Add(
 		    (2*gsl_rng_uniform(BGA::rng)-1.0)*mol.max_dTarget(),
 		    (2*gsl_rng_uniform(BGA::rng)-1.0)*mol.max_dTarget(),
@@ -431,3 +431,5 @@ int main(int argc, char *argv[])
 	exit(exit_code);
     return exit_code;
 }
+
+// End of file

@@ -8,71 +8,80 @@
 * <license text>
 ***********************************************************************/
 
-#include "TriangulationGuru.hpp"
+#include <stdexcept>
+#include <numeric>
+#include <iostream>
+
 #include "BGAutils.hpp"
+#include "TriangulationGuru.hpp"
 
 using namespace std;
+
+// Global data members
+size_t TriangulationGuru::ndim = 3;
 
 // Constructor
 
 TriangulationGuru::TriangulationGuru(size_t max_atoms)
 {
+    fill(est_trials, est_trials+3, size_t(0));
     check_size(max_atoms);
 }
 
 
 // Methods
 
-vector<size_t> TriangulationGuru::shareTrials(size_t natoms, size_t n) const
+void TriangulationGuru::shareTrials(size_t natoms, size_t n) const
 {
     check_size(natoms);
     double p[3] = {
-	equalbias + tginfos[natoms].tgcounts[0],
-	equalbias + tginfos[natoms].tgcounts[1],
-	equalbias + tginfos[natoms].tgcounts[2],
+	10 + tginfos[natoms].tgcounts[0],
+	50 + tginfos[natoms].tgcounts[1],
+	1000 + tginfos[natoms].tgcounts[2],
     };
     double ptot[3];
     partial_sum(p, p+3, ptot);
-    std::vector<size_t> rv(3);
-    switch (natoms)
+    fill(est_trials, est_trials+3, 0);
+    // how many dimensions should be searched?
+    size_t nd = min(ndim, natoms);
+    for (size_t i = 0; i != nd; ++i)
     {
-	case 1:
-	    rv[0] = n;
-	    break;
-	case 2:
-	    rv[0] = size_t( ceil(n*p[0]/ptot[1]) );
-	    rv[1] = size_t( ceil(n*p[1]/ptot[1]) );
-	    break;
-	default:
-	    for (size_t i = 0; i != 3; ++i)
-	    {
-		rv[i] = size_t( ceil(n*p[i]/ptot[2]) );
-	    }
+	est_trials[i] = size_t( ceil(n*p[i]/ptot[nd-1]) );
     }
-    // make sure rv shares sum to n
-    while (rv[0]+rv[1]+rv[2] > n)	*max(rv.begin(), rv.end()) -= 1;
-    return rv;
+    // make sure est_trials shares sum to n
+    for (size_t etsum = accumulate(est_trials, est_trials + 3, 0); etsum > n; )
+    {
+	*max_element(est_trials, est_trials + 3) -= 1;
+	etsum -= 1;
+    }
+cout << natoms << " n = " << n << "  est_trials = { ";
+copy(est_trials, est_trials + 3, ostream_iterator<size_t,char>(cout," "));
+cout << "}\n";
 }
 
-size_t TriangulationGuru::trialsPerTime(size_t natoms, double cputime) const
+size_t TriangulationGuru::trialsPerDistanceCalls(
+	size_t natoms, long long dcalls) const
 {
     check_size(natoms);
-    const double& rate = tginfos[natoms].trial_rate;
+    double rate = tginfos[natoms].trial_rate();
     double rv;
-    rv = rate > 0.0 ? min(cputime/rate, double(maxtrials)) : mintrials;
+    rv = min(dcalls*rate, double(maxtrials));
+    rv = max(rv, double(mintrials));
     return size_t(rv);
 }
 
 void TriangulationGuru::tic()
 {
-    tictime = BGA::CPUTime();
+    tic_dcalls = BGA::cnt.distance_calls;
 }
 
 void TriangulationGuru::toc(size_t natoms, size_t n)
 {
-    double toctime = BGA::CPUTime();
+    if (tic_dcalls < 0)	    return;
     check_size(natoms);
-    tginfos[natoms].trial_rate = (toctime - tictime)/n;
+    tginfos[natoms].tot_trials += n;
+    tginfos[natoms].tot_dcalls += BGA::cnt.distance_calls - tic_dcalls;
+    tic_dcalls = -1;
 }
 
 void TriangulationGuru::noteTriangulation(triangulation_type ttp,
