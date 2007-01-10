@@ -71,9 +71,6 @@ class Liga_t : public std::vector<Division_t>
 	bool isfinished;
 	int* stopflag;
 	int base_level;
-//	size_t lo_level, hi_level;
-//	PMOL advancing, descending;
-//	double adv_bad0, desc_bad0;
 	PMOL world_champ, best_champ;
 
 	// Private ethods
@@ -81,6 +78,7 @@ class Liga_t : public std::vector<Division_t>
 	PMOL updateWorldChamp();
 	PMOL updateBestChamp();
 	void printWorldChamp();
+	void printLevelAverages();
 	void saveOutStru();
 	void saveFrames();
 	void recordFramesTrace(const set<PMOL>& modified);

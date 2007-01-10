@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
     liga.stopFlag(&SIGHUP_received);
     // main loop
     for (liga.prepare(); !liga.finished(); liga.playSeason()) { }
+    liga.printSummary();
     // figure out exit code
     int exit_code;
     if (SIGHUP_received)	    exit_code = SIGHUP + 128;

@@ -7,7 +7,6 @@
 *
 * <license text>
 ***********************************************************************/
-#include "/u24/juhas/programs/liga/trunk/dbprint.h"
 
 #include <sstream>
 #include <gsl/gsl_randist.h>

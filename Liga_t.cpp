@@ -78,6 +78,7 @@ void Liga_t::playSeason()
 	playLevel(lo_level);
 	if (stopFlag())	    break;
     }
+    printLevelAverages();
     updateWorldChamp();
     printWorldChamp();
     updateBestChamp();
@@ -271,6 +272,16 @@ void Liga_t::printWorldChamp()
 	world_champ->NormBadness() << '\n';
 }
 
+void Liga_t::printLevelAverages()
+{
+    size_t level = base_level;
+    iterator lii = begin() + base_level;
+    for (; lii != end() && !lii->empty(); ++lii, ++level)
+    {
+	cout << season << " AV " << level << ' ' <<
+	    lii->NormBadness() << '\n';
+    }
+}
 void Liga_t::saveOutStru()
 {
     static int savecnt = 0;
