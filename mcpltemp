@@ -1,4 +1,4 @@
-#!/u24/local/bin/zsh -f
+#!/bin/zsh -f
 
 ########################################################################
 # Short Title: MC parallel tempering script
