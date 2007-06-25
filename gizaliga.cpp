@@ -34,31 +34,44 @@ void SIGHUP_handler(int signum)
 
 int main(int argc, char *argv[])
 {
-    // process arguments
-    RunPar_t rp;
+    RunPar_t* rp = NULL;
+    Liga_t* liga = NULL;
+    // Catch exceptions
     try	{
-	rp.processArguments(argc, argv);
+	// process arguments
+	rp = new RunPar_t();
+	rp->processArguments(argc, argv);
+	liga = new Liga_t(rp);
+	// watch for HUP
+	signal(SIGHUP, SIGHUP_handler);
+	liga->useStopFlag(&SIGHUP_received);
+	// main loop
+	liga->prepare();
+	while (!liga->finished())    liga->playSeason();
+	liga->printSummary();
     }
     catch (IOError(e)) {
 	cerr << e.what() << endl;
+	delete liga; delete rp;
 	exit(EXIT_INPUT_ERROR);
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
+	delete liga; delete rp;
 	exit(EXIT_INPUT_ERROR);
     }
-    Liga_t liga(&rp);
-    // watch for HUP
-    signal(SIGHUP, SIGHUP_handler);
-    liga.stopFlag(&SIGHUP_received);
-    // main loop
-    for (liga.prepare(); !liga.finished(); liga.playSeason()) { }
-    liga.printSummary();
+    catch (runtime_error(e)) {
+	cerr << e.what() << endl;
+	delete liga; delete rp;
+	exit(EXIT_INPUT_ERROR);
+    }
     // figure out exit code
     int exit_code;
     if (SIGHUP_received)	    exit_code = SIGHUP + 128;
-    else if (liga.solutionFound())  exit_code = EXIT_SUCCESS;
+    else if (liga->solutionFound()) exit_code = EXIT_SUCCESS;
     else			    exit_code = EXIT_FAILURE;
+    // clean up
+    delete liga; delete rp;
     return exit_code;
 }
 

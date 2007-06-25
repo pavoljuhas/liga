@@ -83,30 +83,27 @@ double penalty(double dd)
 ////////////////////////////////////////////////////////////////////////
 
 Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
-    badness(bad0)
+    fixed(false), ttp(LINEAR), badness(bad0)
 {
     r[0] = rx0;
     r[1] = ry0;
     r[2] = rz0;
-    fixed = false;
     badness_sum = badness;
     age = 1;
 }
 
 Atom_t::Atom_t(double r0[3], double bad0) :
-    badness(bad0)
+    fixed(false), ttp(LINEAR), badness(bad0)
 {
     copy(r0, r0+3, r);
-    fixed = false;
     badness_sum = badness;
     age = 1;
 }
 
 Atom_t::Atom_t(valarray<double>& r0, double bad0) :
-    badness(bad0)
+    fixed(false), ttp(LINEAR), badness(bad0)
 {
     copy(&r0[0], &r0[3], r);
-    fixed = false;
     badness_sum = badness;
     age = 1;
 }
@@ -450,9 +447,9 @@ bool Molecule::evolve_jump = true;
 bool Molecule::evolve_relax = false;
 bool Molecule::degenerate_relax = false;
 int Molecule::center_size = 0;
-double Molecule::lookout_prob = 0.0;
-TriangulationGuru Molecule::tguru;
 vector<AtomFilter_t*> Molecule::atom_filters;
+double Molecule::lookout_prob = 0.0;
+Molecule::file_fmt_type Molecule::output_format = XYZ;
 
 Molecule::Molecule()
 {
@@ -834,6 +831,7 @@ int Molecule::NFixed() const
     return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
 }
 
+/*
 Atom_t Molecule::Atom(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
@@ -842,6 +840,7 @@ Atom_t Molecule::Atom(const int cidx)
     }
     return *(atoms[cidx]);
 }
+*/
 
 double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 {
@@ -1663,8 +1662,11 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     return push_count;
 }
 
-Molecule& Molecule::Evolve(long long dcalls)
+Molecule& Molecule::Evolve(const int* est_triang)
 {
+    const int& nlinear = est_triang[LINEAR];
+    const int& nplanar = est_triang[PLANAR];
+    const int& nspatial = est_triang[SPATIAL];
     if (NAtoms() == maxNAtoms())
     {
 	cerr << "E: full-sized molecule cannot Evolve()" << endl;
@@ -1684,9 +1686,9 @@ Molecule& Molecule::Evolve(long long dcalls)
     // finally get the reciprocal value
     vafit = vdrecipw0(vafit);
     double* afit = &vafit[0];
-    size_t ntrials;
-    tguru.tic();
-    ntrials = tguru.trialsPerDistanceCalls(NAtoms(), dcalls);
+    bool lookout = NAtoms() && NAtoms() <= 2 &&
+	gsl_rng_uniform(BGA::rng) < lookout_prob;
+    const int lookout_trials = 1500;
     // evolution is trivial for empty or 1-atom molecule
     switch (NAtoms())
     {
@@ -1694,34 +1696,26 @@ Molecule& Molecule::Evolve(long long dcalls)
 	    Add(0.0, 0.0, 0.0);
 	    return *this;
 	case 1:
-	    if (gsl_rng_uniform(BGA::rng) < lookout_prob)
+	    if (lookout)
 	    {
-		ntrials = 1500;
-		push_second_atoms(vta, ntrials);
+		push_second_atoms(vta, lookout_trials);
 		break;
 	    }
-	    push_good_distances(vta, afit, 1);
-	    Add(vta[0]);
-	    return *this;
 	case 2:
-	    if (gsl_rng_uniform(BGA::rng) < lookout_prob)
+	    if (lookout)
 	    {
-		ntrials = 1500;
-		push_third_atoms(vta, ntrials);
+		push_third_atoms(vta, lookout_trials);
 		break;
 	    }
-//	    ntrials = 16;
 	default:
-	    tguru.shareTrials(NAtoms(), ntrials);
-	    push_good_distances(vta, afit, tguru.est_trials[LINEAR]);
-	    push_good_triangles(vta, afit, tguru.est_trials[PLANAR]);
-	    push_good_pyramids(vta, afit, tguru.est_trials[SPATIAL]);
+	    push_good_distances(vta, afit, nlinear);
+	    push_good_triangles(vta, afit, nplanar);
+	    push_good_pyramids(vta, afit, nspatial);
     }
     // set badness range from desired badness
     double evolve_range = NAtoms()*tol_nbad*evolve_frac;
     double hi_abad = DOUBLE_MAX;
     // try to add as many atoms as possible
-    size_t natoms0 = NAtoms();
     typedef vector<Atom_t>::iterator VAit;
     while (true)
     {
@@ -1730,7 +1724,7 @@ Molecule& Molecule::Evolve(long long dcalls)
 	    break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
-	if (NAtoms() == 1 || NAtoms() == 2)
+	if (lookout)
 	{
 	    // calculate fitness as the number of good neighbors
 	    valarray<int> cnt = good_neighbors_count(vta);
@@ -1757,7 +1751,6 @@ Molecule& Molecule::Evolve(long long dcalls)
 	// vtafit is ready here
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
 	Add(vta[idx]);
-	tguru.noteTriangulation(vta[idx].ttp, natoms0);
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
 	if (evolve_relax)
@@ -1776,7 +1769,6 @@ Molecule& Molecule::Evolve(long long dcalls)
     }
     if (NAtoms() < center_size)
 	Center();
-    tguru.toc(natoms0, ntrials);
     return *this;
 }
 
@@ -2064,16 +2056,14 @@ bool Molecule::WriteAtomEye(const char* file)
     return result;
 }
 
-Molecule& Molecule::OutFmtXYZ()
+void Molecule::OutFmtXYZ()
 {
     output_format = XYZ;
-    return *this;
 }
 
-Molecule& Molecule::OutFmtAtomEye()
+void Molecule::OutFmtAtomEye()
 {
     output_format = ATOMEYE;
-    return *this;
 }
 
 istream& operator>>(istream& fid, Molecule& M)

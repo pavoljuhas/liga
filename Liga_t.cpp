@@ -11,6 +11,7 @@
 #include <queue>
 #include "Liga_t.hpp"
 #include "RunPar_t.hpp"
+#include "TrialDistributor.hpp"
 
 // Constructor and destructor
 
@@ -19,6 +20,7 @@ Liga_t::Liga_t(RunPar_t* runpar) :
 {
     world_champ = NULL;
     best_champ = NULL;
+    tdistributor = NULL;
 }
 
 Liga_t::~Liga_t()
@@ -37,12 +39,16 @@ void Liga_t::prepare()
     world_champ = NULL;
     delete best_champ;
     best_champ = NULL;
+    delete tdistributor;
+    tdistributor = TrialDistributor::create(rp->trials_sharing);
+    tdistributor->resize(rp->natoms + 1);
     base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
+    Division_t::ndim = rp->ndim;
     for (int lev = 0; lev <= rp->natoms; ++lev)
     {
-        int divsize = rp->divSize(lev);
-        push_back(Division_t(divsize));
+        int divsize = divSize(lev);
+        push_back(Division_t(divsize, lev));
     }
     // put initial molecule to its division
     PMOL first_team = new Molecule(rp->mol);
@@ -73,6 +79,7 @@ void Liga_t::playSeason()
 {
     if (stopFlag())	return;
     ++season;
+    shareSeasonTrials();
     for (size_t lo_level = base_level; lo_level < size() - 1; ++lo_level)
     {
 	playLevel(lo_level);
@@ -106,7 +113,10 @@ void Liga_t::playLevel(size_t lo_level)
 	lo_div->push_back(winner_clone);
     }
     // advance as far as possible
-    advancing->Evolve(16*1024);
+//    const int* est_triang = lo_div->estimateTriangulations(tshares[lo_level]);
+    const int* etg = lo_div->estimateTriangulations();
+    advancing->Evolve(etg);
+    lo_div->noteTriangulations(advancing);
     modified.insert(advancing);
     size_t hi_level = advancing->NAtoms();
     iterator hi_div = begin() + hi_level;
@@ -195,6 +205,20 @@ void Liga_t::printSummary()
 
 // Private methods
 
+int Liga_t::divSize(int level)
+{
+    if (level < rp->base_level)	    return 0;
+    if (level < 2)		    return 1;
+    // default is rp->ligasize, but consult with seed_clusters
+    int sz = rp->ligasize;
+    for (   vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
+	    scii != rp->seed_clusters.end(); ++scii )
+    {
+	if (scii->level == level)   sz = scii->number;
+    }
+    return sz;
+}
+
 void Liga_t::makeSeedClusters()
 {
     if (rp->seed_clusters.empty())  return;
@@ -216,9 +240,13 @@ void Liga_t::makeSeedClusters()
 		mcore.Pop(mcore.NAtoms() - 1);
 	    }
 	    int addcnt = scii->level - base_level;
+	    int ntrials = addcnt ? rp->seasontrials/addcnt + 1 : 0;
 	    for (int k = 0; k < addcnt && !mcore.Full(); ++k)
 	    {
-		mcore.Evolve(1024);
+		iterator lo_div = begin() + mcore.NAtoms();
+		lo_div->assignTrials(ntrials);
+		const int* etg = lo_div->estimateTriangulations();
+		mcore.Evolve(etg);
 	    }
 	    if (!mcore.Full())  continue;
 	    if (!seeded->full())
@@ -240,6 +268,25 @@ void Liga_t::makeSeedClusters()
 	    << seed_winner->NormBadness() << endl;
     }
     Molecule::evolve_jump = keep_evolve_jump;
+}
+
+void Liga_t::shareSeasonTrials()
+{
+    // copy level costs and fill rate to trials distributor
+    for (size_t level = base_level; level != size(); ++level)
+    {
+	Division_t* lvdiv = &(at(level));
+  	tdistributor->setLevelBadness(level, lvdiv->NormBadness());
+	double fr = 1.0*lvdiv->size() / lvdiv->fullsize();
+	tdistributor->setLevelFillRate(level, fr);
+    }
+    // share it
+    tdistributor->share(rp->seasontrials);
+    for (size_t level = base_level; level != size(); ++level)
+    {
+	Division_t* lvdiv = &(at(level));
+	lvdiv->assignTrials(tdistributor->tshares[level]);
+    }
 }
 
 Molecule* Liga_t::updateWorldChamp()
@@ -287,7 +334,7 @@ void Liga_t::saveOutStru()
     static int savecnt = 0;
     static valarray<double> bestMNB(DOUBLE_MAX, size());
     if (rp->outstru.empty() || rp->saverate == 0)	    return;
-    if (++savecnt < rp->saverate && !stopFlag() || empty()) return;
+    if (++savecnt < rp->saverate && !finished() || empty()) return;
     // start saving from the largest non-empty division
     for (reverse_iterator hi_div = rbegin(); hi_div != rend(); ++hi_div)
     {
@@ -320,17 +367,17 @@ void Liga_t::saveFrames()
 	PMOL champ;
 	double level;
 	double norm_badness;
-    } save = {0, NULL, 0, DOUBLE_MAX};
+    } saved = {0, NULL, 0, DOUBLE_MAX};
     bool getout = rp->frames.empty() || rp->framesrate == 0 ||
-	++save.cnt < rp->framesrate && !stopFlag() || empty() ||
-	world_champ == save.champ && world_champ->NAtoms() == save.level &&
-	eps_eq(world_champ->NormBadness(), save.norm_badness);
+	++saved.cnt < rp->framesrate && !finished() || empty() ||
+	world_champ == saved.champ && world_champ->NAtoms() == saved.level &&
+	eps_eq(world_champ->NormBadness(), saved.norm_badness);
     if (getout)	    return;
     // need to do something here
-    save.cnt = 0;
-    save.champ = world_champ;
-    save.level = world_champ->NAtoms();
-    save.norm_badness = world_champ->NormBadness();
+    saved.cnt = 0;
+    saved.champ = world_champ;
+    saved.level = world_champ->NAtoms();
+    saved.norm_badness = world_champ->NormBadness();
     // build file name
     ostringstream oss;
     oss << rp->frames << '.' << season;
@@ -347,10 +394,10 @@ void Liga_t::recordFramesTrace(const set<PMOL>& modified)
 	(*mii)->trace.clear();
     }
     size_t level = base_level;
-    for (iterator div = begin() + base_level; div != end(); ++div, ++level)
+    for (iterator dv = begin() + base_level; dv != end(); ++dv, ++level)
     {
 	size_t index = 0;
-	for (mii = div->begin(); mii != div->end(); ++mii, ++index)
+	for (mii = dv->begin(); mii != dv->end(); ++mii, ++index)
 	{
 	    PMOL mp = *mii;
 	    if (!modified.count(mp) && !mp->trace.empty())  continue;
@@ -367,6 +414,7 @@ void Liga_t::saveFramesTrace(const set<PMOL>& modified)
     while (!qtrace.empty() && season == qtrace.front().season)
     {
 	TraceId_t tid = qtrace.front();
+	if (tid.index >= int(at(tid.level).size()))	return;
 	PMOL traced = at(tid.level).at(tid.index);
 	if (!modified.count(traced))	return;
 	qtrace.pop();

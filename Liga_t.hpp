@@ -16,11 +16,11 @@
 
 #include "Division_t.hpp"
 #include "RunPar_t.hpp"
-class Molecule;
+
+class TrialDistributor;
 
 class Liga_t : public std::vector<Division_t>
 {
-
     public:
 
 	// Data members
@@ -38,10 +38,10 @@ class Liga_t : public std::vector<Division_t>
 	{
 	    return stopflag && *stopflag;
 	}
-	inline bool stopFlag(int* flag)
+	inline bool useStopFlag(int* flag)
 	{
 	    stopflag = flag;
-	    return stopflag && *stopflag;
+	    return stopflag;
 	}
 	inline bool finished()
 	{
@@ -72,9 +72,12 @@ class Liga_t : public std::vector<Division_t>
 	int* stopflag;
 	int base_level;
 	PMOL world_champ, best_champ;
+	TrialDistributor* tdistributor;
 
-	// Private ethods
+	// Private methods
+	int divSize(int level);
 	void makeSeedClusters();
+	void shareSeasonTrials();
 	PMOL updateWorldChamp();
 	PMOL updateBestChamp();
 	void printWorldChamp();
@@ -85,4 +88,4 @@ class Liga_t : public std::vector<Division_t>
 	void saveFramesTrace(const set<PMOL>& modified);
 };
 
-#endif		// LIGA_T_HPP_INCLUDED
+#endif	// LIGA_T_HPP_INCLUDED

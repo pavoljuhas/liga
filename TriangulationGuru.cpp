@@ -35,9 +35,9 @@ void TriangulationGuru::shareTrials(size_t natoms, size_t n) const
 {
     check_size(natoms);
     double p[3] = {
-	10 + tginfos[natoms].tgcounts[0],
-	50 + tginfos[natoms].tgcounts[1],
-	1000 + tginfos[natoms].tgcounts[2],
+	2 + tginfos[natoms].tgcounts[0],
+	4 + tginfos[natoms].tgcounts[1],
+	12 + tginfos[natoms].tgcounts[2],
     };
     double ptot[3];
     partial_sum(p, p+3, ptot);
@@ -64,6 +64,7 @@ size_t TriangulationGuru::trialsPerDistanceCalls(
 {
     check_size(natoms);
     double rate = tginfos[natoms].trial_rate();
+    if (!rate && natoms > 0)	rate = tginfos[natoms-1].trial_rate();
     double rv;
     rv = min(dcalls*rate, double(maxtrials));
     rv = max(rv, double(mintrials));

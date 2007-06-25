@@ -47,10 +47,10 @@ public:
     void Dump();
     void ReadPars(const char *file);
     istream& ReadPars(istream& fid = cin);
-    template <typename T> T GetPar(string par);
+    template<typename T> T GetPar(string par);
     std::vector<int> ExpandRangePar(string par);
-    template <typename T> T GetPar(string par, T defval);
-    template <typename T> vector<T> GetParVec(string par);
+    template<typename T> T GetPar(string par, T defval);
+    template<typename T> vector<T> GetParVec(string par);
     void ValidatePars(list<string>& validpars);
     inline bool ispar(const string& p) { return pars.count(p); }
     inline bool isopt(const string& o) { return opts.count(o); }
@@ -86,7 +86,7 @@ template<typename T> T ParseArgs::GetPar(string par, T defval)
     return pars.count(par) ? GetPar<T>(par) : defval;
 }
 
-template <typename T> vector<T> ParseArgs::GetParVec(string par)
+template<typename T> vector<T> ParseArgs::GetParVec(string par)
 {
     if (!pars.count(par))
     {

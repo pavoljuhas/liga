@@ -19,7 +19,6 @@
 #include <limits>
 #include <gsl/gsl_rng.h>
 #include "BGAutils.hpp"
-#include "TriangulationGuru.hpp"
 
 // global random number generator
 namespace BGA
@@ -39,7 +38,7 @@ using namespace std;
 const double DOUBLE_MAX = numeric_limits<double>().max();
 
 // helper objects/functions
-template <typename T>
+template<typename T>
 struct OrderedPair : pair<T,T>
 {
     OrderedPair(const T& x, const T& y) : pair<T,T>(x, y)
@@ -93,25 +92,30 @@ private:
     void init();
 };
 
+enum triangulation_type { LINEAR, PLANAR, SPATIAL, NTGTYPES };
+
 class Atom_t
 {
-public:
-    Atom_t(double rx0, double ry0, double rz0, double bad0 = 0.0);
-    Atom_t(double r0[3], double bad0 = 0.0);
-    Atom_t(valarray<double>& r0, double bad0 = 0.0);
-    mutable double r[3];
-    double Badness() const;
-    double FreeBadness() const;
-    double AvgBadness() const;
-    double IncBadness(double db);
-    double DecBadness(double db);
-    double ResetBadness(double b = 0.0);
-    bool fixed;
-    triangulation_type ttp;
-private:
-    double badness;
-    double badness_sum;
-    int age;
+    public:
+
+	Atom_t(double rx0, double ry0, double rz0, double bad0 = 0.0);
+	Atom_t(double r0[3], double bad0 = 0.0);
+	Atom_t(valarray<double>& r0, double bad0 = 0.0);
+	mutable double r[3];
+	double Badness() const;
+	double FreeBadness() const;
+	double AvgBadness() const;
+	double IncBadness(double db);
+	double DecBadness(double db);
+	double ResetBadness(double b = 0.0);
+	bool fixed;
+	triangulation_type ttp;
+
+    private:
+
+	double badness;
+	double badness_sum;
+	int age;
 };
 
 bool operator==(const Atom_t& a1, const Atom_t& a2);
@@ -189,7 +193,6 @@ public:
     static int center_size;
     static vector<AtomFilter_t*> atom_filters;
     static double lookout_prob;
-    static TriangulationGuru tguru;
     // fitness/badness functions
     double Badness() const;	// total badness
     double NormBadness() const;	// normalized badness
@@ -198,7 +201,11 @@ public:
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
     // atom operations
-    Atom_t Atom(const int cidx);	// get copy of specified atom
+//    Atom_t Atom(const int cidx);	// get copy of specified atom
+    inline const Atom_t& Atom(const int cidx)
+    {
+	return *(atoms[cidx]);
+    }
     Molecule& Pop(const int cidx);	// erase
     Molecule& Pop(const list<int>& cidx);
     Molecule& Clear();			// remove all atoms
@@ -210,15 +217,15 @@ public:
     Molecule& RelaxAtom(const int cidx);	// relax internal atom
     Molecule& RelaxAtom(vector<Atom_t*>::iterator);
     void RelaxExternalAtom(Atom_t& a);
-    Molecule& Evolve(long long dcalls);
+    Molecule& Evolve(const int* est_triang);
     Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
     bool ReadXYZ(const char*); 		// read real coordinates
     bool WriteFile(const char*); 	// save in current output_format
     bool WriteXYZ(const char*); 	// save real coordinates
     bool WriteAtomEye(const char*);	// export in AtomEye format
-    Molecule& OutFmtXYZ();		// output format for operator>>
-    Molecule& OutFmtAtomEye();          // output format for operator>>
+    static void OutFmtXYZ();		// output format for operator>>
+    static void OutFmtAtomEye();        // output format for operator>>
     friend ostream& operator<<(ostream& os, Molecule& M);
     friend istream& operator>>(istream& is, Molecule& M);
     void PrintBadness();		// total and per-atomic badness
@@ -259,7 +266,7 @@ private:
     bool check_atom_filters(Atom_t*);
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
-    file_fmt_type output_format;
+    static file_fmt_type output_format;
     class ParseHeader;
     istream& ReadXYZ(istream& fid);
     string opened_file;

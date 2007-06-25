@@ -9,6 +9,9 @@
 ***********************************************************************/
 
 #include "RunPar_t.hpp"
+#include "TrialDistributor.hpp"
+#include "StringUtils.hpp"
+
 using namespace std;
 
 RunPar_t::RunPar_t()
@@ -138,7 +141,6 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	string emsg = "ndim value must be 1, 2 or 3";
 	throw ParseArgsError(emsg);
     }
-    TriangulationGuru::ndim = ndim;
     // tol_dd
     tol_dd = a.GetPar<double>("tol_dd", 0.1);
     mol.tol_dd = tol_dd;
@@ -210,11 +212,11 @@ void RunPar_t::processArguments(int argc, char *argv[])
     mol.center_size = centersize;
     // maxcputime
     maxcputime = a.GetPar<double>("maxcputime", 0.0);
-    // seed
-    seed = a.GetPar<int>("seed", 0);
-    if (seed)
+    // rngseed
+    rngseed = a.GetPar<int>("rngseed", 0);
+    if (rngseed)
     {
-	gsl_rng_set(BGA::rng, seed);
+	gsl_rng_set(BGA::rng, rngseed);
     }
     // evolve_frac
     evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
@@ -229,8 +231,17 @@ void RunPar_t::processArguments(int argc, char *argv[])
     ligasize = a.GetPar<int>("ligasize", 10);
     // stopgame
     stopgame = a.GetPar<double>("stopgame", 0.0025);
-    // seasondcalls
-    seasondcalls = a.GetPar("seasondcalls", 2048);
+    // seasontrials
+    seasontrials = a.GetPar<int>("seasontrials", 16384);
+    // trials_sharing
+    trials_sharing = a.GetPar<string>("trials_sharing", "equal");
+    if (!TrialDistributor::isType(trials_sharing))
+    {
+	ostringstream emsg;
+	emsg << "trials_sharing must be one of (";
+	emsg << join(", ", TrialDistributor::getTypes()) << ").";
+	throw ParseArgsError(emsg.str());
+    }
     // lookout_prob
     lookout_prob = a.GetPar("lookout_prob", 0.0);
     mol.lookout_prob = lookout_prob;
@@ -264,20 +275,6 @@ void RunPar_t::processArguments(int argc, char *argv[])
     print_pars(a);
 }
 
-int RunPar_t::divSize(int level)
-{
-    if (level < base_level)	return 0;
-    if (level < 2)		return 1;
-    // default is ligasize, but consult with seed_clusters
-    int sz = ligasize;
-    for (   vector<SeedClusterInfo>::iterator scii = seed_clusters.begin();
-	    scii != seed_clusters.end(); ++scii )
-    {
-	if (scii->level == level)   sz = scii->number;
-    }
-    return sz;
-}
-
 void RunPar_t::print_help(ParseArgs& a)
 {
     // /usage:/;/;/-s/.*/"&\\n"/
@@ -303,7 +300,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  framesrate=int        [0] number of iterations between frame saves\n"
 "  framestrace=array     [] triplets of (season, initial, final level)\n"
 "Liga parameters:\n"
-"  ndim={1,2,3}	         [3] search in n-dimensional space.\n"
+"  ndim={1,2,3}          [3] search in n-dimensional space.\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  natoms=int            use with loose distfiles or when tol_dd==0\n"
@@ -311,13 +308,14 @@ void RunPar_t::print_help(ParseArgs& a)
 "  seed_clusters=array   [] triplets of (level, number, trials)\n"
 "  centersize=int        [0] shift smaller molecules to the origin\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
-"  seed=int              seed of random number generator\n"
+"  rngseed=int           seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
 "  evolve_relax=bool     [false] relax the worst atom after addition\n"
 "  degenerate_relax=bool [false] relax the worst atom after removal\n"
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.0025] skip division when winner is worse\n"
-"  seasondcalls=int      [2048] measure of CPU time dedicated to one season\n"
+"  seasontrials=int      [16384] number of atom placements in one season\n"
+"  trials_sharing=string ([equal],size,success) trials sharing among levels\n"
 "  lookout_prob=double   [0.0] lookout probability for 2nd and 3rd atoms\n"
 "Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
@@ -443,19 +441,20 @@ void RunPar_t::print_pars(ParseArgs& a)
     {
 	cout << "maxcputime=" << maxcputime << endl;
     }
-    // seed
-    if (seed)
+    // rngseed
+    if (rngseed)
     {
-	cout << "seed=" << seed << endl;
+	cout << "rngseed=" << rngseed << endl;
     }
     // evolve_frac, evolve_relax, degenerate_relax
     cout << "evolve_frac=" << evolve_frac << endl;
     cout << "evolve_relax=" << evolve_relax << endl;
     cout << "degenerate_relax=" << degenerate_relax << endl;
-    // ligasize, stopgame, seasondcalls, lookout_prob
+    // ligasize, stopgame, seasontrials, trials_sharing, lookout_prob
     cout << "ligasize=" << ligasize << endl;
     cout << "stopgame=" << stopgame << endl;
-    cout << "seasondcalls=" << seasondcalls << endl;
+    cout << "seasontrials=" << seasontrials << endl;
+    cout << "trials_sharing=" << trials_sharing << endl;
     cout << "lookout_prob=" << lookout_prob << endl;
     // constraints
     // bangle_range
@@ -484,10 +483,10 @@ void RunPar_t::fill_validpars()
 	"outstru", "outfmt", "saverate", "saveall",
 	"frames", "framesrate", "framestrace", "ndim",
 	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "seed_clusters",
-	"centersize", "maxcputime", "seed",
+	"centersize", "maxcputime", "rngseed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
-	"seasondcalls", "lookout_prob",
+	"seasontrials", "trials_sharing", "lookout_prob",
 	"bangle_range", "max_dist" };
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));

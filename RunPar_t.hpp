@@ -15,8 +15,6 @@
 #include "BGAlib.hpp"
 #include "ParseArgs.hpp"
 
-class Molecule;
-
 struct TraceId_t
 {
     int season;
@@ -35,7 +33,6 @@ struct RunPar_t
 {
     RunPar_t();
     void processArguments(int argc, char * argv[]);
-    int divSize(int level);
     // Output option
     bool quiet;
     bool trace;
@@ -58,13 +55,14 @@ struct RunPar_t
     std::vector<SeedClusterInfo> seed_clusters;
     int centersize;
     double maxcputime;
-    int seed;
+    int rngseed;
     double evolve_frac;
     bool evolve_relax;
     bool degenerate_relax;
     int ligasize;
     double stopgame;
-    int seasondcalls;
+    int seasontrials;
+    std::string trials_sharing;
     double lookout_prob;
     // generated data
     Molecule mol;

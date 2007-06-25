@@ -13,8 +13,6 @@
 
 #include <vector>
 
-enum triangulation_type { LINEAR, PLANAR, SPATIAL };
-
 class TriangulationGuru
 {
     public:
@@ -36,8 +34,8 @@ class TriangulationGuru
 	void forgetTriangulations();
 
 	// Constants
-	static const size_t mintrials = 256;
-	static const size_t maxtrials = 16384/16;
+	static const size_t mintrials = 64;
+	static const size_t maxtrials = 16384;
 	static size_t ndim;
 
     private:

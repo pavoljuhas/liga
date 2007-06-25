@@ -9,8 +9,9 @@
 ########################################################################
 
 Sources = \
-        BGAlib.cpp BGAutils.cpp ParseArgs.cpp TriangulationGuru.cpp \
-        Liga_t.cpp RunPar_t.cpp
+        BGAlib.cpp BGAutils.cpp ParseArgs.cpp \
+        Liga_t.cpp Division_t.cpp RunPar_t.cpp \
+        TrialDistributor.cpp
         
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
