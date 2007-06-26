@@ -334,7 +334,8 @@ string RunPar_t::version_string(string quote)
 {
     using namespace std;
     ostringstream oss;
-    oss << quote << "gizaliga " << RegisterSVNId::last_id;
+    oss << quote << "gizaliga " << RegisterSVNId::last_id << '\n' <<
+	quote << "compiler version " << __VERSION__;
     return oss.str();
 }
 
