@@ -53,10 +53,6 @@ all: gizaliga
         {comment = soccer league of pyramid builders} : \
         gizaliga.cpp $Sources
 
-:program djoser \
-        {comment = clunky pyramid builder} : \
-        djoser.cpp $Sources
-
 :program mcfitdist \
         {comment = MC shuffling of atoms} : \
         mcfitdist.cpp $Sources
@@ -92,9 +88,5 @@ gizaliga-test-bangle_range :
 
 install-py { comment = install python scripts } :
     @install_files('bin', _no.Scripts, '0755')
-
-:program memTest01 \
-        {comment = test of liga memory usage} : \
-        memTest01.cpp BGAlib.cpp BGAutils.cpp
 
 # End of file
