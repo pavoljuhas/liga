@@ -14,6 +14,11 @@
 #include <vector>
 #include <gsl/gsl_randist.h>
 #include "BGAlib.hpp"
+#include "RegisterSVNId.hpp"
+
+namespace {
+RegisterSVNId Division_t_hpp_id("$Id$");
+}
 
 class Division_t : public vector<Molecule*>
 {

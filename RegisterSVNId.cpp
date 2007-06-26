@@ -49,7 +49,7 @@ int RegisterSVNId::getRevision(const string& id)
 {
     istringstream idline(id);
     string ignore;
-    int rev;
+    int rev = 0;
     idline >> ignore >> ignore >> rev;
     return rev;
 }
@@ -64,8 +64,9 @@ string RegisterSVNId::getAuthor(const string& id)
 
 // constructor
 
-RegisterSVNId::RegisterSVNId(const char* id) : myid(id)
+RegisterSVNId::RegisterSVNId(const char* id)
 {
+    string myid = id;
     svnids[getFile(myid)] = myid;
     if (getRevision(myid) > last_revision)
     {

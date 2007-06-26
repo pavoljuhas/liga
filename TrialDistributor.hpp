@@ -18,7 +18,11 @@
 #include <map>
 #include <valarray>
 #include <deque>
+#include "RegisterSVNId.hpp"
 
+namespace {
+RegisterSVNId TrialDistributor_hpp_id = "$Id$";
+}
 
 class TrialDistributor
 {

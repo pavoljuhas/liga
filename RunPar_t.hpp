@@ -14,6 +14,11 @@
 #include <deque>
 #include "BGAlib.hpp"
 #include "ParseArgs.hpp"
+#include "RegisterSVNId.hpp"
+
+namespace {
+RegisterSVNId RunPar_t_hpp_id("$Id$");
+}
 
 struct TraceId_t
 {
@@ -74,7 +79,7 @@ struct RunPar_t
 private:
 
     void print_help(ParseArgs& a);
-    std::string version_string(std::string quote = "");
+    std::string version_string(std::string quote="");
     void print_pars(ParseArgs& a);
     std::list<std::string> validpars;
     void fill_validpars();

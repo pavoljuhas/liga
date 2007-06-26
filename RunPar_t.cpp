@@ -14,6 +14,13 @@
 
 using namespace std;
 
+RegisterSVNId RunPar_t_cpp_id("$Id$");
+
+
+////////////////////////////////////////////////////////////////////////
+// class RunPar_t
+////////////////////////////////////////////////////////////////////////
+
 RunPar_t::RunPar_t()
 {
     fill_validpars();
@@ -41,7 +48,7 @@ void RunPar_t::processArguments(int argc, char *argv[])
     }
     else if (a.isopt("V"))
     {
-	cout << version_string();
+	cout << version_string() << endl;
 	exit(EXIT_SUCCESS);
     }
     if (a.isopt("p"))
@@ -327,12 +334,7 @@ string RunPar_t::version_string(string quote)
 {
     using namespace std;
     ostringstream oss;
-    oss << quote
-        << "$Id$" << endl
-#   if defined(__DATE__) && defined(__TIME__)
-	<< quote << "compiled " __DATE__ " " __TIME__ << endl
-#   endif
-        ;
+    oss << quote << "gizaliga " << RegisterSVNId::last_id;
     return oss.str();
 }
 
@@ -341,34 +343,34 @@ void RunPar_t::print_pars(ParseArgs& a)
     // print out all run parameters
     // intro messages
     string hashsep(72, '#');
-    cout << hashsep << endl;
-    cout << "# " << a.cmd_t << endl;
-    cout << version_string("# ");
+    cout << hashsep << '\n';
+    cout << "# " << a.cmd_t << '\n';
+    cout << version_string("# ") << '\n';
     char hostname[255];
     gethostname(hostname, 255);
-    cout << "# " << hostname << endl;
+    cout << "# " << hostname << '\n';
     time_t cur_time = time(NULL);
     cout << "# " << ctime(&cur_time);
-    cout << hashsep << endl;
+    cout << hashsep << '\n';
     // distfile
-    cout << "distfile=" << distfile << endl;
+    cout << "distfile=" << distfile << '\n';
     // inistru
     if (a.ispar("inistru"))
     {
-	cout << "inistru=" << inistru << endl;
+	cout << "inistru=" << inistru << '\n';
     }
     // outstru, outfmt, saverate, saveall
     if (a.ispar("outstru"))
     {
-        cout << "outstru=" << outstru << endl;
-	cout << "outfmt=" << outfmt << endl;
-        cout << "saverate=" << saverate << endl;
-	cout << "saveall=" << saveall << endl;
+        cout << "outstru=" << outstru << '\n';
+	cout << "outfmt=" << outfmt << '\n';
+        cout << "saverate=" << saverate << '\n';
+	cout << "saveall=" << saveall << '\n';
     }
     // frames, framestrace, framesrate
     if (a.ispar("frames"))
     {
-	cout << "frames=" << frames << endl;
+	cout << "frames=" << frames << '\n';
 	// framestrace
 	if (framestrace.size() != 0)
 	{
@@ -376,28 +378,28 @@ void RunPar_t::print_pars(ParseArgs& a)
 	    for (deque<TraceId_t>::iterator ii = framestrace.begin();
 		    ii != framestrace.end(); ++ii)
 	    {
-		cout << " \\" << endl;
+		cout << " \\" << '\n';
 		cout << "    " << ii->season;
 		cout << ' ' << ii->level;
 		cout << ' ' << ii->index;
 	    }
-	    cout << endl;
+	    cout << '\n';
 	}
 	// framesrate - print only if framestrace is empty
 	else
 	{
-	    cout << "framesrate=" << framesrate << endl;
+	    cout << "framesrate=" << framesrate << '\n';
 	}
     }
     // liga parameters
     // ndim, tol_dd, tol_bad 
-    cout << "ndim=" << ndim << endl;
-    cout << "tol_dd=" << tol_dd << endl;
-    cout << "tol_bad=" << tol_bad << endl;
+    cout << "ndim=" << ndim << '\n';
+    cout << "tol_dd=" << tol_dd << '\n';
+    cout << "tol_bad=" << tol_bad << '\n';
     // natoms
     if (a.ispar("natoms"))
     {
-	cout << "natoms=" << natoms << endl;
+	cout << "natoms=" << natoms << '\n';
     }
     // fixed_atoms
     if (a.ispar("fixed_atoms") && !fixed_atoms.empty())
@@ -415,7 +417,7 @@ void RunPar_t::print_pars(ParseArgs& a)
 	    if (range > 1)  cout << ".." << fixed_atoms[start+range-1];
 	    start += range;
 	}
-	cout << endl;
+	cout << '\n';
     }
     // seed_clusters
     if (seed_clusters.size() != 0)
@@ -429,33 +431,33 @@ void RunPar_t::print_pars(ParseArgs& a)
 	    cout << ' ' << ii->number;
 	    cout << ' ' << ii->trials;
 	}
-	cout << endl;
+	cout << '\n';
     }
     // centersize
     if (a.ispar("centersize"))
     {
-	cout << "centersize=" << centersize << endl;
+	cout << "centersize=" << centersize << '\n';
     }
     // maxcputime
     if (maxcputime > 0.0)
     {
-	cout << "maxcputime=" << maxcputime << endl;
+	cout << "maxcputime=" << maxcputime << '\n';
     }
     // rngseed
     if (rngseed)
     {
-	cout << "rngseed=" << rngseed << endl;
+	cout << "rngseed=" << rngseed << '\n';
     }
     // evolve_frac, evolve_relax, degenerate_relax
-    cout << "evolve_frac=" << evolve_frac << endl;
-    cout << "evolve_relax=" << evolve_relax << endl;
-    cout << "degenerate_relax=" << degenerate_relax << endl;
+    cout << "evolve_frac=" << evolve_frac << '\n';
+    cout << "evolve_relax=" << evolve_relax << '\n';
+    cout << "degenerate_relax=" << degenerate_relax << '\n';
     // ligasize, stopgame, seasontrials, trials_sharing, lookout_prob
-    cout << "ligasize=" << ligasize << endl;
-    cout << "stopgame=" << stopgame << endl;
-    cout << "seasontrials=" << seasontrials << endl;
-    cout << "trials_sharing=" << trials_sharing << endl;
-    cout << "lookout_prob=" << lookout_prob << endl;
+    cout << "ligasize=" << ligasize << '\n';
+    cout << "stopgame=" << stopgame << '\n';
+    cout << "seasontrials=" << seasontrials << '\n';
+    cout << "trials_sharing=" << trials_sharing << '\n';
+    cout << "lookout_prob=" << lookout_prob << '\n';
     // constraints
     // bangle_range
     if (a.ispar("bangle_range"))
@@ -465,15 +467,15 @@ void RunPar_t::print_pars(ParseArgs& a)
 	{
 	    cout << ',' << bangle_range[i];
 	}
-	cout << endl;
+	cout << '\n';
     }
     // max_dist
     if (a.ispar("max_dist"))
     {
-	cout << "max_dist=" << max_dist << endl;
+	cout << "max_dist=" << max_dist << '\n';
     }
     // finish done
-    cout << hashsep << endl << endl;
+    cout << hashsep << '\n' << endl;
 }
 
 void RunPar_t::fill_validpars()

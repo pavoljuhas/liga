@@ -12,6 +12,8 @@
 
 using namespace std;
 
+RegisterSVNId TrialDistributor_cpp_id("$Id$");
+
 
 ////////////////////////////////////////////////////////////////////////
 // class TrialDistributor

@@ -10,6 +10,14 @@
 
 #include "ParseArgs.hpp"
 
+RegisterSVNId ParseArgs_cpp_id("$Id$");
+
+using namespace std;
+
+////////////////////////////////////////////////////////////////////////
+// class ParseArgs
+////////////////////////////////////////////////////////////////////////
+
 ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
     argc(nargc), argv(nargv)
 {

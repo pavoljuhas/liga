@@ -7,6 +7,8 @@
 
 using namespace std;
 
+RegisterSVNId BGAutils_cpp_id("$Id$");
+
 ofstream& mktempofstream(ofstream& out, char *writefile)
 {
     const int max_attempts = 10;

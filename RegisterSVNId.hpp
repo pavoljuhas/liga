@@ -35,11 +35,6 @@ class RegisterSVNId
 	// constructor
 	RegisterSVNId(const char* idstring);
 
-    private:
-
-	// data
-	const std::string myid;
-
 };  // class RegisterSVNId
 
 #endif	// REGISTERSVNID_HPP_INCLUDED

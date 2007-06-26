@@ -6,6 +6,11 @@
 #include <string>
 #include <list>
 #include <valarray>
+#include "RegisterSVNId.hpp"
+
+namespace {
+RegisterSVNId BGAutils_hpp_id("$Id$");
+}
 
 template<class A, class E> inline void Assert(A assertion, E except)
 {

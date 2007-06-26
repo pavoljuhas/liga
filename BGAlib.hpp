@@ -18,7 +18,12 @@
 #include <map>
 #include <limits>
 #include <gsl/gsl_rng.h>
+#include "RegisterSVNId.hpp"
 #include "BGAutils.hpp"
+
+namespace {
+RegisterSVNId BGAlib_hpp_id("$Id$");
+}
 
 // global random number generator
 namespace BGA

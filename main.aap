@@ -11,7 +11,7 @@
 Sources = \
         BGAlib.cpp BGAutils.cpp ParseArgs.cpp \
         Liga_t.cpp Division_t.cpp RunPar_t.cpp \
-        TrialDistributor.cpp
+        TrialDistributor.cpp RegisterSVNId.cpp
         
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`

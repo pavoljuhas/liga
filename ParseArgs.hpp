@@ -18,13 +18,18 @@
 #include <stdexcept>
 #include <getopt.h>
 #include "BGAutils.hpp"
+#include "RegisterSVNId.hpp"
 
-using namespace std;
+namespace {
+RegisterSVNId ParseArgs_hpp_id("$Id$");
+}
 
-struct ParseArgsError : public runtime_error
+class ParseArgsError : public std::runtime_error
 {
-    ParseArgsError (string what_arg = "") :
-	runtime_error(what_arg) { }
+    public:
+	ParseArgsError (std::string what_arg="") :
+	    std::runtime_error(what_arg)
+	{ }
 };
 
 class ParseArgs
@@ -39,70 +44,70 @@ public:
     char * const * argv;
     char *optstring;
     const struct option *longopts;
-    map<string,string> opts;
-    map<string,string> pars;
-    vector<string> args;
-    string cmd_h, cmd_t;
+    std::map<std::string,std::string> opts;
+    std::map<std::string,std::string> pars;
+    std::vector<std::string> args;
+    std::string cmd_h, cmd_t;
     void Parse();
     void Dump();
     void ReadPars(const char *file);
-    istream& ReadPars(istream& fid = cin);
-    template<typename T> T GetPar(string par);
-    std::vector<int> ExpandRangePar(string par);
-    template<typename T> T GetPar(string par, T defval);
-    template<typename T> vector<T> GetParVec(string par);
-    void ValidatePars(list<string>& validpars);
-    inline bool ispar(const string& p) { return pars.count(p); }
-    inline bool isopt(const string& o) { return opts.count(o); }
+    std::istream& ReadPars(std::istream& fid=std::cin);
+    template<typename T> T GetPar(std::string par);
+    std::vector<int> ExpandRangePar(std::string par);
+    template<typename T> T GetPar(std::string par, T defval);
+    template<typename T> std::vector<T> GetParVec(std::string par);
+    void ValidatePars(std::list<std::string>& validpars);
+    inline bool ispar(const std::string& p) { return pars.count(p); }
+    inline bool isopt(const std::string& o) { return opts.count(o); }
 private:
     void init();
     void do_getopt();
     void do_getopt_long();
     void arg_or_par(const char *s);
-    map<string,bool> cmdl_par;
+    std::map<std::string,bool> cmdl_par;
 };
 
-template<typename T> T ParseArgs::GetPar(string par)
+template<typename T> T ParseArgs::GetPar(std::string par)
 {
     if (!pars.count(par))
     {
-	ostringstream oss;
+	std::ostringstream oss;
 	oss << "parameter '" << par << "' is not defined";
 	throw ParseArgsError(oss.str());
     }
     T val;
-    istringstream iss(pars[par]);
+    std::istringstream iss(pars[par]);
     if ( !(iss >> val) )
     {
-	ostringstream oss;
+	std::ostringstream oss;
 	oss << "invalid value for parameter '" << par << "'";
 	throw ParseArgsError(oss.str());
     }
     return val;
 }
 
-template<typename T> T ParseArgs::GetPar(string par, T defval)
+template<typename T> T ParseArgs::GetPar(std::string par, T defval)
 {
     return pars.count(par) ? GetPar<T>(par) : defval;
 }
 
-template<typename T> vector<T> ParseArgs::GetParVec(string par)
+template<typename T> std::vector<T> ParseArgs::GetParVec(std::string par)
 {
     if (!pars.count(par))
     {
-	ostringstream oss;
+	std::ostringstream oss;
 	oss << "parameter '" << par << "' is not defined";
 	throw ParseArgsError(oss.str());
     }
     // replace all commas in par with <space>
-    string values(pars[par]);
-    for (   string::size_type pcomma = values.find(',');
-	    pcomma != string::npos; pcomma = values.find(',', pcomma) )
+    std::string values(pars[par]);
+    for (   std::string::size_type pcomma = values.find(',');
+	    pcomma != std::string::npos; pcomma = values.find(',', pcomma) )
     {
 	values[pcomma] = ' ';
     }
-    vector<T> v;
-    istringstream iss(values);
+    std::vector<T> v;
+    std::istringstream iss(values);
     T val;
     while (iss >> val)
 	v.push_back(val);

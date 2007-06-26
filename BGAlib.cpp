@@ -18,6 +18,8 @@
 
 #define CHECK_ATOM_FIXED true
 
+RegisterSVNId BGAlib_cpp_id("$Id$");
+
 // random number generator
 gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
 double BGA::eps_badness = 1.0e-10;
