@@ -340,8 +340,11 @@ void Liga_t::saveOutStru()
 {
     static int savecnt = 0;
     static valarray<double> bestMNB(DOUBLE_MAX, size());
-    if (rp->outstru.empty() || rp->saverate == 0)	    return;
-    if (++savecnt < rp->saverate && !finished() || empty()) return;
+    ++savecnt;
+    bool dontsave = rp->outstru.empty() || this->empty() ||
+	(!this->finished() && 0 < rp->saverate && savecnt < rp->saverate);
+
+    if (dontsave)   return;
     // start saving from the largest non-empty division
     for (reverse_iterator hi_div = rbegin(); hi_div != rend(); ++hi_div)
     {
@@ -363,7 +366,7 @@ void Liga_t::saveOutStru()
 	}
 	level_champ->WriteFile(fname.c_str());
 	// stop here if we are not saving all divisions
-	if (!rp->saveall)   return;
+	if (!rp->saveall)   break;
     }
 }
 
@@ -375,11 +378,11 @@ void Liga_t::saveFrames()
 	double level;
 	double norm_badness;
     } saved = {0, NULL, 0, DOUBLE_MAX};
-    bool getout = rp->frames.empty() || rp->framesrate == 0 ||
+    bool dontsave = rp->frames.empty() || rp->framesrate == 0 ||
 	++saved.cnt < rp->framesrate && !finished() || empty() ||
 	world_champ == saved.champ && world_champ->NAtoms() == saved.level &&
 	eps_eq(world_champ->NormBadness(), saved.norm_badness);
-    if (getout)	    return;
+    if (dontsave)    return;
     // need to do something here
     saved.cnt = 0;
     saved.champ = world_champ;
@@ -394,7 +397,7 @@ void Liga_t::saveFrames()
 
 void Liga_t::recordFramesTrace(const set<PMOL>& modified)
 {
-    if (!rp->trace)	return;
+    if (!rp->trace) return;
     Division_t::iterator mii;
     for (mii = at(base_level).begin(); mii != at(base_level).end(); ++mii)
     {
