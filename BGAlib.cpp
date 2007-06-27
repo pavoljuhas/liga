@@ -1353,14 +1353,15 @@ int Molecule::push_good_triangles(
 	    perpdir /= nm_perpdir;
 	    lattice_plane = true;
 	}
-	// otherwise generate direction in yz plane
+	// otherwise generate direction in cartesian plane
+	// perpendicular to the smallest component of longdir
 	else
 	{
-	    valarray<double> uvx(3);
-	    uvx[0] = 1.0;
-	    uvx[1] = 0.0;
-	    uvx[2] = 0.0;
-	    perpdir = vdcross(longdir, uvx);
+	    valarray<double> uv(0.0, 3);
+	    valarray<double> ald = abs(longdir);
+	    int ijk = min_element(&(ald[0]), &(ald[3])) - &(ald[0]);
+	    uv[ijk] = 1.0;
+	    perpdir = vdcross(longdir, uv);
 	    perpdir /= vdnorm(perpdir);
 	    lattice_plane = false;
 	}
