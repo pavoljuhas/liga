@@ -33,6 +33,12 @@ class TrialDistributor
 	static std::list<std::string> getTypes();
 	static bool isType(const std::string& tp);
 
+	// constructor
+	TrialDistributor()
+	{
+	    tol_bad = 1.0e-8;
+	    _type = "";
+	}
 	// destructor
 	virtual ~TrialDistributor() { }
 
@@ -45,6 +51,7 @@ class TrialDistributor
 	// public methods
 	void setLevelBadness(size_t lv, double bd);
 	void setLevelFillRate(size_t lv, double fr);
+	void setTolBadness(double tb)	{ tol_bad = tb; }
 	void resize(size_t sz);
 	inline size_t size()	    { return lvbadlog.size(); }
 	const std::string& type()   { return _type; }
@@ -62,6 +69,7 @@ class TrialDistributor
 	std::string _type;
 	std::deque<BadnessHistory> lvbadlog;
 	std::deque<double> fillrate;
+	double tol_bad;
 
 	// protected methods
 
@@ -81,7 +89,10 @@ class TrialDistributorEqual : public TrialDistributor
     public:
 
 	// constructor and destructor
-	TrialDistributorEqual()	    { _type = "equal"; }
+	TrialDistributorEqual()	: TrialDistributor()
+	{
+	    _type = "equal";
+	}
 	virtual ~TrialDistributorEqual() { }
 
 	// methods
@@ -103,7 +114,10 @@ class TrialDistributorSize : public TrialDistributor
     public:
 
 	// constructor and destructor
-	TrialDistributorSize()	    { _type = "size"; }
+	TrialDistributorSize() : TrialDistributor()
+	{
+	    _type = "size";
+	}
 	virtual ~TrialDistributorSize() { }
 
 	// public methods
@@ -125,7 +139,10 @@ class TrialDistributorSuccess : public TrialDistributor
     public:
 
 	// constructor and destructor
-	TrialDistributorSuccess()   { _type = "success"; }
+	TrialDistributorSuccess() : TrialDistributor()
+	{
+	    _type = "success";
+	}
 	virtual ~TrialDistributorSuccess() { }
 
 	// public methods
@@ -134,7 +151,7 @@ class TrialDistributorSuccess : public TrialDistributor
     private:
 
 	// class data
-	static const double success_weight;
+	static const double tol_bad_scale;
 
 	// methods
 	virtual TrialDistributor* create()

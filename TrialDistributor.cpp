@@ -118,12 +118,13 @@ void TrialDistributorSize::share(int seasontrials)
 
 // class data
 
-const double TrialDistributorSuccess::success_weight = 0.9;
+const double TrialDistributorSuccess::tol_bad_scale = 0.01;
 
 void TrialDistributorSuccess::share(int seasontrials)
 {
     tshares = 0.0;
     if (size() < 2)	return;
+    const double eps_tol_bad = tol_bad_scale * tol_bad;
     // calculate improvement ratio at each level
     valarray<double> scwt(0.0, size());
     for (size_t lv = 0; lv < size(); ++lv)
@@ -133,8 +134,8 @@ void TrialDistributorSuccess::share(int seasontrials)
 	int hwt = histsize - 1;
 	for (int i = hist.size() - 1;  i > 0 && hwt > 0.0;  --i, --hwt)
 	{
-	    double improvement =
-		(hist[i] < hist[i-1]) ? (hist[i-1] - hist[i])/hist[i-1] : 0.0;
+	    double improvement = hist[i] + eps_tol_bad < hist[i-1] ?
+		(hist[i-1] - hist[i])/(hist[i-1] + eps_tol_bad) : 0;
 	    scwt[lv] += hwt * improvement;
 	    tothwt += hwt;
 	}
@@ -148,14 +149,11 @@ void TrialDistributorSuccess::share(int seasontrials)
 	scwt[lo] += scshift;
 	scwt[hi] -= scshift;
     }
-    // normalize scwt
-    double totscwt = scwt.sum();
-    if (totscwt > 0.0)	    scwt /= totscwt;
     // calculate tshares
-    tshares += success_weight * scwt;
-    tshares += (1.0 - success_weight) * (1.0/(size() - 1));
-    tshares *= seasontrials;
+    // average with equal shares to work around zero scwt
+    tshares = scwt + 1.0/(size() - 1);
     tshares[size() - 1] = 0.0;
+    tshares *= seasontrials/tshares.sum();
 }
 
 

@@ -49,6 +49,7 @@ void Liga_t::prepare()
     delete tdistributor;
     tdistributor = TrialDistributor::create(rp->trials_sharing);
     tdistributor->resize(rp->natoms + 1);
+    tdistributor->setTolBadness(rp->tol_bad);
     base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
     Division_t::ndim = rp->ndim;
@@ -293,6 +294,7 @@ void Liga_t::shareSeasonTrials()
     {
 	Division_t* lvdiv = &(at(level));
 	lvdiv->assignTrials(tdistributor->tshares[level]);
+	if (false)   cout << season << " TS " << level << ' ' << tdistributor->tshares[level] << '\n';
     }
 }
 
