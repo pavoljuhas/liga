@@ -12,6 +12,7 @@
 #define RUNPAR_T_HPP_INCLUDED
 
 #include <deque>
+#include <valarray>
 #include "BGAlib.hpp"
 #include "ParseArgs.hpp"
 #include "RegisterSVNId.hpp"
@@ -34,12 +35,16 @@ struct SeedClusterInfo
     int trials;
 };
 
+namespace VerboseFlag
+{
+    enum VerboseFlag { AD, WC, BC, AV, TS, ALL, VERBOSE_SIZE };
+}
+
 struct RunPar_t
 {
     RunPar_t();
     void processArguments(int argc, char * argv[]);
     // Output option
-    bool quiet;
     bool trace;
     // IO parameters
     std::string distfile;
@@ -51,6 +56,8 @@ struct RunPar_t
     std::string frames;
     int framesrate;
     std::deque<TraceId_t> framestrace;
+    std::valarray<bool> verbose;
+    bool verbose_mute;
     // Liga parameters
     size_t ndim;
     double tol_dd;
@@ -78,11 +85,14 @@ struct RunPar_t
 
 private:
 
-    void print_help(ParseArgs& a);
     std::string version_string(std::string quote="");
-    void print_pars(ParseArgs& a);
     std::list<std::string> validpars;
+    std::vector<std::string> verbose_flag;
+
+    void print_help(ParseArgs& a);
+    void print_pars(ParseArgs& a);
     void fill_validpars();
+    void fill_verbose();
 
 };
 

@@ -86,7 +86,9 @@ class Liga_t : public std::vector<Division_t>
 	PMOL updateWorldChamp();
 	PMOL updateBestChamp();
 	void printWorldChamp();
+	void printBestChamp();
 	void printLevelAverages();
+	void printTrialShares();
 	void saveOutStru();
 	void saveFrames();
 	void recordFramesTrace(const set<PMOL>& modified);

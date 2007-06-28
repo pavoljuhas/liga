@@ -24,6 +24,7 @@ RegisterSVNId RunPar_t_cpp_id("$Id$");
 RunPar_t::RunPar_t()
 {
     fill_validpars();
+    fill_verbose();
 }
 
 void RunPar_t::processArguments(int argc, char *argv[])
@@ -33,7 +34,6 @@ void RunPar_t::processArguments(int argc, char *argv[])
     // parameters and options
     option long_options[] = {
 	{"parfile", 1, 0, 'p'},
-	{"quiet", 0, 0, 'q'},
 	{"trace", 0, 0, 't'},
 	{"help", 0, 0, 'h'},
 	{"version", 0, 0, 'V'},
@@ -55,7 +55,6 @@ void RunPar_t::processArguments(int argc, char *argv[])
     {
 	a.ReadPars(a.opts["p"].c_str());
     }
-    quiet = a.isopt("q");
     trace = a.isopt("t");
     a.ValidatePars(validpars);
     // assign run parameters
@@ -139,6 +138,28 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	{
 	    framesrate = a.GetPar<int>("framesrate", 0);
 	}
+    }
+    // verbose
+    if (a.ispar("verbose"))
+    {
+	verbose = false;
+	vector<string> flagwords = a.GetParVec<string>("verbose");
+	vector<string>::iterator w, vbsflag;
+	for (w = flagwords.begin(); w != flagwords.end(); ++w)
+	{
+	    vbsflag = find(verbose_flag.begin(), verbose_flag.end(), *w);
+	    if (vbsflag == verbose_flag.end())
+	    {
+		ostringstream emsg;
+		emsg << "verbose flag must be one of (" <<
+		    join(", ", verbose_flag) << ")";
+		throw ParseArgsError(emsg.str());
+	    }
+	    int vbsindex = vbsflag - verbose_flag.begin();
+	    verbose[vbsindex] = true;
+	    if (vbsindex == VerboseFlag::ALL)	verbose = true;
+	}
+	verbose_mute = !verbose.sum();
     }
     // liga parameters
     // ndim
@@ -292,7 +313,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
-"  -q, --quiet           restrict output to champion quality\n"
 "  -t, --trace           keep and show frame trace of the champion\n"
 "  -h, --help            display this message\n"
 "  -V, --version         show program version\n"
@@ -306,6 +326,8 @@ void RunPar_t::print_help(ParseArgs& a)
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [0] number of iterations between frame saves\n"
 "  framestrace=array     [] triplets of (season, initial, final level)\n"
+"  verbose=array         [AD,WC,BC] output flags from (" <<
+	join(",", verbose_flag) << ")\n" <<
 "Liga parameters:\n"
 "  ndim={1,2,3}          [3] search in n-dimensional space.\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
@@ -322,7 +344,8 @@ void RunPar_t::print_help(ParseArgs& a)
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.0025] skip division when winner is worse\n"
 "  seasontrials=int      [16384] number of atom placements in one season\n"
-"  trials_sharing=string ([equal],size,success) trials sharing among levels\n"
+"  trials_sharing=string [equal] sharing method from (" <<
+	join(",", TrialDistributor::getTypes()) << ")\n" <<
 "  lookout_prob=double   [0.0] lookout probability for 2nd and 3rd atoms\n"
 "Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
@@ -391,6 +414,16 @@ void RunPar_t::print_pars(ParseArgs& a)
 	{
 	    cout << "framesrate=" << framesrate << '\n';
 	}
+    }
+    // verbose
+    if (a.ispar("verbose"))
+    {
+	list<string> flagwords;
+	for (size_t i = 0; i < verbose.size(); ++i)
+	{
+	    if (verbose[i]) flagwords.push_back(verbose_flag[i]);
+	}
+	cout << "verbose=" << join(",", flagwords) << '\n';
     }
     // liga parameters
     // ndim, tol_dd, tol_bad 
@@ -484,7 +517,7 @@ void RunPar_t::fill_validpars()
     char *pnames[] = {
 	"distfile", "inistru",
 	"outstru", "outfmt", "saverate", "saveall",
-	"frames", "framesrate", "framestrace", "ndim",
+	"frames", "framesrate", "framestrace", "verbose", "ndim",
 	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "seed_clusters",
 	"centersize", "maxcputime", "rngseed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
@@ -494,5 +527,25 @@ void RunPar_t::fill_validpars()
     validpars.insert(validpars.end(),
 	    pnames, pnames+sizeof(pnames)/sizeof(char*));
 }
+
+void RunPar_t::fill_verbose()
+{
+    using namespace VerboseFlag;
+    // default verbose value
+    verbose.resize(VERBOSE_SIZE, false);
+    verbose[AD] = true;
+    verbose[WC] = true;
+    verbose[BC] = true;
+    verbose_mute = false;
+    // fill verbose_flag array
+    verbose_flag.resize(VERBOSE_SIZE);
+    verbose_flag[AD] = "ad";
+    verbose_flag[WC] = "wc";
+    verbose_flag[BC] = "bc";
+    verbose_flag[AV] = "av";
+    verbose_flag[TS] = "ts";
+    verbose_flag[ALL] = "all";
+}
+
 
 // End of file

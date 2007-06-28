@@ -80,6 +80,7 @@ void Liga_t::prepare()
     updateWorldChamp();
     printWorldChamp();
     updateBestChamp();
+    printBestChamp();
     cout << '\n' << "Starting the game ... now." << endl;
 }
 
@@ -97,7 +98,8 @@ void Liga_t::playSeason()
     updateWorldChamp();
     printWorldChamp();
     updateBestChamp();
-    cout << endl;
+    printBestChamp();
+    if (!rp->verbose_mute)  cout << endl;
     saveOutStru();
     saveFrames();
 }
@@ -168,7 +170,8 @@ void Liga_t::playLevel(size_t lo_level)
 	    lo_looser->Pop(--nlast);
 	modified.insert(lo_looser);
     }
-    if (!rp->quiet)
+    using namespace VerboseFlag;
+    if (rp->verbose[AD])
     {
 	cout << season;
 	cout << " A " <<
@@ -294,8 +297,8 @@ void Liga_t::shareSeasonTrials()
     {
 	Division_t* lvdiv = &(at(level));
 	lvdiv->assignTrials(tdistributor->tshares[level]);
-	if (false)   cout << season << " TS " << level << ' ' << tdistributor->tshares[level] << '\n';
     }
+    printTrialShares();
 }
 
 Molecule* Liga_t::updateWorldChamp()
@@ -317,19 +320,29 @@ Molecule* Liga_t::updateBestChamp()
     // update needed here
     if (!best_champ)	best_champ = new Molecule(*world_champ);
     else		*best_champ = *world_champ;
-    cout << season << " BC " << best_champ->NAtoms() << ' '
-	<< best_champ->NormBadness() << '\n';
     return best_champ;
 }
 
 void Liga_t::printWorldChamp()
 {
+    using namespace VerboseFlag;
+    if (!rp->verbose[WC])   return;
     cout << season << " WC " << world_champ->NAtoms() << ' ' <<
 	world_champ->NormBadness() << '\n';
 }
 
+void Liga_t::printBestChamp()
+{
+    using namespace VerboseFlag;
+    if (!rp->verbose[BC])   return;
+    cout << season << " BC " << best_champ->NAtoms() << ' '
+	<< best_champ->NormBadness() << '\n';
+}
+
 void Liga_t::printLevelAverages()
 {
+    using namespace VerboseFlag;
+    if (!rp->verbose[AV])   return;
     size_t level = base_level;
     iterator lii = begin() + base_level;
     for (; lii != end() && !lii->empty(); ++lii, ++level)
@@ -338,6 +351,20 @@ void Liga_t::printLevelAverages()
 	    lii->NormBadness() << '\n';
     }
 }
+
+void Liga_t::printTrialShares()
+{
+    using namespace VerboseFlag;
+    if (!rp->verbose[TS])    return;
+    size_t level = base_level;
+    iterator lii = begin() + base_level;
+    for (; lii != end() && !lii->empty(); ++lii, ++level)
+    {
+	cout << season << " TS " << level <<
+		' ' << tdistributor->tshares[level] << '\n';
+    }
+}
+
 void Liga_t::saveOutStru()
 {
     static int savecnt = 0;
