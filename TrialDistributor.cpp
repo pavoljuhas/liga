@@ -150,8 +150,12 @@ void TrialDistributorSuccess::share(int seasontrials)
 	scwt[hi] -= scshift;
     }
     // calculate tshares
-    // average with equal shares to work around zero scwt
-    tshares = scwt + 1.0/(size() - 1);
+    // get size share weights
+    valarray<double> szwt(0.0, size());
+    for (size_t lv = 0; lv < size() - 1; ++lv)	szwt[lv] = lv;
+    szwt /= (0.0 + size() - 2)*(size() - 1)/2.0;
+    // average success and size shares
+    tshares = scwt + szwt;
     tshares[size() - 1] = 0.0;
     tshares *= seasontrials/tshares.sum();
 }
