@@ -24,12 +24,14 @@ namespace {
 RegisterSVNId TrialDistributor_hpp_id = "$Id$";
 }
 
+class RunPar_t;
+
 class TrialDistributor
 {
     public:
 
 	// class methods
-	static TrialDistributor* create(const std::string& tp);
+	static TrialDistributor* create(RunPar_t* rp);
 	static std::list<std::string> getTypes();
 	static bool isType(const std::string& tp);
 
@@ -51,7 +53,6 @@ class TrialDistributor
 	// public methods
 	void setLevelBadness(size_t lv, double bd);
 	void setLevelFillRate(size_t lv, double fr);
-	void setTolBadness(double tb)	{ tol_bad = tb; }
 	void resize(size_t sz);
 	inline size_t size()	    { return lvbadlog.size(); }
 	const std::string& type()   { return _type; }
@@ -69,6 +70,8 @@ class TrialDistributor
 	std::string _type;
 	std::deque<BadnessHistory> lvbadlog;
 	std::deque<double> fillrate;
+	int base_level;
+	int top_level;
 	double tol_bad;
 
 	// protected methods
@@ -149,9 +152,6 @@ class TrialDistributorSuccess : public TrialDistributor
 	virtual void share(int seasontrials);
 
     private:
-
-	// class data
-	static const double tol_bad_scale;
 
 	// methods
 	virtual TrialDistributor* create()

@@ -9,6 +9,7 @@
 ***********************************************************************/
 
 #include "TrialDistributor.hpp"
+#include "RunPar_t.hpp"
 
 using namespace std;
 
@@ -26,15 +27,21 @@ const size_t TrialDistributor::histsize = 10;
 
 // class methods
 
-TrialDistributor* TrialDistributor::create(const string& tp)
+TrialDistributor* TrialDistributor::create(RunPar_t* rp)
 {
-    if (!isType(tp))
+    const string& tstp = rp->trials_sharing;
+    if (!isType(tstp))
     {
 	ostringstream emsg;
-	emsg << "TrialDistributor '" << tp << "' not defined.";
+	emsg << "TrialDistributor '" << tstp << "' not defined.";
 	throw runtime_error(emsg.str());
     }
-    return distributors[tp]->create();
+    TrialDistributor* td = distributors[tstp]->create();
+    // copy data from rp
+    td->resize(rp->natoms + 1);
+    td->tol_bad = rp->tol_bad;
+    td->base_level = rp->base_level;
+    return td;
 }
 
 list<string> TrialDistributor::getTypes()
@@ -81,6 +88,7 @@ void TrialDistributor::resize(size_t sz)
     lvbadlog.resize(sz);
     fillrate.resize(sz, 0.0);
     tshares.resize(sz, 0.0);
+    top_level = sz - 1;
 }
 
 // protected methods
@@ -92,9 +100,9 @@ void TrialDistributor::resize(size_t sz)
 void TrialDistributorEqual::share(int seasontrials)
 {
     tshares = 0.0;
-    if (size() < 2)	return;
-    tshares = 1.0 * seasontrials / (size() - 1);
-    tshares[size() - 1] = 0.0;
+    if (base_level >= top_level)    return;
+    tshares = 1.0 * seasontrials / (top_level - base_level);
+    tshares[top_level] = 0.0;
 }
 
 
@@ -105,10 +113,10 @@ void TrialDistributorEqual::share(int seasontrials)
 void TrialDistributorSize::share(int seasontrials)
 {
     tshares = 0.0;
-    if (size() < 2)	return;
-    for (size_t lv = 0; lv < size() - 1; ++lv)	tshares[lv] = lv;
+    if (base_level >= top_level)    return;
+    for (int lv = base_level; lv < top_level; ++lv)	tshares[lv] = lv;
+    tshares[top_level] = 0.0;
     tshares *= seasontrials/tshares.sum();
-    tshares[size() - 1] = 0.0;
 }
 
 
@@ -118,24 +126,21 @@ void TrialDistributorSize::share(int seasontrials)
 
 // class data
 
-const double TrialDistributorSuccess::tol_bad_scale = 0.01;
-
 void TrialDistributorSuccess::share(int seasontrials)
 {
     tshares = 0.0;
-    if (size() < 2)	return;
-    const double eps_tol_bad = tol_bad_scale * tol_bad;
+    if (base_level >= top_level)    return;
     // calculate improvement ratio at each level
     valarray<double> scwt(0.0, size());
-    for (size_t lv = 0; lv < size(); ++lv)
+    for (int lv = base_level; lv <= top_level; ++lv)
     {
 	BadnessHistory& hist = lvbadlog[lv];
 	double tothwt = 0.0;
 	int hwt = histsize - 1;
 	for (int i = hist.size() - 1;  i > 0 && hwt > 0.0;  --i, --hwt)
 	{
-	    double improvement = hist[i] + eps_tol_bad < hist[i-1] ?
-		(hist[i-1] - hist[i])/(hist[i-1] + eps_tol_bad) : 0;
+	    double improvement = (hist[i] < hist[i-1]) ?
+		(hist[i-1] - hist[i])/tol_bad : 0;
 	    scwt[lv] += hwt * improvement;
 	    tothwt += hwt;
 	}
@@ -143,20 +148,20 @@ void TrialDistributorSuccess::share(int seasontrials)
     }
     // split half of success weight to the levels below
     // for the last level move all success weitht to the former level
-    for (size_t lo = 0, hi = 1; hi < size(); ++lo, ++hi)
+    for (int lo = 0, hi = 1; hi <= top_level; ++lo, ++hi)
     {
-	double scshift = (hi + 1 < size()) ? scwt[hi]/2 : scwt[hi];
+	double scshift = (hi < top_level) ? scwt[hi]/2 : scwt[hi];
 	scwt[lo] += scshift;
 	scwt[hi] -= scshift;
     }
     // calculate tshares
     // get size share weights
     valarray<double> szwt(0.0, size());
-    for (size_t lv = 0; lv < size() - 1; ++lv)	szwt[lv] = lv;
-    szwt /= (0.0 + size() - 2)*(size() - 1)/2.0;
+    for (int lv = base_level; lv < top_level; ++lv)	szwt[lv] = lv;
+    szwt /= szwt.sum();
     // average success and size shares
     tshares = scwt + szwt;
-    tshares[size() - 1] = 0.0;
+    tshares[top_level] = 0.0;
     tshares *= seasontrials/tshares.sum();
 }
 

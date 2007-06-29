@@ -47,9 +47,7 @@ void Liga_t::prepare()
     delete best_champ;
     best_champ = NULL;
     delete tdistributor;
-    tdistributor = TrialDistributor::create(rp->trials_sharing);
-    tdistributor->resize(rp->natoms + 1);
-    tdistributor->setTolBadness(rp->tol_bad);
+    tdistributor = TrialDistributor::create(rp);
     base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
     Division_t::ndim = rp->ndim;
@@ -356,9 +354,7 @@ void Liga_t::printTrialShares()
 {
     using namespace VerboseFlag;
     if (!rp->verbose[TS])    return;
-    size_t level = base_level;
-    iterator lii = begin() + base_level;
-    for (; lii != end() && !lii->empty(); ++lii, ++level)
+    for (size_t level = base_level; level < size(); ++level)
     {
 	cout << season << " TS " << level <<
 		' ' << tdistributor->tshares[level] << '\n';

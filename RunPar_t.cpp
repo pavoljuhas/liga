@@ -260,7 +260,7 @@ void RunPar_t::processArguments(int argc, char *argv[])
     // stopgame
     stopgame = a.GetPar<double>("stopgame", 0.0025);
     // seasontrials
-    seasontrials = a.GetPar<int>("seasontrials", 16384);
+    seasontrials = int( a.GetPar<double>("seasontrials", 16384.0) );
     // trials_sharing
     trials_sharing = a.GetPar<string>("trials_sharing", "equal");
     if (!TrialDistributor::isType(trials_sharing))
