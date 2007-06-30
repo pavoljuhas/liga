@@ -1,5 +1,5 @@
 /***********************************************************************
-* Short Title: object definitions for Biosphere Genetic Algorithm
+* Short Title: object declarations for single element Liga Algorithm
 *
 * Comments:
 *
@@ -86,8 +86,9 @@ public:
     DistanceTable& operator= (const vector<double>&);
     DistanceTable& operator= (const DistanceTable&);
     // member functions
-    vector<double>::iterator find_nearest(const double&);
-    vector<double>::iterator return_back(const double&);
+    iterator find_nearest(const double& d);
+    iterator find_nearest_unused(const double& d, std::valarray<bool>& used);
+    iterator return_back(const double&);
     vector<double> unique();
     // data members
     mutable int NAtoms;   	// target number of atoms

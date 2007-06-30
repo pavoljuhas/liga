@@ -369,7 +369,7 @@ DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
     return *this;
 }
 
-vector<double>::iterator DistanceTable::find_nearest(const double& dfind)
+DistanceTable::iterator DistanceTable::find_nearest(const double& dfind)
 {
     iterator ii = lower_bound(begin(), end(), dfind);
     if (    ( ii == end() && size() != 0 ) ||
@@ -379,7 +379,34 @@ vector<double>::iterator DistanceTable::find_nearest(const double& dfind)
     return ii;
 }
 
-vector<double>::iterator DistanceTable::return_back(const double& dback)
+DistanceTable::iterator
+DistanceTable::find_nearest_unused(const double& d, valarray<bool>& used)
+{
+    iterator ii = find_nearest(d);
+    int idx = ii - begin();
+    if (used[idx])
+    {
+        int hi, lo, nidx = -1;
+        int sz = size();
+        for (hi = idx + 1; hi < sz && used[hi]; ++hi)
+        { }
+        if (hi < sz)
+        {
+            nidx = hi;
+        }
+        for (lo = idx - 1; lo >= 0 && used[lo]; --lo)
+        { }
+        if (lo >= 0 && (nidx < 0 || d - at(lo) < at(nidx) - d))
+        {
+            nidx = lo;
+        }
+        idx = nidx;
+        ii = begin() + nidx;
+    }
+    return ii;
+}
+
+DistanceTable::iterator DistanceTable::return_back(const double& dback)
 {
     iterator ii = lower_bound(begin(), end(), dback);
     return insert(ii, dback);
@@ -853,47 +880,31 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 	throw InvalidMolecule();
     }
     static valarray<bool> used;
-    int dtsize = dTarget.size();
-    if (dtsize != int(used.size()))
+    if (dTarget.size() > used.size())	used.resize(dTarget.size(), false);
     {
-	used.resize(dtsize, false);
+	used.resize(dTarget.size(), false);
     }
-    list<int> used_idx;
+    static vector<int> used_idx;
+    used_idx.clear();
     double tbad = ta.Badness();
     typedef vector<Atom_t*>::iterator VPAit;
     for (   VPAit pai = atoms.begin();
 	    pai != atoms.end() && tbad <= hi_abad; ++pai )
     {
 	double d = dist(ta, **pai);
-	int idx = dTarget.find_nearest(d) - dTarget.begin();
-	// adjust idx if it is already used
-	if (used[idx])
-	{
-	    int hi, lo, nidx = -1;
-	    for (hi = idx+1; hi < dtsize && used[hi]; ++hi)
-	    { }
-	    if (hi < dtsize)
-	    {
-		nidx = hi;
-	    }
-	    for (lo = idx - 1; lo >= 0 && used[lo]; --lo)
-	    { }
-	    if (lo >= 0 && (nidx < 0 || d-dTarget[lo] < dTarget[nidx]-d))
-	    {
-		nidx = lo;
-	    }
-	    idx = nidx;
-	}
-	double dd = dTarget[idx] - d;
+	DistanceTable::iterator pdnear;
+	pdnear = dTarget.find_nearest_unused(d, used);
+	double dd = *pdnear - d;
 	tbad += penalty(dd);
 	if (fabs(dd) < tol_dd)
 	{
+	    int idx = pdnear - dTarget.begin();
 	    used[idx] = true;
 	    used_idx.push_back(idx);
 	}
     }
     // resest all values in array used to false
-    for (   list<int>::iterator ii = used_idx.begin();
+    for (   vector<int>::iterator ii = used_idx.begin();
 	    ii != used_idx.end(); ++ii )
     {
 	used[*ii] = false;
@@ -1090,9 +1101,12 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     const int max_iter = 500;
     // find if it is a member atom:
     // dTarget is not changed in this function
-    int dTsize = dTarget.size();
-    bool dUsed[dTsize];
-    fill(dUsed, dUsed+dTsize, false);
+    static valarray<bool> used;
+    if (dTarget.size() > used.size())	used.resize(dTarget.size(), false);
+    {
+	used.resize(dTarget.size(), false);
+    }
+    static vector<int> used_idx;
     // prepare valarrays for rxa_* functions
     valarray<double> wt(1.0, NAtoms());
     double* pd = &wt[0];
@@ -1110,39 +1124,30 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     double lo_abad = numeric_limits<double>().max();
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
-	list<int> dUsedIdx;
+	used_idx.clear();
 	double* pad0 = &ad0[0];
 	double tbad = 0.0;
 	typedef vector<Atom_t*>::iterator VPAit;
 	for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
 	{
 	    double d = dist(**pai, rta);
-	    int idx = dTarget.find_nearest(d) - dTarget.begin();
-	    if (dUsed[idx])
-	    {
-		int hi, lo, nidx = -1;
-		for (hi = idx; hi != dTsize && dUsed[hi]; ++hi) { };
-		if (hi != dTsize)
-		    nidx = hi;
-		for (lo = idx; lo >= 0 && dUsed[lo]; --lo) { };
-		if (lo >= 0  && (nidx < 0 || d-dTarget[lo] < dTarget[nidx]-d))
-		    nidx = lo;
-		idx = nidx;
-	    }
-	    *(pad0++) = dTarget[idx];
-	    double dd = dTarget[idx] - d;
+	    DistanceTable::iterator pdnear;
+	    pdnear = dTarget.find_nearest_unused(d, used);
+	    *(pad0++) = *pdnear;
+	    double dd = *pdnear - d;
 	    tbad += penalty(dd);
 	    if (fabs(dd) < tol_dd)
 	    {
-		dUsed[idx] = true;
-		dUsedIdx.push_back(idx);
+		int idx = pdnear - dTarget.begin();
+		used[idx] = true;
+		used_idx.push_back(idx);
 	    }
 	}
 	// restore dUsed
-	for (   list<int>::iterator ii = dUsedIdx.begin();
-		ii != dUsedIdx.end(); ++ii  )
+	for (   vector<int>::iterator ii = used_idx.begin();
+		ii != used_idx.end(); ++ii  )
 	{
-	    dUsed[*ii] = false;
+	    used[*ii] = false;
 	}
 	// get out if lo_abad did not improve
 	if ( eps_lt(tbad, lo_abad) )
