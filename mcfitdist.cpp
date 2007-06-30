@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	double nb0 = mol.NormBadness();
 	// pick one atom
 	int aidx = gsl_rng_uniform_int(BGA::rng, mol.NAtoms());
-	Atom_t a0 = mol.Atom(aidx);
+	Atom_t a0 = mol.getAtom(aidx);
 	// apply random shift to a copy
 	double r1[3];
 	r1[0] = a0.r[0] + rp.delta_x * (2*gsl_rng_uniform(BGA::rng) - 1.0);

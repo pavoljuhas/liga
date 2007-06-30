@@ -174,7 +174,7 @@ class Division_t : public vector<Molecule*>
 	{
 	    for (int i = level(); i < advanced->NAtoms(); ++i)
 	    {
-		triangulation_type attp = advanced->Atom(i).ttp;
+		triangulation_type attp = advanced->getAtom(i).ttp;
 		++acc_triang[attp];
 	    }
 	    for (int i = 0; i < NTGTYPES; ++i)

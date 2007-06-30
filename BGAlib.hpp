@@ -207,8 +207,7 @@ public:
     Molecule& Shift(double dh, double dk, double dl);	// move all atoms
     Molecule& Center();	  // center w/r to the center of mass
     // atom operations
-//    Atom_t Atom(const int cidx);	// get copy of specified atom
-    inline const Atom_t& Atom(const int cidx)
+    inline const Atom_t& getAtom(const int cidx)
     {
 	return *(atoms[cidx]);
     }

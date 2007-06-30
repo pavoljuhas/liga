@@ -860,17 +860,6 @@ int Molecule::NFixed() const
     return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
 }
 
-/*
-Atom_t Molecule::Atom(const int cidx)
-{
-    if (cidx < 0 || cidx >= NAtoms())
-    {
-	throw range_error("in Molecule::Atom(const int)");
-    }
-    return *(atoms[cidx]);
-}
-*/
-
 double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 {
     // badness is calculated exactly only when <= hi_abad
@@ -1085,7 +1074,7 @@ Molecule& Molecule::RelaxAtom(const int cidx)
     }
     Assert( !CHECK_ATOM_FIXED || !atoms[cidx]->fixed,
 	    runtime_error("RelaxAtom() called on fixed atom") );
-    Atom_t ta = Atom(cidx);
+    Atom_t ta = getAtom(cidx);
     Pop(cidx);
     RelaxExternalAtom(ta);
     Add(ta);

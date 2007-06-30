@@ -197,7 +197,7 @@ list<int> worst_to_best_atom(Molecule& mol)
     AtomBadnessAndIdx bi[mol.NAtoms()];
     for (int i = 0; i != mol.NAtoms(); ++i)
     {
-	bi[i].first = mol.Atom(i).Badness();
+	bi[i].first = mol.getAtom(i).Badness();
 	bi[i].second = i;
     }
     sort(bi, bi + mol.NAtoms());
