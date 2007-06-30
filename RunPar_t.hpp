@@ -60,6 +60,8 @@ struct RunPar_t
     bool verbose_mute;
     // Liga parameters
     size_t ndim;
+    bool crystal;
+    std::vector<double> latpar;
     double tol_dd;
     double tol_bad;
     int natoms;

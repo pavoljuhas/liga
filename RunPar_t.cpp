@@ -25,6 +25,10 @@ RunPar_t::RunPar_t()
 {
     fill_validpars();
     fill_verbose();
+    crystal = false;
+    latpar.resize(6);
+    latpar[0] = latpar[1] = latpar[2] = 1.0;
+    latpar[3] = latpar[4] = latpar[5] = 90.0;
 }
 
 void RunPar_t::processArguments(int argc, char *argv[])
@@ -168,6 +172,18 @@ void RunPar_t::processArguments(int argc, char *argv[])
     {
 	string emsg = "ndim value must be 1, 2 or 3";
 	throw ParseArgsError(emsg);
+    }
+    // crystal
+    crystal = a.GetPar<bool>("crystal", false);
+    // latpar
+    if (a.ispar("latpar"))
+    {
+        latpar = a.GetParVec<double>("latpar");
+        if (latpar.size() != 6)
+        {
+            char* emsg = "latpar must define 6 lattice parameters";
+            throw ParseArgsError(emsg);
+        }
     }
     // tol_dd
     tol_dd = a.GetPar<double>("tol_dd", 0.1);
@@ -318,7 +334,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  -V, --version         show program version\n"
 "IO parameters:\n"
 "  distfile=FILE         target distance table\n"
-"  inistru=FILE          initial structure [empty box]\n"
+"  inistru=FILE          [empty] initial structure in Cartesian coordinates\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  outfmt=string         [xyz], atomeye - outstru file format\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
@@ -329,7 +345,9 @@ void RunPar_t::print_help(ParseArgs& a)
 "  verbose=array         [AD,WC,BC] output flags from (" <<
 	join(",", verbose_flag) << ")\n" <<
 "Liga parameters:\n"
-"  ndim={1,2,3}          [3] search in n-dimensional space.\n"
+"  ndim={1,2,3}          [3] search in n-dimensional space\n"
+"  crystal=bool          [false] assume periodic crystal structure\n"
+"  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
 "  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
 "  natoms=int            use with loose distfiles or when tol_dd==0\n"
