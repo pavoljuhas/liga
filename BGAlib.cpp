@@ -179,16 +179,16 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
     list<double>  second_distances;
     // find first and second neighbors and corresponding distances
     typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pmai = pm->atoms.begin(); pmai != pm->atoms.end(); ++pmai)
+    for (AtomSequence seq(pm); !seq.finished(); seq.next())
     {
-	double blen = dist(*pta, **pmai);
+	double blen = dist(*pta, *seq.ptr());
 	if (0.0 < blen && blen < 2*max_blen)
 	{
-	    second_neighbors.push_back(*pmai);
+	    second_neighbors.push_back(seq.ptr());
 	    second_distances.push_back(blen);
 	    if (blen < max_blen)
 	    {
-		first_neighbors.push_back(*pmai);
+		first_neighbors.push_back(seq.ptr());
 		first_distances.push_back(blen);
 	    }
 	}
@@ -246,59 +246,12 @@ bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
     }
     // find whether any atom in the molecule is closer than max_dist
     bool has_buddy = false;
-    for (   vector<Atom_t*>::iterator pmai = pm->atoms.begin();
-	    pmai != pm->atoms.end() && !has_buddy; ++pmai )
+    for (AtomSequence seq(pm); !seq.finished() && !has_buddy; seq.next())
     {
-	double d = dist(*pta, **pmai);
+	double d = dist(*pta, *seq.ptr());
 	has_buddy = (0.0 < d) && (d < max_dist);
     }
     return has_buddy;
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// PairDistance_t definitions
-////////////////////////////////////////////////////////////////////////
-
-void PairDistance_t::LockTo(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
-{
-    double d = dist(*pa1, *pa2);
-    vector<double>::iterator dnear = pM->dTarget.find_nearest(d);
-    double dd = *dnear - d;
-    double badness = penalty(dd);
-    if (badness < BGA::eps_badness)
-	badness = 0.0;
-    if (fabs(dd) < pM->tol_dd)
-    {
-	dUsed = +1.0 * (*dnear);
-	pM->dTarget.erase(dnear);
-    }
-    else
-    {
-	dUsed = -1.0 * (*dnear);
-    }
-    double badnesshalf = badness/2.0;
-    pa1->IncBadness(badnesshalf);
-    pa2->IncBadness(badnesshalf);
-    pM->badness += badness;
-}
-
-void PairDistance_t::Release(Molecule* pM, Atom_t* pa1, Atom_t* pa2)
-{
-    double badness = Badness(pM, pa1, pa2);
-    double badnesshalf = badness/2.0;
-    pa1->DecBadness(badnesshalf);
-    pa2->DecBadness(badnesshalf);
-    pM->badness -= badness;
-    if (pM->badness < BGA::eps_badness)
-	pM->badness = 0.0;
-    if (dUsed > 0.0)
-	pM->dTarget.return_back(dUsed);
-}
-
-double PairDistance_t::Badness(Molecule *pM, Atom_t *pa1, Atom_t *pa2)
-{
-    return penalty( fabs(dUsed) - dist(*pa1, *pa2) );
 }
 
 
@@ -531,43 +484,28 @@ Molecule& Molecule::operator=(const Molecule& M)
     Clear();
     dTarget = M.dTarget;
     // duplicate source atoms
-    atoms.resize(M.atoms.size());
-    vector<Atom_t*>::const_iterator asrc;
-    vector<Atom_t*>::iterator adup;
-    for (asrc = M.atoms.begin(), adup = atoms.begin();
-	    asrc != M.atoms.end(); ++asrc, ++adup)
+    atoms.resize(M.atoms.size(), NULL);
+    for (AtomSequenceIndex seq(&M); !seq.finished(); seq.next())
     {
-	*adup = new Atom_t(**asrc);
+	atoms[seq.idx()] = new Atom_t(seq.ref());
     }
+    pmx_used_distances = M.pmx_used_distances;
+    free_pmx_slots = M.free_pmx_slots;
     // finished duplication
     max_natoms = M.max_natoms;
-    // map source atom pointers to this atom pointers
-    map<const Atom_t*, Atom_t*> patom_clone;
-    for (asrc = M.atoms.begin(), adup = atoms.begin();
-	    asrc != M.atoms.end();  ++asrc, ++adup)
-    {
-	patom_clone[*asrc] = *adup;
-    }
-    typedef map<OrderedPair<Atom_t*>,PairDistance_t>::const_iterator MAPcit;
-    for (MAPcit ii = M.pairs.begin(); ii != M.pairs.end(); ++ii)
-    {
-	Atom_t* a1 = patom_clone[ii->first.first];
-	Atom_t* a2 = patom_clone[ii->first.second];
-	OrderedPair<Atom_t*> key(a1, a2);
-	pairs[key] = ii->second;
-    }
     badness = M.badness;
     // IO helpers
     output_format = M.output_format;
     opened_file = M.opened_file;
     trace = M.trace;
+    NormBadness();
     return *this;
 }
 
 void Molecule::init()
 {
     badness = 0;
-    max_natoms = dTarget.NAtoms;
+    setMaxNAtoms(dTarget.NAtoms);
     // default output format
     OutFmtXYZ();
 }
@@ -583,24 +521,8 @@ Molecule::~Molecule()
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
 
-namespace MoleculeRecalculate
-{
-    typedef map<OrderedPair<Atom_t*>,PairDistance_t>::iterator MAPit;
-    struct BadnessWithMAPit_t
-    {
-	double badness;
-	MAPit  iter;
-    };
-    bool comp_BadnessWithMAPit_t_Badness(const BadnessWithMAPit_t& lhs,
-	    const BadnessWithMAPit_t& rhs)
-    {
-	return lhs.badness < rhs.badness;
-    }
-}
-
 void Molecule::Recalculate()
 {
-    using namespace MoleculeRecalculate;
     if (NAtoms() > maxNAtoms())
     {
 	cerr << "E: molecule too large in Recalculate()" << endl;
@@ -610,36 +532,37 @@ void Molecule::Recalculate()
     badness = 0;
     // reset all atoms
     typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	(*pai)->ResetBadness();
+	seq.ptr()->ResetBadness();
+    }
+    // create array of all badness contributions with atom index
+    typedef pair<double,int> BadnessWithIndex;
+    vector<BadnessWithIndex> bwi;
+    bwi.reserve(2*NDist());
+    for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
+    {
+	AtomSequenceIndex seq1 = seq0;
+	for (seq1.next(); !seq1.finished(); seq1.next())
+	{
+	    double d01 = dist(*seq0.ptr(), *seq1.ptr());
+	    double d01used = pmx_used_distances(seq0.idx(), seq1.idx());
+	    // d01used may be negative when it was kept in distance table
+	    double dd = fabs(fabs(d01used) - d01);
+	    double badnesshalf = penalty(dd) / 2.0;
+	    bwi.push_back(BadnessWithIndex(badnesshalf, seq0.idx()));
+	    bwi.push_back(BadnessWithIndex(badnesshalf, seq1.idx()));
+	}
     }
     // order pair iterators by corresponding badness for accurate summation
-    // first create and fill array of BadnessWithMAPit_t
-    BadnessWithMAPit_t* ordered_bwi = new BadnessWithMAPit_t[pairs.size()];
-    BadnessWithMAPit_t* pbwi = ordered_bwi;
-    for (MAPit ii = pairs.begin(); ii != pairs.end(); ++ii, ++pbwi)
+    sort(bwi.begin(), bwi.end());
+    // sum over sorted errors
+    for (vector<BadnessWithIndex>::iterator pbwi = bwi.begin();
+	    pbwi != bwi.end(); ++pbwi)
     {
-	Atom_t* pa1 = ii->first.first;
-	Atom_t* pa2 = ii->first.second;
-	PairDistance_t& pd = ii->second;
-	pbwi->badness = pd.Badness(this, pa1, pa2);
-	pbwi->iter = ii;
+	atoms[pbwi->second]->IncBadness(pbwi->first);
+	badness += pbwi->first;
     }
-    // sort by badness
-    sort(ordered_bwi, ordered_bwi + pairs.size(),
-	    comp_BadnessWithMAPit_t_Badness);
-    // sum over sorted iterators
-    for (pbwi = ordered_bwi; pbwi != ordered_bwi + pairs.size(); ++pbwi)
-    {
-	Atom_t* pa1 = pbwi->iter->first.first;
-	Atom_t* pa2 = pbwi->iter->first.second;
-	double badnesshalf = pbwi->badness/2.0;
-	badness += pbwi->badness;
-	pa1->IncBadness(badnesshalf);
-	pa2->IncBadness(badnesshalf);
-    }
-    delete[] ordered_bwi;
 }
 
 //void Molecule::ReassignPairs()
@@ -675,49 +598,49 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
 
-bool operator==(const Molecule& m1, const Molecule& m2)
+bool operator==(const Molecule& m0, const Molecule& m1)
 {
-    if (&m1 == &m2)
+    if (&m0 == &m1)
 	return true;
-    if (m1.maxNAtoms() != m2.maxNAtoms())
+    if (m0.maxNAtoms() != m1.maxNAtoms())
 	return false;
-    vector<Atom_t*>::const_iterator pai1, pai2;
-    for (   pai1 = m1.atoms.begin(), pai2 = m2.atoms.begin();
-	    pai1 != m1.atoms.end() && pai2 != m2.atoms.end() &&
-	    **pai1 == **pai2;  ++pai1, ++pai2 )
+    AtomSequence seq0(&m0), seq1(&m1);
+    for (; !seq0.finished() && !seq1.finished() && *seq0.ptr() == *seq1.ptr();
+	    seq0.next(), seq1.next() )
     { }
-    return (pai1 == m1.atoms.end() && pai2 == m2.atoms.end());
+    return seq0.finished() && seq1.finished();
 }
 
-void Molecule::setMaxNAtoms(int s)
+void Molecule::setMaxNAtoms(int sz)
 {
-    if (s > dTarget.NAtoms && tol_dd > 0.0)
+    if (sz > dTarget.NAtoms && tol_dd > 0.0)
     {
-	cerr << "E: not enough distances for maxNAtoms = " << s << '.' <<
+	cerr << "E: not enough distances for maxNAtoms = " << sz << '.' <<
 	    "  Did you forget tol_dd = 0?" << endl;
 	throw InvalidMolecule();
     }
-    else if (s < 1)
+    else if (sz < 1)
     {
-	cerr << "E: invalid value of maxNAtoms = " << s << endl;
+	cerr << "E: invalid value of maxNAtoms = " << sz << endl;
 	throw InvalidMolecule();
     }
-    else if (s < NAtoms())
+    else if (sz < NAtoms())
     {
 	cerr << "E: molecule too large in setMaxNAtoms()" << endl;
 	throw InvalidMolecule();
     }
-    max_natoms = s;
+    max_natoms = sz;
+//    pmx_used_distances.resize(sz, sz);
 }
 
 Molecule& Molecule::Shift(double dx, double dy, double dz)
 {
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	(*pai)->r[0] += dx;
-	(*pai)->r[1] += dy;
-	(*pai)->r[2] += dz;
+	Atom_t* pa = seq.ptr();
+	pa->r[0] += dx;
+	pa->r[1] += dy;
+	pa->r[2] += dz;
     }
     return *this;
 }
@@ -725,12 +648,12 @@ Molecule& Molecule::Shift(double dx, double dy, double dz)
 Molecule& Molecule::Center()
 {
     double avg_rx = 0.0, avg_ry = 0.0, avg_rz = 0.0;
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	avg_rx += (*pai)->r[0];
-	avg_ry += (*pai)->r[1];
-	avg_rz += (*pai)->r[2];
+	Atom_t* pa = seq.ptr();
+	avg_rx += pa->r[0];
+	avg_ry += pa->r[1];
+	avg_rz += pa->r[2];
     }
     avg_rx /= NAtoms();
     avg_ry /= NAtoms();
@@ -739,28 +662,22 @@ Molecule& Molecule::Center()
     return *this;
 }
 
-Molecule& Molecule::Pop(const int cidx)
+Molecule& Molecule::Pop(const int aidx)
 {
-    Assert( !CHECK_ATOM_FIXED || !atoms[cidx]->fixed,
+    if (aidx < 0 || aidx >= NAtoms())
+    {
+	throw range_error("in Molecule::Pop(const int aidx)");
+    }
+    Assert( !CHECK_ATOM_FIXED || !atoms[aidx]->fixed,
 	    runtime_error("Pop() called on fixed atom") );
-    if (cidx < 0 || cidx >= NAtoms())
+    Atom_t* pa = atoms[aidx];
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	throw range_error("in Molecule::Pop(const int cidx)");
+	removeAtomPair(seq.ptr(), pa);
     }
-    typedef map<OrderedPair<Atom_t*>,PairDistance_t>::iterator MAPit;
-    typedef vector<Atom_t*>::iterator VPAit;
-    VPAit popped = atoms.begin() + cidx;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
-    {
-	if (pai == popped)  continue;
-	OrderedPair<Atom_t*> key(*pai, *popped);
-	MAPit pit = pairs.find(key);
-	PairDistance_t& pd = pit->second;
-	pd.Release(this, *pai, *popped);
-	pairs.erase(pit);
-    }
-    delete *popped;
-    atoms.erase(popped);
+    free_pmx_slots.insert(pa->pmxidx);
+    delete pa;
+    atoms.erase(atoms.begin() + aidx);
     return *this;
 }
 
@@ -791,23 +708,35 @@ Molecule& Molecule::Pop(const list<int>& cidx)
 
 Molecule& Molecule::Clear()
 {
-    pairs.clear();
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    // return used distances
+    for (AtomSequence seq0(this); !seq0.finished(); seq0.next())
     {
-	delete *pai;
+	AtomSequence seq1 = seq0;
+	for (seq1.next(); !seq1.finished(); seq1.next())
+	{
+	    int i0 = seq0.ptr()->pmxidx;
+	    int i1 = seq1.ptr()->pmxidx;
+	    double d01used = pmx_used_distances(i0, i1);
+	    if (d01used > 0)	dTarget.push_back(d01used);
+	}
+    }
+    sort(dTarget.begin(), dTarget.end());
+    // remove all atoms
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    {
+	delete seq.ptr();
     }
     atoms.clear();
+    free_pmx_slots.clear();
     badness = 0.0;
     return *this;
 }
 
 Molecule& Molecule::Add(const Molecule& M)
 {
-    typedef vector<Atom_t*>::const_iterator VPAcit;
-    for (VPAcit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
+    for (AtomSequence seq(&M); !seq.finished(); seq.next())
     {
-	Add(**pai);
+	Add(*seq.ptr());
     }
     return *this;
 }
@@ -828,16 +757,22 @@ Molecule& Molecule::Add(const Atom_t& atom)
     Atom_t* pnew_atom;
     pnew_atom = new Atom_t(atom);
     pnew_atom->ResetBadness();
-    atoms.push_back(pnew_atom);
-    // pnew_atom is at the end of the list
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); *pai != pnew_atom; ++pai)
+    if (free_pmx_slots.empty())
     {
-	Atom_t* pmol_atom = *pai;
-	OrderedPair<Atom_t*> key(pmol_atom, pnew_atom);
-	PairDistance_t& new_pair = pairs[key];
-	new_pair.LockTo(this, pmol_atom, pnew_atom);
+	pnew_atom->pmxidx = atoms.size();
     }
+    else
+    {
+	set<int>::iterator firstfree = free_pmx_slots.begin();
+	pnew_atom->pmxidx = *firstfree;
+	free_pmx_slots.erase(firstfree);
+    }
+    atoms.push_back(pnew_atom);
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    {
+	addNewAtomPair(pnew_atom, seq.ptr());
+    }
+    NormBadness();
     return *this;
 }
 
@@ -937,7 +872,6 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     }
     double lo_abad = hi_abad - evolve_range;
     typedef vector<Atom_t>::iterator VAit;
-    typedef vector<Atom_t*>::iterator VPAit;
     VAit gai;
     // first check if atoms pass through atom_filters
     gai = vta.begin();
@@ -1106,7 +1040,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     // convert to square root of fitness
     wt = sqrt(vdrecipw0(wt));
     // array for target distances
-    valarray<double> ad0(atoms.size());
+    valarray<double> ad0(NAtoms());
     // do relaxation on a copy of ta
     Atom_t rta(ta);
     // loop while badness is improved
@@ -1132,7 +1066,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 		used_idx.push_back(idx);
 	    }
 	}
-	// restore dUsed
+	// restore used
 	for (   vector<int>::iterator ii = used_idx.begin();
 		ii != used_idx.end(); ++ii  )
 	{
@@ -1206,6 +1140,67 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	*/
 	gsl_vector_free(G);
 	gsl_multifit_fdfsolver_free(lms);
+    }
+}
+
+void Molecule::addNewAtomPair(Atom_t* pa0, Atom_t* pa1)
+{
+    if (pa0 == pa1)	return;
+    double d = dist(*pa0, *pa1);
+    DistanceTable::iterator pdnear = dTarget.find_nearest(d);
+    double dd = *pdnear - d;
+    double pairbadness = penalty(dd);
+    if (pairbadness < BGA::eps_badness)
+    {
+	pairbadness = 0.0;
+    }
+    int idx0 = pa0->pmxidx;
+    int idx1 = pa1->pmxidx;
+    // resize pmx_used_distances if necessary
+    if (max(idx0, idx1) >= int(pmx_used_distances.rows()))
+    {
+	size_t sz0 = max(idx0, idx1) + 1;
+	size_t sz1 = min(2*pmx_used_distances.rows(), size_t(max_natoms));
+	size_t sz = max(sz0, sz1);
+	pmx_used_distances.resize(sz, sz);
+    }
+    if (fabs(dd) < tol_dd)
+    {
+	pmx_used_distances(idx0,idx1) = *pdnear;
+	pmx_used_distances(idx1,idx0) = *pdnear;
+	dTarget.erase(pdnear);
+    }
+    else
+    {
+	pmx_used_distances(idx0,idx1) = -(*pdnear);
+	pmx_used_distances(idx1,idx0) = -(*pdnear);
+    }
+    double badnesshalf = pairbadness/2.0;
+    pa0->IncBadness(badnesshalf);
+    pa1->IncBadness(badnesshalf);
+    badness += pairbadness;
+}
+
+void Molecule::removeAtomPair(Atom_t* pa0, Atom_t* pa1)
+{
+    if (pa0 == pa1)	return;
+    int idx0 = pa0->pmxidx;
+    int idx1 = pa1->pmxidx;
+    double d01 = dist(*pa0, *pa1);
+    double d01used = pmx_used_distances(idx0,idx1);
+    double dd = fabs(fabs(d01used) - d01);
+    double pairbadness = penalty(dd);
+    double badnesshalf = pairbadness/2.0;
+    pa0->DecBadness(badnesshalf);
+    pa1->DecBadness(badnesshalf);
+    badness -= pairbadness;
+    if (badness < BGA::eps_badness)
+    {
+	badness = 0.0;
+    }
+    if (d01used > 0.0)
+    {
+	dTarget.return_back(d01used);
     }
 }
 
@@ -1676,9 +1671,9 @@ Molecule& Molecule::Evolve(const int* est_triang)
     double* pd = &vafit[0];
     // first fill the array with badness
     typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	*pd = (*pai)->Badness();
+	*(pd++) = seq.ptr()->Badness();
     }
     // finally get the reciprocal value
     vafit = vdrecipw0(vafit);
@@ -2173,6 +2168,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 
 void Molecule::PrintBadness()
 {
+    if (!NAtoms())  return;
     cout << "ABadness() =";
     double mab = (*max_element(atoms.begin(), atoms.end(),
 		    comp_pAtom_Badness)) -> Badness();

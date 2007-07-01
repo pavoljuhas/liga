@@ -15,10 +15,11 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <map>
 #include <limits>
+#include <set>
 #include <gsl/gsl_rng.h>
 #include "RegisterSVNId.hpp"
+#include "Matrix.hpp"
 #include "BGAutils.hpp"
 
 namespace {
@@ -116,6 +117,7 @@ class Atom_t
 	double ResetBadness(double b = 0.0);
 	bool fixed;
 	triangulation_type ttp;
+	int pmxidx;	    // pair matrix index
 
     private:
 
@@ -167,16 +169,9 @@ public:
     double max_dist;
 };
 
-struct PairDistance_t
-{
-    void LockTo(Molecule* M, Atom_t* a1, Atom_t* a2);
-    void Release(Molecule* M, Atom_t* a1, Atom_t* a2);
-    double Badness(Molecule* M, Atom_t* a1, Atom_t* a2);
-    double dUsed;
-};
-
 class Molecule
 {
+    friend class AtomSequence;
 public:
     // constructors
     Molecule();
@@ -235,30 +230,23 @@ public:
     friend istream& operator>>(istream& is, Molecule& M);
     void PrintBadness();		// total and per-atomic badness
     void PrintFitness();		// total and per-atomic fitness
-    void Recalculate(); 	// update everything
-    inline int NDist()  const { return pairs.size(); }
-    inline int NAtoms() const { return atoms.size(); }
+    void Recalculate();			// update everything
+    inline int NDist()  const
+    {
+	int n = NAtoms();
+	return n*(n-1)/2;
+    }
+    inline int NAtoms() const	 { return atoms.size(); }
     inline int maxNAtoms() const { return max_natoms; }
     void setMaxNAtoms(int s);
     inline double max_dTarget() const { return dTarget.back(); }
     // history trace
     list<int> trace;
-private:
-    // constructor helper
-    void init();
-    // data storage
-    DistanceTable dTarget;
-    int max_natoms;
-    // atoms must precede pairs
-    vector<Atom_t*> atoms;		      // vector of pointers to atoms
-    map<OrderedPair<Atom_t*>,PairDistance_t> pairs;
-    friend void PairDistance_t::LockTo(Molecule*, Atom_t*, Atom_t*);
-    friend void PairDistance_t::Release(Molecule*, Atom_t*, Atom_t*);
-    friend bool operator==(const Molecule&, const Molecule&);
-    friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);
-    friend bool LoneAtomFilter_t::Check(Atom_t*, Molecule*);
-    // badness evaluation
-    mutable double badness;		// molecular badness
+
+protected:
+
+    void addNewAtomPair(Atom_t* pa0, Atom_t* pa1);
+    void removeAtomPair(Atom_t* pa0, Atom_t* pa1);
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
     int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
@@ -269,13 +257,69 @@ private:
     void filter_good_atoms(vector<Atom_t>& vta,
 	    double evolve_range, double hi_abad);
     bool check_atom_filters(Atom_t*);
+
+private:
+    // constructor helper
+    void init();
+    // data storage
+    DistanceTable dTarget;
+    int max_natoms;
+    // atoms must precede pairs
+    vector<Atom_t*> atoms;		// vector of pointers to atoms
+    Matrix<double> pmx_used_distances;
+    std::set<int> free_pmx_slots;
+    friend bool operator==(const Molecule&, const Molecule&);
+    friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);
+    friend bool LoneAtomFilter_t::Check(Atom_t*, Molecule*);
+    // badness evaluation
+    mutable double badness;		// molecular badness
     // IO helpers
     enum file_fmt_type {XYZ = 1, ATOMEYE};
     static file_fmt_type output_format;
     class ParseHeader;
     istream& ReadXYZ(istream& fid);
     string opened_file;
+
 };
+
+class AtomSequence
+{
+    public:
+
+	AtomSequence(const Molecule* pm)
+	{
+	    Molecule* mol = const_cast<Molecule*>(pm);
+	    first = mol->atoms.begin();
+	    last = mol->atoms.end();
+	    rewind();
+	}
+	inline Atom_t* ptr()	{ return *ii; }
+	inline Atom_t& ref()   	{ return **ii; }
+	inline void rewind()   	{ ii = first; }
+	inline void next()	{ ++ii; }
+	inline bool finished()	{ return ii == last; }
+
+    private:
+
+	Molecule* mol;
+	std::vector<Atom_t*>::iterator ii, first, last;
+};
+
+class AtomSequenceIndex : public AtomSequence
+{
+    public:
+
+	AtomSequenceIndex(const Molecule* pm) : AtomSequence(pm), index(0)
+	{ }
+	inline int idx()	{ return index; }
+	inline void next()	{ AtomSequence::next(); ++index; }
+	inline void rewind()   	{ AtomSequence::rewind(); index = 0; }
+
+    private:
+
+	int index;
+};
+
 bool operator==(const Molecule& m1, const Molecule& m2);
 
 class Molecule::ParseHeader
