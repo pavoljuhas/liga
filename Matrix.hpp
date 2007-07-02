@@ -89,11 +89,14 @@ template <class T> class Matrix
 	    return *this;
 	}
 
-	void resize(size_t m, size_t n, T value=T(0))
+	void resize(size_t m, size_t n, const T* value=NULL)
 	{
 	    if (m == mrows && n == mcols)   return;
 	    T* resized = new T[m*n];
-	    std::fill(resized, resized + m*n, value);
+	    if (value)
+	    {
+		std::fill(resized, resized + m*n, *value);
+	    }
 	    for (   size_t i = 0, offset = 0;
 		    i != std::min(m, mrows); ++i, offset += n )
 	    {
@@ -107,6 +110,11 @@ template <class T> class Matrix
 	    mrows = m;
 	    mcols = n;
 	    msize = m*n;
+	}
+
+	void resize(size_t m, size_t n, const T& value)
+	{
+	    resize(m, n, &value);
 	}
 
 	void clear()
@@ -139,11 +147,6 @@ template <class T> class Matrix
 	inline size_t columns()
 	{
 	    return mcols;
-	}
-
-	inline T* operator[](size_t i)
-	{
-	    return mdata + mcols*i;
 	}
 
 	inline T& operator()(size_t i, size_t j)
@@ -205,6 +208,31 @@ template <class T> class Matrix
 		cout << endl;
 	    }
 	}
+};
+
+template <class T> class SymmetricMatrix : public Matrix<T>
+{
+    public:
+
+	// Constructors
+
+	SymmetricMatrix() : Matrix<T>() { }
+	SymmetricMatrix(const Matrix<T>& src) : Matrix<T>(src) { }
+	SymmetricMatrix(size_t m, size_t n) : Matrix<T>(m, n) { }
+
+	// Overloaded methods
+
+	inline T& operator()(size_t i, size_t j)
+	{
+	    if (i > j)	std::swap(i, j);
+	    return Matrix<T>::operator()(i, j);
+	}
+
+	SymmetricMatrix<T> transposed() 
+	{ 
+	    return SymmetricMatrix<T>(*this);
+	}
+
 };
 
 template <class T>
