@@ -994,7 +994,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     // find if it is a member atom:
     // dTarget is not changed in this function
     static valarray<bool> used;
-    if (dTarget.size() > used.size())	used.resize(dTarget.size(), false);
+    if (dTarget.size() > used.size())
     {
 	used.resize(dTarget.size(), false);
     }
