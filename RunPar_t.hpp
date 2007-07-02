@@ -57,7 +57,6 @@ struct RunPar_t
     int framesrate;
     std::deque<TraceId_t> framestrace;
     std::valarray<bool> verbose;
-    bool verbose_mute;
     // Liga parameters
     size_t ndim;
     bool crystal;

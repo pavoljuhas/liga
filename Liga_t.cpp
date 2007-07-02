@@ -97,7 +97,6 @@ void Liga_t::playSeason()
     printWorldChamp();
     updateBestChamp();
     printBestChamp();
-    if (!rp->verbose_mute)  cout << endl;
     saveOutStru();
     saveFrames();
 }

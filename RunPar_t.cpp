@@ -163,7 +163,6 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	    verbose[vbsindex] = true;
 	    if (vbsindex == VerboseFlag::ALL)	verbose = true;
 	}
-	verbose_mute = !verbose.sum();
     }
     // liga parameters
     // ndim
@@ -339,7 +338,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [0] number of iterations between frame saves\n"
 "  framestrace=array     [] triplets of (season, initial, final level)\n"
-"  verbose=array         [AD,WC,BC] output flags from (" <<
+"  verbose=array         [ad,wc,bc] output flags from (" <<
 	join(",", verbose_flag) << ")\n" <<
 "Liga parameters:\n"
 "  ndim={1,2,3}          [3] search in n-dimensional space\n"
@@ -545,7 +544,6 @@ void RunPar_t::fill_verbose()
     verbose[AD] = true;
     verbose[WC] = true;
     verbose[BC] = true;
-    verbose_mute = false;
     // fill verbose_flag array
     verbose_flag.resize(VERBOSE_SIZE);
     verbose_flag[AD] = "ad";
