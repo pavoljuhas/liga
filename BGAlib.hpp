@@ -182,7 +182,6 @@ public:
     static bool evolve_relax;
     static bool degenerate_relax;
     static double evolve_frac;
-    static int center_size;
     static vector<AtomFilter_t*> atom_filters;
     static double lookout_prob;
     // fitness/badness functions

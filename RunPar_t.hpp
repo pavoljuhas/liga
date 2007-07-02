@@ -67,7 +67,6 @@ struct RunPar_t
     int natoms;
     std::vector<int> fixed_atoms;
     std::vector<SeedClusterInfo> seed_clusters;
-    int centersize;
     double maxcputime;
     int rngseed;
     double evolve_frac;

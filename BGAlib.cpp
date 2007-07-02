@@ -428,7 +428,6 @@ double Molecule::evolve_frac = 0.1;
 bool Molecule::evolve_jump = true;
 bool Molecule::evolve_relax = false;
 bool Molecule::degenerate_relax = false;
-int Molecule::center_size = 0;
 vector<AtomFilter_t*> Molecule::atom_filters;
 double Molecule::lookout_prob = 0.0;
 Molecule::file_fmt_type Molecule::output_format = XYZ;
@@ -1745,8 +1744,6 @@ void Molecule::Evolve(const int* est_triang)
 	for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
 	    pai->ResetBadness();
     }
-    if (NAtoms() < center_size)
-	Center();
 }
 
 void Molecule::Degenerate(int Npop)
@@ -1785,8 +1782,6 @@ void Molecule::Degenerate(int Npop)
 	    RelaxAtom(worst);
 	}
     }
-    if (NAtoms() < center_size)
-	Center();
 }
 
 vector<int> random_choose_few(int K, int Np, bool with_repeat)

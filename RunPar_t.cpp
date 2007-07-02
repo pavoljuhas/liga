@@ -251,9 +251,6 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	    seed_clusters.push_back(ii->second);
 	}
     }
-    // centersize
-    centersize = a.GetPar<int>("centersize", 0);
-    mol.center_size = centersize;
     // maxcputime
     maxcputime = a.GetPar<double>("maxcputime", 0.0);
     // rngseed
@@ -353,7 +350,6 @@ void RunPar_t::print_help(ParseArgs& a)
 "  natoms=int            use with loose distfiles or when tol_dd==0\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  seed_clusters=array   [] triplets of (level, number, trials)\n"
-"  centersize=int        [0] shift smaller molecules to the origin\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
 "  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
@@ -485,11 +481,6 @@ void RunPar_t::print_pars(ParseArgs& a)
 	}
 	cout << '\n';
     }
-    // centersize
-    if (a.ispar("centersize"))
-    {
-	cout << "centersize=" << centersize << '\n';
-    }
     // maxcputime
     if (maxcputime > 0.0)
     {
@@ -537,7 +528,7 @@ void RunPar_t::fill_validpars()
 	"outstru", "outfmt", "saverate", "saveall",
 	"frames", "framesrate", "framestrace", "verbose", "ndim",
 	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "seed_clusters",
-	"centersize", "maxcputime", "rngseed",
+	"maxcputime", "rngseed",
 	"evolve_frac", "evolve_relax", "degenerate_relax",
 	"ligasize", "stopgame",
 	"seasontrials", "trials_sharing", "lookout_prob",
