@@ -44,15 +44,6 @@ using namespace std;
 const double DOUBLE_MAX = numeric_limits<double>().max();
 
 // helper objects/functions
-template<typename T>
-struct OrderedPair : pair<T,T>
-{
-    OrderedPair(const T& x, const T& y) : pair<T,T>(x, y)
-    {
-	if (pair<T,T>::first > pair<T,T>::second)
-	    swap(pair<T,T>::first, pair<T,T>::second);
-    }
-};
 vector<int> random_choose_few(int K, int Np, bool with_repeat = false);
 vector<int> random_wt_choose(int K, const double* p, int Np);
 
@@ -266,7 +257,7 @@ private:
     int max_natoms;
     // atoms must precede pairs
     vector<Atom_t*> atoms;		// vector of pointers to atoms
-    Matrix<double> pmx_used_distances;
+    SymmetricMatrix<double> pmx_used_distances;
     std::set<int> free_pmx_slots;
     friend bool operator==(const Molecule&, const Molecule&);
     friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);

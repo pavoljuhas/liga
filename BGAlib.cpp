@@ -630,7 +630,6 @@ void Molecule::setMaxNAtoms(int sz)
 	throw InvalidMolecule();
     }
     max_natoms = sz;
-//    pmx_used_distances.resize(sz, sz);
 }
 
 Molecule& Molecule::Shift(double dx, double dy, double dz)
@@ -1167,13 +1166,11 @@ void Molecule::addNewAtomPair(Atom_t* pa0, Atom_t* pa1)
     if (fabs(dd) < tol_dd)
     {
 	pmx_used_distances(idx0,idx1) = *pdnear;
-	pmx_used_distances(idx1,idx0) = *pdnear;
 	dTarget.erase(pdnear);
     }
     else
     {
 	pmx_used_distances(idx0,idx1) = -(*pdnear);
-	pmx_used_distances(idx1,idx0) = -(*pdnear);
     }
     double badnesshalf = pairbadness/2.0;
     pa0->IncBadness(badnesshalf);
