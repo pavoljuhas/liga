@@ -632,7 +632,7 @@ void Molecule::setMaxNAtoms(int sz)
     max_natoms = sz;
 }
 
-Molecule& Molecule::Shift(double dx, double dy, double dz)
+void Molecule::Shift(double dx, double dy, double dz)
 {
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
@@ -641,10 +641,9 @@ Molecule& Molecule::Shift(double dx, double dy, double dz)
 	pa->r[1] += dy;
 	pa->r[2] += dz;
     }
-    return *this;
 }
 
-Molecule& Molecule::Center()
+void Molecule::Center()
 {
     double avg_rx = 0.0, avg_ry = 0.0, avg_rz = 0.0;
     for (AtomSequence seq(this); !seq.finished(); seq.next())
@@ -658,10 +657,9 @@ Molecule& Molecule::Center()
     avg_ry /= NAtoms();
     avg_rz /= NAtoms();
     Shift(-avg_rx, -avg_ry, -avg_rz);
-    return *this;
 }
 
-Molecule& Molecule::Pop(const int aidx)
+void Molecule::Pop(const int aidx)
 {
     if (aidx < 0 || aidx >= NAtoms())
     {
@@ -677,10 +675,9 @@ Molecule& Molecule::Pop(const int aidx)
     free_pmx_slots.insert(pa->pmxidx);
     delete pa;
     atoms.erase(atoms.begin() + aidx);
-    return *this;
 }
 
-Molecule& Molecule::Pop(const list<int>& cidx)
+void Molecule::Pop(const list<int>& cidx)
 {
     list<int> atoms2pop;
     // build a list of indices of atoms to be popped
@@ -702,10 +699,9 @@ Molecule& Molecule::Pop(const list<int>& cidx)
     {
 	Pop(*rii);
     }
-    return *this;
 }
 
-Molecule& Molecule::Clear()
+void Molecule::Clear()
 {
     // return used distances
     for (AtomSequence seq0(this); !seq0.finished(); seq0.next())
@@ -728,25 +724,22 @@ Molecule& Molecule::Clear()
     atoms.clear();
     free_pmx_slots.clear();
     badness = 0.0;
-    return *this;
 }
 
-Molecule& Molecule::Add(const Molecule& M)
+void Molecule::Add(const Molecule& M)
 {
     for (AtomSequence seq(&M); !seq.finished(); seq.next())
     {
 	Add(*seq.ptr());
     }
-    return *this;
 }
 
-Molecule& Molecule::Add(double rx0, double ry0, double rz0)
+void Molecule::Add(double rx0, double ry0, double rz0)
 {
     Add(Atom_t(rx0, ry0, rz0));
-    return *this;
 }
 
-Molecule& Molecule::Add(const Atom_t& atom)
+void Molecule::Add(const Atom_t& atom)
 {
     if (NAtoms() == maxNAtoms())
     {
@@ -772,10 +765,9 @@ Molecule& Molecule::Add(const Atom_t& atom)
 	addNewAtomPair(pnew_atom, seq.ptr());
     }
     NormBadness();
-    return *this;
 }
 
-Molecule& Molecule::Fix(const int cidx)
+void Molecule::Fix(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
     {
@@ -784,7 +776,6 @@ Molecule& Molecule::Fix(const int cidx)
 	throw range_error(emsg.str());
     }
     atoms[cidx]->fixed = true;
-    return *this;
 }
 
 inline bool pAtom_is_fixed(const Atom_t* pa) { return pa->fixed; }
@@ -993,13 +984,12 @@ int rxa_df(const gsl_vector* x, void* params, gsl_matrix* J)
     return status;
 }
 
-Molecule& Molecule::RelaxAtom(vector<Atom_t*>::iterator pai)
+void Molecule::RelaxAtom(vector<Atom_t*>::iterator pai)
 {
     RelaxAtom(pai - atoms.begin());
-    return *this;
 }
 
-Molecule& Molecule::RelaxAtom(const int cidx)
+void Molecule::RelaxAtom(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
     {
@@ -1011,7 +1001,6 @@ Molecule& Molecule::RelaxAtom(const int cidx)
     Pop(cidx);
     RelaxExternalAtom(ta);
     Add(ta);
-    return *this;
 }
 
 void Molecule::RelaxExternalAtom(Atom_t& ta)
@@ -1651,7 +1640,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     return push_count;
 }
 
-Molecule& Molecule::Evolve(const int* est_triang)
+void Molecule::Evolve(const int* est_triang)
 {
     const int& nlinear = est_triang[LINEAR];
     const int& nplanar = est_triang[PLANAR];
@@ -1683,7 +1672,7 @@ Molecule& Molecule::Evolve(const int* est_triang)
     {
 	case 0:
 	    Add(0.0, 0.0, 0.0);
-	    return *this;
+	    return;
 	case 1:
 	    if (lookout)
 	    {
@@ -1758,13 +1747,12 @@ Molecule& Molecule::Evolve(const int* est_triang)
     }
     if (NAtoms() < center_size)
 	Center();
-    return *this;
 }
 
-Molecule& Molecule::Degenerate(int Npop)
+void Molecule::Degenerate(int Npop)
 {
     Npop = min(NAtoms(), Npop);
-    if (Npop == 0)  return *this;
+    if (Npop == 0)  return;
     // build array of atom badnesses
     double freebad[NAtoms()];
     int freeidx[NAtoms()];
@@ -1777,7 +1765,7 @@ Molecule& Molecule::Degenerate(int Npop)
 	freeidx[Nfree] = i;
 	Nfree++;
     }
-    if (Nfree == 0)  return *this;
+    if (Nfree == 0)  return;
     Npop = min(Nfree, Npop);
     // build list of indices of atoms to pop
     vector<int> idxidx = random_wt_choose(Npop, freebad, Nfree);
@@ -1799,7 +1787,6 @@ Molecule& Molecule::Degenerate(int Npop)
     }
     if (NAtoms() < center_size)
 	Center();
-    return *this;
 }
 
 vector<int> random_choose_few(int K, int Np, bool with_repeat)

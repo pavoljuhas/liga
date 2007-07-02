@@ -190,26 +190,26 @@ public:
     double NormBadness() const;	// normalized badness
     inline bool Full() const { return !(NAtoms() < maxNAtoms()); }
     // operator functions
-    Molecule& Shift(double dh, double dk, double dl);	// move all atoms
-    Molecule& Center();	  // center w/r to the center of mass
+    void Shift(double dh, double dk, double dl);	// move all atoms
+    void Center();	  // center w/r to the center of mass
     // atom operations
     inline const Atom_t& getAtom(const int cidx)
     {
 	return *(atoms[cidx]);
     }
-    Molecule& Pop(const int cidx);	// erase
-    Molecule& Pop(const list<int>& cidx);
-    Molecule& Clear();			// remove all atoms
-    Molecule& Add(const Molecule& M);	// add specified molecule
-    Molecule& Add(double rx0, double ry0, double rz0);	// add single atom
-    Molecule& Add(const Atom_t& a);			// add single atom
-    Molecule& Fix(const int cidx);		// mark atom as fixed
+    void Pop(const int cidx);	// erase
+    void Pop(const list<int>& cidx);
+    void Clear();			// remove all atoms
+    void Add(const Molecule& M);	// add specified molecule
+    void Add(double rx0, double ry0, double rz0);	// add single atom
+    void Add(const Atom_t& a);			// add single atom
+    void Fix(const int cidx);		// mark atom as fixed
     int NFixed() const;				// count fixed atoms
-    Molecule& RelaxAtom(const int cidx);	// relax internal atom
-    Molecule& RelaxAtom(vector<Atom_t*>::iterator);
+    void RelaxAtom(const int cidx);	// relax internal atom
+    void RelaxAtom(vector<Atom_t*>::iterator);
     void RelaxExternalAtom(Atom_t& a);
-    Molecule& Evolve(const int* est_triang);
-    Molecule& Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
+    void Evolve(const int* est_triang);
+    void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
     // IO functions
     bool ReadXYZ(const char*); 		// read real coordinates
     bool WriteFile(const char*); 	// save in current output_format
