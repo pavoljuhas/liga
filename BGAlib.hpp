@@ -79,7 +79,7 @@ public:
     DistanceTable& operator= (const DistanceTable&);
     // member functions
     iterator find_nearest(const double& d);
-    iterator find_nearest_unused(const double& d, std::set<int>& used);
+    iterator find_nearest_unused(const double& d, std::valarray<bool>& used);
     iterator return_back(const double&);
     vector<double> unique();
     // data members
