@@ -79,7 +79,7 @@ public:
     DistanceTable& operator= (const DistanceTable&);
     // member functions
     iterator find_nearest(const double& d);
-    iterator find_nearest_unused(const double& d, std::valarray<bool>& used);
+    iterator find_nearest_unused(const double& d, std::set<int>& used);
     iterator return_back(const double&);
     vector<double> unique();
     // data members
@@ -173,7 +173,8 @@ public:
 	    const vector<double>& vy, const vector<double>& vz);
     Molecule(const Molecule& M);		// copy constructor
     Molecule& operator=(const Molecule&);	// assignment
-    ~Molecule();		// destructor
+    // destructor
+    virtual ~Molecule();
     // fit parameters
     static double tol_dd;
     static double tol_nbad;	// tolerance of normalized badness
@@ -198,12 +199,12 @@ public:
     }
     void Pop(const int cidx);	// erase
     void Pop(const list<int>& cidx);
-    void Clear();			// remove all atoms
+    virtual void Clear();		// remove all atoms
     void Add(const Molecule& M);	// add specified molecule
     void Add(double rx0, double ry0, double rz0);	// add single atom
-    void Add(const Atom_t& a);			// add single atom
+    void Add(const Atom_t& a);		// add single atom
     void Fix(const int cidx);		// mark atom as fixed
-    int NFixed() const;				// count fixed atoms
+    int NFixed() const;			// count fixed atoms
     void RelaxAtom(const int cidx);	// relax internal atom
     void RelaxAtom(vector<Atom_t*>::iterator);
     void RelaxExternalAtom(Atom_t& a);

@@ -333,29 +333,27 @@ DistanceTable::iterator DistanceTable::find_nearest(const double& dfind)
 }
 
 DistanceTable::iterator
-DistanceTable::find_nearest_unused(const double& d, valarray<bool>& used)
+DistanceTable::find_nearest_unused(const double& d, set<int>& used)
 {
     iterator ii = find_nearest(d);
     int idx = ii - begin();
-    if (used[idx])
-    {
-        int hi, lo, nidx = -1;
-        int sz = size();
-        for (hi = idx + 1; hi < sz && used[hi]; ++hi)
-        { }
-        if (hi < sz)
-        {
-            nidx = hi;
-        }
-        for (lo = idx - 1; lo >= 0 && used[lo]; --lo)
-        { }
-        if (lo >= 0 && (nidx < 0 || d - at(lo) < at(nidx) - d))
-        {
-            nidx = lo;
-        }
-        idx = nidx;
-        ii = begin() + nidx;
-    }
+    set<int>::iterator pu = used.find(idx);
+    if (pu == used.end())	return ii;
+    // search up for next unused index
+    int hi = idx;
+    int sz = size();
+    set<int>::iterator puhi = pu;
+    while (++hi < sz && ++puhi != used.end() && hi == *puhi)	{ }
+    // search down for next unused index
+    int lo = idx;
+    set<int>::reverse_iterator pulo(pu); --pulo;
+    while (--lo >= 0 && ++pulo != used.rend() && lo == *pulo)	{ }
+    // find better index
+    if (hi >= sz)			    idx = lo;
+    else if (lo < 0)			    idx = hi;
+    else if ((d - at(lo)) < (at(hi) - d))   idx = lo;
+    else				    idx = hi;
+    ii = begin() + idx;
     return ii;
 }
 
@@ -497,7 +495,6 @@ Molecule& Molecule::operator=(const Molecule& M)
     output_format = M.output_format;
     opened_file = M.opened_file;
     trace = M.trace;
-    NormBadness();
     return *this;
 }
 
@@ -678,26 +675,10 @@ void Molecule::Pop(const int aidx)
 
 void Molecule::Pop(const list<int>& cidx)
 {
-    list<int> atoms2pop;
-    // build a list of indices of atoms to be popped
-    for ( list<int>::const_iterator ii = cidx.begin();
-	    ii != cidx.end(); ++ii )
-    {
-	if (*ii < 0 || *ii >= NAtoms())
-	{
-	    cerr << "index out of range in Molecule::Pop(list<int>)" << endl;
-	    throw range_error("in Molecule::Pop(const list<int>&)");
-	}
-	atoms2pop.push_back(*ii);
-    }
-    // now pop those atoms going from the highest index down
-    atoms2pop.sort();
-    atoms2pop.unique();
-    for ( list<int>::reverse_iterator rii = atoms2pop.rbegin();
-	    rii != atoms2pop.rend(); ++rii )
-    {
-	Pop(*rii);
-    }
+    // create a sorted set of indices of atoms to be popped
+    set<int> popped(cidx.begin(), cidx.end());
+    set<int>::reverse_iterator rii;
+    for (rii = popped.rbegin(); rii != popped.rend(); ++rii)  Pop(*rii);
 }
 
 void Molecule::Clear()
@@ -729,7 +710,7 @@ void Molecule::Add(const Molecule& M)
 {
     for (AtomSequence seq(&M); !seq.finished(); seq.next())
     {
-	Add(*seq.ptr());
+	Add(seq.ref());
     }
 }
 
@@ -763,7 +744,6 @@ void Molecule::Add(const Atom_t& atom)
     {
 	addNewAtomPair(pnew_atom, seq.ptr());
     }
-    NormBadness();
 }
 
 void Molecule::Fix(const int cidx)
@@ -792,13 +772,7 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 	cerr << "E: Molecule too large in calc_test_badness()" << endl;
 	throw InvalidMolecule();
     }
-    static valarray<bool> used;
-    if (dTarget.size() > used.size())	used.resize(dTarget.size(), false);
-    {
-	used.resize(dTarget.size(), false);
-    }
-    static vector<int> used_idx;
-    used_idx.clear();
+    set<int> used;
     double tbad = ta.Badness();
     typedef vector<Atom_t*>::iterator VPAit;
     for (   VPAit pai = atoms.begin();
@@ -812,15 +786,8 @@ double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
 	if (fabs(dd) < tol_dd)
 	{
 	    int idx = pdnear - dTarget.begin();
-	    used[idx] = true;
-	    used_idx.push_back(idx);
+	    used.insert(idx);
 	}
-    }
-    // resest all values in array used to false
-    for (   vector<int>::iterator ii = used_idx.begin();
-	    ii != used_idx.end(); ++ii )
-    {
-	used[*ii] = false;
     }
     return tbad;
 }
@@ -1011,12 +978,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     const int max_iter = 500;
     // find if it is a member atom:
     // dTarget is not changed in this function
-    static valarray<bool> used;
-    if (dTarget.size() > used.size())	used.resize(dTarget.size(), false);
-    {
-	used.resize(dTarget.size(), false);
-    }
-    static vector<int> used_idx;
+    set<int> used;
     // prepare valarrays for rxa_* functions
     valarray<double> wt(1.0, NAtoms());
     double* pd = &wt[0];
@@ -1034,7 +996,6 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     double lo_abad = numeric_limits<double>().max();
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
-	used_idx.clear();
 	double* pad0 = &ad0[0];
 	double tbad = 0.0;
 	typedef vector<Atom_t*>::iterator VPAit;
@@ -1049,15 +1010,8 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    if (fabs(dd) < tol_dd)
 	    {
 		int idx = pdnear - dTarget.begin();
-		used[idx] = true;
-		used_idx.push_back(idx);
+		used.insert(idx);
 	    }
-	}
-	// restore used
-	for (   vector<int>::iterator ii = used_idx.begin();
-		ii != used_idx.end(); ++ii  )
-	{
-	    used[*ii] = false;
 	}
 	// get out if lo_abad did not improve
 	if ( eps_lt(tbad, lo_abad) )
