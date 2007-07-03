@@ -31,7 +31,7 @@ class Liga_t : public std::vector<Division_t>
 
 	// Data members
 	int season;
-	
+
 	// Constructor and destructor
 	Liga_t(RunPar_t* runpar);
 	~Liga_t();

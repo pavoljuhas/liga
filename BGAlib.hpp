@@ -163,7 +163,8 @@ public:
 class Molecule
 {
     friend class AtomSequence;
-public:
+    friend class AtomCost;
+    public:
     // constructors
     Molecule();
     Molecule(const DistanceTable&);
@@ -236,6 +237,10 @@ public:
 
 protected:
 
+    // data members
+//    StructureType _type;
+//    std::string _type_str;
+
     void addNewAtomPair(Atom_t* pa0, Atom_t* pa1);
     void removeAtomPair(Atom_t* pa0, Atom_t* pa1);
     int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
@@ -249,7 +254,7 @@ protected:
 	    double evolve_range, double hi_abad);
     bool check_atom_filters(Atom_t*);
 
-private:
+    private:
     // constructor helper
     void init();
     // data storage

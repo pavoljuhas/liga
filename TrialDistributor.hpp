@@ -52,13 +52,13 @@ class TrialDistributor
 	// function to register derived classes
 	bool Register();
 
-	// public methods
+	// methods
 	void setLevelBadness(size_t lv, double bd);
 	void setLevelFillRate(size_t lv, double fr);
 	void resize(size_t sz);
-	inline size_t size()	    { return lvbadlog.size(); }
-	DistributorType type()	    { return _type; }
-	const std::string& typeStr()	{ return _type_str; }
+	inline size_t size()	{ return lvbadlog.size(); }
+	virtual DistributorType type() = 0;
+	virtual std::string typeStr() = 0;
 	virtual void share(int seasontrials) = 0;
 
     protected:
@@ -70,8 +70,6 @@ class TrialDistributor
 	static const size_t histsize;
 
 	// data members
-	DistributorType _type;
-	std::string _type_str;
 	std::deque<BadnessHistory> lvbadlog;
 	std::deque<double> fillrate;
 	int base_level;
@@ -93,14 +91,12 @@ class TrialDistributorEqual : public TrialDistributor
     public:
 
 	// constructor and destructor
-	TrialDistributorEqual()	: TrialDistributor()
-	{
-	    _type = EQUAL;
-	    _type_str = "equal";
-	}
+	TrialDistributorEqual()	: TrialDistributor() { }
 	virtual ~TrialDistributorEqual() { }
 
 	// methods
+	virtual DistributorType type()	{ return EQUAL; }
+	virtual std::string typeStr()	{ return "equal"; }
 	virtual void share(int seasontrials);
 
 };  // class TrialDistributorEqual
@@ -111,14 +107,12 @@ class TrialDistributorSize : public TrialDistributor
     public:
 
 	// constructor and destructor
-	TrialDistributorSize() : TrialDistributor()
-	{
-	    _type = SIZE;
-	    _type_str = "size";
-	}
+	TrialDistributorSize() : TrialDistributor() { }
 	virtual ~TrialDistributorSize() { }
 
-	// public methods
+	// methods
+	virtual DistributorType type()	{ return SIZE; }
+	virtual std::string typeStr()	{ return "size"; }
 	virtual void share(int seasontrials);
 
 };  // class TrialDistributorSize
@@ -129,14 +123,12 @@ class TrialDistributorSuccess : public TrialDistributor
     public:
 
 	// constructor and destructor
-	TrialDistributorSuccess() : TrialDistributor()
-	{
-	    _type = SUCCESS;
-	    _type_str = "success";
-	}
+	TrialDistributorSuccess() : TrialDistributor() { }
 	virtual ~TrialDistributorSuccess() { }
 
-	// public methods
+	// methods
+	virtual DistributorType type()	{ return SUCCESS; }
+	virtual std::string typeStr()	{ return "success"; }
 	virtual void share(int seasontrials);
 
 };  // class TrialDistributorSuccess

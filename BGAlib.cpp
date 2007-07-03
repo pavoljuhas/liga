@@ -857,7 +857,9 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	}
 	vta.erase(gai, vta.end());
     }
-    // obtain badness of every test atom and adjust hi_abad cutoff
+    // obtain badness of every test atom with lazy evaluation for badnesses
+    // higher than (minimum + evolve_range)
+//    auto_ptr<AtomCost> atom_cost(this);
     // badness is exact only when <= hi_abad
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {

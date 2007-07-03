@@ -79,7 +79,7 @@ bool TrialDistributor::isType(const string& tp)
 
 bool TrialDistributor::Register()
 {
-    distributors[_type_str] = _type;
+    distributors[typeStr()] = type();
     return true;
 }
 
