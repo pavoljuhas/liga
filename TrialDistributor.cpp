@@ -22,7 +22,7 @@ RegisterSVNId TrialDistributor_cpp_id("$Id$");
 
 // class data
 
-map<std::string,TrialDistributor*> TrialDistributor::distributors;
+map<string,TrialDistributor::DistributorType> TrialDistributor::distributors;
 const size_t TrialDistributor::histsize = 10;
 
 // class methods
@@ -36,7 +36,7 @@ TrialDistributor* TrialDistributor::create(RunPar_t* rp)
 	emsg << "TrialDistributor '" << tstp << "' not defined.";
 	throw runtime_error(emsg.str());
     }
-    TrialDistributor* td = distributors[tstp]->create();
+    TrialDistributor* td = create(distributors[tstp]);
     // copy data from rp
     td->resize(rp->natoms + 1);
     td->tol_bad = rp->tol_bad;
@@ -44,11 +44,26 @@ TrialDistributor* TrialDistributor::create(RunPar_t* rp)
     return td;
 }
 
+TrialDistributor* TrialDistributor::create(DistributorType tp)
+{
+    switch (tp)
+    {
+	case EQUAL:	return new TrialDistributorEqual();
+	case SIZE:	return new TrialDistributorSize();
+	case SUCCESS:	return new TrialDistributorSuccess();
+	default:
+	    ostringstream emsg;
+	    emsg << "Unhandled value of DistributorType " << tp;
+	    throw invalid_argument(emsg.str());
+    }
+    return NULL;
+}
+
 list<string> TrialDistributor::getTypes()
 {
     list<string> rv;
-    typedef map<string,TrialDistributor*>::iterator Iter;
-    for (Iter ii = distributors.begin(); ii != distributors.end(); ++ii)
+    map<string,DistributorType>::iterator ii;
+    for (ii = distributors.begin(); ii != distributors.end(); ++ii)
     {
 	rv.push_back(ii->first);
     }
@@ -64,8 +79,7 @@ bool TrialDistributor::isType(const string& tp)
 
 bool TrialDistributor::Register()
 {
-    if (distributors.count(_type))  return true;
-    distributors[_type] = create();
+    distributors[_type_str] = _type;
     return true;
 }
 

@@ -30,8 +30,11 @@ class TrialDistributor
 {
     public:
 
+	enum DistributorType { EQUAL, SIZE, SUCCESS };
+
 	// class methods
 	static TrialDistributor* create(RunPar_t* rp);
+	static TrialDistributor* create(DistributorType tp);
 	static std::list<std::string> getTypes();
 	static bool isType(const std::string& tp);
 
@@ -39,7 +42,6 @@ class TrialDistributor
 	TrialDistributor()
 	{
 	    tol_bad = 1.0e-8;
-	    _type = "";
 	}
 	// destructor
 	virtual ~TrialDistributor() { }
@@ -55,7 +57,8 @@ class TrialDistributor
 	void setLevelFillRate(size_t lv, double fr);
 	void resize(size_t sz);
 	inline size_t size()	    { return lvbadlog.size(); }
-	const std::string& type()   { return _type; }
+	DistributorType type()	    { return _type; }
+	const std::string& typeStr()	{ return _type_str; }
 	virtual void share(int seasontrials) = 0;
 
     protected:
@@ -67,7 +70,8 @@ class TrialDistributor
 	static const size_t histsize;
 
 	// data members
-	std::string _type;
+	DistributorType _type;
+	std::string _type_str;
 	std::deque<BadnessHistory> lvbadlog;
 	std::deque<double> fillrate;
 	int base_level;
@@ -79,10 +83,7 @@ class TrialDistributor
     private:
 
 	// registry of derived trial distributors
-	static std::map<std::string,TrialDistributor*> distributors;
-
-	// methods
-	virtual TrialDistributor* create() = 0;
+	static std::map<std::string,DistributorType> distributors;
 
 };  // class TrialDistributor
 
@@ -94,20 +95,13 @@ class TrialDistributorEqual : public TrialDistributor
 	// constructor and destructor
 	TrialDistributorEqual()	: TrialDistributor()
 	{
-	    _type = "equal";
+	    _type = EQUAL;
+	    _type_str = "equal";
 	}
 	virtual ~TrialDistributorEqual() { }
 
 	// methods
 	virtual void share(int seasontrials);
-
-    private:
-
-	// methods
-	virtual TrialDistributor* create()
-	{
-	    return new TrialDistributorEqual();
-	}
 
 };  // class TrialDistributorEqual
 
@@ -119,20 +113,13 @@ class TrialDistributorSize : public TrialDistributor
 	// constructor and destructor
 	TrialDistributorSize() : TrialDistributor()
 	{
-	    _type = "size";
+	    _type = SIZE;
+	    _type_str = "size";
 	}
 	virtual ~TrialDistributorSize() { }
 
 	// public methods
 	virtual void share(int seasontrials);
-
-    private:
-
-	// methods
-	virtual TrialDistributor* create()
-	{
-	    return new TrialDistributorSize();
-	}
 
 };  // class TrialDistributorSize
 
@@ -144,20 +131,13 @@ class TrialDistributorSuccess : public TrialDistributor
 	// constructor and destructor
 	TrialDistributorSuccess() : TrialDistributor()
 	{
-	    _type = "success";
+	    _type = SUCCESS;
+	    _type_str = "success";
 	}
 	virtual ~TrialDistributorSuccess() { }
 
 	// public methods
 	virtual void share(int seasontrials);
-
-    private:
-
-	// methods
-	virtual TrialDistributor* create()
-	{
-	    return new TrialDistributorSuccess();
-	}
 
 };  // class TrialDistributorSuccess
 
