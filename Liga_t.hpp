@@ -11,6 +11,7 @@
 #ifndef LIGA_T_HPP_INCLUDED
 #define LIGA_T_HPP_INCLUDED
 
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -77,7 +78,7 @@ class Liga_t : public std::vector<Division_t>
 	int* stopflag;
 	int base_level;
 	PMOL world_champ, best_champ;
-	TrialDistributor* tdistributor;
+	std::auto_ptr<TrialDistributor> tdistributor;
 
 	// Private methods
 	int divSize(int level);

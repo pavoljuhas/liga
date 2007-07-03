@@ -27,7 +27,6 @@ Liga_t::Liga_t(RunPar_t* runpar) :
 {
     world_champ = NULL;
     best_champ = NULL;
-    tdistributor = NULL;
 }
 
 Liga_t::~Liga_t()
@@ -46,8 +45,7 @@ void Liga_t::prepare()
     world_champ = NULL;
     delete best_champ;
     best_champ = NULL;
-    delete tdistributor;
-    tdistributor = TrialDistributor::create(rp);
+    tdistributor.reset( TrialDistributor::create(rp) );
     base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
     Division_t::ndim = rp->ndim;
