@@ -9,12 +9,14 @@
 ***********************************************************************/
 
 #include <sstream>
+#include <cassert>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlin.h>
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
+#include "AtomCost.hpp"
 
 #define CHECK_ATOM_FIXED true
 
@@ -663,8 +665,8 @@ void Molecule::Pop(const int aidx)
     {
 	throw range_error("in Molecule::Pop(const int aidx)");
     }
-    Assert( !CHECK_ATOM_FIXED || !atoms[aidx]->fixed,
-	    runtime_error("Pop() called on fixed atom") );
+    // Pop should never get called on fixed atom
+    assert(!atoms[aidx]->fixed);
     Atom_t* pa = atoms[aidx];
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
@@ -841,7 +843,6 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	cerr << "E: Molecule too large in filter_good_atoms()" << endl;
 	throw InvalidMolecule();
     }
-    double lo_abad = hi_abad - evolve_range;
     typedef vector<Atom_t>::iterator VAit;
     VAit gai;
     // first check if atoms pass through atom_filters
@@ -857,29 +858,22 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	}
 	vta.erase(gai, vta.end());
     }
-    // obtain badness of every test atom and adjust hi_abad cutoff
-    // badness is exact only when <= hi_abad
+    // obtain badness of every test atom, do lazy evaluation when badness
+    // is higher than (minimum + evolve_range)
+    AtomCost* atomcost = getAtomCostCalculator();
+    atomcost->setCutoff(hi_abad);
+    atomcost->setCutoffRange(evolve_range);
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
-	// initial atom badness is the badness sum of base atoms
-	// in the next round it is 0; in any case we can use IncBadness
-	double tbad = calc_test_badness(*tai, hi_abad);
-	tai->IncBadness(tbad);
-	if (tai->Badness() < lo_abad)
-	{
-	    lo_abad = tai->Badness();
-	    hi_abad = lo_abad + evolve_range;
-	}
+	tai->IncBadness(atomcost->eval(*tai));
     }
-    // hi_abad has a correct value here
+    // atom cost cutoff is available here,
     // let us keep only good atoms
     gai = vta.begin();
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
-	if (tai->Badness() <= hi_abad)
-	{
-	    *(gai++) = *tai;
-	}
+	if (tai->Badness() > atomcost->cutoff())    continue;
+	*(gai++) = *tai;
     }
     vta.erase(gai, vta.end());
 }
@@ -976,8 +970,8 @@ void Molecule::RelaxAtom(const int cidx)
     {
 	throw range_error("in Molecule::RelaxAtom(const int)");
     }
-    Assert( !CHECK_ATOM_FIXED || !atoms[cidx]->fixed,
-	    runtime_error("RelaxAtom() called on fixed atom") );
+    // RelaxAtom should never get called on a fixed atom
+    assert(!atoms[cidx]->fixed);
     Atom_t ta = getAtom(cidx);
     Pop(cidx);
     RelaxExternalAtom(ta);
@@ -1110,6 +1104,13 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	gsl_vector_free(G);
 	gsl_multifit_fdfsolver_free(lms);
     }
+}
+
+AtomCost* Molecule::getAtomCostCalculator()
+{
+    static AtomCost the_acc(this);
+    the_acc.resetFor(this);
+    return &the_acc;
 }
 
 void Molecule::addNewAtomPair(Atom_t* pa0, Atom_t* pa1)
@@ -2127,15 +2128,15 @@ ostream& operator<<(ostream& fid, Molecule& M)
     return fid;
 }
 
-void Molecule::PrintBadness()
+void Molecule::PrintBadness() const
 {
     if (!NAtoms())  return;
     cout << "ABadness() =";
     double mab = (*max_element(atoms.begin(), atoms.end(),
 		    comp_pAtom_Badness)) -> Badness();
     bool marked = false;
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
+    vector<Atom_t*>::const_iterator pai;
+    for (pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
 	cout << ' ';
 	if (!marked && (*pai)->Badness() == mab)

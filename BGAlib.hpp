@@ -22,6 +22,8 @@
 #include "Matrix.hpp"
 #include "BGAutils.hpp"
 
+class AtomCost;
+
 namespace {
 RegisterSVNId BGAlib_hpp_id("$Id$");
 }
@@ -160,117 +162,141 @@ public:
     double max_dist;
 };
 
+enum StructureType { MOLECULE, CRYSTAL };
+
 class Molecule
 {
-    friend class AtomSequence;
-public:
-    // constructors
-    Molecule();
-    Molecule(const DistanceTable&);
-    Molecule(const DistanceTable&, const int s, const double* px,
-	    const double* py, const double* pz);
-    Molecule(const DistanceTable&, const vector<double>& vx,
-	    const vector<double>& vy, const vector<double>& vz);
-    Molecule(const Molecule& M);		// copy constructor
-    Molecule& operator=(const Molecule&);	// assignment
-    // destructor
-    virtual ~Molecule();
-    // fit parameters
-    static double tol_dd;
-    static double tol_nbad;	// tolerance of normalized badness
-    static double tol_r;	// position tolerance in RelaxAtom
-    static bool evolve_jump;
-    static bool evolve_relax;
-    static bool degenerate_relax;
-    static double evolve_frac;
-    static vector<AtomFilter_t*> atom_filters;
-    static double lookout_prob;
-    // fitness/badness functions
-    double Badness() const;	// total badness
-    double NormBadness() const;	// normalized badness
-    inline bool Full() const { return !(NAtoms() < maxNAtoms()); }
-    // operator functions
-    void Shift(double dh, double dk, double dl);	// move all atoms
-    void Center();	  // center w/r to the center of mass
-    // atom operations
-    inline const Atom_t& getAtom(const int cidx)
-    {
-	return *(atoms[cidx]);
-    }
-    void Pop(const int cidx);	// erase
-    void Pop(const list<int>& cidx);
-    virtual void Clear();		// remove all atoms
-    void Add(const Molecule& M);	// add specified molecule
-    void Add(double rx0, double ry0, double rz0);	// add single atom
-    void Add(const Atom_t& a);		// add single atom
-    void Fix(const int cidx);		// mark atom as fixed
-    int NFixed() const;			// count fixed atoms
-    void RelaxAtom(const int cidx);	// relax internal atom
-    void RelaxAtom(vector<Atom_t*>::iterator);
-    void RelaxExternalAtom(Atom_t& a);
-    void Evolve(const int* est_triang);
-    void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
-    // IO functions
-    bool ReadXYZ(const char*); 		// read real coordinates
-    bool WriteFile(const char*); 	// save in current output_format
-    bool WriteXYZ(const char*); 	// save real coordinates
-    bool WriteAtomEye(const char*);	// export in AtomEye format
-    static void OutFmtXYZ();		// output format for operator>>
-    static void OutFmtAtomEye();        // output format for operator>>
-    friend ostream& operator<<(ostream& os, Molecule& M);
-    friend istream& operator>>(istream& is, Molecule& M);
-    void PrintBadness();		// total and per-atomic badness
-    void PrintFitness();		// total and per-atomic fitness
-    void Recalculate();			// update everything
-    inline int NDist()  const
-    {
-	int n = NAtoms();
-	return n*(n-1)/2;
-    }
-    inline int NAtoms() const	 { return atoms.size(); }
-    inline int maxNAtoms() const { return max_natoms; }
-    void setMaxNAtoms(int s);
-    inline double max_dTarget() const { return dTarget.back(); }
-    // history trace
-    list<int> trace;
+    public:
 
-protected:
+	// friends
+	friend class AtomSequence;
+	friend class AtomCost;
+	friend bool operator==(const Molecule&, const Molecule&);
+	friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);
+	friend bool LoneAtomFilter_t::Check(Atom_t*, Molecule*);
+	friend ostream& operator<<(ostream& os, Molecule& M);
+	friend istream& operator>>(istream& is, Molecule& M);
 
-    void addNewAtomPair(Atom_t* pa0, Atom_t* pa1);
-    void removeAtomPair(Atom_t* pa0, Atom_t* pa1);
-    int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
-    int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
-    int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
-    int push_second_atoms(vector<Atom_t>& vta, int ntrials);
-    int push_third_atoms(vector<Atom_t>& vta, int ntrials);
-    double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
-    valarray<int> good_neighbors_count(const vector<Atom_t>& vta);
-    void filter_good_atoms(vector<Atom_t>& vta,
-	    double evolve_range, double hi_abad);
-    bool check_atom_filters(Atom_t*);
+	// class data
+	// fit parameters
+	static double tol_dd;
+	static double tol_nbad;	// tolerance of normalized badness
+	static double tol_r;	// position tolerance in RelaxAtom
+	static bool evolve_jump;
+	static bool evolve_relax;
+	static bool degenerate_relax;
+	static double evolve_frac;
+	static vector<AtomFilter_t*> atom_filters;
+	static double lookout_prob;
 
-private:
-    // constructor helper
-    void init();
-    // data storage
-    DistanceTable dTarget;
-    int max_natoms;
-    // atoms must precede pairs
-    vector<Atom_t*> atoms;		// vector of pointers to atoms
-    SymmetricMatrix<double> pmx_used_distances;
-    std::set<int> free_pmx_slots;
-    friend bool operator==(const Molecule&, const Molecule&);
-    friend bool BondAngleFilter_t::Check(Atom_t*, Molecule*);
-    friend bool LoneAtomFilter_t::Check(Atom_t*, Molecule*);
-    // badness evaluation
-    mutable double badness;		// molecular badness
-    // IO helpers
-    enum file_fmt_type {XYZ = 1, ATOMEYE};
-    static file_fmt_type output_format;
-    class ParseHeader;
-    istream& ReadXYZ(istream& fid);
-    string opened_file;
+	// class methods
+	static void OutFmtXYZ();	// output format for operator>>
+	static void OutFmtAtomEye();    // output format for operator>>
 
+	// data
+	list<int> trace;
+
+	// constructors
+	Molecule();
+	Molecule(const DistanceTable&);
+	Molecule(const DistanceTable&, const int s, const double* px,
+		const double* py, const double* pz);
+	Molecule(const DistanceTable&, const vector<double>& vx,
+		const vector<double>& vy, const vector<double>& vz);
+	Molecule(const Molecule& M);		// copy constructor
+	Molecule& operator=(const Molecule&);	// assignment
+
+	// destructor
+	virtual ~Molecule();
+
+	// methods - class registration and type info
+	bool Register();
+	virtual StructureType type() const  { return MOLECULE; }
+	virtual std::string typeStr() const { return "molecule"; }
+
+	// methods - fitness/badness evaluation
+	double Badness() const;	    // total badness
+	double NormBadness() const; // normalized badness
+	inline bool Full() const     { return !(NAtoms() < maxNAtoms()); }
+	inline int NAtoms() const    { return atoms.size(); }
+	inline int maxNAtoms() const { return max_natoms; }
+	void setMaxNAtoms(int s);
+	inline int NDist()  const
+	{
+	    int n = NAtoms();
+	    return n*(n-1)/2;
+	}
+	inline double max_dTarget() const { return dTarget.back(); }
+	void Recalculate();	    // update everything
+
+	// methods - molecule operations
+	void Shift(double dh, double dk, double dl);	// move all atoms
+	void Center();	  // center w/r to the center of mass
+
+	// atom operations
+	inline const Atom_t& getAtom(const int cidx) { return *(atoms[cidx]); }
+	void Pop(const int cidx);	// erase
+	void Pop(const list<int>& cidx);
+	virtual void Clear();		// remove all atoms
+	void Add(const Molecule& M);	// add specified molecule
+	void Add(double rx0, double ry0, double rz0);	// add single atom
+	void Add(const Atom_t& a);	// add single atom
+	void Fix(const int cidx);	// mark atom as fixed
+	int NFixed() const;		// count fixed atoms
+	void RelaxAtom(const int cidx);	// relax internal atom
+	void RelaxAtom(vector<Atom_t*>::iterator);
+	void RelaxExternalAtom(Atom_t& a);
+	void Evolve(const int* est_triang);
+	void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
+
+	// IO functions
+	bool ReadXYZ(const char*); 	// read real coordinates
+	bool WriteFile(const char*); 	// save in current output_format
+	bool WriteXYZ(const char*); 	// save real coordinates
+	bool WriteAtomEye(const char*);	// export in AtomEye format
+	void PrintBadness() const;	// total and per-atomic badness
+	void PrintFitness();		// total and per-atomic fitness
+
+    protected:
+
+	// methods
+	virtual AtomCost* getAtomCostCalculator();
+	void addNewAtomPair(Atom_t* pa0, Atom_t* pa1);
+	void removeAtomPair(Atom_t* pa0, Atom_t* pa1);
+	int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
+	int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
+	int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
+	int push_second_atoms(vector<Atom_t>& vta, int ntrials);
+	int push_third_atoms(vector<Atom_t>& vta, int ntrials);
+	double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
+	valarray<int> good_neighbors_count(const vector<Atom_t>& vta);
+	void filter_good_atoms(vector<Atom_t>& vta,
+		double evolve_range, double hi_abad);
+	bool check_atom_filters(Atom_t*);
+
+    private:
+
+	// types
+	enum file_fmt_type {XYZ = 1, ATOMEYE};
+	class ParseHeader;
+
+	// class data
+	static file_fmt_type output_format;
+
+	// data
+	DistanceTable dTarget;
+	int max_natoms;
+	vector<Atom_t*> atoms;		// vector of pointers to atoms
+	SymmetricMatrix<double> pmx_used_distances;
+	std::set<int> free_pmx_slots;
+	mutable double badness;		// molecular badness
+
+	// methods
+	// constructor helper
+	void init();
+	// IO helpers
+	istream& ReadXYZ(istream& fid);
+	string opened_file;
 };
 
 class AtomSequence

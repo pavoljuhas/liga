@@ -49,16 +49,16 @@ class TrialDistributor
 	// data - calculated
 	std::valarray<double> tshares;
 
-	// function to register derived classes
+	// methods - class registration and type info
 	bool Register();
+	virtual DistributorType type() = 0;
+	virtual std::string typeStr() = 0;
 
 	// methods
 	void setLevelBadness(size_t lv, double bd);
 	void setLevelFillRate(size_t lv, double fr);
 	void resize(size_t sz);
 	inline size_t size()	{ return lvbadlog.size(); }
-	virtual DistributorType type() = 0;
-	virtual std::string typeStr() = 0;
 	virtual void share(int seasontrials) = 0;
 
     protected:

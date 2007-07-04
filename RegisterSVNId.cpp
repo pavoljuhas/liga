@@ -66,6 +66,7 @@ string RegisterSVNId::getAuthor(const string& id)
 
 RegisterSVNId::RegisterSVNId(const char* id)
 {
+    /*
     string myid = id;
     svnids[getFile(myid)] = myid;
     if (getRevision(myid) > last_revision)
@@ -77,6 +78,7 @@ RegisterSVNId::RegisterSVNId(const char* id)
 	idstrm << last_revision << ' ' << last_date << ' ' << last_author;
 	last_id = idstrm.str();
     }
+    */
 }
 
 // End of RegisterSVNId.cpp

@@ -11,7 +11,8 @@
 Sources = \
         BGAlib.cpp BGAutils.cpp ParseArgs.cpp \
         Liga_t.cpp Division_t.cpp RunPar_t.cpp \
-        TrialDistributor.cpp RegisterSVNId.cpp
+        TrialDistributor.cpp RegisterSVNId.cpp \
+        AtomCost.cpp
         
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
@@ -45,6 +46,7 @@ all: gizaliga
         CXXFLAGS += $EXTRA_DEBUG
 
     fast
+        DEFINE += -DNDEBUG
         OPTIMIZE = 3
         CXXFLAGS += $EXTRA_OPTIM
         EXESUF = -fast
