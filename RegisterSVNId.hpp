@@ -19,21 +19,29 @@ class RegisterSVNId
 {
     public:
 
-	// class data
-	static std::map<std::string,std::string> svnids;
-	static int last_revision;
-	static std::string last_date;
-	static std::string last_author;
-	static std::string last_id;
-
 	// class methods
 	static std::string getFile(const std::string& id);
 	static int getRevision(const std::string& id);
 	static std::string getDate(const std::string& id);
 	static std::string getAuthor(const std::string& id);
+	static int lastRevision();
+	static std::string lastDate();
+	static std::string lastAuthor();
+	static std::string lastId();
 
 	// constructor
-	RegisterSVNId(const char* idstring);
+	RegisterSVNId(const char* id);
+
+    private:
+
+	// class data
+	static int last_revision;
+	static std::string last_date;
+	static std::string last_author;
+
+	// class methods
+	static void processRecords();
+	static std::map<std::string,std::string>& records(const char* id=NULL);
 
 };  // class RegisterSVNId
 
