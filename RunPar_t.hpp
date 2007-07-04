@@ -35,7 +35,7 @@ struct SeedClusterInfo
     int trials;
 };
 
-namespace VerboseFlag
+namespace NS_VerboseFlag
 {
     enum VerboseFlag { AD, WC, BC, AV, TS, ALL, VERBOSE_SIZE };
 }

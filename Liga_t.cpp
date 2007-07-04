@@ -165,7 +165,7 @@ void Liga_t::playLevel(size_t lo_level)
 	    lo_looser->Pop(--nlast);
 	modified.insert(lo_looser);
     }
-    using namespace VerboseFlag;
+    using namespace NS_VerboseFlag;
     if (rp->verbose[AD])
     {
 	cout << season;
