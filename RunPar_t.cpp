@@ -146,6 +146,7 @@ void RunPar_t::processArguments(int argc, char *argv[])
     // verbose
     if (a.ispar("verbose"))
     {
+	using namespace NS_VerboseFlag;
 	verbose = false;
 	vector<string> flagwords = a.GetParVec<string>("verbose");
 	vector<string>::iterator w, vbsflag;
@@ -161,7 +162,7 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	    }
 	    int vbsindex = vbsflag - verbose_flag.begin();
 	    verbose[vbsindex] = true;
-	    if (vbsindex == VerboseFlag::ALL)	verbose = true;
+	    if (vbsindex == ALL)    verbose = true;
 	}
     }
     // liga parameters
@@ -538,7 +539,7 @@ void RunPar_t::fill_validpars()
 
 void RunPar_t::fill_verbose()
 {
-    using namespace VerboseFlag;
+    using namespace NS_VerboseFlag;
     // default verbose value
     verbose.resize(VERBOSE_SIZE, false);
     verbose[AD] = true;

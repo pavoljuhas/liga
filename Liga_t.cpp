@@ -320,7 +320,7 @@ Molecule* Liga_t::updateBestChamp()
 
 void Liga_t::printWorldChamp()
 {
-    using namespace VerboseFlag;
+    using namespace NS_VerboseFlag;
     if (!rp->verbose[WC])   return;
     cout << season << " WC " << world_champ->NAtoms() << ' ' <<
 	world_champ->NormBadness() << '\n';
@@ -328,7 +328,7 @@ void Liga_t::printWorldChamp()
 
 void Liga_t::printBestChamp()
 {
-    using namespace VerboseFlag;
+    using namespace NS_VerboseFlag;
     if (!rp->verbose[BC])   return;
     cout << season << " BC " << best_champ->NAtoms() << ' '
 	<< best_champ->NormBadness() << '\n';
@@ -336,7 +336,7 @@ void Liga_t::printBestChamp()
 
 void Liga_t::printLevelAverages()
 {
-    using namespace VerboseFlag;
+    using namespace NS_VerboseFlag;
     if (!rp->verbose[AV])   return;
     size_t level = base_level;
     iterator lii = begin() + base_level;
@@ -349,7 +349,7 @@ void Liga_t::printLevelAverages()
 
 void Liga_t::printTrialShares()
 {
-    using namespace VerboseFlag;
+    using namespace NS_VerboseFlag;
     if (!rp->verbose[TS])    return;
     for (size_t level = base_level; level < size(); ++level)
     {
