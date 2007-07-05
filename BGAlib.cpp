@@ -506,8 +506,6 @@ void Molecule::init()
 {
     badness = 0;
     setMaxNAtoms(dTarget.NAtoms);
-    // default output format
-    OutFmtXYZ();
 }
 
 Molecule::~Molecule()
