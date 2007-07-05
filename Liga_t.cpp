@@ -95,6 +95,7 @@ void Liga_t::playSeason()
     printWorldChamp();
     updateBestChamp();
     printBestChamp();
+    cout.flush();
     saveOutStru();
     saveFrames();
 }
@@ -367,7 +368,7 @@ void Liga_t::saveOutStru()
 	(!this->finished() && 0 < rp->saverate && savecnt < rp->saverate);
 
     if (dontsave)   return;
-    // start saving from the largest non-empty division
+    // find the largest non-empty division
     reverse_iterator save_div = rbegin();
     while (save_div != rend() && save_div->empty()) { ++save_div; }
     // save all lower division or stop after one save
@@ -375,8 +376,12 @@ void Liga_t::saveOutStru()
     stop_save = (rp->saveall || save_div == rend()) ? rend() : save_div + 1;
     for (; save_div != stop_save; ++save_div)
     {
+	// intermediate division may become empty
+	if (save_div->empty())	continue;
 	PMOL level_champ = save_div->best();
 	size_t level = level_champ->NAtoms();
+	// do not save empty structure
+	if (level == 0)	break;
 	// save only if there is clear improvement
 	bool improved = eps_lt(level_champ->NormBadness(), bestMNB[level]);
 	if (!improved)	continue;
