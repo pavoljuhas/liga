@@ -368,13 +368,18 @@ void Liga_t::saveOutStru()
 
     if (dontsave)   return;
     // start saving from the largest non-empty division
-    for (reverse_iterator hi_div = rbegin(); hi_div != rend(); ++hi_div)
+    reverse_iterator save_div = rbegin();
+    while (save_div != rend() && save_div->empty()) { ++save_div; }
+    // save all lower division or stop after one save
+    reverse_iterator stop_save;
+    stop_save = (rp->saveall || save_div == rend()) ? rend() : save_div + 1;
+    for (; save_div != stop_save; ++save_div)
     {
-	if (hi_div->empty())	continue;
-	PMOL level_champ = hi_div->best();
+	PMOL level_champ = save_div->best();
 	size_t level = level_champ->NAtoms();
 	// save only if there is clear improvement
-	if (!eps_lt(level_champ->NormBadness(), bestMNB[level]))    continue;
+	bool improved = eps_lt(level_champ->NormBadness(), bestMNB[level]);
+	if (!improved)	continue;
 	// something to save here
 	savecnt = 0;
 	bestMNB[level] = level_champ->NormBadness();
@@ -387,8 +392,6 @@ void Liga_t::saveOutStru()
 	    fname = oss.str();
 	}
 	level_champ->WriteFile(fname.c_str());
-	// stop here if we are not saving all divisions
-	if (!rp->saveall)   break;
     }
 }
 
