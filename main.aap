@@ -13,6 +13,9 @@ Sources = \
         Liga_t.cpp Division_t.cpp RunPar_t.cpp \
         TrialDistributor.cpp RegisterSVNId.cpp \
         AtomCost.cpp
+
+Tests = \
+        TestRelaxExternalAtom.cpp
         
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
@@ -64,30 +67,36 @@ all: gizaliga
         {comment = cluster relaxation program} : \
         relaxatoms.cpp $Sources
 
+:program alltests
+    {comment = build unit tests}
+    {add_LIBS = -lcppunit -ldl} :
+        alltests.cpp
+        $Sources
+        $Tests
+
 test { comment = test gizaliga on shapes and solids } : \
     gizaliga-test-solids gizaliga-test-shapes gizaliga-test-bangle_range
         :print  -----------------
         :print  All tests passed!
         :print  -----------------
 
-GL=./gizaliga
-@if Build == "fast":
-    GL=./gizaliga-fast
-
 gizaliga-test-solids :
     @for f in ("tetrahedron.dst", "octahedron.dst", "cube.dst", \
             "icosahedron.dst", "dodecahedron.dst"):
-        :sys {log} $GL maxcputime=1 solids/$f
+        :sys {log} ./gizaliga$EXESUF maxcputime=1 solids/$f
 
 gizaliga-test-shapes :
     @for f in ("square.dst", "pentagon.dst", \
             "hexagon.dst", "heptagon.dst", "octagon.dst"):
-        :sys {log} $GL maxcputime=1 ndim=2 shapes/$f
+        :sys {log} ./gizaliga$EXESUF maxcputime=1 ndim=2 shapes/$f
 
 gizaliga-test-bangle_range :
-    :sys {log} $GL maxcputime=1 shapes/square.dst bangle_range=1.5,80
+    :sys {log} ./gizaliga$EXESUF maxcputime=1 shapes/square.dst bangle_range=1.5,80
     @pass
-    :sys {log} $GL maxcputime=1 shapes/hexagon.dst bangle_range=1.5,110
+    :sys {log} ./gizaliga$EXESUF maxcputime=1 shapes/hexagon.dst bangle_range=1.5,110
+
+unittest { comment = execute Liga unit tests} : alltests
+    :sys ./alltests${EXESUF}
 
 install-py { comment = install python scripts } :
     @install_files('bin', _no.Scripts, '0755')
