@@ -92,7 +92,7 @@ class Division_t : public vector<Molecule*>
 	    for (iterator mi = begin(); mi != end(); ++mi, ++pd)
 		*pd = (*mi)->NormBadness();
 	    // then get the reciprocal value
-	    vmfit = vdrecipw0(vmfit);
+	    vmfit = recipw0(vmfit);
 	    double *mfit = &vmfit[0];
 	    int idx = random_wt_choose(1, mfit, size()).front();
 	    return idx;

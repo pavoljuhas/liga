@@ -36,8 +36,8 @@ class AtomCost
 
 	// public methods
 	virtual void resetFor(Molecule* m);
-	double eval(Atom_t& pa);
-	virtual double eval(Atom_t* pa);
+	double eval(const Atom_t& pa);
+	virtual double eval(const Atom_t* pa);
 	double lowest() const;
 	double cutoff() const;
 	void setCutoff(double cf);
@@ -48,12 +48,17 @@ class AtomCost
 	const std::vector<double>& partialCosts() const;
 	const std::vector<double>& targetDistances() const;
 	const std::vector<int>& usedTargetIndices() const;
+	virtual size_t lsqComponentsSize() const;
+	size_t lsqParametersSize() const;
+	const std::vector<double>& lsqWeights() const;
+	const std::vector<double>& lsqComponents() const;
+	double lsqJacobianGet(size_t m, size_t n) const;
 
     protected:
 
 	// data - arguments
 	Molecule* arg_mol;
-	Atom_t* arg_atom;
+	const Atom_t* arg_atom;
 	// data - results
 	bool use_distances;
 	bool apply_cutoff;
@@ -64,6 +69,11 @@ class AtomCost
 	std::vector<double> partial_costs;
 	std::vector<double> target_distances;
 	std::vector<int> useflag_indices;
+	// LSQ specific data
+	mutable std::vector<Atom_t*> lsq_anchors;   // anchor atoms
+	mutable std::vector<double> lsq_di;	    // model distances
+	mutable std::vector<double> lsq_fi;	    // LSQ components
+	mutable std::vector<double> lsq_wt;	    // weights
 
 	// protected methods
 
@@ -73,7 +83,9 @@ class AtomCost
 	std::vector<bool> useflag;
 
 	// private methods
+	void resizeArrays();
 	void resetUseFlags();
+	void resetLSQArrays();
 	std::vector<double>::iterator getNearestDistance(const double& d);
 
 };  // class AtomCost

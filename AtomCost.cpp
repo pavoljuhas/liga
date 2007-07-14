@@ -9,7 +9,9 @@
  ***********************************************************************/
 
 #include <cassert>
+#include <cmath>
 #include "AtomCost.hpp"
+#include "BGAutils.hpp"
 #include "BGAlib.hpp"
 #include "RunPar_t.hpp"
 
@@ -36,11 +38,6 @@ void AtomCost::resetFor(Molecule* m)
 {
     arg_mol = m;
     noCutoff();
-    if (arg_mol->maxNAtoms() > int(partial_costs.size()))
-    {
-	partial_costs.resize(arg_mol->maxNAtoms());
-	target_distances.resize(arg_mol->maxNAtoms());
-    }
     use_distances = (arg_mol->tol_dd > 0.0);
     if (use_distances && arg_mol->dTarget.size() > useflag.size())
     {
@@ -48,17 +45,19 @@ void AtomCost::resetFor(Molecule* m)
     }
 }
 
-double AtomCost::eval(Atom_t& a)
+double AtomCost::eval(const Atom_t& a)
 {
     return eval(&a);
 }
 
-double AtomCost::eval(Atom_t* pa)
+double AtomCost::eval(const Atom_t* pa)
 {
     // assign arguments
     arg_atom = pa;
     // begin calculation
+    resizeArrays();
     resetUseFlags();
+    resetLSQArrays();
     total_cost = 0.0;
     vector<double>::iterator tgdii = target_distances.begin();
     vector<double>::iterator ptcii = partial_costs.begin();
@@ -144,7 +143,76 @@ const vector<int>& AtomCost::usedTargetIndices() const
     return useflag_indices;
 }
 
+size_t AtomCost::lsqComponentsSize() const
+{
+    if (lsq_anchors.empty())	lsq_anchors = arg_mol->atoms;
+    return lsq_anchors.size();
+}
+
+size_t AtomCost::lsqParametersSize() const
+{
+    return 3;
+}
+
+namespace {
+inline double sqrt_double(double x) { return sqrt(x); }
+}
+
+const vector<double>& AtomCost::lsqWeights() const
+{
+    if (!lsq_wt.empty())    return lsq_wt;
+    lsq_wt.resize(lsqComponentsSize());
+    vector<double>::iterator wtii = lsq_wt.begin();
+    for (AtomSequence seq(lsq_anchors); !seq.finished(); seq.next())
+    {
+	// assertion checks
+	assert(wtii < lsq_wt.end());
+	*(wtii++) = seq.ptr()->Badness();
+    }
+    lsq_wt = recipw0(lsq_wt);
+    transform(lsq_wt.begin(), lsq_wt.end(), lsq_wt.begin(), sqrt_double);
+    return lsq_wt;
+}
+
+const vector<double>& AtomCost::lsqComponents() const
+{
+    if (!lsq_fi.empty())    return lsq_fi;
+    lsq_fi.resize(lsqComponentsSize());
+    lsq_di.resize(lsqComponentsSize());
+    vector<double>::iterator fii = lsq_fi.begin();
+    vector<double>::iterator dii = lsq_di.begin();
+    vector<double>::const_iterator tgdii = target_distances.begin();
+    vector<double>::const_iterator wtii = lsqWeights().begin();
+    for (AtomSequence seq(lsq_anchors); !seq.finished();
+	    seq.next(), ++fii, ++dii, ++tgdii, ++wtii)
+    {
+	assert(fii < lsq_fi.end());
+	assert(dii < lsq_di.end());
+	assert(tgdii < target_distances.end());
+	assert(wtii < lsq_wt.end());
+	*dii = dist(*arg_atom, *seq.ptr());
+	*fii = *wtii * (*tgdii - *dii);
+    }
+    return lsq_fi;
+}
+
+double AtomCost::lsqJacobianGet(size_t m, size_t n) const
+{
+    // make sure all lsq_vectors are cached
+    if (lsq_fi.empty())	    lsqComponents();
+    double Jmn;
+    Jmn = lsq_wt[m] * (lsq_anchors[m]->r[n] - arg_atom->r[n]) / lsq_di[m];
+    return Jmn;
+}
+
 // private methods
+
+void AtomCost::resizeArrays()
+{
+    if (arg_mol->NAtoms() == int(partial_costs.size()))	    return;
+    partial_costs.resize(arg_mol->NAtoms());
+    target_distances.resize(arg_mol->NAtoms());
+}
 
 void AtomCost::resetUseFlags()
 {
@@ -156,6 +224,15 @@ void AtomCost::resetUseFlags()
 	useflag[*ii] = false;
     }
     useflag_indices.clear();
+}
+
+void AtomCost::resetLSQArrays()
+{
+    if (lsq_anchors.empty())	return;
+    lsq_anchors.clear();
+    lsq_di.clear();
+    lsq_fi.clear();
+    lsq_wt.clear();
 }
 
 vector<double>::iterator AtomCost::getNearestDistance(const double& d)

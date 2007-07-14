@@ -18,8 +18,6 @@
 #include "BGAlib.hpp"
 #include "AtomCost.hpp"
 
-#define CHECK_ATOM_FIXED true
-
 RegisterSVNId BGAlib_cpp_id("$Id$");
 
 // random number generator
@@ -307,7 +305,8 @@ DistanceTable::DistanceTable(const DistanceTable& d0)
 
 DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
-    *this = v;
+    vector<double>& this_vector = *this;
+    this_vector = v;
     init();
     return *this;
 }
@@ -900,26 +899,16 @@ struct rxa_par
 int rxa_fdf(const gsl_vector* x, void* params, gsl_vector* f, gsl_matrix* J)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
-    ta.r[0] = gsl_vector_get(x, 0);
-    ta.r[1] = gsl_vector_get(x, 1);
-    ta.r[2] = gsl_vector_get(x, 2);
-    typedef vector<Atom_t*> VPA;
-    typedef valarray<double> VAD;
-    VPA& atoms = *( ((struct rxa_par *)params)->atoms );
-    VAD& ad0 = *( ((struct rxa_par *)params)->ad0 );
-    VAD& wt = *( ((struct rxa_par *)params)->wt );
-    VAD ad(ad0.size());
-    typedef vector<Atom_t*>::iterator VPAit;
-    int idx = 0;
-    gsl_matrix_set_zero(J);
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++idx)
+    copy(x->data, x->data + x->size, ta.r);
+    AtomCost* atomcost = static_cast<AtomCost*>(params);
+    atomcost->eval(ta);
+    for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
     {
-	ad[idx] = dist(ta, **pai);
-	double fi = wt[idx]*(ad[idx] - ad0[idx]);
-	gsl_vector_set(f, idx, fi);
-	for (int jdx = 0; ad[idx] != 0.0 && jdx < 3; ++jdx)
-	    gsl_matrix_set(J, idx, jdx,
-		    wt[idx]*(ta.r[jdx] - (*pai)->r[jdx])/ad[idx]);
+	gsl_vector_set(f, m, atomcost->lsqComponents()[m]);
+	for (size_t n = 0; n != atomcost->lsqParametersSize(); ++n)
+	{
+	    gsl_matrix_set(J, m, n, atomcost->lsqJacobianGet(m, n));
+	}
     }
     return GSL_SUCCESS;
 }
@@ -927,34 +916,30 @@ int rxa_fdf(const gsl_vector* x, void* params, gsl_vector* f, gsl_matrix* J)
 int rxa_f(const gsl_vector* x, void* params, gsl_vector* f)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
-    ta.r[0] = gsl_vector_get(x, 0);
-    ta.r[1] = gsl_vector_get(x, 1);
-    ta.r[2] = gsl_vector_get(x, 2);
-    typedef vector<Atom_t*> VPA;
-    typedef valarray<double> VAD;
-    VPA& atoms = *( ((struct rxa_par *)params)->atoms );
-    VAD& ad0 = *( ((struct rxa_par *)params)->ad0 );
-    VAD& wt = *( ((struct rxa_par *)params)->wt );
-    typedef vector<Atom_t*>::iterator VPAit;
-    int idx = 0;
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++idx)
+    copy(x->data, x->data + x->size, ta.r);
+    AtomCost* atomcost = static_cast<AtomCost*>(params);
+    atomcost->eval(ta);
+    for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
     {
-	double fi = wt[idx]*(dist(ta, **pai) - ad0[idx]);
-	gsl_vector_set(f, idx, fi);
+	gsl_vector_set(f, m, atomcost->lsqComponents()[m]);
     }
     return GSL_SUCCESS;
 }
 
 int rxa_df(const gsl_vector* x, void* params, gsl_matrix* J)
 {
-    typedef vector<Atom_t*> VPA;
-    typedef valarray<double> VAD;
-    VPA& atoms = *( ((struct rxa_par *)params)->atoms );
-    // just use rxa_fdf ignoring function values
-    gsl_vector* fignore = gsl_vector_alloc(atoms.size());
-    int status = rxa_fdf(x, params, fignore, J);
-    gsl_vector_free(fignore);
-    return status;
+    static Atom_t ta(0.0, 0.0, 0.0);
+    copy(x->data, x->data + x->size, ta.r);
+    AtomCost* atomcost = static_cast<AtomCost*>(params);
+    atomcost->eval(ta);
+    for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
+    {
+	for (size_t n = 0; n != atomcost->lsqParametersSize(); ++n)
+	{
+	    gsl_matrix_set(J, m, n, atomcost->lsqJacobianGet(m, n));
+	}
+    }
+    return GSL_SUCCESS;
 }
 
 void Molecule::RelaxAtom(vector<Atom_t*>::iterator pai)
@@ -979,86 +964,38 @@ void Molecule::RelaxAtom(const int cidx)
 void Molecule::RelaxExternalAtom(Atom_t& ta)
 {
     const int maximum_relaxations = 20;
+    const int maximum_iterations = 500;
     // pj: this seems to be crashing when NAtoms() < 3
     if (NAtoms() < 3)
 	return;
-    const int max_iter = 500;
-    // find if it is a member atom:
-    // dTarget is not changed in this function
-    static valarray<bool> used;
-    if (dTarget.size() > used.size())
-    {
-	used.resize(dTarget.size(), false);
-    }
-    static vector<int> used_idx;
-    // prepare valarrays for rxa_* functions
-    valarray<double> wt(1.0, NAtoms());
-    double* pd = &wt[0];
-    typedef vector<Atom_t*>::iterator VPAit;
-    // first fill the array with badness
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
-	*pd = (*pai)->Badness();
-    // convert to square root of fitness
-    wt = sqrt(vdrecipw0(wt));
-    // array for target distances
-    valarray<double> ad0(NAtoms());
     // do relaxation on a copy of ta
     Atom_t rta(ta);
     // loop while badness is improved
-    double lo_abad = numeric_limits<double>().max();
+    double lo_abad = DOUBLE_MAX;
+    AtomCost* atomcost = getAtomCostCalculator();
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
-	used_idx.clear();
-	double* pad0 = &ad0[0];
-	double tbad = 0.0;
-	typedef vector<Atom_t*>::iterator VPAit;
-	for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai)
-	{
-	    double d = dist(**pai, rta);
-	    DistanceTable::iterator pdnear;
-	    pdnear = dTarget.find_nearest_unused(d, used);
-	    *(pad0++) = *pdnear;
-	    double dd = *pdnear - d;
-	    tbad += penalty(dd);
-	    if (fabs(dd) < tol_dd)
-	    {
-		int idx = pdnear - dTarget.begin();
-		used[idx] = true;
-		used_idx.push_back(idx);
-	    }
-	}
-	// restore used
-	for (   vector<int>::iterator ii = used_idx.begin();
-		ii != used_idx.end(); ++ii  )
-	{
-	    used[*ii] = false;
-	}
-	// get out if lo_abad did not improve
-	if ( eps_lt(tbad, lo_abad) )
-	{
-	    lo_abad = tbad;
-	    ta = rta;
-	    if (lo_abad < BGA::eps_badness)
-		break;
-	}
-	else
-	    break;
-//	cout << "original tbad = " << tbad << endl;
-	// parameter pair for minimizer functions
-	struct rxa_par rxap = { &atoms, &ad0, &wt };
+	double tbad = atomcost->eval(rta);
+	// get out if tbad did not improve
+	if (!eps_lt(tbad, lo_abad))	break;
+	lo_abad = tbad;
+	ta = rta;
+	// get out if lo_abad is very low
+	if (lo_abad < BGA::eps_badness)	break;
+	// carry out relaxation otherwise
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
 	f.f = &rxa_f;
 	f.df = &rxa_df;
 	f.fdf = &rxa_fdf;
-	f.n = NAtoms();
-	f.p = 3;
-	f.params = &rxap;
+	f.n = atomcost->lsqComponentsSize();
+	f.p = atomcost->lsqParametersSize();
+	f.params = static_cast<void*>(atomcost);
 	// bind rta coordinates to vector x
 	gsl_vector_view x = gsl_vector_view_array(rta.r, 3);
 	// allocate solver
 	gsl_multifit_fdfsolver* lms = gsl_multifit_fdfsolver_alloc(
-		gsl_multifit_fdfsolver_lmsder, NAtoms(), 3);
+		gsl_multifit_fdfsolver_lmsder, f.n, f.p);
 	gsl_multifit_fdfsolver_set(lms, &f, &x.vector);
 	// allocate vector for gradient test
 	gsl_vector* G = gsl_vector_alloc(3);
@@ -1084,21 +1021,9 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    status = gsl_multifit_test_gradient(G, BGA::eps_badness/tol_r);
 //	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
 	}
-	while (status == GSL_CONTINUE && iter < max_iter);
+	while (status == GSL_CONTINUE && iter < maximum_iterations);
 	for (int i = 0; i < 3; ++i)
 	    rta.r[i] = gsl_vector_get(lms->x, i);
-	// get relaxed value of tbad
-	// pj: this may go away later
-	/*
-	tbad = 0.0;
-	for (int i = 0; i < NAtoms(); ++i)
-	{
-	    tbad += penalty(gsl_vector_get(lms->f, i));
-	}
-	// and update lo_abad before reassigning the distances
-	lo_abad = min(lo_abad, tbad);
-	cout << "relaxed tbad = " << tbad << endl;
-	*/
 	gsl_vector_free(G);
 	gsl_multifit_fdfsolver_free(lms);
     }
@@ -1642,7 +1567,7 @@ void Molecule::Evolve(const int* est_triang)
 	*(pd++) = seq.ptr()->Badness();
     }
     // finally get the reciprocal value
-    vafit = vdrecipw0(vafit);
+    vafit = recipw0(vafit);
     double* afit = &vafit[0];
     bool lookout = NAtoms() && NAtoms() <= 2 &&
 	gsl_rng_uniform(BGA::rng) < lookout_prob;
@@ -1704,7 +1629,7 @@ void Molecule::Evolve(const int* est_triang)
 		*pfit = ai->Badness();
 	    }
 	    // then get the reciprocal value
-	    vtafit = vdrecipw0(vtafit);
+	    vtafit = recipw0(vtafit);
 	}
 	// vtafit is ready here
 	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
@@ -2156,7 +2081,7 @@ void Molecule::PrintFitness()
     for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
 	*pd = (*pai)->Badness();
     // then get the reciprocal value
-    vafit = vdrecipw0(vafit);
+    vafit = recipw0(vafit);
     cout << "AFitness() =";
     double mab = vafit.max();
     bool marked = false;

@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <limits>
 #include <set>
 #include <gsl/gsl_rng.h>
 #include "RegisterSVNId.hpp"
@@ -41,9 +40,6 @@ struct InvalidMolecule { };
 struct InvalidPopulation { };
 
 using namespace std;
-
-// constants
-const double DOUBLE_MAX = numeric_limits<double>().max();
 
 // helper objects/functions
 vector<int> random_choose_few(int K, int Np, bool with_repeat = false);
@@ -308,6 +304,12 @@ class AtomSequence
 	    Molecule* mol = const_cast<Molecule*>(pm);
 	    first = mol->atoms.begin();
 	    last = mol->atoms.end();
+	    rewind();
+	}
+	AtomSequence(std::vector<Atom_t*>& atoms)
+	{
+	    first = atoms.begin();
+	    last = atoms.end();
 	    rewind();
 	}
 	inline Atom_t* ptr()	{ return *ii; }
