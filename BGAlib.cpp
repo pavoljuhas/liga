@@ -685,10 +685,9 @@ void Molecule::Clear()
 	{
 	    int i0 = seq0.ptr()->pmxidx;
 	    int i1 = seq1.ptr()->pmxidx;
-	    list<double>& udst = pmx_used_distances(i0, i1);
-	    list<double>::iterator udii = udst.begin();
-	    for (; udii != udst.end(); ++udii)	dTarget.push_back(*udii);
-	    udst.clear();
+	    double& udst = pmx_used_distances(i0, i1);
+	    if (udst > 0.0)	dTarget.push_back(udst);
+	    udst = 0.0;
 	}
     }
     sort(dTarget.begin(), dTarget.end());
@@ -1010,7 +1009,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
     {
 	int idx0 = pa->pmxidx;
 	int idx1 = atoms[*aii]->pmxidx;
-	pmx_used_distances(idx0,idx1).push_back(dTarget[*dii]);
+	pmx_used_distances(idx0,idx1) = dTarget[*dii];
     }
     // remove used distances from target table
     set<int> uidcs(didcs.begin(), didcs.end());
@@ -1029,10 +1028,9 @@ void Molecule::removeAtomPairs(Atom_t* pa)
 	// return any used distances
 	int idx0 = pa->pmxidx;
 	int idx1 = seq.ptr()->pmxidx;
-	list<double>::iterator udii = pmx_used_distances(idx0,idx1).begin();
-	list<double>::iterator udlast = pmx_used_distances(idx0,idx1).end();
-	for (; udii != udlast; ++udii)	dTarget.return_back(*udii);
-	pmx_used_distances(idx0,idx1).clear();
+	double& udst = pmx_used_distances(idx0, idx1);
+	if (udst > 0.0)	    dTarget.return_back(udst);
+	udst = 0.0;
 	// remove pair costs
 	double pairbadness = pmx_partial_costs(idx0,idx1);
 	double badnesshalf = pairbadness/2.0;
@@ -1657,8 +1655,8 @@ int Molecule::getPairMatrixIndex()
 	size_t sz1 = min(2*pmx_used_distances.rows(), size_t(max_natoms));
 	size_t sz = max(sz0, sz1);
 	assert(sz <= size_t(max_natoms));
-	pmx_used_distances.resize(sz, sz);
-	pmx_partial_costs.resize(sz, sz);
+	pmx_used_distances.resize(sz, sz, 0.0);
+	pmx_partial_costs.resize(sz, sz, 0.0);
     }
     return idx;
 }

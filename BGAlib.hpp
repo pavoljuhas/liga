@@ -286,7 +286,7 @@ class Molecule
 	DistanceTable dTarget;
 	int max_natoms;
 	vector<Atom_t*> atoms;		// vector of pointers to atoms
-	SymmetricMatrix< list<double> > pmx_used_distances;
+	SymmetricMatrix<double> pmx_used_distances;
 	SymmetricMatrix<double> pmx_partial_costs;
 	set<int> free_pmx_slots;
 	mutable double badness;		// molecular badness
