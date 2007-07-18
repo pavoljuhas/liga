@@ -77,7 +77,7 @@ public:
     DistanceTable& operator= (const DistanceTable&);
     // member functions
     iterator find_nearest(const double& d);
-    iterator find_nearest_unused(const double& d, std::valarray<bool>& used);
+    iterator find_nearest_unused(const double& d, valarray<bool>& used);
     iterator return_back(const double&);
     vector<double> unique();
     // data members
@@ -208,9 +208,13 @@ class Molecule
 	// methods - class registration and type info
 	bool Register();
 	virtual StructureType type() const  { return MOLECULE; }
-	virtual std::string typeStr() const { return "molecule"; }
+	virtual string typeStr() const { return "molecule"; }
 
 	// methods - fitness/badness evaluation
+	inline bool isCloseEnough(const double& dd) const
+	{
+	    return fabs(dd) < tol_dd;
+	}
 	double Badness() const;	    // total badness
 	double NormBadness() const; // normalized badness
 	inline bool Full() const     { return !(NAtoms() < maxNAtoms()); }
@@ -257,14 +261,13 @@ class Molecule
 
 	// methods
 	virtual AtomCost* getAtomCostCalculator();
-	void addNewAtomPair(Atom_t* pa0, Atom_t* pa1);
-	void removeAtomPair(Atom_t* pa0, Atom_t* pa1);
+	void addNewAtomPairs(Atom_t* pa);
+	void removeAtomPairs(Atom_t* pa);
 	int push_good_distances(vector<Atom_t>& vta, double* afit, int ntrials);
 	int push_good_triangles(vector<Atom_t>& vta, double* afit, int ntrials);
 	int push_good_pyramids(vector<Atom_t>& vta, double* afit, int ntrials);
 	int push_second_atoms(vector<Atom_t>& vta, int ntrials);
 	int push_third_atoms(vector<Atom_t>& vta, int ntrials);
-	double calc_test_badness(Atom_t& a, double hi_abad = DOUBLE_MAX);
 	valarray<int> good_neighbors_count(const vector<Atom_t>& vta);
 	void filter_good_atoms(vector<Atom_t>& vta,
 		double evolve_range, double hi_abad);
@@ -283,13 +286,15 @@ class Molecule
 	DistanceTable dTarget;
 	int max_natoms;
 	vector<Atom_t*> atoms;		// vector of pointers to atoms
-	SymmetricMatrix<double> pmx_used_distances;
-	std::set<int> free_pmx_slots;
+	SymmetricMatrix< list<double> > pmx_used_distances;
+	SymmetricMatrix<double> pmx_partial_costs;
+	set<int> free_pmx_slots;
 	mutable double badness;		// molecular badness
 
 	// methods
 	// constructor helper
 	void init();
+	int getPairMatrixIndex();
 	// IO helpers
 	istream& ReadXYZ(istream& fid);
 	string opened_file;
@@ -306,7 +311,7 @@ class AtomSequence
 	    last = mol->atoms.end();
 	    rewind();
 	}
-	AtomSequence(std::vector<Atom_t*>& atoms)
+	AtomSequence(vector<Atom_t*>& atoms)
 	{
 	    first = atoms.begin();
 	    last = atoms.end();
@@ -321,7 +326,7 @@ class AtomSequence
     private:
 
 	Molecule* mol;
-	std::vector<Atom_t*>::iterator ii, first, last;
+	vector<Atom_t*>::iterator ii, first, last;
 };
 
 class AtomSequenceIndex : public AtomSequence

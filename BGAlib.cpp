@@ -128,8 +128,6 @@ double Atom_t::AvgBadness() const
 double Atom_t::IncBadness(double db)
 {
     badness += db;
-    if (badness < BGA::eps_badness)
-	badness = 0.0;
     badness_sum += badness;
     age++;
     return badness;
@@ -138,8 +136,7 @@ double Atom_t::IncBadness(double db)
 double Atom_t::DecBadness(double db)
 {
     badness -= db;
-    if (badness < BGA::eps_badness)
-	badness = 0.0;
+    if (badness < 0.0)	badness = 0.0;
     badness_sum += badness;
     age++;
     return badness;
@@ -490,6 +487,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 	atoms[seq.idx()] = new Atom_t(seq.ref());
     }
     pmx_used_distances = M.pmx_used_distances;
+    pmx_partial_costs = M.pmx_partial_costs;
     free_pmx_slots = M.free_pmx_slots;
     // finished duplication
     max_natoms = M.max_natoms;
@@ -542,11 +540,9 @@ void Molecule::Recalculate()
 	AtomSequenceIndex seq1 = seq0;
 	for (seq1.next(); !seq1.finished(); seq1.next())
 	{
-	    double d01 = dist(*seq0.ptr(), *seq1.ptr());
-	    double d01used = pmx_used_distances(seq0.idx(), seq1.idx());
-	    // d01used may be negative when it was kept in distance table
-	    double dd = fabs(fabs(d01used) - d01);
-	    double badnesshalf = penalty(dd) / 2.0;
+	    int idx0 = seq0.ptr()->pmxidx;
+	    int idx1 = seq1.ptr()->pmxidx;
+	    double badnesshalf = pmx_partial_costs(idx0,idx1) / 2.0;
 	    bwi.push_back(BadnessWithIndex(badnesshalf, seq0.idx()));
 	    bwi.push_back(BadnessWithIndex(badnesshalf, seq1.idx()));
 	}
@@ -665,10 +661,7 @@ void Molecule::Pop(const int aidx)
     // Pop should never get called on fixed atom
     assert(!atoms[aidx]->fixed);
     Atom_t* pa = atoms[aidx];
-    for (AtomSequence seq(this); !seq.finished(); seq.next())
-    {
-	removeAtomPair(seq.ptr(), pa);
-    }
+    removeAtomPairs(pa);
     free_pmx_slots.insert(pa->pmxidx);
     delete pa;
     atoms.erase(atoms.begin() + aidx);
@@ -692,8 +685,10 @@ void Molecule::Clear()
 	{
 	    int i0 = seq0.ptr()->pmxidx;
 	    int i1 = seq1.ptr()->pmxidx;
-	    double d01used = pmx_used_distances(i0, i1);
-	    if (d01used > 0)	dTarget.push_back(d01used);
+	    list<double>& udst = pmx_used_distances(i0, i1);
+	    list<double>::iterator udii = udst.begin();
+	    for (; udii != udst.end(); ++udii)	dTarget.push_back(*udii);
+	    udst.clear();
 	}
     }
     sort(dTarget.begin(), dTarget.end());
@@ -727,24 +722,14 @@ void Molecule::Add(const Atom_t& atom)
 	cerr << "E: molecule too large in Add()" << endl;
 	throw InvalidMolecule();
     }
+    // create new atom
     Atom_t* pnew_atom;
     pnew_atom = new Atom_t(atom);
     pnew_atom->ResetBadness();
-    if (free_pmx_slots.empty())
-    {
-	pnew_atom->pmxidx = atoms.size();
-    }
-    else
-    {
-	set<int>::iterator firstfree = free_pmx_slots.begin();
-	pnew_atom->pmxidx = *firstfree;
-	free_pmx_slots.erase(firstfree);
-    }
+    pnew_atom->pmxidx = getPairMatrixIndex();
+    // create new pairs while summing up the costs
+    addNewAtomPairs(pnew_atom);
     atoms.push_back(pnew_atom);
-    for (AtomSequence seq(this); !seq.finished(); seq.next())
-    {
-	addNewAtomPair(pnew_atom, seq.ptr());
-    }
 }
 
 void Molecule::Fix(const int cidx)
@@ -763,47 +748,6 @@ inline bool pAtom_is_fixed(const Atom_t* pa) { return pa->fixed; }
 int Molecule::NFixed() const
 {
     return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
-}
-
-double Molecule::calc_test_badness(Atom_t& ta, double hi_abad)
-{
-    // badness is calculated exactly only when <= hi_abad
-    if (NAtoms() == maxNAtoms())
-    {
-	cerr << "E: Molecule too large in calc_test_badness()" << endl;
-	throw InvalidMolecule();
-    }
-    static valarray<bool> used;
-    if (dTarget.size() > used.size())
-    {
-	used.resize(dTarget.size(), false);
-    }
-    static vector<int> used_idx;
-    used_idx.clear();
-    double tbad = ta.Badness();
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (   VPAit pai = atoms.begin();
-	    pai != atoms.end() && tbad <= hi_abad; ++pai )
-    {
-	double d = dist(ta, **pai);
-	DistanceTable::iterator pdnear;
-	pdnear = dTarget.find_nearest_unused(d, used);
-	double dd = *pdnear - d;
-	tbad += penalty(dd);
-	if (fabs(dd) < tol_dd)
-	{
-	    int idx = pdnear - dTarget.begin();
-	    used[idx] = true;
-	    used_idx.push_back(idx);
-	}
-    }
-    // resest all values in array used to false
-    for (   vector<int>::iterator ii = used_idx.begin();
-	    ii != used_idx.end(); ++ii )
-    {
-	used[*ii] = false;
-    }
-    return tbad;
 }
 
 valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
@@ -1036,63 +980,67 @@ AtomCost* Molecule::getAtomCostCalculator()
     return &the_acc;
 }
 
-void Molecule::addNewAtomPair(Atom_t* pa0, Atom_t* pa1)
+void Molecule::addNewAtomPairs(Atom_t* pa)
 {
-    if (pa0 == pa1)	return;
-    double d = dist(*pa0, *pa1);
-    DistanceTable::iterator pdnear = dTarget.find_nearest(d);
-    double dd = *pdnear - d;
-    double pairbadness = penalty(dd);
-    if (pairbadness < BGA::eps_badness)
+    // calculate the cost
+    AtomCost* atomcost = getAtomCostCalculator();
+    atomcost->eval(pa);
+    // store partial costs
+    const vector<double>& ptcs = atomcost->partialCosts();
+    assert(atoms.size() == ptcs.size());
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
     {
-	pairbadness = 0.0;
+	double pairbadness = ptcs[seq.idx()];
+	int idx0 = pa->pmxidx;
+	int idx1 = seq.ptr()->pmxidx;
+	pmx_partial_costs(idx0,idx1) = pairbadness;
+	double badnesshalf = pairbadness / 2.0;
+	seq.ptr()->IncBadness(badnesshalf);
+	pa->IncBadness(badnesshalf);
     }
-    int idx0 = pa0->pmxidx;
-    int idx1 = pa1->pmxidx;
-    // resize pmx_used_distances if necessary
-    if (max(idx0, idx1) >= int(pmx_used_distances.rows()))
+    badness += atomcost->total();
+    if (badness < BGA::eps_badness)	badness = 0.0;    
+    // remember used distances in pmx_used_distances
+    const vector<int>& didcs = atomcost->usedTargetDistanceIndices();
+    const vector<int>& aidcs = atomcost->usedTargetAtomIndices();
+    assert(didcs.size() == aidcs.size());
+    vector<int>::const_iterator dii = didcs.begin();
+    vector<int>::const_iterator aii = aidcs.begin();
+    for (; dii != didcs.end(); ++dii, ++aii)
     {
-	size_t sz0 = max(idx0, idx1) + 1;
-	size_t sz1 = min(2*pmx_used_distances.rows(), size_t(max_natoms));
-	size_t sz = max(sz0, sz1);
-	pmx_used_distances.resize(sz, sz);
+	int idx0 = pa->pmxidx;
+	int idx1 = atoms[*aii]->pmxidx;
+	pmx_used_distances(idx0,idx1).push_back(dTarget[*dii]);
     }
-    if (fabs(dd) < tol_dd)
+    // remove used distances from target table
+    set<int> uidcs(didcs.begin(), didcs.end());
+    set<int>::reverse_iterator ii;
+    for (ii = uidcs.rbegin(); ii != uidcs.rend(); ++ii)
     {
-	pmx_used_distances(idx0,idx1) = *pdnear;
-	dTarget.erase(pdnear);
+	dTarget.erase(dTarget.begin() + *ii);
     }
-    else
-    {
-	pmx_used_distances(idx0,idx1) = -(*pdnear);
-    }
-    double badnesshalf = pairbadness/2.0;
-    pa0->IncBadness(badnesshalf);
-    pa1->IncBadness(badnesshalf);
-    badness += pairbadness;
 }
 
-void Molecule::removeAtomPair(Atom_t* pa0, Atom_t* pa1)
+void Molecule::removeAtomPairs(Atom_t* pa)
 {
-    if (pa0 == pa1)	return;
-    int idx0 = pa0->pmxidx;
-    int idx1 = pa1->pmxidx;
-    double d01 = dist(*pa0, *pa1);
-    double d01used = pmx_used_distances(idx0,idx1);
-    double dd = fabs(fabs(d01used) - d01);
-    double pairbadness = penalty(dd);
-    double badnesshalf = pairbadness/2.0;
-    pa0->DecBadness(badnesshalf);
-    pa1->DecBadness(badnesshalf);
-    badness -= pairbadness;
-    if (badness < BGA::eps_badness)
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	badness = 0.0;
+	if (pa == seq.ptr())	continue;
+	// return any used distances
+	int idx0 = pa->pmxidx;
+	int idx1 = seq.ptr()->pmxidx;
+	list<double>::iterator udii = pmx_used_distances(idx0,idx1).begin();
+	list<double>::iterator udlast = pmx_used_distances(idx0,idx1).end();
+	for (; udii != udlast; ++udii)	dTarget.return_back(*udii);
+	pmx_used_distances(idx0,idx1).clear();
+	// remove pair costs
+	double pairbadness = pmx_partial_costs(idx0,idx1);
+	double badnesshalf = pairbadness/2.0;
+	pa->DecBadness(badnesshalf);
+	seq.ptr()->DecBadness(badnesshalf);
+	badness -= pairbadness;
     }
-    if (d01used > 0.0)
-    {
-	dTarget.return_back(d01used);
-    }
+    if (badness < BGA::eps_badness)	badness = 0.0;    
 }
 
 int Molecule::push_good_distances(
@@ -1688,6 +1636,31 @@ void Molecule::Degenerate(int Npop)
 	    RelaxAtom(worst);
 	}
     }
+}
+
+int Molecule::getPairMatrixIndex()
+{
+    int idx;
+    if (!free_pmx_slots.empty())
+    {
+	set<int>::iterator firstfree = free_pmx_slots.begin();
+	idx = *firstfree;
+	free_pmx_slots.erase(firstfree);
+	return idx;
+    }
+    // no free slots here
+    idx = atoms.size();
+    // check if we need to resize pmx_used_distances
+    if (size_t(idx) >= pmx_used_distances.rows())
+    {
+	size_t sz0 = idx + 1;
+	size_t sz1 = min(2*pmx_used_distances.rows(), size_t(max_natoms));
+	size_t sz = max(sz0, sz1);
+	assert(sz <= size_t(max_natoms));
+	pmx_used_distances.resize(sz, sz);
+	pmx_partial_costs.resize(sz, sz);
+    }
+    return idx;
 }
 
 vector<int> random_choose_few(int K, int Np, bool with_repeat)

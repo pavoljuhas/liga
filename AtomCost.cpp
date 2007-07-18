@@ -38,7 +38,7 @@ void AtomCost::resetFor(Molecule* m)
 {
     arg_mol = m;
     noCutoff();
-    use_distances = (arg_mol->tol_dd > 0.0);
+    use_distances = arg_mol->isCloseEnough(0.0);
     if (use_distances && arg_mol->dTarget.size() > useflag.size())
     {
 	useflag.resize(arg_mol->dTarget.size(), false);
@@ -61,18 +61,27 @@ double AtomCost::eval(const Atom_t* pa)
     total_cost = 0.0;
     vector<double>::iterator tgdii = target_distances.begin();
     vector<double>::iterator ptcii = partial_costs.begin();
-    for (AtomSequence seq(arg_mol); !seq.finished(); seq.next())
+    DistanceTable& dtgt = arg_mol->dTarget;
+    for (AtomSequenceIndex seq(arg_mol); !seq.finished(); seq.next())
     {
 	// assertion checks
 	assert(tgdii < target_distances.end());
 	assert(ptcii < partial_costs.end());
 	// calculation
 	double d = dist(*arg_atom, *seq.ptr());
-	vector<double>::iterator pdnear = getNearestDistance(d);
-	*(tgdii++) = *pdnear;
-	double pcost = penalty(d - *pdnear);
+	size_t nearidx = nearDistanceIndex(d);
+	const double& dnear = dtgt[nearidx];
+	*(tgdii++) = dnear;
+	double dd = dnear - d;
+	double pcost = penalty(dd);
 	*(ptcii++) = pcost;
 	total_cost += pcost;
+	if (use_distances && arg_mol->isCloseEnough(dd))
+	{
+	    useflag[nearidx] = true;
+	    useflag_indices.push_back(nearidx);
+	    useatom_indices.push_back(seq.idx());
+	}
 	if (apply_cutoff && total_cost + arg_atom->Badness() > cutoff_cost)
 	{
 	    break;
@@ -138,9 +147,14 @@ const vector<double>& AtomCost::targetDistances() const
     return target_distances;
 }
 
-const vector<int>& AtomCost::usedTargetIndices() const
+const vector<int>& AtomCost::usedTargetDistanceIndices() const
 {
     return useflag_indices;
+}
+
+const vector<int>& AtomCost::usedTargetAtomIndices() const
+{
+    return useatom_indices;
 }
 
 size_t AtomCost::lsqComponentsSize() const
@@ -224,6 +238,7 @@ void AtomCost::resetUseFlags()
 	useflag[*ii] = false;
     }
     useflag_indices.clear();
+    useatom_indices.clear();
 }
 
 void AtomCost::resetLSQArrays()
@@ -235,15 +250,10 @@ void AtomCost::resetLSQArrays()
     lsq_wt.clear();
 }
 
-vector<double>::iterator AtomCost::getNearestDistance(const double& d)
+size_t AtomCost::nearDistanceIndex(const double& d)
 {
     DistanceTable& dtgt = arg_mol->dTarget;
-    vector<double>::iterator ii = dtgt.find_nearest(d);
-    if (!use_distances)
-    {
-	return ii;
-    }
-    int idx = ii - dtgt.begin();
+    int idx = dtgt.find_nearest(d) - dtgt.begin();
     if (useflag[idx])
     {
         int hi, lo, nidx = -1;
@@ -261,12 +271,8 @@ vector<double>::iterator AtomCost::getNearestDistance(const double& d)
             nidx = lo;
         }
         idx = nidx;
-        ii = dtgt.begin() + nidx;
     }
-    if (fabs(*ii - d) < arg_mol->tol_dd)
-    {
-	useflag[idx] = true;
-	useflag_indices.push_back(idx);
-    }
-    return ii;
+    return idx;
 }
+
+// End of AtomCost.cpp

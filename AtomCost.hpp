@@ -26,7 +26,9 @@ class AtomCost
 {
     public:
 
-	// data members
+	// data - arguments
+	Molecule* arg_mol;
+	const Atom_t* arg_atom;
 
 	// constructor
 	AtomCost(Molecule* m);
@@ -47,7 +49,8 @@ class AtomCost
 	double total() const;
 	const std::vector<double>& partialCosts() const;
 	const std::vector<double>& targetDistances() const;
-	const std::vector<int>& usedTargetIndices() const;
+	const std::vector<int>& usedTargetDistanceIndices() const;
+	const std::vector<int>& usedTargetAtomIndices() const;
 	virtual size_t lsqComponentsSize() const;
 	size_t lsqParametersSize() const;
 	const std::vector<double>& lsqWeights() const;
@@ -56,9 +59,6 @@ class AtomCost
 
     protected:
 
-	// data - arguments
-	Molecule* arg_mol;
-	const Atom_t* arg_atom;
 	// data - results
 	bool use_distances;
 	bool apply_cutoff;
@@ -69,6 +69,7 @@ class AtomCost
 	std::vector<double> partial_costs;
 	std::vector<double> target_distances;
 	std::vector<int> useflag_indices;
+	std::vector<int> useatom_indices;
 	// LSQ specific data
 	mutable std::vector<Atom_t*> lsq_anchors;   // anchor atoms
 	mutable std::vector<double> lsq_di;	    // model distances
@@ -86,7 +87,7 @@ class AtomCost
 	void resizeArrays();
 	void resetUseFlags();
 	void resetLSQArrays();
-	std::vector<double>::iterator getNearestDistance(const double& d);
+	size_t nearDistanceIndex(const double& d);
 
 };  // class AtomCost
 
