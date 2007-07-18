@@ -21,8 +21,9 @@ Tests ?= \
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
-BDIR ?= AAPDIR/$BDIR
-CLEANFILES += core.[0-9]*
+Bdir ?= AAPDIR
+BDIR = $Bdir/$BDIR
+CLEANFILES += core.[0-9]* gizaliga-fast alltests-fast
 
 @from os import uname
 @from socket import gethostname
