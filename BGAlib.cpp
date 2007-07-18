@@ -90,24 +90,18 @@ Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
     r[0] = rx0;
     r[1] = ry0;
     r[2] = rz0;
-    badness_sum = badness;
-    age = 1;
 }
 
 Atom_t::Atom_t(double r0[3], double bad0) :
     fixed(false), ttp(LINEAR), badness(bad0)
 {
     copy(r0, r0+3, r);
-    badness_sum = badness;
-    age = 1;
 }
 
 Atom_t::Atom_t(valarray<double>& r0, double bad0) :
     fixed(false), ttp(LINEAR), badness(bad0)
 {
     copy(&r0[0], &r0[3], r);
-    badness_sum = badness;
-    age = 1;
 }
 
 double Atom_t::Badness() const
@@ -120,16 +114,9 @@ double Atom_t::FreeBadness() const
     return fixed ? 0.0 : badness;
 }
 
-double Atom_t::AvgBadness() const
-{
-    return (age != 0) ? 1.0*badness_sum/age : 0.0;
-}
-
 double Atom_t::IncBadness(double db)
 {
     badness += db;
-    badness_sum += badness;
-    age++;
     return badness;
 }
 
@@ -137,15 +124,12 @@ double Atom_t::DecBadness(double db)
 {
     badness -= db;
     if (badness < 0.0)	badness = 0.0;
-    badness_sum += badness;
-    age++;
     return badness;
 }
 
 double Atom_t::ResetBadness(double b)
 {
-    badness = badness_sum = b;
-    age = 1;
+    badness = b;
     return badness;
 }
 

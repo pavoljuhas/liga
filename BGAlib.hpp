@@ -100,7 +100,6 @@ class Atom_t
 	mutable double r[3];
 	double Badness() const;
 	double FreeBadness() const;
-	double AvgBadness() const;
 	double IncBadness(double db);
 	double DecBadness(double db);
 	double ResetBadness(double b = 0.0);
@@ -111,8 +110,6 @@ class Atom_t
     private:
 
 	double badness;
-	double badness_sum;
-	int age;
 };
 
 bool operator==(const Atom_t& a1, const Atom_t& a2);
