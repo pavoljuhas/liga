@@ -14,13 +14,14 @@ Sources = \
         TrialDistributor.cpp RegisterSVNId.cpp \
         AtomCost.cpp
 
-Tests = \
+Tests ?= \
+        TestMoleculeCost.cpp \
         TestRelaxExternalAtom.cpp
         
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
-BDIR = AAPDIR/$BDIR
+BDIR ?= AAPDIR/$BDIR
 CLEANFILES += core.[0-9]*
 
 @from os import uname
@@ -32,6 +33,7 @@ CLEANFILES += core.[0-9]*
 
 :syseval gsl-config --cflags | :assign INCLUDE
 :syseval gsl-config --libs | :assign LIBS
+
 @if C_COMPILE_ACTION == "compile_gcc":
     CXXFLAGS += -Wall
     EXTRA_DEBUG = -gstabs+
@@ -40,8 +42,6 @@ CLEANFILES += core.[0-9]*
     CXXFLAGS += -Wall
     EXTRA_DEBUG =
     EXTRA_OPTIM = -fast
-
-all: gizaliga
 
 :variant Build
     debug
@@ -55,50 +55,64 @@ all: gizaliga
         CXXFLAGS += $EXTRA_OPTIM
         EXESUF = -fast
 
+########################################################################
+# build targets
+########################################################################
+
+all: gizaliga
+
 :program gizaliga \
-        {comment = soccer league of pyramid builders} : \
-        gizaliga.cpp $Sources
+{comment = soccer league of pyramid builders} : \
+    gizaliga.cpp $Sources
 
 :program mcfitdist \
-        {comment = MC shuffling of atoms} : \
-        mcfitdist.cpp $Sources
+{comment = MC shuffling of atoms} : \
+    mcfitdist.cpp $Sources
 
 :program relaxatoms \
-        {comment = cluster relaxation program} : \
-        relaxatoms.cpp $Sources
+{comment = cluster relaxation program} : \
+    relaxatoms.cpp $Sources
 
-:program alltests
-    {comment = build unit tests}
-    {add_LIBS = -lcppunit -ldl} :
-        alltests.cpp
-        $Sources
-        $Tests
+:program alltests \
+{comment = build unit tests} \
+{add_LIBS = -lcppunit -ldl} : \
+    alltests.cpp $Sources $Tests
 
-test { comment = test gizaliga on shapes and solids } : \
-    gizaliga-test-solids gizaliga-test-shapes gizaliga-test-bangle_range
+########################################################################
+# tests
+########################################################################
+
+test { comment = exectute all run tests and unit tests } : \
+    runtest unittest 
         :print  -----------------
         :print  All tests passed!
         :print  -----------------
 
-gizaliga-test-solids :
-    @for f in ("tetrahedron.dst", "octahedron.dst", "cube.dst", \
-            "icosahedron.dst", "dodecahedron.dst"):
-        :sys {log} ./gizaliga$EXESUF maxcputime=1 solids/$f
+runtest { virtual } { comment = test gizaliga on shapes and solids } : \
+    gizaliga runtest-solids runtest-shapes runtest-bangle_range
 
-gizaliga-test-shapes :
-    @for f in ("square.dst", "pentagon.dst", \
-            "hexagon.dst", "heptagon.dst", "octagon.dst"):
-        :sys {log} ./gizaliga$EXESUF maxcputime=1 ndim=2 shapes/$f
+gl = ./gizaliga$EXESUF
+runtest_options = maxcputime=1 seasontrials=500
 
-gizaliga-test-bangle_range :
-    :sys {log} ./gizaliga$EXESUF maxcputime=1 shapes/square.dst bangle_range=1.5,80
-    @pass
-    :sys {log} ./gizaliga$EXESUF maxcputime=1 shapes/hexagon.dst bangle_range=1.5,110
+runtest-solids :
+        solids = tetrahedron.dst octahedron.dst cube.dst \
+                 icosahedron.dst dodecahedron.dst
+        @for f in var2list(solids):
+            :sys {log} $gl $runtest_options solids/$f
+
+runtest-shapes :
+        shapes = square.dst pentagon.dst hexagon.dst heptagon.dst octagon.dst
+        @for f in var2list(shapes):
+            :sys {log} $gl $runtest_options ndim=2 shapes/$f
+
+runtest-bangle_range :
+        :sys {log} $gl $runtest_options shapes/square.dst bangle_range=1.5,80
+        :sys {log} $gl $runtest_options shapes/hexagon.dst bangle_range=1.5,110
 
 unittest { comment = execute Liga unit tests} : alltests
-    :sys ./alltests${EXESUF}
+        :sys ./alltests${EXESUF}
 
 install-py { comment = install python scripts } :
-    @install_files('bin', _no.Scripts, '0755')
+        @install_files('bin', _no.Scripts, '0755')
 
 # End of file
