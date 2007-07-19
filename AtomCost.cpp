@@ -13,10 +13,8 @@
 #include "AtomCost.hpp"
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
-#include "RunPar_t.hpp"
 
 class Molecule;
-class RunPar_t;
 class Atom_t;
 
 RegisterSVNId AtomCost_cpp_id = "$Id$";

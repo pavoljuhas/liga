@@ -56,7 +56,7 @@ public:
     std::vector<int> ExpandRangePar(std::string par);
     template<typename T> T GetPar(std::string par, T defval);
     template<typename T> std::vector<T> GetParVec(std::string par);
-    void ValidatePars(std::list<std::string>& validpars);
+    void ValidatePars(const std::list<std::string>& validpars);
     inline bool ispar(const std::string& p) { return pars.count(p); }
     inline bool isopt(const std::string& o) { return opts.count(o); }
 private:

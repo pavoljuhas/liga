@@ -120,11 +120,11 @@ vector<int> ParseArgs::ExpandRangePar(string par)
     return indices;
 }
 
-void ParseArgs::ValidatePars(list<string>& validpars)
+void ParseArgs::ValidatePars(const list<string>& validpars)
 {
     list<string> invalidpars;
     typedef map<string,string>::iterator MSSit;
-    typedef list<string>::iterator LSit;
+    typedef list<string>::const_iterator LSit;
     for (MSSit ii = pars.begin(); ii != pars.end(); ++ii)
     {
 	LSit ivp = find(validpars.begin(), validpars.end(), ii->first);

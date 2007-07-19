@@ -11,6 +11,7 @@
 #include "RunPar_t.hpp"
 #include "TrialDistributor.hpp"
 #include "StringUtils.hpp"
+#include "Liga_t.hpp"
 
 using namespace std;
 
@@ -21,17 +22,12 @@ RegisterSVNId RunPar_t_cpp_id("$Id$");
 // class RunPar_t
 ////////////////////////////////////////////////////////////////////////
 
-RunPar_t::RunPar_t()
+RunPar_t::RunPar_t(int argc, char* argv[])
 {
-    fill_validpars();
-    fill_verbose();
-    crystal = false;
-    latpar.resize(6);
-    latpar[0] = latpar[1] = latpar[2] = 1.0;
-    latpar[3] = latpar[4] = latpar[5] = 90.0;
+    processArguments(argc, argv);
 }
 
-void RunPar_t::processArguments(int argc, char *argv[])
+void RunPar_t::processArguments(int argc, char* argv[])
 {
     char *short_options =
 	"p:qthV";
@@ -43,77 +39,77 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	{"version", 0, 0, 'V'},
 	{0, 0, 0, 0}
     };
-    ParseArgs a(argc, argv, short_options, long_options);
-    a.Parse();
-    if (a.isopt("h") || argc == 1)
+    args.reset(new ParseArgs(argc, argv, short_options, long_options));
+    args->Parse();
+    if (args->isopt("h") || argc == 1)
     {
-	print_help(a);
+	print_help();
 	exit(EXIT_SUCCESS);
     }
-    else if (a.isopt("V"))
+    else if (args->isopt("V"))
     {
 	cout << version_string() << endl;
 	exit(EXIT_SUCCESS);
     }
-    if (a.isopt("p"))
+    if (args->isopt("p"))
     {
-	a.ReadPars(a.opts["p"].c_str());
+	args->ReadPars(args->opts["p"].c_str());
     }
-    trace = a.isopt("t");
-    a.ValidatePars(validpars);
+    trace = args->isopt("t");
+    args->ValidatePars(validpars());
     // assign run parameters
     // distfile
-    if (a.args.size())
-	a.pars["distfile"] = a.args[0];
-    if (a.args.size() > 1)
+    if (args->args.size())
+	args->pars["distfile"] = args->args[0];
+    if (args->args.size() > 1)
     {
 	ostringstream emsg;
 	emsg << argv[0] << ": several DISTFILE arguments";
 	throw ParseArgsError(emsg.str());
     }
-    if (!a.ispar("distfile"))
+    if (!args->ispar("distfile"))
     {
 	string msg = "Distance file not defined";
 	throw ParseArgsError(msg);
     }
-    distfile = a.pars["distfile"];
+    distfile = args->pars["distfile"];
     DistanceTable* dtab;
     dtab = new DistanceTable(distfile.c_str());
     // create empty molecule
     mol = Molecule(*dtab);
     // inistru
-    if (a.ispar("inistru"))
+    if (args->ispar("inistru"))
     {
-	inistru = a.pars["inistru"];
+	inistru = args->pars["inistru"];
 	mol.ReadXYZ(inistru.c_str());
     }
     // outstru, outfmt, saverate, saveall
-    if (a.ispar("outstru"))
+    if (args->ispar("outstru"))
     {
 	// outstru
-	outstru = a.pars["outstru"];
+	outstru = args->pars["outstru"];
 	// outfmt
-	outfmt = a.GetPar<string>("outfmt", "xyz");
+	outfmt = args->GetPar<string>("outfmt", "xyz");
 	if (outfmt == "xyz")
 	    mol.OutFmtXYZ();
 	else if (outfmt == "atomeye")
 	    mol.OutFmtAtomEye();
 	else throw ParseArgsError("Invalid value of outfmt parameter");
 	// saverate
-	saverate = a.GetPar<int>("saverate", 10);
+	saverate = args->GetPar<int>("saverate", 10);
 	// saveall
-	saveall = a.GetPar<bool>("saveall", false);
+	saveall = args->GetPar<bool>("saveall", false);
     }
     // frames, framestrace, framesrate
-    if (a.ispar("frames"))
+    if (args->ispar("frames"))
     {
 	// frames
-	frames = a.pars["frames"];
+	frames = args->pars["frames"];
 	// framestrace
-	if (a.ispar("framestrace"))
+	if (args->ispar("framestrace"))
 	{
 	    framesrate = 0;
-	    vector<int> stp = a.GetParVec<int>("framestrace");
+	    vector<int> stp = args->GetParVec<int>("framestrace");
 	    if (stp.size() % 3)
 	    {
 		string emsg = "framestrace must have 3n entries";
@@ -140,45 +136,42 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	// framesrate - parse only if framestrace is empty
 	if (framestrace.size() == 0)
 	{
-	    framesrate = a.GetPar<int>("framesrate", 0);
+	    framesrate = args->GetPar<int>("framesrate", 0);
 	}
     }
     // verbose
-    if (a.ispar("verbose"))
+    if (args->ispar("verbose"))
     {
-	using namespace NS_VerboseFlag;
-	verbose = false;
-	vector<string> flagwords = a.GetParVec<string>("verbose");
-	vector<string>::iterator w, vbsflag;
-	for (w = flagwords.begin(); w != flagwords.end(); ++w)
+	verbose = args->GetParVec<string>("verbose");
+	vector<string>::iterator w;
+	for (w = verbose.begin(); w != verbose.end(); ++w)
 	{
-	    vbsflag = find(verbose_flag.begin(), verbose_flag.end(), *w);
-	    if (vbsflag == verbose_flag.end())
+	    if (!Liga_t::isVerboseFlag(*w))
 	    {
 		ostringstream emsg;
 		emsg << "verbose flag must be one of (" <<
-		    join(", ", verbose_flag) << ")";
+		    joined_verbose_flags() << ")";
 		throw ParseArgsError(emsg.str());
 	    }
-	    int vbsindex = vbsflag - verbose_flag.begin();
-	    verbose[vbsindex] = true;
-	    if (vbsindex == ALL)    verbose = true;
 	}
     }
     // liga parameters
     // ndim
-    ndim = a.GetPar<size_t>("ndim", 3);
+    ndim = args->GetPar<size_t>("ndim", 3);
     if (ndim < 1 || ndim > 3)
     {
 	string emsg = "ndim value must be 1, 2 or 3";
 	throw ParseArgsError(emsg);
     }
     // crystal
-    crystal = a.GetPar<bool>("crystal", false);
+    crystal = args->GetPar<bool>("crystal", false);
     // latpar
-    if (a.ispar("latpar"))
+    latpar.resize(6);
+    latpar[0] = latpar[1] = latpar[2] = 1.0;
+    latpar[3] = latpar[4] = latpar[5] = 90.0;
+    if (args->ispar("latpar"))
     {
-        latpar = a.GetParVec<double>("latpar");
+        latpar = args->GetParVec<double>("latpar");
         if (latpar.size() != 6)
         {
             char* emsg = "latpar must define 6 lattice parameters";
@@ -186,22 +179,22 @@ void RunPar_t::processArguments(int argc, char *argv[])
         }
     }
     // tol_dd
-    tol_dd = a.GetPar<double>("tol_dd", 0.1);
+    tol_dd = args->GetPar<double>("tol_dd", 0.1);
     mol.tol_dd = tol_dd;
     // tol_bad
-    tol_bad = a.GetPar<double>("tol_bad", 1.0e-4);
+    tol_bad = args->GetPar<double>("tol_bad", 1.0e-4);
     mol.tol_nbad = tol_bad;
     // natoms must be set after tol_dd
-    if (a.ispar("natoms"))
+    if (args->ispar("natoms"))
     {
-	natoms = a.GetPar<int>("natoms");
+	natoms = args->GetPar<int>("natoms");
 	mol.setMaxNAtoms(natoms);
     }
     natoms = mol.maxNAtoms();
     // fixed_atoms must be set after inistru
-    if (a.ispar("fixed_atoms"))
+    if (args->ispar("fixed_atoms"))
     {
-	fixed_atoms = a.ExpandRangePar("fixed_atoms");
+	fixed_atoms = args->ExpandRangePar("fixed_atoms");
 	sort(fixed_atoms.begin(), fixed_atoms.end());
 	vector<int>::iterator last;
 	last = unique(fixed_atoms.begin(), fixed_atoms.end());
@@ -221,9 +214,9 @@ void RunPar_t::processArguments(int argc, char *argv[])
     }
     base_level = mol.NFixed();
     // seed_clusters
-    if (a.ispar("seed_clusters"))
+    if (args->ispar("seed_clusters"))
     {
-	vector<int> scs = a.GetParVec<int>("seed_clusters");
+	vector<int> scs = args->GetParVec<int>("seed_clusters");
 	if (scs.size() % 3)
 	{
 	    string emsg = "seed_clusters must have 3n entries";
@@ -252,30 +245,30 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	}
     }
     // maxcputime
-    maxcputime = a.GetPar<double>("maxcputime", 0.0);
+    maxcputime = args->GetPar<double>("maxcputime", 0.0);
     // rngseed
-    rngseed = a.GetPar<int>("rngseed", 0);
+    rngseed = args->GetPar<int>("rngseed", 0);
     if (rngseed)
     {
 	gsl_rng_set(BGA::rng, rngseed);
     }
     // evolve_frac
-    evolve_frac = a.GetPar<double>("evolve_frac", 0.1);
+    evolve_frac = args->GetPar<double>("evolve_frac", 0.1);
     mol.evolve_frac = evolve_frac;
     // evolve_relax
-    evolve_relax = a.GetPar<bool>("evolve_relax", false);
+    evolve_relax = args->GetPar<bool>("evolve_relax", false);
     mol.evolve_relax = evolve_relax;
     // degenerate_relax
-    degenerate_relax = a.GetPar<bool>("degenerate_relax", false);
+    degenerate_relax = args->GetPar<bool>("degenerate_relax", false);
     mol.degenerate_relax = degenerate_relax;
     // ligasize
-    ligasize = a.GetPar<int>("ligasize", 10);
+    ligasize = args->GetPar<int>("ligasize", 10);
     // stopgame
-    stopgame = a.GetPar<double>("stopgame", 0.0025);
+    stopgame = args->GetPar<double>("stopgame", 0.0025);
     // seasontrials
-    seasontrials = int( a.GetPar<double>("seasontrials", 16384.0) );
+    seasontrials = int( args->GetPar<double>("seasontrials", 16384.0) );
     // trials_sharing
-    trials_sharing = a.GetPar<string>("trials_sharing", "equal");
+    trials_sharing = args->GetPar<string>("trials_sharing", "equal");
     if (!TrialDistributor::isType(trials_sharing))
     {
 	ostringstream emsg;
@@ -284,12 +277,12 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	throw ParseArgsError(emsg.str());
     }
     // lookout_prob
-    lookout_prob = a.GetPar("lookout_prob", 0.0);
+    lookout_prob = args->GetPar("lookout_prob", 0.0);
     mol.lookout_prob = lookout_prob;
     // bangle_range
-    if (a.ispar("bangle_range"))
+    if (args->ispar("bangle_range"))
     {
-	bangle_range = a.GetParVec<double>("bangle_range");
+	bangle_range = args->GetParVec<double>("bangle_range");
 	if (bangle_range.size() != 2 && bangle_range.size() != 3)
 	{
 	    string emsg = "bangle_range must have 2 or 3 arguments";
@@ -305,23 +298,24 @@ void RunPar_t::processArguments(int argc, char *argv[])
 	mol.atom_filters.push_back(pbaf);
     }
     // max_dist
-    if (a.ispar("max_dist"))
+    if (args->ispar("max_dist"))
     {
-	max_dist = a.GetPar<double>("max_dist");
+	max_dist = args->GetPar<double>("max_dist");
 	LoneAtomFilter_t* plaf = new LoneAtomFilter_t(max_dist);
 	plaf->max_dist = max_dist;
 	mol.atom_filters.push_back(plaf);
     }
     // done
-    print_pars(a);
+    print_pars();
 }
 
-void RunPar_t::print_help(ParseArgs& a)
+void RunPar_t::print_help()
 {
     // /usage:/;/;/-s/.*/"&\\n"/
     // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
+    string cmd_t = args->cmd_t;
     cout << 
-"usage: " << a.cmd_t << " [-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
+"usage: " << cmd_t << " [-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
 "run gizaliga simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
@@ -340,7 +334,7 @@ void RunPar_t::print_help(ParseArgs& a)
 "  framesrate=int        [0] number of iterations between frame saves\n"
 "  framestrace=array     [] triplets of (season, initial, final level)\n"
 "  verbose=array         [ad,wc,bc] output flags from (" <<
-	join(",", verbose_flag) << ")\n" <<
+	joined_verbose_flags() << ")\n" <<
 "Liga parameters:\n"
 "  ndim={1,2,3}          [3] search in n-dimensional space\n"
 "  crystal=bool          [false] assume periodic crystal structure\n"
@@ -376,13 +370,13 @@ string RunPar_t::version_string(string quote)
     return oss.str();
 }
 
-void RunPar_t::print_pars(ParseArgs& a)
+void RunPar_t::print_pars()
 {
     // print out all run parameters
     // intro messages
     string hashsep(72, '#');
     cout << hashsep << '\n';
-    cout << "# " << a.cmd_t << '\n';
+    cout << "# " << args->cmd_t << '\n';
     cout << version_string("# ") << '\n';
     char hostname[255];
     gethostname(hostname, 255);
@@ -393,12 +387,12 @@ void RunPar_t::print_pars(ParseArgs& a)
     // distfile
     cout << "distfile=" << distfile << '\n';
     // inistru
-    if (a.ispar("inistru"))
+    if (args->ispar("inistru"))
     {
 	cout << "inistru=" << inistru << '\n';
     }
     // outstru, outfmt, saverate, saveall
-    if (a.ispar("outstru"))
+    if (args->ispar("outstru"))
     {
         cout << "outstru=" << outstru << '\n';
 	cout << "outfmt=" << outfmt << '\n';
@@ -406,7 +400,7 @@ void RunPar_t::print_pars(ParseArgs& a)
 	cout << "saveall=" << saveall << '\n';
     }
     // frames, framestrace, framesrate
-    if (a.ispar("frames"))
+    if (args->ispar("frames"))
     {
 	cout << "frames=" << frames << '\n';
 	// framestrace
@@ -430,14 +424,9 @@ void RunPar_t::print_pars(ParseArgs& a)
 	}
     }
     // verbose
-    if (a.ispar("verbose"))
+    if (args->ispar("verbose"))
     {
-	list<string> flagwords;
-	for (size_t i = 0; i < verbose.size(); ++i)
-	{
-	    if (verbose[i]) flagwords.push_back(verbose_flag[i]);
-	}
-	cout << "verbose=" << join(",", flagwords) << '\n';
+	cout << "verbose=" << join(",", verbose) << '\n';
     }
     // liga parameters
     // ndim, tol_dd, tol_bad 
@@ -445,12 +434,12 @@ void RunPar_t::print_pars(ParseArgs& a)
     cout << "tol_dd=" << tol_dd << '\n';
     cout << "tol_bad=" << tol_bad << '\n';
     // natoms
-    if (a.ispar("natoms"))
+    if (args->ispar("natoms"))
     {
 	cout << "natoms=" << natoms << '\n';
     }
     // fixed_atoms
-    if (a.ispar("fixed_atoms") && !fixed_atoms.empty())
+    if (args->ispar("fixed_atoms") && !fixed_atoms.empty())
     {
 	cout << "fixed_atoms=";
 	for (int start = 0; start < int(fixed_atoms.size()); )
@@ -503,7 +492,7 @@ void RunPar_t::print_pars(ParseArgs& a)
     cout << "lookout_prob=" << lookout_prob << '\n';
     // constraints
     // bangle_range
-    if (a.ispar("bangle_range"))
+    if (args->ispar("bangle_range"))
     {
 	cout << "bangle_range=" << bangle_range[0];
 	for (size_t i = 1; i < bangle_range.size(); ++i)
@@ -513,7 +502,7 @@ void RunPar_t::print_pars(ParseArgs& a)
 	cout << '\n';
     }
     // max_dist
-    if (a.ispar("max_dist"))
+    if (args->ispar("max_dist"))
     {
 	cout << "max_dist=" << max_dist << '\n';
     }
@@ -521,39 +510,51 @@ void RunPar_t::print_pars(ParseArgs& a)
     cout << hashsep << '\n' << endl;
 }
 
-void RunPar_t::fill_validpars()
+const list<string>& RunPar_t::validpars() const
 {
-    char *pnames[] = {
-	"distfile", "inistru",
-	"outstru", "outfmt", "saverate", "saveall",
-	"frames", "framesrate", "framestrace", "verbose", "ndim",
-	"tol_dd", "tol_bad", "natoms", "fixed_atoms", "seed_clusters",
-	"maxcputime", "rngseed",
-	"evolve_frac", "evolve_relax", "degenerate_relax",
-	"ligasize", "stopgame",
-	"seasontrials", "trials_sharing", "lookout_prob",
-	"bangle_range", "max_dist" };
-    validpars.insert(validpars.end(),
-	    pnames, pnames+sizeof(pnames)/sizeof(char*));
+    char *parnames[] = {
+        "distfile",
+        "inistru",
+        "outstru",
+        "outfmt",
+        "saverate",
+        "saveall",
+        "frames",
+        "framesrate",
+        "framestrace",
+        "verbose",
+        "ndim",
+        "tol_dd",
+        "tol_bad",
+        "natoms",
+        "fixed_atoms",
+        "seed_clusters",
+        "maxcputime",
+        "rngseed",
+        "evolve_frac",
+        "evolve_relax",
+        "degenerate_relax",
+        "ligasize",
+        "stopgame",
+        "seasontrials",
+        "trials_sharing",
+        "lookout_prob",
+        "bangle_range",
+        "max_dist",
+    };
+    size_t parlen = sizeof(parnames)/sizeof(char*);
+    static list<string> parlist(parnames, parnames + parlen);
+    return parlist;
 }
 
-void RunPar_t::fill_verbose()
+const string& RunPar_t::joined_verbose_flags() const
 {
-    using namespace NS_VerboseFlag;
-    // default verbose value
-    verbose.resize(VERBOSE_SIZE, false);
-    verbose[AD] = true;
-    verbose[WC] = true;
-    verbose[BC] = true;
-    // fill verbose_flag array
-    verbose_flag.resize(VERBOSE_SIZE);
-    verbose_flag[AD] = "ad";
-    verbose_flag[WC] = "wc";
-    verbose_flag[BC] = "bc";
-    verbose_flag[AV] = "av";
-    verbose_flag[TS] = "ts";
-    verbose_flag[ALL] = "all";
+    static string jvf;
+    if (jvf.empty())
+    {
+        jvf = join(", ", Liga_t::verbose_flags);
+    }
+    return jvf;
 }
-
 
 // End of file

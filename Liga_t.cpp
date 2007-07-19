@@ -13,6 +13,9 @@
 #include "RunPar_t.hpp"
 #include "TrialDistributor.hpp"
 
+using namespace std;
+using namespace NS_LIGA_VERBOSE_FLAG;
+
 RegisterSVNId Liga_t_cpp_id("$Id$");
 
 
@@ -20,13 +23,36 @@ RegisterSVNId Liga_t_cpp_id("$Id$");
 // class Liga_t
 ////////////////////////////////////////////////////////////////////////
 
+// class data
+
+const vector<string> Liga_t::verbose_flags(verbose_flags_array,
+        verbose_flags_array + VERBOSE_SIZE);
+
+// class methods
+
+bool Liga_t::isVerboseFlag(string flag)
+{
+    return count(verbose_flags.begin(), verbose_flags.end(), flag);
+}
+
 // Constructor and destructor
 
 Liga_t::Liga_t(RunPar_t* runpar) :
-    std::vector<Division_t>(), rp(runpar), stopflag(NULL)
+    vector<Division_t>(), rp(runpar), stopflag(NULL)
 {
     world_champ = NULL;
     best_champ = NULL;
+    verbose = getDefaultVerbose();
+    // this needs to be moved to RunPar_t later
+    if (rp->args->ispar("verbose"))
+    {
+        setVerbose(ALL, false);
+        vector<string>::iterator w;
+        for (w = rp->verbose.begin(); w != rp->verbose.end(); ++w)
+        {
+            setVerbose(*w, true);
+        }
+    }
 }
 
 Liga_t::~Liga_t()
@@ -166,8 +192,7 @@ void Liga_t::playLevel(size_t lo_level)
 	    lo_looser->Pop(--nlast);
 	modified.insert(lo_looser);
     }
-    using namespace NS_VerboseFlag;
-    if (rp->verbose[AD])
+    if (verbose[AD])
     {
 	cout << season;
 	cout << " A " <<
@@ -183,7 +208,7 @@ void Liga_t::playLevel(size_t lo_level)
     if (advancing->Full())  updateWorldChamp();
 }
 
-void Liga_t::printFramesTrace()
+void Liga_t::printFramesTrace() const
 {
     if (!rp->trace)	return;
     // needs clean up
@@ -200,7 +225,7 @@ void Liga_t::printFramesTrace()
     cout << endl;
 }
 
-void Liga_t::printSummary()
+void Liga_t::printSummary() const
 {
 
     if (solutionFound())    cout << "Solution found!!!\n\n";
@@ -208,6 +233,50 @@ void Liga_t::printSummary()
     else if (stopFlag())    cout << "Simulation stopped, graceful death.\n\n";
     printFramesTrace();
     BGA::cnt.PrintRunStats();
+}
+
+void Liga_t::setVerbose(VerboseFlag flag, bool value)
+{
+    if (flag < 0 || flag >= VERBOSE_SIZE)
+    {
+        ostringstream emsg;
+        emsg << "Invalide verbose flag " << flag;
+        throw out_of_range(emsg.str());
+    }
+    verbose[flag] = value;
+    if (flag == ALL)
+    {
+        fill(verbose.begin(), verbose.end(), value);
+    }
+}
+
+void Liga_t::setVerbose(string flag, bool value)
+{
+    vector<string>::const_iterator vbsflag;
+    vbsflag = find(verbose_flags.begin(), verbose_flags.end(), flag);
+    if (vbsflag == verbose_flags.end())
+    {
+        ostringstream emsg;
+        emsg << "Invalide verbose flag " << flag;
+        throw out_of_range(emsg.str());
+    }
+    int vbsindex = vbsflag - verbose_flags.begin();
+    setVerbose(static_cast<VerboseFlag>(vbsindex), value);
+}
+
+
+const vector<bool>& Liga_t::getVerbose() const
+{
+    return verbose;
+}
+
+vector<bool> Liga_t::getDefaultVerbose()
+{
+    vector<bool> default_verbose(VERBOSE_SIZE, false);
+    default_verbose[AD] = true;
+    default_verbose[WC] = true;
+    default_verbose[BC] = true;
+    return default_verbose;
 }
 
 // Private methods
@@ -321,24 +390,21 @@ Molecule* Liga_t::updateBestChamp()
 
 void Liga_t::printWorldChamp()
 {
-    using namespace NS_VerboseFlag;
-    if (!rp->verbose[WC])   return;
+    if (!verbose[WC])   return;
     cout << season << " WC " << world_champ->NAtoms() << ' ' <<
 	world_champ->NormBadness() << '\n';
 }
 
 void Liga_t::printBestChamp()
 {
-    using namespace NS_VerboseFlag;
-    if (!rp->verbose[BC])   return;
+    if (!verbose[BC])   return;
     cout << season << " BC " << best_champ->NAtoms() << ' '
 	<< best_champ->NormBadness() << '\n';
 }
 
 void Liga_t::printLevelAverages()
 {
-    using namespace NS_VerboseFlag;
-    if (!rp->verbose[AV])   return;
+    if (!verbose[AV])   return;
     size_t level = base_level;
     iterator lii = begin() + base_level;
     for (; lii != end() && !lii->empty(); ++lii, ++level)
@@ -350,8 +416,7 @@ void Liga_t::printLevelAverages()
 
 void Liga_t::printTrialShares()
 {
-    using namespace NS_VerboseFlag;
-    if (!rp->verbose[TS])    return;
+    if (!verbose[TS])    return;
     for (size_t level = base_level; level < size(); ++level)
     {
 	cout << season << " TS " << level <<

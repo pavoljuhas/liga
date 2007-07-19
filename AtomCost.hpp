@@ -15,7 +15,6 @@
 #include "RegisterSVNId.hpp"
 
 class Molecule;
-class RunPar_t;
 class Atom_t;
 
 namespace {

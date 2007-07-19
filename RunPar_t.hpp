@@ -13,6 +13,7 @@
 
 #include <deque>
 #include <valarray>
+#include <string>
 #include "BGAlib.hpp"
 #include "ParseArgs.hpp"
 #include "RegisterSVNId.hpp"
@@ -35,15 +36,12 @@ struct SeedClusterInfo
     int trials;
 };
 
-namespace NS_VerboseFlag
-{
-    enum VerboseFlag { AD, WC, BC, AV, TS, ALL, VERBOSE_SIZE };
-}
-
 struct RunPar_t
 {
-    RunPar_t();
-    void processArguments(int argc, char * argv[]);
+    RunPar_t(int argc, char* argv[]);
+    void processArguments(int argc, char* argv[]);
+    // parsed input arguments
+    std::auto_ptr<ParseArgs> args;
     // Output option
     bool trace;
     // IO parameters
@@ -56,7 +54,7 @@ struct RunPar_t
     std::string frames;
     int framesrate;
     std::deque<TraceId_t> framestrace;
-    std::valarray<bool> verbose;
+    std::vector<std::string> verbose;
     // Liga parameters
     size_t ndim;
     bool crystal;
@@ -86,13 +84,12 @@ struct RunPar_t
 private:
 
     std::string version_string(std::string quote="");
-    std::list<std::string> validpars;
-    std::vector<std::string> verbose_flag;
+    const std::list<std::string>& validpars() const;
+    const std::string& joined_verbose_flags() const;
 
-    void print_help(ParseArgs& a);
-    void print_pars(ParseArgs& a);
+    void print_help();
+    void print_pars();
     void fill_validpars();
-    void fill_verbose();
 
 };
 
