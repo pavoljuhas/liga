@@ -12,10 +12,11 @@ Sources = \
         BGAlib.cpp BGAutils.cpp ParseArgs.cpp \
         Liga_t.cpp Division_t.cpp RunPar_t.cpp \
         TrialDistributor.cpp RegisterSVNId.cpp \
-        AtomCost.cpp
+        AtomCost.cpp PointsInSphere.cpp
 
 Tests ?= \
         TestMoleculeCost.cpp \
+        TestPointsInSphere.cpp \
         TestRelaxExternalAtom.cpp
         
 Scripts = dvar.py coord.py uniqdst.py
@@ -63,7 +64,8 @@ CCompileAction = $?C_COMPILE_ACTION
 all: gizaliga
 
 :program gizaliga \
-{comment = soccer league of pyramid builders} : \
+{comment = soccer league of pyramid builders} \
+{var_LD = $CXX} : \
     gizaliga.cpp $Sources
 
 :program mcfitdist \
@@ -76,7 +78,8 @@ all: gizaliga
 
 :program alltests \
 {comment = build unit tests} \
-{add_LIBS = -lcppunit -ldl} : \
+{add_LIBS = -lcppunit -ldl} \
+{var_LD = $CXX} : \
     alltests.cpp $Sources $Tests
 
 ########################################################################
