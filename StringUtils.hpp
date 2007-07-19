@@ -28,4 +28,19 @@ std::string join(StrType sep, Sequence words)
     return joined;
 }
 
+template<typename StrType, typename Iterator>
+std::string join(StrType sep, Iterator first, Iterator last)
+{
+    std::string joined;
+    Iterator w = first;
+    if (w == last)	return joined;
+    for (joined = *(w++); w != last; ++w)
+    {
+	joined += sep;
+	joined += *w;
+    }
+    return joined;
+}
+
+
 #endif	// STRINGUTILS_HPP_INCLUDED
