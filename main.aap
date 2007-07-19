@@ -1,5 +1,5 @@
 ########################################################################
-# Short Title: aap rules for Biosphere Genetic Algorithm
+# Short Title: aap rules for single element liga algorithm
 #
 # Comments:
 #
@@ -29,20 +29,20 @@ CLEANFILES += core.[0-9]* gizaliga-fast alltests-fast
 @from socket import gethostname
 @if gethostname() in ('white','green') and uname()[-1] == 'ia64':
     :toolsearch intelcc gcc
-@else:
-    :usetool gcc
 
 :syseval gsl-config --cflags | :assign INCLUDE
 :syseval gsl-config --libs | :assign LIBS
 
-@if C_COMPILE_ACTION == "compile_gcc":
-    CXXFLAGS += -Wall
-    EXTRA_DEBUG = -gstabs+
-    EXTRA_OPTIM = -ffast-math
-@elif C_COMPILE_ACTION == "compile_intelcc":
+CCompileAction = $?C_COMPILE_ACTION
+@if CCompileAction == "compile_intelcc":
     CXXFLAGS += -Wall
     EXTRA_DEBUG =
     EXTRA_OPTIM = -fast
+@else:
+    # by default assume gcc
+    CXXFLAGS += -Wall
+    EXTRA_DEBUG = -gstabs+
+    EXTRA_OPTIM = -ffast-math
 
 :variant Build
     debug
