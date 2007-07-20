@@ -241,7 +241,7 @@ void Liga_t::setVerbose(VerboseFlag flag, bool value)
     {
         ostringstream emsg;
         emsg << "Invalide verbose flag " << flag;
-        throw out_of_range(emsg.str());
+        throw invalid_argument(emsg.str());
     }
     verbose[flag] = value;
     if (flag == ALL)
@@ -258,7 +258,7 @@ void Liga_t::setVerbose(string flag, bool value)
     {
         ostringstream emsg;
         emsg << "Invalide verbose flag " << flag;
-        throw out_of_range(emsg.str());
+        throw invalid_argument(emsg.str());
     }
     int vbsindex = vbsflag - verbose_flags.begin();
     setVerbose(static_cast<VerboseFlag>(vbsindex), value);
