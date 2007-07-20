@@ -18,32 +18,33 @@ Tests ?= \
         TestMoleculeCost.cpp \
         TestPointsInSphere.cpp \
         TestRelaxExternalAtom.cpp
-        
+
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 Bdir ?= AAPDIR
 BDIR = $Bdir/$BDIR
-CLEANFILES += core.[0-9]* gizaliga-fast alltests-fast
+CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
 
-@from os import uname
-@from socket import gethostname
-@if gethostname() in ('white','green') and uname()[-1] == 'ia64':
-    :toolsearch intelcc gcc
+:python
+    def buildOnHPC():
+        from os import uname
+        from socket import gethostname
+        onhpc = gethostname() in ('white','green') and uname()[-1] == 'ia64'
+        return onhpc
 
-:syseval gsl-config --cflags | :assign INCLUDE
-:syseval gsl-config --libs | :assign LIBS
-
-CCompileAction = $?C_COMPILE_ACTION
-@if CCompileAction == "compile_intelcc":
-    CXXFLAGS += -Wall
-    EXTRA_DEBUG =
+CXXFLAGS += -Wall
+@if buildOnHPC():
+    CXX ?= icpc
     EXTRA_OPTIM = -fast
 @else:
-    # by default assume gcc
-    CXXFLAGS += -Wall
     EXTRA_DEBUG = -gstabs+
     EXTRA_OPTIM = -ffast-math
+
+:syseval gsl-config --cflags | :assign add_include
+:syseval gsl-config --libs | :assign add_libs
+INCLUDE += $add_include
+LIBS += $add_libs
 
 :variant Build
     debug
@@ -65,21 +66,21 @@ all: gizaliga
 
 :program gizaliga \
 {comment = soccer league of pyramid builders} \
-{var_LD = $CXX} : \
+{var_LD = $CXX} :
     gizaliga.cpp $Sources
 
 :program mcfitdist \
-{comment = MC shuffling of atoms} : \
+{comment = MC shuffling of atoms} :
     mcfitdist.cpp $Sources
 
 :program relaxatoms \
-{comment = cluster relaxation program} : \
+{comment = cluster relaxation program} :
     relaxatoms.cpp $Sources
 
 :program alltests \
 {comment = build unit tests} \
 {add_LIBS = -lcppunit -ldl} \
-{var_LD = $CXX} : \
+{var_LD = $CXX} :
     alltests.cpp $Sources $Tests
 
 ########################################################################
@@ -87,7 +88,7 @@ all: gizaliga
 ########################################################################
 
 test { comment = exectute all run tests and unit tests } : \
-    runtest unittest 
+    runtest unittest
         :print  -----------------
         :print  All tests passed!
         :print  -----------------
