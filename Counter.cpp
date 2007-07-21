@@ -75,9 +75,6 @@ ostream& operator<<(ostream& os, const Counter& cnt)
 // definitions for Counter::CounterStorage
 ////////////////////////////////////////////////////////////////////////
 
-Counter::CounterStorage::CounterStorage() : std::map<std::string,Counter*>()
-{ }
-
 Counter::CounterStorage::~CounterStorage()
 {
     for (iterator ii = begin(); ii != end(); ++ii)
@@ -87,3 +84,4 @@ Counter::CounterStorage::~CounterStorage()
     }
 }
 
+// End of file

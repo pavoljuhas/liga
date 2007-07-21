@@ -42,7 +42,6 @@ class Counter
         class CounterStorage : public std::map<std::string,Counter*>
         {
             public:
-                CounterStorage();
                 ~CounterStorage();
         };
 
