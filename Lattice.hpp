@@ -81,6 +81,10 @@ class Lattice
         // conversion of coordinates and tensors
         const R3::Vector& cartesian(const R3::Vector& vl) const;
         const R3::Vector& fractional(const R3::Vector& vc) const;
+        template <class V>
+            const R3::Vector& cartesian(const V& vl) const;
+        template <class V>
+        const R3::Vector& fractional(const V& vc) const;
         const R3::Matrix& cartesianMatrix(const R3::Matrix& Ml) const;
         const R3::Matrix& fractionalMatrix(const R3::Matrix& Mc) const;
         // lattice related tensors
@@ -181,6 +185,22 @@ inline double Lattice::anglerad(const V& u, const V& v) const
 {
     double ca = dot(u, v)/(norm(u) * norm(v));
     return acos(ca);
+}
+
+template <class V>
+inline const R3::Vector& Lattice::cartesian(const V& vl) const
+{
+    static R3::Vector vlcopy;
+    vlcopy = vl[0], vl[1], vl[2];
+    return cartesian(vlcopy);
+}
+
+template <class V>
+inline const R3::Vector& Lattice::fractional(const V& vl) const
+{
+    static R3::Vector vlcopy;
+    vlcopy = vl[0], vl[1], vl[2];
+    return fractional(vlcopy);
 }
 
 #endif  // LATTICE_HPP_INCLUDED

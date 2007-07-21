@@ -8,16 +8,16 @@
 
 ########################################################################
 
-Sources = \
-        BGAlib.cpp BGAutils.cpp ParseArgs.cpp \
-        Liga_t.cpp Division_t.cpp RunPar_t.cpp \
-        TrialDistributor.cpp RegisterSVNId.cpp \
-        AtomCost.cpp PointsInSphere.cpp
+LigaSources =
+        AtomCost.cpp BGAlib.cpp BGAutils.cpp Division_t.cpp
+        Liga_t.cpp ParseArgs.cpp RegisterSVNId.cpp RunPar_t.cpp
+        TrialDistributor.cpp
 
-Tests ?= \
-        TestMoleculeCost.cpp \
-        TestPointsInSphere.cpp \
-        TestRelaxExternalAtom.cpp
+TestedSources =
+        $LigaSources
+        PointsInSphere.cpp Counters.cpp Lattice.cpp R3linalg.cpp
+
+Tests ?= Test*.cpp
 
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
@@ -41,10 +41,11 @@ CXXFLAGS += -Wall
     EXTRA_DEBUG = -gstabs+
     EXTRA_OPTIM = -ffast-math
 
-:syseval gsl-config --cflags | :assign add_include
-:syseval gsl-config --libs | :assign add_libs
-INCLUDE += $add_include
-LIBS += $add_libs
+:syseval gsl-config --cflags | :assign GSLInclude
+:syseval gsl-config --libs | :assign GSLLibs
+:syseval pkg-config --libs blitz | :assign BlitzLibs
+INCLUDE += $GSLInclude -I$(HOME)/programs/include
+LIBS += $GSLLibs $BlitzLibs
 
 :variant Build
     debug
@@ -67,21 +68,21 @@ all: gizaliga
 :program gizaliga \
 {comment = soccer league of pyramid builders} \
 {var_LD = $CXX} :
-    gizaliga.cpp $Sources
+    gizaliga.cpp $LigaSources
 
 :program mcfitdist \
 {comment = MC shuffling of atoms} :
-    mcfitdist.cpp $Sources
+    mcfitdist.cpp $LigaSources
 
 :program relaxatoms \
 {comment = cluster relaxation program} :
-    relaxatoms.cpp $Sources
+    relaxatoms.cpp $LigaSources
 
 :program alltests \
 {comment = build unit tests} \
 {add_LIBS = -lcppunit -ldl} \
 {var_LD = $CXX} :
-    alltests.cpp $Sources $Tests
+    alltests.cpp $TestedSources $Tests
 
 ########################################################################
 # tests
