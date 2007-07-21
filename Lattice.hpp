@@ -52,6 +52,9 @@ class Lattice
         inline double sinalpha() const  { return sina; }
         inline double sinbeta() const   { return sinb; }
         inline double singamma() const  { return sing; }
+        inline const R3::Vector& va() const { return _va; }
+        inline const R3::Vector& vb() const { return _vb; }
+        inline const R3::Vector& vc() const { return _vc; }
         // reciprocal lattice
         inline double ar() const        { return _ar; }
         inline double br() const        { return _br; }
@@ -65,6 +68,9 @@ class Lattice
         inline double sinalphar() const { return sinar; }
         inline double sinbetar() const  { return sinbr; }
         inline double singammar() const { return singr; }
+        inline const R3::Vector& var() const    { return _var; }
+        inline const R3::Vector& vbr() const    { return _vbr; }
+        inline const R3::Vector& vcr() const    { return _vcr; }
         // vector operations using lattice coordinates
         template <class V>
             inline double dot(const V& u, const V& v) const;
@@ -79,12 +85,12 @@ class Lattice
         template <class V>
             inline double anglerad(const V& u, const V& v) const;
         // conversion of coordinates and tensors
-        const R3::Vector& cartesian(const R3::Vector& vl) const;
-        const R3::Vector& fractional(const R3::Vector& vc) const;
+        const R3::Vector& cartesian(const R3::Vector& lv) const;
+        const R3::Vector& fractional(const R3::Vector& cv) const;
         template <class V>
-            const R3::Vector& cartesian(const V& vl) const;
+            const R3::Vector& cartesian(const V& lv) const;
         template <class V>
-        const R3::Vector& fractional(const V& vc) const;
+        const R3::Vector& fractional(const V& cv) const;
         const R3::Matrix& cartesianMatrix(const R3::Matrix& Ml) const;
         const R3::Matrix& fractionalMatrix(const R3::Matrix& Mc) const;
         // lattice related tensors
@@ -106,12 +112,14 @@ class Lattice
         double _alpha, _beta, _gamma;
         double cosa, cosb, cosg;
         double sina, sinb, sing;
+        R3::Vector _va, _vb, _vc;
 
         // data - reciprocal lattice parameters
         double _ar, _br, _cr;
         double _alphar, _betar, _gammar;
         double cosar, cosbr, cosgr;
         double sinar, sinbr, singr;
+        R3::Vector _var, _vbr, _vcr;
 
         // data - tensors
         // _base = _stdbase * _baserot
@@ -140,10 +148,10 @@ Lattice::Lattice(const V& va0, const V& vb0, const V& vc0)
 template <class V>
 void Lattice::setLatBase(const V& va0, const V& vb0, const V& vc0)
 {
-    R3::Vector va(va0[0], va0[1], va0[2]);
-    R3::Vector vb(vb0[0], vb0[1], vb0[2]);
-    R3::Vector vc(vc0[0], vc0[1], vc0[2]);
-    setLatBase(va, vb, vc);
+    R3::Vector va1(va0[0], va0[1], va0[2]);
+    R3::Vector vb1(vb0[0], vb0[1], vb0[2]);
+    R3::Vector vc1(vc0[0], vc0[1], vc0[2]);
+    setLatBase(va1, vb1, vc1);
 }
 
 template <class V>
@@ -188,19 +196,19 @@ inline double Lattice::anglerad(const V& u, const V& v) const
 }
 
 template <class V>
-inline const R3::Vector& Lattice::cartesian(const V& vl) const
+inline const R3::Vector& Lattice::cartesian(const V& lv) const
 {
-    static R3::Vector vlcopy;
-    vlcopy = vl[0], vl[1], vl[2];
-    return cartesian(vlcopy);
+    static R3::Vector lvcopy;
+    lvcopy = lv[0], lv[1], lv[2];
+    return cartesian(lvcopy);
 }
 
 template <class V>
-inline const R3::Vector& Lattice::fractional(const V& vl) const
+inline const R3::Vector& Lattice::fractional(const V& cv) const
 {
-    static R3::Vector vlcopy;
-    vlcopy = vl[0], vl[1], vl[2];
-    return fractional(vlcopy);
+    static R3::Vector cvcopy;
+    cvcopy = cv[0], cv[1], cv[2];
+    return fractional(cvcopy);
 }
 
 #endif  // LATTICE_HPP_INCLUDED

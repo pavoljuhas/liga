@@ -120,7 +120,13 @@ void Lattice::setLatPar( double a0, double b0, double c0,
                0.0,         0.0,                _c;
     // calculate unit cell rotation matrix _baserot,  _base = _stdbase*_baserot
     _base = R3::product(_stdbase, _baserot);
+    _va = _base(0,0), _base(0,1), _base(0,2);
+    _vb = _base(1,0), _base(1,1), _base(1,2);
+    _vc = _base(2,0), _base(2,1), _base(2,2);
     _recbase = R3::inverse(_base);
+    _var = _recbase(0,0), _recbase(1,0), _recbase(2,0);
+    _vbr = _recbase(0,1), _recbase(1,1), _recbase(2,1);
+    _vcr = _recbase(0,2), _recbase(1,2), _recbase(2,2);
     _normbase =
         _base(0,0)*_ar,     _base(0,1)*_ar,     _base(0,2)*_ar,
         _base(1,0)*_br,     _base(1,1)*_br,     _base(1,2)*_br,
@@ -148,12 +154,15 @@ void Lattice::setLatBase(const R3::Vector& va0,
     {
         throw invalid_argument("base is not right-handed");
     }
-    _a = R3::norm(va0);
-    _b = R3::norm(vb0);
-    _c = R3::norm(vc0);
-    cosa = R3::dot(vb0, vc0) / (_b*_c);
-    cosb = R3::dot(va0, vc0) / (_a*_c);
-    cosg = R3::dot(va0, vb0) / (_a*_b);
+    _va = va0;
+    _vb = vb0;
+    _vc = vc0;
+    _a = R3::norm(_va);
+    _b = R3::norm(_vb);
+    _c = R3::norm(_vc);
+    cosa = R3::dot(_vb, _vc) / (_b*_c);
+    cosb = R3::dot(_va, _vc) / (_a*_c);
+    cosg = R3::dot(_va, _vb) / (_a*_b);
     sina = sqrt(1.0 - cosa*cosa);
     sinb = sqrt(1.0 - cosb*cosb);
     sing = sqrt(1.0 - cosg*cosg);
@@ -183,6 +192,9 @@ void Lattice::setLatBase(const R3::Vector& va0,
     // calculate unit cell rotation matrix,  base = stdbase*baserot
     _baserot = R3::product(R3::inverse(_stdbase), _base);
     _recbase = R3::inverse(_base);
+    _var = _recbase(0,0), _recbase(1,0), _recbase(2,0);
+    _vbr = _recbase(0,1), _recbase(1,1), _recbase(2,1);
+    _vcr = _recbase(0,2), _recbase(1,2), _recbase(2,2);
     // bases normalized to unit reciprocal vectors
     _normbase =
         _base(0,0)*_ar,     _base(0,1)*_ar,     _base(0,2)*_ar,
@@ -198,17 +210,17 @@ void Lattice::setLatBase(const R3::Vector& va0,
                _c*_a*cosb,  _c*_b*cosa,  _c*_c;
 }
 
-const R3::Vector& Lattice::cartesian(const R3::Vector& vl) const
+const R3::Vector& Lattice::cartesian(const R3::Vector& lv) const
 {
     static R3::Vector res;
-    res = R3::product(vl, _base);
+    res = R3::product(lv, _base);
     return res;
 }
 
-const R3::Vector& Lattice::fractional(const R3::Vector& vc) const
+const R3::Vector& Lattice::fractional(const R3::Vector& cv) const
 {
     static R3::Vector res;
-    res = R3::product(vc, _recbase);
+    res = R3::product(cv, _recbase);
     return res;
 }
 

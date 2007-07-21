@@ -61,9 +61,9 @@ public:
 	CPPUNIT_ASSERT(MatricesAlmostEqual(lattice->base(), identity));
 	// lattice parameters constructor
 	Lattice lattice1(1.0, 2.0, 3.0, 90, 90, 120);
-	R3::Vector va(lattice1.base().data());
-	R3::Vector vb(lattice1.base().data() + 3);
-	R3::Vector vc(lattice1.base().data() + 6);
+	R3::Vector va = lattice1.va();
+	R3::Vector vb = lattice1.vb();
+	R3::Vector vc = lattice1.vc();
         double adotb = R3::dot(va, vb);
         double adotc = R3::dot(va, vc);
         double bdotc = R3::dot(vb, vc);
