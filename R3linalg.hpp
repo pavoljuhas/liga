@@ -15,7 +15,7 @@
 #include <blitz/tinyvec-et.h>
 #include <blitz/tinymat.h>
 
-#include "Counters.hpp"
+#include "Counter.hpp"
 
 namespace R3 {
 

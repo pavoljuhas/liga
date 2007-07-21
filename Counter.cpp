@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <sys/times.h>
 
-#include "Counters.hpp"
+#include "Counter.hpp"
 
 using namespace std;
 using namespace LIGA;

@@ -8,8 +8,8 @@
 * <license text>
 ***********************************************************************/
 
-#ifndef COUNTERS_HPP_INCLUDED
-#define COUNTERS_HPP_INCLUDED
+#ifndef COUNTER_HPP_INCLUDED
+#define COUNTER_HPP_INCLUDED
 
 namespace LIGA {
 
@@ -33,4 +33,4 @@ extern Counters counters;
 
 }	// namespace LIGA
 
-#endif	// COUNTERS_HPP_INCLUDED
+#endif	// COUNTER_HPP_INCLUDED

@@ -15,7 +15,7 @@ LigaSources =
 
 TestedSources =
         $LigaSources
-        PointsInSphere.cpp Counters.cpp Lattice.cpp R3linalg.cpp
+        PointsInSphere.cpp Counter.cpp Lattice.cpp R3linalg.cpp
 
 Tests ?= Test*.cpp
 
