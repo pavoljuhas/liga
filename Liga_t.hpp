@@ -18,6 +18,7 @@
 
 #include "Division_t.hpp"
 #include "RunPar_t.hpp"
+#include "Counter.hpp"
 #include "RegisterSVNId.hpp"
 
 namespace {
@@ -134,7 +135,7 @@ inline bool Liga_t::solutionFound() const
 
 inline bool Liga_t::outOfTime() const
 {
-    return rp->maxcputime > 0.0 && BGA::CPUTime() > rp->maxcputime;
+    return rp->maxcputime > 0.0 && Counter::CPUTime() > rp->maxcputime;
 }
 
 #endif	// LIGA_T_HPP_INCLUDED

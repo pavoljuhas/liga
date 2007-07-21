@@ -232,7 +232,7 @@ void Liga_t::printSummary() const
     else if (outOfTime())   cout << "Exceeded maxcputime.\n\n";
     else if (stopFlag())    cout << "Simulation stopped, graceful death.\n\n";
     printFramesTrace();
-    BGA::cnt.PrintRunStats();
+    Counter::printRunStats();
 }
 
 void Liga_t::setVerbose(VerboseFlag flag, bool value)

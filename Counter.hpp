@@ -11,26 +11,55 @@
 #ifndef COUNTER_HPP_INCLUDED
 #define COUNTER_HPP_INCLUDED
 
-namespace LIGA {
+#include <iostream>
+#include <string>
+#include <map>
 
-class Counters
+class Counter
 {
     public:
 
-	// Data Members
-	unsigned long long dpenalty_calls;
-	unsigned long long wpenalty_calls;
-	unsigned long long R3_norm_calls;
+	// friends
+	friend std::ostream& operator<<(std::ostream&, const Counter&);
 
-	// Methods
-	double CPUTime();
-	void printRunStats();
+        // types
+        typedef unsigned long long ValueType;
+
+        // class methods
+        static Counter* getCounter(std::string name);
+	static double CPUTime();
+	static void printRunStats();
+
+        // public methods
+        inline const std::string& name() const  { return _name; }
+        inline ValueType value() const          { return _value; }
+        inline void count(int tics=1)           { _value += tics; }
+        inline void reset(ValueType cnt=0)      { _value = cnt; }
+
+    private:
+
+	// helper class
+        class CounterStorage : public std::map<std::string,Counter*>
+        {
+            public:
+                CounterStorage();
+                ~CounterStorage();
+        };
+
+        // class data
+        static CounterStorage storage;
+        
+        // constructor
+        Counter(std::string name);
+
+	// Data Members
+        const std::string _name;
+        ValueType _value;
 
 };
 
-// Global instance of Counters
-extern Counters counters;
+// non-member operators
 
-}	// namespace LIGA
+std::ostream& operator<<(std::ostream& os, const Counter& cnt);
 
-#endif	// COUNTER_HPP_INCLUDED
+#endif	// COUNTERS_HPP_INCLUDED

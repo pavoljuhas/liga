@@ -67,7 +67,8 @@ inline Matrix transpose(const Matrix& A)
 template <class V>
 inline double norm(const V& u)
 {
-    LIGA::counters.R3_norm_calls++;
+    static Counter* R3_norm_calls = Counter::getCounter("R3_norm_calls");
+    R3_norm_calls->count();
     return sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
 }
 

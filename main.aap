@@ -9,13 +9,12 @@
 ########################################################################
 
 LigaSources =
-        AtomCost.cpp BGAlib.cpp BGAutils.cpp Division_t.cpp
-        Liga_t.cpp ParseArgs.cpp RegisterSVNId.cpp RunPar_t.cpp
-        TrialDistributor.cpp
+        AtomCost.cpp BGAlib.cpp BGAutils.cpp Counter.cpp Division_t.cpp
+        Liga_t.cpp ParseArgs.cpp RegisterSVNId.cpp TrialDistributor.cpp
 
 TestedSources =
         $LigaSources
-        PointsInSphere.cpp Counter.cpp Lattice.cpp R3linalg.cpp
+        PointsInSphere.cpp Lattice.cpp R3linalg.cpp
 
 Tests ?= Test*.cpp
 
@@ -68,7 +67,7 @@ all: gizaliga
 :program gizaliga \
 {comment = soccer league of pyramid builders} \
 {var_LD = $CXX} :
-    gizaliga.cpp $LigaSources
+    gizaliga.cpp RunPar_t.cpp $LigaSources
 
 :program mcfitdist \
 {comment = MC shuffling of atoms} :

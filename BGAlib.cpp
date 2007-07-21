@@ -17,6 +17,7 @@
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
 #include "AtomCost.hpp"
+#include "Counter.hpp"
 
 RegisterSVNId BGAlib_cpp_id("$Id$");
 
@@ -76,7 +77,8 @@ template<typename T> bool read_data(istream& fid, vector<T>& v)
 
 double penalty(double dd)
 {
-    BGA::cnt.penalty_calls++;
+    static Counter* penalty_calls = Counter::getCounter("penalty_calls");
+    penalty_calls->count();
     return dd*dd;
 }
 
@@ -140,7 +142,8 @@ bool operator==(const Atom_t& a1, const Atom_t& a2)
 
 double dist2(const Atom_t& a1, const Atom_t& a2)
 {
-    BGA::cnt.distance_calls++;
+    static Counter* distance_calls = Counter::getCounter("distance_calls");
+    distance_calls->count();
     double dr[3] = { a1.r[0]-a2.r[0], a1.r[1]-a2.r[1], a1.r[2]-a2.r[2] };
     return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
 }

@@ -44,27 +44,6 @@ ofstream& mktempofstream(ofstream& out, char *writefile)
     return out;
 }
 
-double BGA::CPUTime()
-{
-    tms tbuf;
-    times(&tbuf);
-    return 1.0*tbuf.tms_utime/sysconf(_SC_CLK_TCK);
-}
-
-void Counters_t::PrintRunStats()
-{
-    char hostname[255];
-    gethostname(hostname, 255);
-    cout << "Run statistics:" << endl;
-    cout << "penalty_calls = " << penalty_calls << endl;
-    cout << "distance_calls = " << distance_calls << endl;
-    cout << "UserCPUtime = " << BGA::CPUTime() << 's' << endl;
-    cout << "Host = " << hostname << endl;
-}
-
-// define global instance of Counters_t
-Counters_t BGA::cnt;
-
 double vdnorm(const valarray<double>& v)
 {
     double s2 = 0.0;

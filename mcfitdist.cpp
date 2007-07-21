@@ -11,6 +11,7 @@
 #include <signal.h>
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
+#include "Counter.hpp"
 
 const int EXIT_ARGS_ERROR = 2;
 ////////////////////////////////////////////////////////////////////////
@@ -350,7 +351,7 @@ int main(int argc, char *argv[])
     {
 	if (SIGHUP_received)
 	    break;
-	else if (rp.maxcputime > 0.0 && BGA::CPUTime() > rp.maxcputime)
+	else if (rp.maxcputime > 0.0 && Counter::CPUTime() > rp.maxcputime)
 	    break;
         ++rv.totsteps;
 	// store original normalized badnees
@@ -380,7 +381,8 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-	    mol.Pop(aidx).Add(a1);
+	    mol.Pop(aidx);
+	    mol.Add(a1);
 	}
 	double nb1 = mol.NormBadness();
 	// accept according to Metropolis algorithm
@@ -389,7 +391,8 @@ int main(int argc, char *argv[])
 	else
 	{
 	    // revert back, a1 is the last atom
-	    mol.Pop(mol.NAtoms()-1).Add(a0);
+	    mol.Pop(mol.NAtoms()-1);
+            mol.Add(a0);
 	}
 	// log printing
 	if (rp.lograte && rv.totsteps % rp.lograte == 0)
@@ -413,7 +416,7 @@ int main(int argc, char *argv[])
 	cout << "Received SIGHUP, graceful death." << endl << endl;
 	exit_code = SIGHUP+128;
     }
-    else if (rp.maxcputime > 0.0 && BGA::CPUTime() > rp.maxcputime)
+    else if (rp.maxcputime > 0.0 && Counter::CPUTime() > rp.maxcputime)
     {
 	cout << "Exceeded maxcputime." << endl << endl;
 	exit_code = 1;
@@ -423,7 +426,7 @@ int main(int argc, char *argv[])
 	cout << "Solution found!!!" << endl << endl;
 	exit_code = EXIT_SUCCESS;
     }
-    BGA::cnt.PrintRunStats();
+    Counter::printRunStats();
     // save last molecule
     rv.exiting = true;
     save_outstru(mol, best_mol, rp, rv);
