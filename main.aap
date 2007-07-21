@@ -8,11 +8,11 @@
 
 ########################################################################
 
-LigaSources =
+LigaSources +=
         AtomCost.cpp BGAlib.cpp BGAutils.cpp Counter.cpp Division_t.cpp
         Liga_t.cpp ParseArgs.cpp RegisterSVNId.cpp TrialDistributor.cpp
 
-TestedSources =
+TestedSources +=
         $LigaSources
         PointsInSphere.cpp Lattice.cpp R3linalg.cpp
 

@@ -49,6 +49,9 @@ Crystal& Crystal::operator=(const Crystal& crs)
     return *this;
 }
 
+Crystal::~Crystal()
+{ }
+
 
 // private methods
 
