@@ -45,8 +45,8 @@ class Counter
                 ~CounterStorage();
         };
 
-        // class data
-        static CounterStorage storage;
+        // class methods
+        static CounterStorage& storage();
         
         // constructor
         Counter(std::string name);

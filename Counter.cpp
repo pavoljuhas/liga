@@ -16,20 +16,15 @@
 
 using namespace std;
 
-// class data - private
-
-Counter::CounterStorage Counter::storage;
-
-
 // class methods
 
 Counter* Counter::getCounter(string name)
 {
-    if (!storage.count(name))
+    if (!storage().count(name))
     {
-        storage[name] = new Counter(name);
+        storage()[name] = new Counter(name);
     }
-    return storage[name];
+    return storage()[name];
 }
 
 double Counter::CPUTime()
@@ -45,7 +40,7 @@ void Counter::printRunStats()
     gethostname(hostname, 255);
     cout << "Run statistics:\n";
     CounterStorage::iterator ii;
-    for (ii = storage.begin(); ii != storage.end(); ++ii)
+    for (ii = storage().begin(); ii != storage().end(); ++ii)
     {
         Counter& cii = *(ii->second);
         cout << cii << '\n';
@@ -53,6 +48,16 @@ void Counter::printRunStats()
     cout << "UserCPUtime = " << CPUTime() << "s\n";
     cout << "Host = " << hostname << endl;
 }
+
+
+// class methods - private
+
+Counter::CounterStorage& Counter::storage()
+{
+    static CounterStorage the_storage;
+    return the_storage;
+}
+
 
 
 // constructor - private
@@ -70,6 +75,7 @@ ostream& operator<<(ostream& os, const Counter& cnt)
     os << cnt.name() << " = " << cnt.value();
     return os;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // definitions for Counter::CounterStorage
