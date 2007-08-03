@@ -10,7 +10,6 @@
 
 #include <sstream>
 #include <cassert>
-#include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlin.h>
@@ -18,11 +17,14 @@
 #include "BGAlib.hpp"
 #include "AtomCost.hpp"
 #include "Counter.hpp"
+#include "Random.hpp"
 
 RegisterSVNId BGAlib_cpp_id("$Id$");
 
-// random number generator
-gsl_rng * BGA::rng = gsl_rng_alloc(gsl_rng_default);
+using namespace LIGA;
+
+// constants
+
 double BGA::eps_badness = 1.0e-10;
 
 ////////////////////////////////////////////////////////////////////////
@@ -1048,7 +1050,8 @@ int Molecule::push_good_distances(
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
-	vector<int> aidx = random_wt_choose(min(NAtoms(),2), afit, NAtoms());
+        size_t basesize = min(NAtoms(),2);
+	const PickType& aidx = randomWeighedPick(basesize, NAtoms(), afit);
 	Atom_t& a0 = *atoms[aidx[0]];
 	valarray<double> rdir(0.0, 3);
 	if (NAtoms() > 1)
@@ -1074,7 +1077,7 @@ int Molecule::push_good_distances(
 	    lattice_rdir = false;
 	}
 	// pick free distance
-	int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
+	int didx = randomInt(dTarget.size());
 	double radius = dTarget[didx];
 	// add front atom
 	double nr[3];
@@ -1122,12 +1125,14 @@ int Molecule::push_good_triangles(
     {
 	// pick 2 atoms for base and 3rd for plane orientation
 	int nchoose = NAtoms() > 2 ? 3 : 2;
-	vector<int> aidx = random_wt_choose(nchoose, afit, NAtoms());
+	const PickType& aidx = randomWeighedPick(nchoose, NAtoms(), afit);
 	Atom_t& a0 = *atoms[aidx[0]];
 	Atom_t& a1 = *atoms[aidx[1]];
 	// pick 2 vertex distances
 	bool with_repeat = (tol_dd <= 0.0);
-	vector<int> didx = random_choose_few(2, dTarget.size(), with_repeat);
+        const PickType& didx = with_repeat ?
+            randomPickWithRepeat(2, dTarget.size()) :
+            randomPickFew(2, dTarget.size());
 	double r13 = dTarget[didx[0]];
 	double r23 = dTarget[didx[1]];
 	double r12 = dist(a0, a1);
@@ -1225,13 +1230,15 @@ int Molecule::push_good_pyramids(
     for (int nt = 0; nt < ntrials;)
     {
 	// pick 3 base atoms
-	vector<int> aidx = random_wt_choose(3, afit, NAtoms());
+        const PickType& aidx = randomWeighedPick(3, NAtoms(), afit);
 	Atom_t& a0 = *atoms[aidx[0]];
 	Atom_t& a1 = *atoms[aidx[1]];
 	Atom_t& a2 = *atoms[aidx[2]];
 	// pick 3 vertex distances
 	bool with_repeat = (tol_dd <= 0.0);
-	vector<int> didx = random_choose_few(3, dTarget.size(), with_repeat);
+	PickType didx = with_repeat ?
+            randomPickWithRepeat(3, dTarget.size()) :
+            randomPickFew(3, dTarget.size());
 	// loop over all permutations of selected distances
 	sort(didx.begin(), didx.end());
 	do
@@ -1368,13 +1375,10 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 	// distances will be picked randomly
 	for (push_count = 0; push_count < ntrials; ++push_count)
 	{
-	    int didx = gsl_rng_uniform_int(BGA::rng, dTarget.size());
+	    int didx = randomInt(dTarget.size());
 	    double dz = dTarget[didx];
 	    // randomize direction
-	    if (gsl_rng_uniform_int(BGA::rng, 2) == 0)
-	    {
-		dz = -dz;
-	    }
+            dz *= plusminus();
 	    nr[2] = a0.r[2] + dz;
 	    Atom_t ad(nr); ad.ttp = LINEAR;
 	    vta.push_back(ad);
@@ -1413,8 +1417,9 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	bool with_repeat = (tol_dd <= 0.0);
 	for (int i = 0; i < ntrials; ++i)
 	{
-	    vector<int> didx;
-	    didx = random_choose_few(2, dTarget.size(), with_repeat);
+            const PickType& didx = with_repeat ?
+                randomPickWithRepeat(2, dTarget.size()) :
+                randomPickFew(2, dTarget.size());
 	    d0.push_back(dTarget[didx[0]]);
 	    d1.push_back(dTarget[didx[1]]);
 	}
@@ -1466,7 +1471,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	    xperp = 0.0;
 	else if (xp2 < 0.0)
 	    continue;
-	else if (gsl_rng_uniform_int(BGA::rng, 2) == 0)
+	else if (randomInt(2) == 0)
 	    xperp = -xperp;
 	// add atom
 	valarray<double> Pn(3);
@@ -1503,7 +1508,7 @@ void Molecule::Evolve(const int* est_triang)
     vafit = recipw0(vafit);
     double* afit = &vafit[0];
     bool lookout = NAtoms() && NAtoms() <= 2 &&
-	gsl_rng_uniform(BGA::rng) < lookout_prob;
+	randomFloat() < lookout_prob;
     const int lookout_trials = 1500;
     // evolution is trivial for empty or 1-atom molecule
     switch (NAtoms())
@@ -1565,7 +1570,7 @@ void Molecule::Evolve(const int* est_triang)
 	    vtafit = recipw0(vtafit);
 	}
 	// vtafit is ready here
-	int idx = random_wt_choose(1, &vtafit[0], vtafit.size()).front();
+	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
 	Add(vta[idx]);
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
@@ -1604,9 +1609,10 @@ void Molecule::Degenerate(int Npop)
     if (Nfree == 0)  return;
     Npop = min(Nfree, Npop);
     // build list of indices of atoms to pop
-    vector<int> idxidx = random_wt_choose(Npop, freebad, Nfree);
+    const PickType& idxidx = randomWeighedPick(Npop, Nfree, freebad);
     list<int> ipop;
-    for (vector<int>::iterator ii = idxidx.begin(); ii != idxidx.end(); ++ii)
+    PickType::const_iterator ii;
+    for (ii = idxidx.begin(); ii != idxidx.end(); ++ii)
     {
 	ipop.push_back(freeidx[*ii]);
     }
@@ -1647,108 +1653,6 @@ int Molecule::getPairMatrixIndex()
     }
     return idx;
 }
-
-vector<int> random_choose_few(int K, int Np, bool with_repeat)
-{
-    vector<int> vec(K);
-    if (with_repeat)
-    {
-	for (int i = 0; i < K; ++i)
-	    vec[i] = gsl_rng_uniform_int(BGA::rng, Np);
-	return vec;
-    }
-    // no repeats allowed here
-    if (K > Np)
-    {
-	cerr << "random_wt_choose(): too many items to choose" << endl;
-	throw range_error("too many items to choose");
-    }
-    // check trivial case
-    else if (K == 0)
-    {
-	return vec;
-    }
-    int N = Np;
-    map<int,int> tr;
-    vector<int>::iterator vecit = vec.begin();
-    for (int i = 0; i < K; ++i, --N)
-    {
-	int k = gsl_rng_uniform_int(BGA::rng, N);
-	for (int c = 0;  tr.count(k) == 1;  k = tr[k], ++c)
-	{
-	    if (!(c < Np))
-	    {
-		cerr << "random_choose_few(): too many translations" << endl;
-		throw runtime_error("too many translations");
-	    }
-	}
-	*(vecit++) = k;
-	tr[k] = N-1;
-    }
-    return vec;
-}
-
-vector<int> random_wt_choose(int K, const double* p, int Np)
-{
-    vector<int> vec(K);
-    if (K > Np)
-    {
-	cerr << "random_wt_choose(): too many items to choose" << endl;
-	throw range_error("too many items to choose");
-    }
-    // check trivial case
-    else if (K == 0)
-    {
-	return vec;
-    }
-    if ( p+Np != find_if(p, p+Np, bind2nd(less<double>(),0.0)) )
-    {
-	cerr << "random_wt_choose(): negative choice probability" << endl;
-	throw runtime_error("negative choice probability");
-    }
-    // now we need to do some real work
-    double prob[Np];
-    copy(p, p+Np, prob);
-    // integer encoding
-    int val[Np];
-    for (int i = 0; i != Np; ++i)  val[i] = i;
-    // cumulative probability
-    double cumprob[Np];
-    // main loop
-    vector<int>::iterator vecit = vec.begin();
-    for (int i = 0, Nprob = Np; i != K; ++i, --Nprob)
-    {
-	// calculate cumulative probability
-	partial_sum(prob, prob+Nprob, cumprob);
-	// if all probabilities are 0.0, set them to equal value
-	if (cumprob[Nprob-1] == 0.0)
-	{
-	    for (int j = 0; j != Nprob; ++j)
-	    {
-		prob[j] = 1.0;
-		cumprob[j] = (j+1.0)/Nprob;
-	    }
-	}
-	// otherwise we can normalize cumprob
-	else
-	{
-	    for (double* pcp = cumprob; pcp != cumprob+Nprob; ++pcp)
-	    {
-		*pcp /= cumprob[Nprob-1];
-	    }
-	}
-	// now let's do binary search on cumprob:
-	double r = gsl_rng_uniform(BGA::rng);
-	double* pcp = upper_bound(cumprob, cumprob+Nprob, r);
-	int idx = pcp - cumprob;
-	*(vecit++) = val[idx];
-	// overwrite this element with the last number
-	prob[idx] = prob[Nprob-1];
-	val[idx] = val[Nprob-1];
-    }
-    return vec;
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule IO functions

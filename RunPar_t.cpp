@@ -8,12 +8,14 @@
 * <license text>
 ***********************************************************************/
 
-#include "RunPar_t.hpp"
+#include "Random.hpp"
 #include "TrialDistributor.hpp"
 #include "StringUtils.hpp"
 #include "Liga_t.hpp"
+#include "RunPar_t.hpp"
 
 using namespace std;
+using namespace LIGA;
 
 RegisterSVNId RunPar_t_cpp_id("$Id$");
 
@@ -250,7 +252,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     rngseed = args->GetPar<int>("rngseed", 0);
     if (rngseed)
     {
-	gsl_rng_set(BGA::rng, rngseed);
+	randomSeed(rngseed);
     }
     // evolve_frac
     evolve_frac = args->GetPar<double>("evolve_frac", 0.1);

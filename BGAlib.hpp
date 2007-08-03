@@ -16,7 +16,6 @@
 #include <vector>
 #include <list>
 #include <set>
-#include <gsl/gsl_rng.h>
 #include "RegisterSVNId.hpp"
 #include "Matrix.hpp"
 #include "BGAutils.hpp"
@@ -30,7 +29,6 @@ RegisterSVNId BGAlib_hpp_id("$Id$");
 // global random number generator
 namespace BGA
 {
-    extern gsl_rng* rng;
     extern double eps_badness;
 };
 
@@ -40,10 +38,6 @@ struct InvalidMolecule { };
 struct InvalidPopulation { };
 
 using namespace std;
-
-// helper objects/functions
-vector<int> random_choose_few(int K, int Np, bool with_repeat = false);
-vector<int> random_wt_choose(int K, const double* p, int Np);
 
 inline bool eps_eq(double x, double y)
 {

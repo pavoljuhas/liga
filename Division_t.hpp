@@ -12,13 +12,15 @@
 #define DIVISION_T_HPP_INCLUDED
 
 #include <vector>
-#include <gsl/gsl_randist.h>
 #include "BGAlib.hpp"
+#include "Random.hpp"
 #include "RegisterSVNId.hpp"
 
 namespace {
 RegisterSVNId Division_t_hpp_id("$Id$");
 }
+
+using namespace LIGA;
 
 class Division_t : public vector<Molecule*>
 {
@@ -94,7 +96,7 @@ class Division_t : public vector<Molecule*>
 	    // then get the reciprocal value
 	    vmfit = recipw0(vmfit);
 	    double *mfit = &vmfit[0];
-	    int idx = random_wt_choose(1, mfit, size()).front();
+	    int idx = randomWeighedInt(size(), mfit);
 	    return idx;
 	}
 
@@ -106,7 +108,7 @@ class Division_t : public vector<Molecule*>
 	    for (iterator mi = begin(); mi != end(); ++mi, ++pd)
 		*pd = (*mi)->NormBadness();
 	    double *mbad = &vmbad[0];
-	    int idx = random_wt_choose(1, mbad, size()).front();
+	    int idx = randomWeighedInt(size(), mbad);
 	    return idx;
 	}
 
@@ -148,7 +150,7 @@ class Division_t : public vector<Molecule*>
 		// by beta distribution
 		double a = acc_triang[i] + 1;
 		double b = tot_triang[i] - acc_triang[i] + 1;
-		pbtg[i] = gsl_ran_beta(BGA::rng, a, b);
+		pbtg[i] = randomBeta(a, b);
 	    }
 	    size_t nd = min(ndim, level());
 	    switch (nd) 

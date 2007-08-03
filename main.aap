@@ -10,7 +10,8 @@
 
 LigaSources +=
         AtomCost.cpp BGAlib.cpp BGAutils.cpp Counter.cpp Division_t.cpp
-        Liga_t.cpp ParseArgs.cpp RegisterSVNId.cpp TrialDistributor.cpp
+        Liga_t.cpp ParseArgs.cpp Random.cpp
+        RegisterSVNId.cpp TrialDistributor.cpp
 
 TestedSources +=
         $LigaSources
