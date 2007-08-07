@@ -14,9 +14,6 @@
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
 
-class Molecule;
-class Atom_t;
-
 RegisterSVNId AtomCost_cpp_id = "$Id$";
 
 ////////////////////////////////////////////////////////////////////////
@@ -34,12 +31,12 @@ AtomCost::AtomCost(Molecule* m) : arg_atom(NULL)
 
 void AtomCost::resetFor(Molecule* m)
 {
-    arg_mol = m;
+    arg_cluster = m;
     noCutoff();
-    use_distances = arg_mol->isCloseEnough(0.0);
-    if (use_distances && arg_mol->dTarget.size() > useflag.size())
+    use_distances = arg_cluster->isCloseEnough(0.0);
+    if (use_distances && arg_cluster->dTarget.size() > useflag.size())
     {
-	useflag.resize(arg_mol->dTarget.size(), false);
+	useflag.resize(arg_cluster->dTarget.size(), false);
     }
 }
 
@@ -59,8 +56,8 @@ double AtomCost::eval(const Atom_t* pa)
     total_cost = 0.0;
     vector<double>::iterator tgdii = target_distances.begin();
     vector<double>::iterator ptcii = partial_costs.begin();
-    DistanceTable& dtgt = arg_mol->dTarget;
-    for (AtomSequenceIndex seq(arg_mol); !seq.finished(); seq.next())
+    DistanceTable& dtgt = arg_cluster->dTarget;
+    for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
 	// assertion checks
 	assert(tgdii < target_distances.end());
@@ -74,7 +71,7 @@ double AtomCost::eval(const Atom_t* pa)
 	double pcost = penalty(dd);
 	*(ptcii++) = pcost;
 	total_cost += pcost;
-	if (use_distances && arg_mol->isCloseEnough(dd))
+	if (use_distances && arg_cluster->isCloseEnough(dd))
 	{
 	    useflag[nearidx] = true;
 	    useflag_indices.push_back(nearidx);
@@ -157,7 +154,7 @@ const vector<int>& AtomCost::usedTargetAtomIndices() const
 
 size_t AtomCost::lsqComponentsSize() const
 {
-    if (lsq_anchors.empty())	lsq_anchors = arg_mol->atoms;
+    if (lsq_anchors.empty())	lsq_anchors = arg_cluster->atoms;
     return lsq_anchors.size();
 }
 
@@ -221,9 +218,9 @@ double AtomCost::lsqJacobianGet(size_t m, size_t n) const
 
 void AtomCost::resizeArrays()
 {
-    if (arg_mol->NAtoms() == int(partial_costs.size()))	    return;
-    partial_costs.resize(arg_mol->NAtoms());
-    target_distances.resize(arg_mol->NAtoms());
+    if (arg_cluster->NAtoms() == int(partial_costs.size()))	    return;
+    partial_costs.resize(arg_cluster->NAtoms());
+    target_distances.resize(arg_cluster->NAtoms());
 }
 
 void AtomCost::resetUseFlags()
@@ -250,7 +247,7 @@ void AtomCost::resetLSQArrays()
 
 size_t AtomCost::nearDistanceIndex(const double& d)
 {
-    DistanceTable& dtgt = arg_mol->dTarget;
+    DistanceTable& dtgt = arg_cluster->dTarget;
     int idx = dtgt.find_nearest(d) - dtgt.begin();
     if (useflag[idx])
     {

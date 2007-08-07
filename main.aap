@@ -33,7 +33,6 @@ CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
         onhpc = gethostname() in ('white','green') and uname()[-1] == 'ia64'
         return onhpc
 
-CXXFLAGS += -Wall
 @if buildOnHPC():
     CXX ?= icpc
     ExtraOptim = -fast
@@ -41,11 +40,16 @@ CXXFLAGS += -Wall
     ExtraDebug = -gstabs+
     ExtraOptim = -ffast-math
 
-:syseval gsl-config --cflags | :assign GSLInclude
-:syseval gsl-config --libs | :assign GSLLibs
-:syseval pkg-config --libs blitz | :assign BlitzLibs
-INCLUDE += $GSLInclude -I$(HOME)/programs/include
-LIBS += $GSLLibs $BlitzLibs
+@if has_build_target():
+    :syseval gsl-config --cflags | :assign GSLInclude
+    :syseval gsl-config --libs | :assign GSLLibs
+    :syseval pkg-config --libs blitz | :assign BlitzLibs
+    INCLUDE += $GSLInclude -I$(HOME)/programs/include
+    LIBS += $GSLLibs $BlitzLibs
+    CXXFLAGS += -Wall
+
+:attribute {check = c_md5} *.cpp *.hpp
+:attribute {check = none} $HOME/include/blitz/*
 
 :variant Build
     debug

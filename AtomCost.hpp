@@ -25,10 +25,6 @@ class AtomCost
 {
     public:
 
-	// data - arguments
-	Molecule* arg_mol;
-	const Atom_t* arg_atom;
-
 	// constructor
 	AtomCost(Molecule* m);
 
@@ -58,8 +54,13 @@ class AtomCost
 
     protected:
 
+	// data - arguments
+	Molecule* arg_cluster;
+	const Atom_t* arg_atom;
+
 	// data - results
 	bool use_distances;
+	std::vector<bool> useflag;
 	bool apply_cutoff;
 	double lowest_cost;
 	double cutoff_cost;
@@ -69,6 +70,7 @@ class AtomCost
 	std::vector<double> target_distances;
 	std::vector<int> useflag_indices;
 	std::vector<int> useatom_indices;
+
 	// LSQ specific data
 	mutable std::vector<Atom_t*> lsq_anchors;   // anchor atoms
 	mutable std::vector<double> lsq_di;	    // model distances
@@ -76,13 +78,6 @@ class AtomCost
 	mutable std::vector<double> lsq_wt;	    // weights
 
 	// protected methods
-
-    private:
-
-	// data members
-	std::vector<bool> useflag;
-
-	// private methods
 	void resizeArrays();
 	void resetUseFlags();
 	void resetLSQArrays();
