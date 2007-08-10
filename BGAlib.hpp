@@ -19,6 +19,7 @@
 #include "RegisterSVNId.hpp"
 #include "Matrix.hpp"
 #include "BGAutils.hpp"
+#include "R3linalg.hpp"
 
 class AtomCost;
 
@@ -88,10 +89,9 @@ class Atom_t
 {
     public:
 
-	Atom_t(double rx0, double ry0, double rz0, double bad0 = 0.0);
-	Atom_t(double r0[3], double bad0 = 0.0);
-	Atom_t(valarray<double>& r0, double bad0 = 0.0);
-	mutable double r[3];
+	Atom_t(double rx0, double ry0, double rz0, double bad0=0.0);
+        template <class V> Atom_t(const V& r0, double bad0=0.0);
+        R3::Vector r;
 	double Badness() const;
 	double FreeBadness() const;
 	double IncBadness(double db);
@@ -105,6 +105,13 @@ class Atom_t
 
 	double badness;
 };
+
+template <class V>
+Atom_t::Atom_t(const V& r0, double bad0) :
+    fixed(false), ttp(LINEAR), badness(bad0)
+{
+    r = r0[0], r0[1], r0[2];
+}
 
 bool operator==(const Atom_t& a1, const Atom_t& a2);
 double dist2(const Atom_t& a1, const Atom_t& a2);

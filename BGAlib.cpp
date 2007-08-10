@@ -18,6 +18,7 @@
 #include "AtomCost.hpp"
 #include "Counter.hpp"
 #include "Random.hpp"
+#include "R3linalg.hpp"
 
 RegisterSVNId BGAlib_cpp_id("$Id$");
 
@@ -96,18 +97,6 @@ Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
     r[2] = rz0;
 }
 
-Atom_t::Atom_t(double r0[3], double bad0) :
-    fixed(false), ttp(LINEAR), badness(bad0)
-{
-    copy(r0, r0+3, r);
-}
-
-Atom_t::Atom_t(valarray<double>& r0, double bad0) :
-    fixed(false), ttp(LINEAR), badness(bad0)
-{
-    copy(&r0[0], &r0[3], r);
-}
-
 double Atom_t::Badness() const
 {
     return badness;
@@ -139,7 +128,7 @@ double Atom_t::ResetBadness(double b)
 
 bool operator==(const Atom_t& a1, const Atom_t& a2)
 {
-    return equal(a1.r, a1.r+3, a2.r);
+    return equal(a1.r.data(), a1.r.data() + 3, a2.r.data());
 }
 
 double dist2(const Atom_t& a1, const Atom_t& a2)
@@ -831,7 +820,7 @@ struct rxa_par
 int rxa_fdf(const gsl_vector* x, void* params, gsl_vector* f, gsl_matrix* J)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
-    copy(x->data, x->data + x->size, ta.r);
+    copy(x->data, x->data + x->size, ta.r.data());
     AtomCost* atomcost = static_cast<AtomCost*>(params);
     atomcost->eval(ta);
     for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
@@ -848,7 +837,7 @@ int rxa_fdf(const gsl_vector* x, void* params, gsl_vector* f, gsl_matrix* J)
 int rxa_f(const gsl_vector* x, void* params, gsl_vector* f)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
-    copy(x->data, x->data + x->size, ta.r);
+    copy(x->data, x->data + x->size, ta.r.data());
     AtomCost* atomcost = static_cast<AtomCost*>(params);
     atomcost->eval(ta);
     for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
@@ -861,7 +850,7 @@ int rxa_f(const gsl_vector* x, void* params, gsl_vector* f)
 int rxa_df(const gsl_vector* x, void* params, gsl_matrix* J)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
-    copy(x->data, x->data + x->size, ta.r);
+    copy(x->data, x->data + x->size, ta.r.data());
     AtomCost* atomcost = static_cast<AtomCost*>(params);
     atomcost->eval(ta);
     for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
@@ -924,7 +913,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	f.p = atomcost->lsqParametersSize();
 	f.params = static_cast<void*>(atomcost);
 	// bind rta coordinates to vector x
-	gsl_vector_view x = gsl_vector_view_array(rta.r, 3);
+	gsl_vector_view x = gsl_vector_view_array(rta.r.data(), 3);
 	// allocate solver
 	gsl_multifit_fdfsolver* lms = gsl_multifit_fdfsolver_alloc(
 		gsl_multifit_fdfsolver_lmsder, f.n, f.p);
@@ -1053,16 +1042,15 @@ int Molecule::push_good_distances(
         size_t basesize = min(NAtoms(),2);
 	const PickType& aidx = randomWeighedPick(basesize, NAtoms(), afit);
 	Atom_t& a0 = *atoms[aidx[0]];
-	valarray<double> rdir(0.0, 3);
+        R3::Vector rdir(0.0, 0.0, 0.0);
 	if (NAtoms() > 1)
 	{
 	    Atom_t& a1 = *atoms[aidx[1]];
-	    for (int i = 0; i < 3; ++i)
-		rdir[i] = a1.r[i] - a0.r[i];
+            rdir = a1.r - a0.r;
 	}
 	// normalize rdir if defined
 	bool lattice_rdir;
-	double nm_rdir = vdnorm(rdir);
+	double nm_rdir = R3::norm(rdir);
 	if (nm_rdir > eps_d)
 	{
 	    rdir /= nm_rdir;
@@ -1080,10 +1068,9 @@ int Molecule::push_good_distances(
 	int didx = randomInt(dTarget.size());
 	double radius = dTarget[didx];
 	// add front atom
-	double nr[3];
-	for (int i = 0; i < 3; ++i)
-	    nr[i] = a0.r[i] + rdir[i]*radius;
-	Atom_t ad1front(nr[0], nr[1], nr[2]);
+        R3::Vector nr;
+        nr = a0.r + rdir*radius;
+	Atom_t ad1front(nr);
 	ad1front.ttp = LINEAR;
 	vta.push_back(ad1front);
 	++push_count;
@@ -1092,9 +1079,8 @@ int Molecule::push_good_distances(
 	if (lattice_rdir)
 	{
 	    ++nt;
-	    for (int i = 0; i < 3; ++i)
-		nr[i] = a0.r[i] - rdir[i]*radius;
-	    Atom_t ad1back(nr[0], nr[1], nr[2]);
+            nr = a0.r - rdir*radius;
+	    Atom_t ad1back(nr);
 	    ad1back.ttp = LINEAR;
 	    vta.push_back(ad1back);
 	    ++push_count;
@@ -1151,21 +1137,19 @@ int Molecule::push_good_triangles(
 	    continue;
 	double xperp[2] = { -xp, xp };
 	// find direction along triangle base:
-	valarray<double> longdir(3);
-	for (int i = 0; i < 3; ++i)
-	    longdir[i] = (a1.r[i] - a0.r[i])/r12;
+        R3::Vector longdir;
+        longdir = (a1.r - a0.r)/r12;
 	// generate direction perpendicular to longdir
-	valarray<double> perpdir(0.0, 3);
+        R3::Vector perpdir(0.0, 0.0, 0.0);
 	if (nchoose > 2)
 	{
 	    Atom_t& a2 = *atoms[aidx[2]];
-	    for (int i = 0; i < 3; ++i)
-		perpdir[i] = a2.r[i] - a0.r[i];
-	    perpdir -= longdir*vddot(longdir, perpdir);
+            perpdir = a2.r - a0.r;
+	    perpdir -= longdir*R3::dot(longdir, perpdir);
 	}
 	// normalize perpdir if defined
 	bool lattice_plane;
-	double nm_perpdir = vdnorm(perpdir);
+	double nm_perpdir = R3::norm(perpdir);
 	if (nm_perpdir > eps_d)
 	{
 	    perpdir /= nm_perpdir;
@@ -1175,17 +1159,17 @@ int Molecule::push_good_triangles(
 	// perpendicular to the smallest component of longdir
 	else
 	{
-	    valarray<double> uv(0.0, 3);
-	    valarray<double> ald = abs(longdir);
-	    int ijk = min_element(&(ald[0]), &(ald[3])) - &(ald[0]);
+            R3::Vector uv(0.0, 0.0, 0.0);
+            R3::Vector ald = fabs(longdir);
+	    int ijk = minIndex(ald);
 	    uv[ijk] = 1.0;
-	    perpdir = vdcross(longdir, uv);
-	    perpdir /= vdnorm(perpdir);
+	    perpdir = R3::cross(longdir, uv);
+	    perpdir /= R3::norm(perpdir);
 	    lattice_plane = false;
 	}
 	// allocate vallarays for positions of a0 and vertex P
-	valarray<double> Pa0(a0.r, 3);
-	valarray<double> P(3);
+        R3::Vector Pa0 = a0.r;
+        R3::Vector P;
 	// if vertex search has already failed above, nt would increase by 1
 	// here we want nt to count number of added vertices
 	--nt;
@@ -1196,7 +1180,7 @@ int Molecule::push_good_triangles(
 	    {
 		++nt;
 		P = Pa0 + (*pxl)*longdir + (*pxp)*perpdir;
-		Atom_t ad2(P[0], P[1], P[2]);
+		Atom_t ad2(P);
 		ad2.ttp = PLANAR;
 		vta.push_back(ad2);
 		++push_count;
@@ -1248,48 +1232,48 @@ int Molecule::push_good_pyramids(
 	    double r24 = dTarget[ didx[1] ];
 	    double r34 = dTarget[ didx[2] ];
 	    // uvi is a unit vector in a0a1 direction
-	    valarray<double> uvi(3);
-	    for (int i = 0; i != 3; ++i) { uvi[i] = a1.r[i] - a0.r[i]; }
-	    double r12 = vdnorm(uvi);
+            R3::Vector uvi;
+            uvi = a1.r - a0.r;
+	    double r12 = R3::norm(uvi);
 	    if (r12 < eps_d)
 		continue;
 	    uvi /= r12;
 	    // v13 is a0a2 vector
-	    valarray<double> v13(3);
-	    for (int i = 0; i != 3; ++i) { v13[i] = a2.r[i] - a0.r[i]; }
+            R3::Vector v13;
+            v13 = a2.r - a0.r;
 	    // uvj lies in a0a1a2 plane and is perpendicular to uvi
-	    valarray<double> uvj = v13;
-	    uvj -= uvi*vddot(uvi, uvj);
-	    double nm_uvj = vdnorm(uvj);
+            R3::Vector uvj = v13;
+	    uvj -= uvi*R3::dot(uvi, uvj);
+	    double nm_uvj = R3::norm(uvj);
 	    if (nm_uvj < eps_d)
 		continue;
 	    uvj /= nm_uvj;
 	    // uvk is a unit vector perpendicular to a0a1a2 plane
-	    valarray<double> uvk = vdcross(uvi, uvj);
+            R3::Vector uvk = R3::cross(uvi, uvj);
 	    double xP1 = -0.5/(r12)*(r12*r12 + r14*r14 - r24*r24);
 	    // Pn are coordinates in pyramid coordinate system
-	    valarray<double> P1(3);
+            R3::Vector P1;
 	    P1[0] = xP1; P1[1] = P1[2] = 0.0;
 	    // vT is translation from pyramid to normal system
-	    valarray<double> vT(3);
+            R3::Vector vT;
 	    vT[0] = a0.r[0] - xP1*uvi[0];
 	    vT[1] = a0.r[1] - xP1*uvi[1];
 	    vT[2] = a0.r[2] - xP1*uvi[2];
 	    // obtain coordinates of P3
-	    valarray<double> P3 = P1;
-	    P3[0] += vddot(uvi, v13);
-	    P3[1] += vddot(uvj, v13);
+            R3::Vector P3 = P1;
+	    P3[0] += R3::dot(uvi, v13);
+	    P3[1] += R3::dot(uvj, v13);
 	    P3[2] = 0.0;
 	    double xP3 = P3[0];
 	    double yP3 = P3[1];
 	    // find pyramid vertices
-	    valarray<double> P4(0.0, 3);
+            R3::Vector P4(0.0, 3);
 	    double h2 = r14*r14 - xP1*xP1;
 	    // does P4 belong to a0a1 line?
 	    if (fabs(h2) < eps_d)
 	    {
 		// is vertex on a0a1
-		if (fabs(vdnorm(P3) - r14) > eps_d)
+		if (fabs(R3::norm(P3) - r14) > eps_d)
 		    continue;
 		P4 = vT;
 		Atom_t ad3(P4[0], P4[1], P4[2]);
@@ -1349,8 +1333,7 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
     // second atoms will be pushed along z-direction from a0
     Atom_t& a0 = *atoms[0];
     // new position
-    double nr[3];
-    copy(a0.r, a0.r+3, nr);
+    R3::Vector nr = a0.r;
     int push_count = 0;
     if (ntrials > 2*dTarget.Nuniqd)
     {
@@ -1431,16 +1414,13 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     Atom_t a1 = *atoms[1];
     double r01 = dist(a0, a1);
     // longitudinal direction along triangle base
-    valarray<double> longdir(3);
-    for (int i = 0; i != 3; ++i)
-    {
-	longdir[i] = (a1.r[i] - a0.r[i])/r01;
-    }
+    R3::Vector longdir;
+    longdir = (a1.r - a0.r)/r01;
     // perpendicular direction to longdir is a cross product of x with longdir
-    valarray<double> ux(0.0, 3);
+    R3::Vector ux(0.0, 0.0, 0.0);
     ux[0] = 1.0;
-    valarray<double> perpdir = vdcross(ux, longdir);
-    double nm_perpdir = vdnorm(perpdir);
+    R3::Vector perpdir = R3::cross(ux, longdir);
+    double nm_perpdir = R3::norm(perpdir);
     if (nm_perpdir == 0.0)
     {
 	// longdir is ux, let us set perpdir = uy
@@ -1451,7 +1431,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     {
 	perpdir /= nm_perpdir;
     }
-    valarray<double> Pa0(a0.r, 3);
+    R3::Vector Pa0 = a0.r;
     // now loop over list of distances
     typedef list<double>::iterator LDit;
     for (   LDit d0i = d0.begin(), d1i = d1.begin();
@@ -1474,7 +1454,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	else if (randomInt(2) == 0)
 	    xperp = -xperp;
 	// add atom
-	valarray<double> Pn(3);
+        R3::Vector Pn;
 	Pn = Pa0 + xlong*longdir + xperp*perpdir;
 	Atom_t ad(Pn); ad.ttp = PLANAR;
 	vta.push_back(ad);
@@ -1866,10 +1846,9 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		xyz_extremes.push_back(+M.dTarget.max_d);
 		for (VPAit pai = afirst; pai != alast; ++pai)
 		{
-		    for (double* pr = (*pai)->r; pr != (*pai)->r + 2; ++pr)
-		    {
-			xyz_extremes.push_back(*pr * scale);
-		    }
+                    R3::Vector rsc = (*pai)->r * scale;
+                    xyz_extremes.insert(xyz_extremes.end(),
+                            rsc.data(), rsc.data() + 3);
 		}
 		// make atomeye happy
 		xyz_extremes.push_back(-1.75);
