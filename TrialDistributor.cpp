@@ -22,7 +22,6 @@ RegisterSVNId TrialDistributor_cpp_id("$Id$");
 
 // class data
 
-map<string,TrialDistributor::DistributorType> TrialDistributor::distributors;
 const size_t TrialDistributor::histsize = 10;
 
 // class methods
@@ -36,7 +35,7 @@ TrialDistributor* TrialDistributor::create(RunPar_t* rp)
 	emsg << "TrialDistributor '" << tstp << "' not defined.";
 	throw runtime_error(emsg.str());
     }
-    TrialDistributor* td = create(distributors[tstp]);
+    TrialDistributor* td = create(distributorsRegistry()[tstp]);
     // copy data from rp
     td->resize(rp->natoms + 1);
     td->tol_bad = rp->tol_bad;
@@ -62,8 +61,8 @@ TrialDistributor* TrialDistributor::create(DistributorType tp)
 list<string> TrialDistributor::getTypes()
 {
     list<string> rv;
-    map<string,DistributorType>::iterator ii;
-    for (ii = distributors.begin(); ii != distributors.end(); ++ii)
+    map<string,DistributorType>::iterator ii = distributorsRegistry().begin();
+    for (; ii != distributorsRegistry().end(); ++ii)
     {
 	rv.push_back(ii->first);
     }
@@ -72,14 +71,14 @@ list<string> TrialDistributor::getTypes()
 
 bool TrialDistributor::isType(const string& tp)
 {
-    return distributors.count(tp);
+    return distributorsRegistry().count(tp);
 }
 
 // public methods
 
 bool TrialDistributor::Register()
 {
-    distributors[typeStr()] = type();
+    distributorsRegistry()[typeStr()] = type();
     return true;
 }
 
@@ -106,6 +105,16 @@ void TrialDistributor::resize(size_t sz)
 }
 
 // protected methods
+
+// private class methods
+
+map<string,TrialDistributor::DistributorType>&
+TrialDistributor::distributorsRegistry()
+{
+    static map<string,TrialDistributor::DistributorType> the_distributors;
+    return the_distributors;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // class TrialDistributorEqual

@@ -81,7 +81,7 @@ class TrialDistributor
     private:
 
 	// registry of derived trial distributors
-	static std::map<std::string,DistributorType> distributors;
+	static std::map<std::string,DistributorType>& distributorsRegistry();
 
 };  // class TrialDistributor
 
