@@ -78,6 +78,7 @@ class AtomCost
 	mutable std::vector<double> lsq_wt;	    // weights
 
 	// protected methods
+        const std::vector<Atom_t*>& getClusterAtoms() const;
 	void resizeArrays();
 	void resetUseFlags();
 	void resetLSQArrays();

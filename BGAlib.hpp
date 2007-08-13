@@ -257,6 +257,9 @@ class Molecule
 
     protected:
 
+        // data
+	DistanceTable dTarget;
+
 	// methods
 	virtual AtomCost* getAtomCostCalculator();
 	void addNewAtomPairs(Atom_t* pa);
@@ -281,7 +284,6 @@ class Molecule
 	static file_fmt_type output_format;
 
 	// data
-	DistanceTable dTarget;
 	int max_natoms;
 	vector<Atom_t*> atoms;		// vector of pointers to atoms
 	SymmetricMatrix<double> pmx_used_distances;
@@ -296,50 +298,6 @@ class Molecule
 	// IO helpers
 	istream& ReadXYZ(istream& fid);
 	string opened_file;
-};
-
-class AtomSequence
-{
-    public:
-
-	AtomSequence(const Molecule* pm)
-	{
-	    Molecule* mol = const_cast<Molecule*>(pm);
-	    first = mol->atoms.begin();
-	    last = mol->atoms.end();
-	    rewind();
-	}
-	AtomSequence(vector<Atom_t*>& atoms)
-	{
-	    first = atoms.begin();
-	    last = atoms.end();
-	    rewind();
-	}
-	inline Atom_t* ptr()	{ return *ii; }
-	inline Atom_t& ref()   	{ return **ii; }
-	inline void rewind()   	{ ii = first; }
-	inline void next()	{ ++ii; }
-	inline bool finished()	{ return ii == last; }
-
-    private:
-
-	Molecule* mol;
-	vector<Atom_t*>::iterator ii, first, last;
-};
-
-class AtomSequenceIndex : public AtomSequence
-{
-    public:
-
-	AtomSequenceIndex(const Molecule* pm) : AtomSequence(pm), index(0)
-	{ }
-	inline int idx()	{ return index; }
-	inline void next()	{ AtomSequence::next(); ++index; }
-	inline void rewind()   	{ AtomSequence::rewind(); index = 0; }
-
-    private:
-
-	int index;
 };
 
 bool operator==(const Molecule& m1, const Molecule& m2);

@@ -15,6 +15,7 @@
 #include <gsl/gsl_multifit_nlin.h>
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
+#include "AtomSequence.hpp"
 #include "AtomCost.hpp"
 #include "Counter.hpp"
 #include "Random.hpp"

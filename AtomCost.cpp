@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <cmath>
+#include "AtomSequence.hpp"
 #include "AtomCost.hpp"
 #include "BGAutils.hpp"
 #include "BGAlib.hpp"
@@ -215,6 +216,11 @@ double AtomCost::lsqJacobianGet(size_t m, size_t n) const
 }
 
 // private methods
+
+const vector<Atom_t*>& AtomCost::getClusterAtoms() const
+{
+    return arg_cluster->atoms;
+}
 
 void AtomCost::resizeArrays()
 {
