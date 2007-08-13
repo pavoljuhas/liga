@@ -90,6 +90,9 @@ class LatticeParameters
         inline double sind(double x) { return sin(M_PI/180.0*x); }
 };
 
+}	// namespace NS_POINTSINSPHERE
+
+
 class PointsInSphere
 {
     public:
@@ -104,7 +107,7 @@ class PointsInSphere
 
         // constructors
         PointsInSphere(double _Rmin, double _Rmax,
-                const LatticeParameters& _latpar);
+                const NS_POINTSINSPHERE::LatticeParameters& _latpar);
         PointsInSphere(double _Rmin, double _Rmax,
                 double _a, double _b, double _c,
                 double _alpha, double _beta, double _gamma);
@@ -120,7 +123,7 @@ class PointsInSphere
     private:
 
         // data
-        const LatticeParameters latpar;
+        const NS_POINTSINSPHERE::LatticeParameters latpar;
         // calculated constants set by init()
         double RminSquare, RmaxSquare;
         // 2D reciprocal parameters and cosine in bc plane
@@ -146,6 +149,7 @@ class PointsInSphere
 };
 
 // template constructor
+
 template <class L>
 PointsInSphere::PointsInSphere(double _Rmin, double _Rmax, const L& lat) :
     Rmin(_Rmin), Rmax(_Rmax),
@@ -156,12 +160,13 @@ PointsInSphere::PointsInSphere(double _Rmin, double _Rmax, const L& lat) :
     rewind();
 }
 
+
 class ReflectionsInQminQmax
 {
     private:
 
         // data - sph must be initialized before hkl and h, k, l
-        const LatticeParameters latpar;
+        const NS_POINTSINSPHERE::LatticeParameters latpar;
         PointsInSphere sph;
 
     public:
@@ -175,7 +180,7 @@ class ReflectionsInQminQmax
 
         // constructors
         ReflectionsInQminQmax(double _Qmin, double _Qmax,
-                const LatticeParameters& _latpar);
+                const NS_POINTSINSPHERE::LatticeParameters& _latpar);
         ReflectionsInQminQmax(double _Qmin, double _Qmax,
                 double _a, double _b, double _c,
                 double _alpha, double _beta, double _gamma);
@@ -212,7 +217,7 @@ class ReflectionsInDmaxDmin : public ReflectionsInQminQmax
 
         // constructors
         ReflectionsInDmaxDmin(double _Dmax, double _Dmin,
-                const LatticeParameters& _latpar);
+                const NS_POINTSINSPHERE::LatticeParameters& _latpar);
         ReflectionsInDmaxDmin(double _Dmax, double _Dmin,
                 double _a, double _b, double _c,
                 double _alpha, double _beta, double _gamma);
@@ -227,11 +232,5 @@ ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(
 	    ReflectionsInQminQmax(2.0*M_PI/_Dmax, 2.0*M_PI/_Dmin, lat),
 	    Dmax(_Dmax), Dmin(_Dmin)
 { }
-
-}	// namespace NS_POINTSINSPHERE
-
-using NS_POINTSINSPHERE::PointsInSphere;
-using NS_POINTSINSPHERE::ReflectionsInQminQmax;
-using NS_POINTSINSPHERE::ReflectionsInDmaxDmin;
 
 #endif	// POINTSINSPHERE_HPP_INCLUDED
