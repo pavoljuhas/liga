@@ -15,6 +15,7 @@ RegisterSVNId BGAutils_hpp_id("$Id$");
 
 // constants
 const double DOUBLE_MAX = std::numeric_limits<double>().max();
+const double DOUBLE_EPS = std::numeric_limits<double>().epsilon();
 
 struct IOError : public std::runtime_error
 {

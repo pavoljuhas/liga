@@ -20,6 +20,11 @@ TestedSources +=
 
 Tests ?= Test*.cpp
 
+LocalInclude +=
+        $HOME/programs/include $HOME/include
+        /usr/local/include /u24/local/include
+LocalInclude = `[d for d in var2list(LocalInclude) if os.path.isdir(d)]`
+
 Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
@@ -45,7 +50,7 @@ CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
     :syseval gsl-config --cflags | :assign GSLInclude
     :syseval gsl-config --libs | :assign GSLLibs
     :syseval pkg-config --libs blitz | :assign BlitzLibs
-    INCLUDE += $GSLInclude -I$(HOME)/programs/include
+    INCLUDE += $GSLInclude -I$*LocalInclude
     LIBS += $GSLLibs $BlitzLibs
     CXXFLAGS += -Wall
 

@@ -11,6 +11,7 @@
 #ifndef CRYSTAL_T_HPP_INCLUDED
 #define CRYSTAL_T_HPP_INCLUDED
 
+#include <boost/shared_ptr.hpp>
 #include "BGAlib.hpp"
 #include "RegisterSVNId.hpp"
 
@@ -24,23 +25,31 @@ class Crystal : public Molecule
 {
     public:
 
+	// friends
+	friend class AtomCostCrystal;
+
 	// data
 
 	// constructors
 	Crystal();
 	Crystal(const DistanceTable&);
 	Crystal(const Crystal&);
-	Crystal& operator=(const Crystal&);
-	~Crystal();
+	virtual ~Crystal();
 
         // methods
+	Crystal& operator=(const Crystal&);
+        void setLattice(const Lattice&);
+        const Lattice& getLattice() const;
+        void setRRange(double rmin, double rmax);
+        std::pair<double,double> getRRange() const;
+        std::pair<double,double> getRExtent() const;
 
     private:
 
 	// crystal specific data
-	Lattice* lattice;
-	double rmin;
-	double rmax;
+        boost::shared_ptr<Lattice> _lattice;
+	double _rmin;
+	double _rmax;
 
         // methods
         void init();
