@@ -1,5 +1,5 @@
 /***********************************************************************
-* Short Title: unit tests of least squares atom relaxation
+* Short Title: unit tests of const evaluation in Molecule
 *
 * Comments:
 *

@@ -17,12 +17,6 @@ RegisterSVNId BGAutils_hpp_id("$Id$");
 const double DOUBLE_MAX = std::numeric_limits<double>().max();
 const double DOUBLE_EPS = std::numeric_limits<double>().epsilon();
 
-struct IOError : public std::runtime_error
-{
-    IOError (const std::string what_arg = "") :
-	std::runtime_error(what_arg) { }
-};
-
 // similar to mkstemp(3)
 std::ofstream& mktempofstream(std::ofstream& out, char *writefile);
 

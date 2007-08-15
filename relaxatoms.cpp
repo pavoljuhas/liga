@@ -8,6 +8,7 @@
 
 #include <unistd.h>
 #include "ParseArgs.hpp"
+#include "Exceptions.hpp"
 #include "BGAlib.hpp"
 
 const int EXIT_INPUT_ERROR = 2;

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <sys/times.h>
+#include "Exceptions.hpp"
 #include "BGAutils.hpp"
 
 using namespace std;

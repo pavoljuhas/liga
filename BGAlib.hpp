@@ -33,11 +33,6 @@ namespace BGA
     extern double eps_badness;
 };
 
-// exceptions
-struct InvalidDistanceTable { };
-struct InvalidMolecule { };
-struct InvalidPopulation { };
-
 using namespace std;
 
 inline bool eps_eq(double x, double y)
@@ -59,29 +54,41 @@ inline bool eps_lt(double x, double y)
 double penalty(double dd);
 
 /* declaration of BGA objects */
-class DistanceTable : public vector<double>
+class DistanceTable : public std::vector<double>
 {
-public:
-    // constructors
-    DistanceTable();
-    DistanceTable(const double*, size_t);
-    DistanceTable(const char*);
-    DistanceTable(const vector<double>&);
-    DistanceTable(const DistanceTable&);
-    DistanceTable& operator= (const vector<double>&);
-    DistanceTable& operator= (const DistanceTable&);
-    // member functions
-    iterator find_nearest(const double& d);
-    iterator find_nearest_unused(const double& d, valarray<bool>& used);
-    iterator return_back(const double&);
-    vector<double> unique();
-    // data members
-    mutable int NAtoms;   	// target number of atoms
-    mutable int Nuniqd;   	// number of unique distances
-    mutable double max_d;
-private:
-    void init();
+    public:
+
+        // friends
+	friend std::istream& operator>>(std::istream&, DistanceTable&);
+
+        // constructors
+        DistanceTable();
+        DistanceTable(const double* v, size_t sz);
+        DistanceTable(const std::vector<double>&);
+        DistanceTable(const DistanceTable&);
+
+        // methods
+        DistanceTable& operator= (const std::vector<double>&);
+        DistanceTable& operator= (const DistanceTable&);
+        iterator find_nearest(const double& d);
+        iterator find_nearest_unused(const double& d, valarray<bool>& used);
+        iterator return_back(const double&);
+        int estNumAtoms() const;
+        int countUnique() const;
+        std::vector<double> unique() const;
+
+    private:
+
+        // data
+        int est_num_atoms;
+        int count_unique;
+
+        // methods
+        void init();
 };
+
+// Non-member operators
+std::istream& operator>>(std::istream&, DistanceTable&);
 
 enum triangulation_type { LINEAR, PLANAR, SPATIAL, NTGTYPES };
 
@@ -208,6 +215,9 @@ class Molecule
 	virtual StructureType type() const  { return MOLECULE; }
 	virtual string typeStr() const { return "molecule"; }
 
+        // methods - molecule configuration
+        void setDistanceTable(const DistanceTable&);
+        void setDistanceTable(const std::vector<double>&);
 	// methods - fitness/badness evaluation
 	inline bool isCloseEnough(const double& dd) const
 	{

@@ -11,6 +11,7 @@
 #include <signal.h>
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
+#include "Exceptions.hpp"
 #include "Liga_t.hpp"
 
 const int EXIT_INPUT_ERROR = 2;

@@ -16,7 +16,7 @@ LigaSources +=
 
 TestedSources +=
         $LigaSources
-        PointsInSphere.cpp Lattice.cpp R3linalg.cpp
+        PointsInSphere.cpp Lattice.cpp R3linalg.cpp Crystal.cpp
 
 Tests ?= Test*.cpp
 

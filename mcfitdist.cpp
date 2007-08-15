@@ -12,6 +12,7 @@
 #include "ParseArgs.hpp"
 #include "BGAlib.hpp"
 #include "Counter.hpp"
+#include "Excpetions.hpp"
 
 const int EXIT_ARGS_ERROR = 2;
 ////////////////////////////////////////////////////////////////////////

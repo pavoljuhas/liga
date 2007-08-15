@@ -20,6 +20,7 @@
 #include "Counter.hpp"
 #include "Random.hpp"
 #include "R3linalg.hpp"
+#include "Exceptions.hpp"
 
 RegisterSVNId BGAlib_cpp_id("$Id$");
 
@@ -240,32 +241,9 @@ DistanceTable::DistanceTable() : vector<double>()
     init();
 }
 
-DistanceTable::DistanceTable(const double* v, size_t s) : vector<double>()
+DistanceTable::DistanceTable(const double* v, size_t sz) :
+    vector<double>(v, v + sz)
 {
-    resize(s);
-    copy(v, v+s, begin());
-    init();
-}
-
-DistanceTable::DistanceTable(const char* file) : vector<double>()
-{
-    // open file for reading
-    ifstream fid(file);
-    if (!fid)
-    {
-	cerr << "E: unable to read '" << file << "'" << endl;
-	throw IOError();
-    }
-    bool result = read_header(fid) && read_data(fid, *this);
-    // check if everything was read
-    if ( !result || !fid.eof() )
-    {
-	fid.clear();
-	cerr << "E: " << file << ':' << fid.tellg() <<
-	    ": error reading DistanceTable" << endl;
-	throw IOError();
-    }
-    fid.close();
     init();
 }
 
@@ -289,13 +267,10 @@ DistanceTable& DistanceTable::operator= (const vector<double>& v)
 
 DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
 {
-    if (this == &d0)
-	return *this;
-    resize(d0.size());
-    copy(d0.begin(), d0.end(), begin());
-    NAtoms = d0.NAtoms;
-    Nuniqd = d0.Nuniqd;
-    max_d = d0.max_d;
+    if (this == &d0)    return *this;
+    assign(d0.begin(), d0.end());
+    est_num_atoms = d0.est_num_atoms;
+    count_unique = d0.count_unique;
     return *this;
 }
 
@@ -342,13 +317,23 @@ DistanceTable::iterator DistanceTable::return_back(const double& dback)
     return insert(ii, dback);
 }
 
-vector<double> DistanceTable::unique()
+int DistanceTable::estNumAtoms() const
 {
-    vector<double> dtu(Nuniqd);
+    return est_num_atoms;
+}
+
+int DistanceTable::countUnique() const
+{
+    return count_unique;
+}
+
+vector<double> DistanceTable::unique() const
+{
+    vector<double> dtu(countUnique());
     vector<double>::iterator dui = dtu.begin();
     double eps_dd = sqrt(BGA::eps_badness);
     double d0 = -1.0;
-    for (iterator di = begin(); di != end() && dui != dtu.end(); ++di)
+    for (const_iterator di = begin(); di != end() && dui != dtu.end(); ++di)
     {
 	if ( (*di - d0) > eps_dd )
 	{
@@ -359,39 +344,47 @@ vector<double> DistanceTable::unique()
     return dtu;
 }
 
+// private methods
+
 void DistanceTable::init()
 {
-    if (size() == 0)
+    double xn = ( 1.0 + sqrt(1.0 + 8.0*size()) )/2.0;
+    est_num_atoms = int(xn);
+    count_unique = 0;
+    if (empty())    return;
+    // check for any negative element
+    size_t minidx = min_element(begin(), end()) - begin();
+    if (at(minidx) < 0.0)
     {
-	NAtoms = 1;
-	Nuniqd = 0;
-	max_d = 1.0;
-	return;
+        ostringstream emsg;
+        emsg << "DistanceTable::init() negative distance at " << minidx;
+        throw InvalidDistanceTable(emsg.str());
     }
-    // calculate NAtoms
-    double xNAtoms = 0.5 + sqrt(1 + 8.0*size())/2.0;
-    NAtoms = int(xNAtoms);
-    // sort and check values
+    // sort and count unique distance
     sort(begin(), end());
-    if (at(0) <= 0)
-    {
-	cerr << "E: non-positive entry in DistanceTable, " <<
-	    "d[0]=" << at(0) << endl;
-	throw InvalidDistanceTable();
-    }
-    // calculate Nuniqd
+    // the table is not empty here
     double eps_dd = sqrt(BGA::eps_badness);
-    Nuniqd = 1;
-    // here size() > 0
     for (iterator ilo = begin(), ihi = begin()+1; ihi != end(); ++ilo, ++ihi)
     {
-	if ( (*ihi - *ilo) > eps_dd )
-	    ++Nuniqd;
+	if ( (*ihi - *ilo) > eps_dd )   ++count_unique;
     }
-    // max_d is very simple
-    max_d = back();
 }
 
+istream& operator>>(istream& fid, DistanceTable& dtbl)
+{
+    vector<double> data_buffer;
+    // skip header
+    string word;
+    while (!fid.eof() && fid >> word && !word.empty() && word[0] == '#')
+    {}
+    istringstream wstrm(word);
+    double x;
+    if (wstrm >> x)     data_buffer.push_back(x);
+    while (fid >> x)    data_buffer.push_back(x);
+    dtbl.swap(data_buffer);
+    dtbl.init();
+    return fid;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
@@ -481,7 +474,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 void Molecule::init()
 {
     badness = 0;
-    setMaxNAtoms(dTarget.NAtoms);
+    setMaxNAtoms(dTarget.estNumAtoms());
 }
 
 Molecule::~Molecule()
@@ -585,7 +578,7 @@ bool operator==(const Molecule& m0, const Molecule& m1)
 
 void Molecule::setMaxNAtoms(int sz)
 {
-    if (sz > dTarget.NAtoms && tol_dd > 0.0)
+    if (sz > dTarget.estNumAtoms() && tol_dd > 0.0)
     {
 	cerr << "E: not enough distances for maxNAtoms = " << sz << '.' <<
 	    "  Did you forget tol_dd = 0?" << endl;
@@ -1336,7 +1329,7 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
     // new position
     R3::Vector nr = a0.r;
     int push_count = 0;
-    if (ntrials > 2*dTarget.Nuniqd)
+    if (ntrials > 2*dTarget.countUnique())
     {
 	// we can push all the unique distances in both directions
 	typedef vector<double>::iterator VDit;
@@ -1381,7 +1374,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     }
     // build list of distances from the base atoms
     list<double> d0, d1;
-    if (ntrials > 2 * dTarget.Nuniqd * dTarget.Nuniqd)
+    if (ntrials > 2 * dTarget.countUnique() * dTarget.countUnique())
     {
 	// we can push all the unique triangles
 	typedef vector<double>::iterator VDit;
@@ -1843,8 +1836,11 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    {
 		const double scale = 1.01;
 		list<double> xyz_extremes;
-		xyz_extremes.push_back(-M.dTarget.max_d);
-		xyz_extremes.push_back(+M.dTarget.max_d);
+                if (!M.dTarget.empty())
+                {
+                    xyz_extremes.push_back(-M.dTarget.back());
+                    xyz_extremes.push_back(+M.dTarget.back());
+                }
 		for (VPAit pai = afirst; pai != alast; ++pai)
 		{
                     R3::Vector rsc = (*pai)->r * scale;

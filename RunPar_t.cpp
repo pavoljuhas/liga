@@ -12,6 +12,7 @@
 #include "TrialDistributor.hpp"
 #include "StringUtils.hpp"
 #include "Liga_t.hpp"
+#include "Exceptions.hpp"
 #include "RunPar_t.hpp"
 
 using namespace std;
@@ -75,10 +76,17 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	throw ParseArgsError(msg);
     }
     distfile = args->pars["distfile"];
-    DistanceTable* dtab;
-    dtab = new DistanceTable(distfile.c_str());
+    DistanceTable dtab;
+    ifstream dstfid(distfile.c_str());
+    if (!dstfid)
+    {
+        ostringstream emsg;
+        emsg << "Unable to read '" << distfile << "'";
+        throw IOError(emsg.str());
+    }
+    dstfid >> dtab;
     // create empty molecule
-    mol = Molecule(*dtab);
+    mol = Molecule(dtab);
     // inistru
     if (args->ispar("inistru"))
     {
