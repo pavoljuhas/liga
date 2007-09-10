@@ -25,7 +25,6 @@ LocalInclude +=
         /usr/local/include /u24/local/include
 LocalInclude = `[d for d in var2list(LocalInclude) if os.path.isdir(d)]`
 
-Scripts = dvar.py coord.py uniqdst.py
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 Bdir ?= AAPDIR
@@ -127,8 +126,5 @@ runtest-bangle_range :
 
 unittest { comment = execute Liga unit tests} : alltests
         :sys ./alltests${EXESUF}
-
-install-py { comment = install python scripts } :
-        @install_files('bin', _no.Scripts, '0755')
 
 # End of file
