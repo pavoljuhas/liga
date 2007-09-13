@@ -8,12 +8,15 @@
 * <license text>
 ***********************************************************************/
 
+#include "RunPar_t.hpp"
 #include "Random.hpp"
 #include "TrialDistributor.hpp"
 #include "StringUtils.hpp"
+#include "Molecule.hpp"
 #include "Liga_t.hpp"
+#include "AtomFilter_t.hpp"
 #include "Exceptions.hpp"
-#include "RunPar_t.hpp"
+#include "RegisterSVNId.hpp"
 
 using namespace std;
 using namespace LIGA;
@@ -86,12 +89,12 @@ void RunPar_t::processArguments(int argc, char* argv[])
     }
     dstfid >> dtab;
     // create empty molecule
-    mol = Molecule(dtab);
+    mol.reset(new Molecule(dtab));
     // inistru
     if (args->ispar("inistru"))
     {
 	inistru = args->pars["inistru"];
-	mol.ReadXYZ(inistru.c_str());
+	mol->ReadXYZ(inistru.c_str());
     }
     // outstru, outfmt, saverate, saveall
     if (args->ispar("outstru"))
@@ -101,9 +104,9 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	// outfmt
 	outfmt = args->GetPar<string>("outfmt", "xyz");
 	if (outfmt == "xyz")
-	    mol.OutFmtXYZ();
+	    mol->OutFmtXYZ();
 	else if (outfmt == "atomeye")
-	    mol.OutFmtAtomEye();
+	    mol->OutFmtAtomEye();
 	else throw ParseArgsError("Invalid value of outfmt parameter");
 	// saverate
 	saverate = args->GetPar<int>("saverate", 10);
@@ -190,17 +193,17 @@ void RunPar_t::processArguments(int argc, char* argv[])
     }
     // tol_dd
     tol_dd = args->GetPar<double>("tol_dd", 0.1);
-    mol.tol_dd = tol_dd;
+    Molecule::tol_dd = tol_dd;
     // tol_bad
     tol_bad = args->GetPar<double>("tol_bad", 1.0e-4);
-    mol.tol_nbad = tol_bad;
+    Molecule::tol_nbad = tol_bad;
     // natoms must be set after tol_dd
     if (args->ispar("natoms"))
     {
 	natoms = args->GetPar<int>("natoms");
-	mol.setMaxNAtoms(natoms);
+	mol->setMaxNAtoms(natoms);
     }
-    natoms = mol.maxNAtoms();
+    natoms = mol->maxNAtoms();
     // fixed_atoms must be set after inistru
     if (args->ispar("fixed_atoms"))
     {
@@ -213,7 +216,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	try {
 	    for (ii = fixed_atoms.begin(); ii != fixed_atoms.end(); ++ii)
 	    {
-		mol.Fix(*ii - 1);
+		mol->Fix(*ii - 1);
 	    }
 	}
 	catch (range_error) {
@@ -222,7 +225,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    throw ParseArgsError(emsg.str());
 	}
     }
-    base_level = mol.NFixed();
+    base_level = mol->NFixed();
     // seed_clusters
     if (args->ispar("seed_clusters"))
     {
@@ -240,7 +243,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    scid.level = scs[i];
 	    scid.number = scs[i+1];
 	    scid.trials = scs[i+2];
-	    if (scid.level <= base_level || scid.level > mol.maxNAtoms())
+	    if (scid.level <= base_level || scid.level > mol->maxNAtoms())
 	    {
 		ostringstream emsg;
 		emsg << "seed_clusters - invalid level " << scid.level;
@@ -264,13 +267,13 @@ void RunPar_t::processArguments(int argc, char* argv[])
     }
     // evolve_frac
     evolve_frac = args->GetPar<double>("evolve_frac", 0.1);
-    mol.evolve_frac = evolve_frac;
+    Molecule::evolve_frac = evolve_frac;
     // evolve_relax
     evolve_relax = args->GetPar<bool>("evolve_relax", false);
-    mol.evolve_relax = evolve_relax;
+    Molecule::evolve_relax = evolve_relax;
     // degenerate_relax
     degenerate_relax = args->GetPar<bool>("degenerate_relax", false);
-    mol.degenerate_relax = degenerate_relax;
+    Molecule::degenerate_relax = degenerate_relax;
     // ligasize
     ligasize = args->GetPar<int>("ligasize", 10);
     // stopgame
@@ -288,7 +291,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     }
     // lookout_prob
     lookout_prob = args->GetPar("lookout_prob", 0.0);
-    mol.lookout_prob = lookout_prob;
+    Molecule::lookout_prob = lookout_prob;
     // bangle_range
     if (args->ispar("bangle_range"))
     {
@@ -299,21 +302,17 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    throw ParseArgsError(emsg);
 	}
 	double max_blen = bangle_range[0];
+        if (bangle_range.size() == 2)   bangle_range.push_back(DOUBLE_MAX);
 	BondAngleFilter_t* pbaf = new BondAngleFilter_t(max_blen);
-	pbaf->lo_bangle = bangle_range[1];
-	if (bangle_range.size() == 3)
-	{
-	    pbaf->hi_bangle = bangle_range[2];
-	}
-	mol.atom_filters.push_back(pbaf);
+        pbaf->setBondAngleRange(bangle_range[1], bangle_range[2]);
+        Molecule::atom_filters.push_back(pbaf);
     }
     // max_dist
     if (args->ispar("max_dist"))
     {
 	max_dist = args->GetPar<double>("max_dist");
 	LoneAtomFilter_t* plaf = new LoneAtomFilter_t(max_dist);
-	plaf->max_dist = max_dist;
-	mol.atom_filters.push_back(plaf);
+        Molecule::atom_filters.push_back(plaf);
     }
     // done
     print_pars();

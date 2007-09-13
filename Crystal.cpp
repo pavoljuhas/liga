@@ -13,6 +13,8 @@
 #include <boost/foreach.hpp>
 #include "Crystal.hpp"
 #include "Lattice.hpp"
+#include "Atom_t.hpp"
+#include "BGAutils.hpp"
 
 using namespace std;
 

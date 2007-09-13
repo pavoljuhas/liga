@@ -10,6 +10,7 @@
 
 #include <queue>
 #include "Liga_t.hpp"
+#include "Molecule.hpp"
 #include "RunPar_t.hpp"
 #include "TrialDistributor.hpp"
 
@@ -81,7 +82,7 @@ void Liga_t::prepare()
         push_back(Division_t(divsize, lev));
     }
     // put initial molecule to its division
-    PMOL first_team = new Molecule(rp->mol);
+    PMOL first_team = new Molecule(*rp->mol);
     cout << "Initial team" << endl;
     cout << season << " I " << first_team->NAtoms() << ' ' <<
 	first_team->NormBadness() << '\n';
@@ -180,8 +181,8 @@ void Liga_t::playLevel(size_t lo_level)
     // all set now so we can swap winner and looser
     hi_div->at(looser_idx) = advancing;
     lo_div->at(winner_idx) = descending;
-    // make sure the original best cluster was much much better than
-    // whatever left in the low division
+    // keep a copy of the original advancing cluster if it was
+    // much much better than whatever left in the low division
     const double spoil_factor = 10.0;
     if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
 		spoil_factor*adv_bad0) )
@@ -206,6 +207,12 @@ void Liga_t::playLevel(size_t lo_level)
     saveFramesTrace(modified);
     // update world champ so that the season can be cut short by stopFlag()
     if (advancing->Full())  updateWorldChamp();
+}
+
+bool Liga_t::solutionFound() const
+{
+    return world_champ && world_champ->Full() &&
+        world_champ->NormBadness() < rp->tol_bad;
 }
 
 void Liga_t::printFramesTrace() const
@@ -431,7 +438,7 @@ void Liga_t::saveOutStru()
     ++savecnt;
     bool dontsave = rp->outstru.empty() || this->empty() ||
 	(!this->finished() && 0 < rp->saverate && savecnt < rp->saverate);
-
+    // get out if there is nothing to do
     if (dontsave)   return;
     // find the largest non-empty division
     reverse_iterator save_div = rbegin();

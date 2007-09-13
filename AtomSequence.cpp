@@ -9,7 +9,7 @@
 ***********************************************************************/
 
 #include "AtomSequence.hpp"
-#include "BGAlib.hpp"
+#include "Molecule.hpp"
 
 using namespace std;
 

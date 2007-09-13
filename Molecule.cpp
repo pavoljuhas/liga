@@ -1,5 +1,5 @@
 /***********************************************************************
-* Short Title: object definitions for Biosphere Genetic Algorithm
+* Short Title: class Molecule - definitions
 *
 * Comments:
 *
@@ -14,7 +14,8 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlin.h>
 #include "BGAutils.hpp"
-#include "BGAlib.hpp"
+#include "Molecule.hpp"
+#include "AtomFilter_t.hpp"
 #include "AtomSequence.hpp"
 #include "AtomCost.hpp"
 #include "Counter.hpp"
@@ -22,369 +23,11 @@
 #include "R3linalg.hpp"
 #include "Exceptions.hpp"
 
-RegisterSVNId BGAlib_cpp_id("$Id$");
-
+using namespace std;
 using namespace LIGA;
 
-// constants
+RegisterSVNId Molecule_cpp_id("$Id$");
 
-double BGA::eps_badness = 1.0e-10;
-
-////////////////////////////////////////////////////////////////////////
-// common helper functions
-////////////////////////////////////////////////////////////////////////
-
-// read lines that do not start with number
-bool read_header(istream& fid, string& header)
-{
-    double x;
-    string line;
-    istringstream istrs;
-    header.clear();
-    for (   istream::pos_type p = fid.tellg();
-	    !fid.eof() && getline(fid, line);
-	    p = fid.tellg()
-	)
-    {
-	istrs.clear();
-	istrs.str(line);
-	if (istrs >> x)
-	{
-	    fid.seekg(p);
-	    break;
-	}
-	else
-	{
-	    header.append(line + '\n');
-	}
-    }
-    return !(fid.rdstate() & ios::badbit);
-}
-
-bool read_header(istream& fid)
-{
-    string dummy;
-    return read_header(fid, dummy);
-}
-
-// read as many numbers as possible
-template<typename T> bool read_data(istream& fid, vector<T>& v)
-{
-    // prepare v
-    T x;
-    while (fid >> x)
-    {
-	v.push_back(x);
-    }
-    return !(fid.rdstate() & ios::badbit);
-}
-
-
-double penalty(double dd)
-{
-    static Counter* penalty_calls = Counter::getCounter("penalty_calls");
-    penalty_calls->count();
-    return dd*dd;
-}
-
-////////////////////////////////////////////////////////////////////////
-// Atom_t definitions
-////////////////////////////////////////////////////////////////////////
-
-Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
-    fixed(false), ttp(LINEAR), badness(bad0)
-{
-    r[0] = rx0;
-    r[1] = ry0;
-    r[2] = rz0;
-}
-
-double Atom_t::Badness() const
-{
-    return badness;
-}
-
-double Atom_t::FreeBadness() const
-{
-    return fixed ? 0.0 : badness;
-}
-
-double Atom_t::IncBadness(double db)
-{
-    badness += db;
-    return badness;
-}
-
-double Atom_t::DecBadness(double db)
-{
-    badness -= db;
-    if (badness < 0.0)	badness = 0.0;
-    return badness;
-}
-
-double Atom_t::ResetBadness(double b)
-{
-    badness = b;
-    return badness;
-}
-
-bool operator==(const Atom_t& a1, const Atom_t& a2)
-{
-    return equal(a1.r.data(), a1.r.data() + 3, a2.r.data());
-}
-
-double dist2(const Atom_t& a1, const Atom_t& a2)
-{
-    static Counter* distance_calls = Counter::getCounter("distance_calls");
-    distance_calls->count();
-    double dr[3] = { a1.r[0]-a2.r[0], a1.r[1]-a2.r[1], a1.r[2]-a2.r[2] };
-    return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// AtomFilter_t - definitions of subclasses
-////////////////////////////////////////////////////////////////////////
-
-bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
-{
-    // first neighbors are closer than max_blen
-    list<Atom_t*> first_neighbors;
-    list<double>  first_distances;
-    // second neighbors are closer than 2*max_blen
-    list<Atom_t*> second_neighbors;
-    list<double>  second_distances;
-    // find first and second neighbors and corresponding distances
-    typedef vector<Atom_t*>::iterator VPAit;
-    for (AtomSequence seq(pm); !seq.finished(); seq.next())
-    {
-	double blen = dist(*pta, *seq.ptr());
-	if (0.0 < blen && blen < 2*max_blen)
-	{
-	    second_neighbors.push_back(seq.ptr());
-	    second_distances.push_back(blen);
-	    if (blen < max_blen)
-	    {
-		first_neighbors.push_back(seq.ptr());
-		first_distances.push_back(blen);
-	    }
-	}
-    }
-    // check all new bond angles formed by test atom
-    typedef list<Atom_t*>::iterator LPAit;
-    typedef list<double>::iterator LDit;
-    LPAit pfn1i, pfn2i;
-    LDit dfn1i, dfn2i;
-    for (   pfn1i = first_neighbors.begin(), dfn1i = first_distances.begin();
-	    pfn1i != first_neighbors.end();  ++pfn1i, ++dfn1i )
-    {
-	// check test atom angles, ta_angle
-	pfn2i = pfn1i; ++pfn2i;
-	dfn2i = dfn1i; ++dfn2i;
-	for (; pfn2i != first_neighbors.end(); ++pfn2i, ++dfn2i)
-	{
-	    double dsqneib = dist2(**pfn1i, **pfn2i);
-	    double ta_angle = 180.0 / M_PI * acos(
-		    ( (*dfn1i)*(*dfn1i) + (*dfn2i)*(*dfn2i) - dsqneib ) /
-		    (2.0*(*dfn1i)*(*dfn2i))  );
-	    if (ta_angle < lo_bangle || ta_angle > hi_bangle)
-	    {
-		return false;
-	    }
-	}
-	// check neighbor atom angles, na_angle
-	LPAit psni = second_neighbors.begin();
-	LDit dsni = second_distances.begin();
-	for (; psni != second_neighbors.end(); ++psni, ++dsni)
-	{
-	    double dneib = dist(**pfn1i, **psni);
-	    if (dneib == 0.0 || !(dneib < max_blen))
-	    {
-		continue;
-	    }
-	    double na_angle = 180.0 / M_PI * acos(
-		    ( (*dfn1i)*(*dfn1i) + dneib*dneib - (*dsni)*(*dsni) ) /
-		    (2.0*(*dfn1i)*dneib)  );
-	    if (na_angle < lo_bangle || na_angle > hi_bangle)
-	    {
-		return false;
-	    }
-	}
-    }
-    return true;
-}
-
-bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
-{
-    // atom is always good with respect to empty molecule
-    if (pm->NAtoms() == 0)
-    {
-	return true;
-    }
-    // find whether any atom in the molecule is closer than max_dist
-    bool has_buddy = false;
-    for (AtomSequence seq(pm); !seq.finished() && !has_buddy; seq.next())
-    {
-	double d = dist(*pta, *seq.ptr());
-	has_buddy = (0.0 < d) && (d < max_dist);
-    }
-    return has_buddy;
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// DistanceTable definitions
-////////////////////////////////////////////////////////////////////////
-
-DistanceTable::DistanceTable() : vector<double>()
-{
-    init();
-}
-
-DistanceTable::DistanceTable(const double* v, size_t sz) :
-    vector<double>(v, v + sz)
-{
-    init();
-}
-
-DistanceTable::DistanceTable(const vector<double>& v) : vector<double>(v)
-{
-    init();
-}
-
-DistanceTable::DistanceTable(const DistanceTable& d0)
-{
-    *this = d0;
-}
-
-DistanceTable& DistanceTable::operator= (const vector<double>& v)
-{
-    vector<double>& this_vector = *this;
-    this_vector = v;
-    init();
-    return *this;
-}
-
-DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
-{
-    if (this == &d0)    return *this;
-    assign(d0.begin(), d0.end());
-    est_num_atoms = d0.est_num_atoms;
-    count_unique = d0.count_unique;
-    return *this;
-}
-
-DistanceTable::iterator DistanceTable::find_nearest(const double& dfind)
-{
-    iterator ii = lower_bound(begin(), end(), dfind);
-    if (    ( ii == end() && size() != 0 ) ||
-	    ( ii != begin() && (dfind - *(ii-1)) < (*ii - dfind) )
-       )
-	--ii;
-    return ii;
-}
-
-DistanceTable::iterator
-DistanceTable::find_nearest_unused(const double& d, valarray<bool>& used)
-{
-    iterator ii = find_nearest(d);
-    int idx = ii - begin();
-    if (used[idx])
-    {
-        int hi, lo, nidx = -1;
-        int sz = size();
-        for (hi = idx + 1; hi < sz && used[hi]; ++hi)
-        { }
-        if (hi < sz)
-        {
-            nidx = hi;
-        }
-        for (lo = idx - 1; lo >= 0 && used[lo]; --lo)
-        { }
-        if (lo >= 0 && (nidx < 0 || d - at(lo) < at(nidx) - d))
-        {
-            nidx = lo;
-        }
-        idx = nidx;
-        ii = begin() + nidx;
-    }
-    return ii;
-}
-
-DistanceTable::iterator DistanceTable::return_back(const double& dback)
-{
-    iterator ii = lower_bound(begin(), end(), dback);
-    return insert(ii, dback);
-}
-
-int DistanceTable::estNumAtoms() const
-{
-    return est_num_atoms;
-}
-
-int DistanceTable::countUnique() const
-{
-    return count_unique;
-}
-
-vector<double> DistanceTable::unique() const
-{
-    vector<double> dtu(countUnique());
-    vector<double>::iterator dui = dtu.begin();
-    double eps_dd = sqrt(BGA::eps_badness);
-    double d0 = -1.0;
-    for (const_iterator di = begin(); di != end() && dui != dtu.end(); ++di)
-    {
-	if ( (*di - d0) > eps_dd )
-	{
-	    *(dui++) = *di;
-	    d0 = *di;
-	}
-    }
-    return dtu;
-}
-
-// private methods
-
-void DistanceTable::init()
-{
-    double xn = ( 1.0 + sqrt(1.0 + 8.0*size()) )/2.0;
-    est_num_atoms = int(xn);
-    count_unique = 0;
-    if (empty())    return;
-    // check for any negative element
-    size_t minidx = min_element(begin(), end()) - begin();
-    if (at(minidx) < 0.0)
-    {
-        ostringstream emsg;
-        emsg << "DistanceTable::init() negative distance at " << minidx;
-        throw InvalidDistanceTable(emsg.str());
-    }
-    // sort and count unique distance
-    sort(begin(), end());
-    // the table is not empty here
-    double eps_dd = sqrt(BGA::eps_badness);
-    for (iterator ilo = begin(), ihi = begin()+1; ihi != end(); ++ilo, ++ihi)
-    {
-	if ( (*ihi - *ilo) > eps_dd )   ++count_unique;
-    }
-}
-
-istream& operator>>(istream& fid, DistanceTable& dtbl)
-{
-    vector<double> data_buffer;
-    // skip header
-    string word;
-    while (!fid.eof() && fid >> word && !word.empty() && word[0] == '#')
-    {}
-    istringstream wstrm(word);
-    double x;
-    if (wstrm >> x)     data_buffer.push_back(x);
-    while (fid >> x)    data_buffer.push_back(x);
-    dtbl.swap(data_buffer);
-    dtbl.init();
-    return fid;
-}
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
@@ -402,21 +45,25 @@ vector<AtomFilter_t*> Molecule::atom_filters;
 double Molecule::lookout_prob = 0.0;
 Molecule::file_fmt_type Molecule::output_format = XYZ;
 
+// constructors
+//
 Molecule::Molecule()
 {
     init();
 }
 
-Molecule::Molecule(const DistanceTable& dtab) : dTarget(dtab)
+Molecule::Molecule(const DistanceTable& dtab)
 {
     init();
+    setDistanceTable(dtab);
 }
 
 Molecule::Molecule(const DistanceTable& dtab,
 	const int s, const double* px, const double* py, const double* pz
-	) : dTarget(dtab)
+	)
 {
     init();
+    setDistanceTable(dtab);
     for (int i = 0; i < s; ++i)
     {
 	Add(px[i], py[i], pz[i]);
@@ -426,9 +73,10 @@ Molecule::Molecule(const DistanceTable& dtab,
 Molecule::Molecule(const DistanceTable& dtab,
 	const vector<double>& vx, const vector<double>& vy,
 	const vector<double>& vz
-	) : dTarget(dtab)
+	)
 {
     init();
+    setDistanceTable(dtab);
     if (vx.size() != vy.size() || vx.size() != vz.size())
     {
 	cerr << "E: invalid coordinate vectors" << endl;
@@ -440,9 +88,10 @@ Molecule::Molecule(const DistanceTable& dtab,
     }
 }
 
-Molecule::Molecule(const Molecule& M) : dTarget(M.dTarget)
+Molecule::Molecule(const Molecule& M)
 {
     init();
+    setDistanceTable(*M.dTarget);
     *this  = M;
 }
 
@@ -451,7 +100,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     if (this == &M) return *this;
     // Clear() must be the first statement
     Clear();
-    dTarget = M.dTarget;
+    setDistanceTable(*M.dTarget);
     // duplicate source atoms
     atoms.resize(M.atoms.size(), NULL);
     for (AtomSequenceIndex seq(&M); !seq.finished(); seq.next())
@@ -465,7 +114,6 @@ Molecule& Molecule::operator=(const Molecule& M)
     max_natoms = M.max_natoms;
     badness = M.badness;
     // IO helpers
-    output_format = M.output_format;
     opened_file = M.opened_file;
     trace = M.trace;
     return *this;
@@ -474,7 +122,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 void Molecule::init()
 {
     badness = 0;
-    setMaxNAtoms(dTarget.estNumAtoms());
+    max_natoms = -1;
 }
 
 Molecule::~Molecule()
@@ -483,10 +131,37 @@ Molecule::~Molecule()
     Clear();
 }
 
+void Molecule::setDistanceTable(const DistanceTable& dtbl)
+{
+    if (dTarget.get())  *dTarget = dtbl;
+    else                dTarget.reset(new DistanceTable(dtbl));
+    if (max_natoms < 0) max_natoms = dTarget->estNumAtoms();
+}
+
+void Molecule::setDistanceTable(const vector<double>& dvec)
+{
+    if (dTarget.get())  *dTarget = dvec;
+    else                dTarget.reset(new DistanceTable(dvec));
+    if (max_natoms < 0) max_natoms = dTarget->estNumAtoms();
+}
+
+const DistanceTable& Molecule::getDistanceTable() const
+{
+    assert(dTarget.get() != NULL);
+    return *dTarget;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
+
+double Molecule::max_dTarget() const
+{
+    double mx = 0.0;
+    if (dTarget.get() && !dTarget->empty())  mx = dTarget->back();
+    return mx;
+}
 
 void Molecule::Recalculate()
 {
@@ -578,7 +253,7 @@ bool operator==(const Molecule& m0, const Molecule& m1)
 
 void Molecule::setMaxNAtoms(int sz)
 {
-    if (sz > dTarget.estNumAtoms() && tol_dd > 0.0)
+    if (sz > dTarget->estNumAtoms() && tol_dd > 0.0)
     {
 	cerr << "E: not enough distances for maxNAtoms = " << sz << '.' <<
 	    "  Did you forget tol_dd = 0?" << endl;
@@ -658,11 +333,11 @@ void Molecule::Clear()
 	    int i0 = seq0.ptr()->pmxidx;
 	    int i1 = seq1.ptr()->pmxidx;
 	    double& udst = pmx_used_distances(i0, i1);
-	    if (udst > 0.0)	dTarget.push_back(udst);
+	    if (udst > 0.0)	dTarget->push_back(udst);
 	    udst = 0.0;
 	}
     }
-    sort(dTarget.begin(), dTarget.end());
+    sort(dTarget->begin(), dTarget->end());
     // remove all atoms
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
@@ -736,7 +411,7 @@ valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
 		++a2i, ++pcnt2 )
 	{
 	    double d = dist(*a1i, *a2i);
-	    double dd = *(dTarget.find_nearest(d)) - d;
+	    double dd = *(dTarget->find_nearest(d)) - d;
 	    if (penalty(dd) < hi_pbad)
 	    {
 		++(*pcnt1);
@@ -896,7 +571,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	lo_abad = tbad;
 	ta = rta;
 	// get out if lo_abad is very low
-	if (lo_abad < BGA::eps_badness)	break;
+	if (lo_abad < LIGA::eps_badness)    break;
 	// carry out relaxation otherwise
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
@@ -933,7 +608,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    // scale f_i with atom fitness
 	    // pj: test gradient or do a simplex search?
 	    gsl_multifit_gradient(lms->J, lms->f, G);
-	    status = gsl_multifit_test_gradient(G, BGA::eps_badness/tol_r);
+	    status = gsl_multifit_test_gradient(G, LIGA::eps_badness/tol_r);
 //	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
 	}
 	while (status == GSL_CONTINUE && iter < maximum_iterations);
@@ -970,7 +645,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
 	pa->IncBadness(badnesshalf);
     }
     badness += atomcost->total();
-    if (badness < BGA::eps_badness)	badness = 0.0;    
+    if (badness < LIGA::eps_badness)	badness = 0.0;    
     // remember used distances in pmx_used_distances
     const vector<int>& didcs = atomcost->usedTargetDistanceIndices();
     const vector<int>& aidcs = atomcost->usedTargetAtomIndices();
@@ -981,14 +656,14 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
     {
 	int idx0 = pa->pmxidx;
 	int idx1 = atoms[*aii]->pmxidx;
-	pmx_used_distances(idx0,idx1) = dTarget[*dii];
+	pmx_used_distances(idx0,idx1) = dTarget->at(*dii);
     }
     // remove used distances from target table
     set<int> uidcs(didcs.begin(), didcs.end());
     set<int>::reverse_iterator ii;
     for (ii = uidcs.rbegin(); ii != uidcs.rend(); ++ii)
     {
-	dTarget.erase(dTarget.begin() + *ii);
+	dTarget->erase(dTarget->begin() + *ii);
     }
 }
 
@@ -1001,7 +676,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
 	int idx0 = pa->pmxidx;
 	int idx1 = seq.ptr()->pmxidx;
 	double& udst = pmx_used_distances(idx0, idx1);
-	if (udst > 0.0)	    dTarget.return_back(udst);
+	if (udst > 0.0)	    dTarget->return_back(udst);
 	udst = 0.0;
 	// remove pair costs
 	double pairbadness = pmx_partial_costs(idx0,idx1);
@@ -1010,7 +685,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
 	seq.ptr()->DecBadness(badnesshalf);
 	badness -= pairbadness;
     }
-    if (badness < BGA::eps_badness)	badness = 0.0;    
+    if (badness < LIGA::eps_badness)	badness = 0.0;    
 }
 
 int Molecule::push_good_distances(
@@ -1059,8 +734,8 @@ int Molecule::push_good_distances(
 	    lattice_rdir = false;
 	}
 	// pick free distance
-	int didx = randomInt(dTarget.size());
-	double radius = dTarget[didx];
+	int didx = randomInt(dTarget->size());
+	double radius = dTarget->at(didx);
 	// add front atom
         R3::Vector nr;
         nr = a0.r + rdir*radius;
@@ -1111,10 +786,10 @@ int Molecule::push_good_triangles(
 	// pick 2 vertex distances
 	bool with_repeat = (tol_dd <= 0.0);
         const PickType& didx = with_repeat ?
-            randomPickWithRepeat(2, dTarget.size()) :
-            randomPickFew(2, dTarget.size());
-	double r13 = dTarget[didx[0]];
-	double r23 = dTarget[didx[1]];
+            randomPickWithRepeat(2, dTarget->size()) :
+            randomPickFew(2, dTarget->size());
+	double r13 = dTarget->at(didx[0]);
+	double r23 = dTarget->at(didx[1]);
 	double r12 = dist(a0, a1);
 	// is triangle base reasonably large?
 	if (r12 < eps_d)
@@ -1215,16 +890,16 @@ int Molecule::push_good_pyramids(
 	// pick 3 vertex distances
 	bool with_repeat = (tol_dd <= 0.0);
 	PickType didx = with_repeat ?
-            randomPickWithRepeat(3, dTarget.size()) :
-            randomPickFew(3, dTarget.size());
+            randomPickWithRepeat(3, dTarget->size()) :
+            randomPickFew(3, dTarget->size());
 	// loop over all permutations of selected distances
 	sort(didx.begin(), didx.end());
 	do
 	{
 	    ++nt;
-	    double r14 = dTarget[ didx[0] ];
-	    double r24 = dTarget[ didx[1] ];
-	    double r34 = dTarget[ didx[2] ];
+	    double r14 = dTarget->at(didx[0]);
+	    double r24 = dTarget->at(didx[1]);
+	    double r34 = dTarget->at(didx[2]);
 	    // uvi is a unit vector in a0a1 direction
             R3::Vector uvi;
             uvi = a1.r - a0.r;
@@ -1329,11 +1004,11 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
     // new position
     R3::Vector nr = a0.r;
     int push_count = 0;
-    if (ntrials > 2*dTarget.countUnique())
+    if (ntrials > 2*dTarget->countUnique())
     {
 	// we can push all the unique distances in both directions
 	typedef vector<double>::iterator VDit;
-	vector<double> dtu = dTarget.unique();
+	vector<double> dtu = dTarget->unique();
 	for (VDit dui = dtu.begin(); dui != dtu.end(); ++dui)
 	{
 	    // top atom
@@ -1352,8 +1027,8 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 	// distances will be picked randomly
 	for (push_count = 0; push_count < ntrials; ++push_count)
 	{
-	    int didx = randomInt(dTarget.size());
-	    double dz = dTarget[didx];
+	    int didx = randomInt(dTarget->size());
+	    double dz = dTarget->at(didx);
 	    // randomize direction
             dz *= plusminus();
 	    nr[2] = a0.r[2] + dz;
@@ -1374,11 +1049,11 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     }
     // build list of distances from the base atoms
     list<double> d0, d1;
-    if (ntrials > 2 * dTarget.countUnique() * dTarget.countUnique())
+    if (ntrials > 2 * dTarget->countUnique() * dTarget->countUnique())
     {
 	// we can push all the unique triangles
 	typedef vector<double>::iterator VDit;
-	vector<double> dtu = dTarget.unique();
+	vector<double> dtu = dTarget->unique();
 	for (VDit ui0 = dtu.begin(); ui0 != dtu.end(); ++ui0)
 	{
 	    for (VDit ui1 = dtu.begin(); ui1 != dtu.end(); ++ui1)
@@ -1395,10 +1070,10 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	for (int i = 0; i < ntrials; ++i)
 	{
             const PickType& didx = with_repeat ?
-                randomPickWithRepeat(2, dTarget.size()) :
-                randomPickFew(2, dTarget.size());
-	    d0.push_back(dTarget[didx[0]]);
-	    d1.push_back(dTarget[didx[1]]);
+                randomPickWithRepeat(2, dTarget->size()) :
+                randomPickFew(2, dTarget->size());
+	    d0.push_back( dTarget->at(didx[0]) );
+	    d1.push_back( dTarget->at(didx[1]) );
 	}
     }
     // define some constants and base atoms
@@ -1836,10 +1511,10 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    {
 		const double scale = 1.01;
 		list<double> xyz_extremes;
-                if (!M.dTarget.empty())
+                if (!M.dTarget->empty())
                 {
-                    xyz_extremes.push_back(-M.dTarget.back());
-                    xyz_extremes.push_back(+M.dTarget.back());
+                    xyz_extremes.push_back(-M.dTarget->back());
+                    xyz_extremes.push_back(+M.dTarget->back());
                 }
 		for (VPAit pai = afirst; pai != alast; ++pai)
 		{

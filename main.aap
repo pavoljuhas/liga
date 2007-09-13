@@ -9,16 +9,18 @@
 ########################################################################
 
 LigaSources +=
-        AtomCost.cpp AtomSequence.cpp
-        BGAlib.cpp BGAutils.cpp Counter.cpp Division_t.cpp
-        Liga_t.cpp ParseArgs.cpp Random.cpp
+        Atom_t.cpp AtomCost.cpp AtomFilter_t.cpp AtomSequence.cpp
+        BGAutils.cpp Counter.cpp DistanceTable.cpp Division_t.cpp
+        Liga_t.cpp Molecule.cpp ParseArgs.cpp Random.cpp
         RegisterSVNId.cpp TrialDistributor.cpp
 
 TestedSources +=
         $LigaSources
         PointsInSphere.cpp Lattice.cpp R3linalg.cpp Crystal.cpp
 
-Tests ?= Test*.cpp
+Tests ?= `glob('Test*.cpp')`
+# temporary disable TestCrystalCost
+Tests = `[f for f in var2list(Tests) if f != "TestCrystalCost.cpp" ]`
 
 LocalInclude +=
         $HOME/programs/include $HOME/include
@@ -40,6 +42,7 @@ CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
 
 @if buildOnHPC():
     CXX ?= icpc
+    ExtraDebug =
     ExtraOptim = -fast
 @else:
     ExtraDebug = -gstabs+

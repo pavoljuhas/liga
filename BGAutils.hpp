@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <string>
-#include <list>
+#include <vector>
 #include <valarray>
 #include <limits>
 #include "RegisterSVNId.hpp"
@@ -17,25 +17,29 @@ RegisterSVNId BGAutils_hpp_id("$Id$");
 const double DOUBLE_MAX = std::numeric_limits<double>().max();
 const double DOUBLE_EPS = std::numeric_limits<double>().epsilon();
 
+namespace LIGA {
+
+const double eps_badness = 1.0e-10;
+
+};
+
+inline bool eps_eq(double x, double y)
+{
+    return fabs(x-y) < LIGA::eps_badness;
+}
+
+inline bool eps_gt(double x, double y)
+{
+    return x > y + LIGA::eps_badness;
+}
+
+inline bool eps_lt(double x, double y)
+{
+    return x < y - LIGA::eps_badness;
+}
+
 // similar to mkstemp(3)
 std::ofstream& mktempofstream(std::ofstream& out, char *writefile);
-
-template<typename T>
-typename std::list<T>::iterator list_at(std::list<T>& lst, int n)
-{
-    typename std::list<T>::iterator ii;
-    if (n <= lst.size()/2)
-    {
-	ii = lst.begin();
-	advance(ii, n);
-    }
-    else
-    {
-	ii = lst.end();
-	advance(ii, n-(int)lst.size());
-    }
-    return ii;
-}
 
 double vdnorm(const std::valarray<double>&);
 double vddot(const std::valarray<double>&, const std::valarray<double>&);
@@ -67,5 +71,28 @@ T recipw0(const T& v, double zerogain=zero_reciprocal_gain)
     }
     return rv;
 }
+
+bool read_header(std::istream& fid, std::string& header);
+bool read_header(std::istream& fid);
+template<typename T> bool read_data(std::istream& fid, std::vector<T>& v);
+
+////////////////////////////////////////////////////////////////////////
+// Definitions
+////////////////////////////////////////////////////////////////////////
+
+// template functions
+template<typename T>
+bool read_data(std::istream& fid, std::vector<T>& v)
+{
+    // prepare v
+    T x;
+    while (fid >> x)
+    {
+	v.push_back(x);
+    }
+    return !(fid.rdstate() & std::ios::badbit);
+}
+
+
 
 #endif		// BGAUTILS_HPP_INCLUDED

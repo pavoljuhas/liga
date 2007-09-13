@@ -12,7 +12,7 @@
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "BGAlib.hpp"
+#include "Molecule.hpp"
 
 using namespace std;
 

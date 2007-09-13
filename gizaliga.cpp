@@ -10,9 +10,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include "ParseArgs.hpp"
-#include "BGAlib.hpp"
 #include "Exceptions.hpp"
 #include "Liga_t.hpp"
+
+using namespace std;
 
 const int EXIT_INPUT_ERROR = 2;
 

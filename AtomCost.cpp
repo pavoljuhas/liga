@@ -12,10 +12,26 @@
 #include <cmath>
 #include "AtomSequence.hpp"
 #include "AtomCost.hpp"
+#include "Molecule.hpp"
 #include "BGAutils.hpp"
-#include "BGAlib.hpp"
+#include "Counter.hpp"
+
+using namespace std;
 
 RegisterSVNId AtomCost_cpp_id = "$Id$";
+
+
+////////////////////////////////////////////////////////////////////////
+// functions
+////////////////////////////////////////////////////////////////////////
+
+double penalty(double dd)
+{
+    static Counter* penalty_calls = Counter::getCounter("penalty_calls");
+    penalty_calls->count();
+    return dd*dd;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // class AtomCost
@@ -33,11 +49,12 @@ AtomCost::AtomCost(Molecule* m) : arg_atom(NULL)
 void AtomCost::resetFor(Molecule* m)
 {
     arg_cluster = m;
+    const DistanceTable& dtgt = arg_cluster->getDistanceTable();
     noCutoff();
     use_distances = arg_cluster->isCloseEnough(0.0);
-    if (use_distances && arg_cluster->dTarget.size() > useflag.size())
+    if (use_distances && dtgt.size() > useflag.size())
     {
-	useflag.resize(arg_cluster->dTarget.size(), false);
+	useflag.resize(dtgt.size(), false);
     }
 }
 
@@ -57,7 +74,7 @@ double AtomCost::eval(const Atom_t* pa)
     total_cost = 0.0;
     vector<double>::iterator tgdii = target_distances.begin();
     vector<double>::iterator ptcii = partial_costs.begin();
-    DistanceTable& dtgt = arg_cluster->dTarget;
+    const DistanceTable& dtgt = arg_cluster->getDistanceTable();
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
 	// assertion checks
@@ -253,7 +270,7 @@ void AtomCost::resetLSQArrays()
 
 size_t AtomCost::nearDistanceIndex(const double& d)
 {
-    DistanceTable& dtgt = arg_cluster->dTarget;
+    const DistanceTable& dtgt = *(arg_cluster->dTarget);
     int idx = dtgt.find_nearest(d) - dtgt.begin();
     if (useflag[idx])
     {

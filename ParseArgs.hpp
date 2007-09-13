@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <list>
 #include <vector>
 #include <map>
 #include <stdexcept>

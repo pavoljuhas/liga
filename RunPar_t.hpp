@@ -12,10 +12,10 @@
 #define RUNPAR_T_HPP_INCLUDED
 
 #include <deque>
-#include <valarray>
 #include <string>
-#include "BGAlib.hpp"
+#include <memory>
 #include "ParseArgs.hpp"
+#include "Molecule.hpp"
 #include "RegisterSVNId.hpp"
 
 namespace {
@@ -75,7 +75,7 @@ struct RunPar_t
     std::string trials_sharing;
     double lookout_prob;
     // generated data
-    Molecule mol;
+    std::auto_ptr<Molecule> mol;
     int base_level;
     // Constrains
     std::vector<double> bangle_range;

@@ -62,11 +62,11 @@ class Liga_t : public std::vector<Division_t>
 	void prepare();
 	void playSeason();
 	void playLevel(size_t lo_level);
-	inline bool stopFlag() const;
-	inline bool useStopFlag(int* flag);
-	inline bool finished();
-	inline bool solutionFound() const;
-	inline bool outOfTime() const;
+	bool stopFlag() const;
+	bool useStopFlag(int* flag);
+	bool finished();
+	bool solutionFound() const;
+	bool outOfTime() const;
 	void printFramesTrace() const;
 	void printSummary() const;
         void setVerbose(VerboseFlag flag, bool value=true);
@@ -99,8 +99,8 @@ class Liga_t : public std::vector<Division_t>
 	void printTrialShares();
 	void saveOutStru();
 	void saveFrames();
-	void recordFramesTrace(const set<PMOL>& modified);
-	void saveFramesTrace(const set<PMOL>& modified);
+	void recordFramesTrace(const std::set<PMOL>& modified);
+	void saveFramesTrace(const std::set<PMOL>& modified);
 };
 
 // class data
@@ -125,12 +125,6 @@ inline bool Liga_t::finished()
     isfinished = isfinished || stopflag && *stopflag ||
         solutionFound() || outOfTime();
     return isfinished;
-}
-
-inline bool Liga_t::solutionFound() const
-{
-    return world_champ && world_champ->Full() &&
-        world_champ->NormBadness() < rp->tol_bad;
 }
 
 inline bool Liga_t::outOfTime() const

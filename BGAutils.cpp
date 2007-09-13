@@ -10,6 +10,10 @@ using namespace std;
 
 RegisterSVNId BGAutils_cpp_id("$Id$");
 
+////////////////////////////////////////////////////////////////////////
+// common helper functions
+////////////////////////////////////////////////////////////////////////
+
 ofstream& mktempofstream(ofstream& out, char *writefile)
 {
     const int max_attempts = 10;
@@ -74,6 +78,39 @@ valarray<double> vdcross(const valarray<double>& v1, const valarray<double>& v2)
     cross[1] = v1[2]*v2[0] - v1[0]*v2[2];
     cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
     return cross;
+}
+
+// read lines that do not start with number
+bool read_header(istream& fid, string& header)
+{
+    double x;
+    string line;
+    istringstream istrs;
+    header.clear();
+    for (   istream::pos_type p = fid.tellg();
+	    !fid.eof() && getline(fid, line);
+	    p = fid.tellg()
+	)
+    {
+	istrs.clear();
+	istrs.str(line);
+	if (istrs >> x)
+	{
+	    fid.seekg(p);
+	    break;
+	}
+	else
+	{
+	    header.append(line + '\n');
+	}
+    }
+    return !(fid.rdstate() & ios::badbit);
+}
+
+bool read_header(istream& fid)
+{
+    string dummy;
+    return read_header(fid, dummy);
 }
 
 // End of file

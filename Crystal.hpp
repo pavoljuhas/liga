@@ -12,7 +12,7 @@
 #define CRYSTAL_T_HPP_INCLUDED
 
 #include <boost/shared_ptr.hpp>
-#include "BGAlib.hpp"
+#include "Molecule.hpp"
 #include "RegisterSVNId.hpp"
 
 class Lattice;
@@ -53,8 +53,6 @@ class Crystal : public Molecule
 
         // methods
         void init();
-
-
 
 };
 

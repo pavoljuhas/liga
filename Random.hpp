@@ -11,13 +11,11 @@
 #ifndef RANDOM_HPP_INCLUDED
 #define RANDOM_HPP_INCLUDED
 
+#include <numeric>
 #include <vector>
-#include <valarray>
-#include <limits>
 #include <stdexcept>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-
 #include "R3linalg.hpp"
 
 namespace LIGA {
