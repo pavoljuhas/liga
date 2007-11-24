@@ -318,7 +318,7 @@ void Liga_t::makeSeedClusters()
 	for (int nt = 0; nt < scii->trials; ++nt)
 	{
 	    // make sure mcore is at base_level
-	    while (mcore.NAtoms() > base_level) mcore.Pop(mcore.NAtoms() - 1);
+	    while (mcore.NAtoms() > base_level)
 	    {
 		mcore.Pop(mcore.NAtoms() - 1);
 	    }
