@@ -51,7 +51,7 @@ void AtomCost::resetFor(Molecule* m)
     arg_cluster = m;
     const DistanceTable& dtgt = arg_cluster->getDistanceTable();
     noCutoff();
-    use_distances = arg_cluster->isCloseEnough(0.0);
+    use_distances = !arg_cluster->distreuse;
     if (use_distances && dtgt.size() > useflag.size())
     {
 	useflag.resize(dtgt.size(), false);
@@ -89,7 +89,7 @@ double AtomCost::eval(const Atom_t* pa)
 	double pcost = penalty(dd);
 	*(ptcii++) = pcost;
 	total_cost += pcost;
-	if (use_distances && arg_cluster->isCloseEnough(dd))
+	if (use_distances)
 	{
 	    useflag[nearidx] = true;
 	    useflag_indices.push_back(nearidx);

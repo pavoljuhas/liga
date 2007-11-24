@@ -34,8 +34,8 @@ RegisterSVNId Molecule_cpp_id("$Id$");
 ////////////////////////////////////////////////////////////////////////
 
 // static members
-double Molecule::tol_dd  = numeric_limits<double>().max();
-double Molecule::tol_nbad  = 0.05*0.05;
+bool Molecule::distreuse = false;
+double Molecule::tol_nbad = 0.05*0.05;
 double Molecule::tol_r = 1.0e-8;
 double Molecule::evolve_frac = 0.1;
 bool Molecule::evolve_jump = true;
@@ -253,21 +253,24 @@ bool operator==(const Molecule& m0, const Molecule& m1)
 
 void Molecule::setMaxNAtoms(int sz)
 {
-    if (sz > dTarget->estNumAtoms() && tol_dd > 0.0)
+    if (sz > dTarget->estNumAtoms() && !distreuse)
     {
-	cerr << "E: not enough distances for maxNAtoms = " << sz << '.' <<
-	    "  Did you forget tol_dd = 0?" << endl;
-	throw InvalidMolecule();
+	ostringstream emsg;
+	emsg << "E: not enough distances for maxNAtoms = " << sz << '.' <<
+	    "  Forgot to set distreuse?";
+	throw InvalidMolecule(emsg.str());
     }
     else if (sz < 1)
     {
-	cerr << "E: invalid value of maxNAtoms = " << sz << endl;
-	throw InvalidMolecule();
+	ostringstream emsg;
+	emsg << "E: invalid value of maxNAtoms = " << sz;
+	throw InvalidMolecule(emsg.str());
     }
     else if (sz < NAtoms())
     {
-	cerr << "E: molecule too large in setMaxNAtoms()" << endl;
-	throw InvalidMolecule();
+	ostringstream emsg;
+	emsg << "E: molecule too large in setMaxNAtoms()";
+	throw InvalidMolecule(emsg.str());
     }
     max_natoms = sz;
 }
@@ -784,8 +787,7 @@ int Molecule::push_good_triangles(
 	Atom_t& a0 = *atoms[aidx[0]];
 	Atom_t& a1 = *atoms[aidx[1]];
 	// pick 2 vertex distances
-	bool with_repeat = (tol_dd <= 0.0);
-        const PickType& didx = with_repeat ?
+        const PickType& didx = distreuse ?
             randomPickWithRepeat(2, dTarget->size()) :
             randomPickFew(2, dTarget->size());
 	double r13 = dTarget->at(didx[0]);
@@ -888,8 +890,7 @@ int Molecule::push_good_pyramids(
 	Atom_t& a1 = *atoms[aidx[1]];
 	Atom_t& a2 = *atoms[aidx[2]];
 	// pick 3 vertex distances
-	bool with_repeat = (tol_dd <= 0.0);
-	PickType didx = with_repeat ?
+	PickType didx = distreuse ?
             randomPickWithRepeat(3, dTarget->size()) :
             randomPickFew(3, dTarget->size());
 	// loop over all permutations of selected distances
@@ -1066,10 +1067,9 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     else
     {
 	// distances will be picked randomly
-	bool with_repeat = (tol_dd <= 0.0);
 	for (int i = 0; i < ntrials; ++i)
 	{
-            const PickType& didx = with_repeat ?
+            const PickType& didx = distreuse ?
                 randomPickWithRepeat(2, dTarget->size()) :
                 randomPickFew(2, dTarget->size());
 	    d0.push_back( dTarget->at(didx[0]) );

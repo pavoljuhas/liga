@@ -59,7 +59,7 @@ struct RunPar_t
     size_t ndim;
     bool crystal;
     std::vector<double> latpar;
-    double tol_dd;
+    bool distreuse;
     double tol_bad;
     int natoms;
     std::vector<int> fixed_atoms;

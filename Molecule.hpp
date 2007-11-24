@@ -46,7 +46,7 @@ class Molecule
 
 	// class data
 	// fit parameters
-	static double tol_dd;
+        static bool distreuse;
 	static double tol_nbad;	// tolerance of normalized badness
 	static double tol_r;	// position tolerance in RelaxAtom
 	static bool evolve_jump;
@@ -89,7 +89,6 @@ class Molecule
         const DistanceTable& getDistanceTable() const;
 
 	// methods - fitness/badness evaluation
-	bool isCloseEnough(const double& dd) const;
 	double Badness() const;	    // total badness
 	double NormBadness() const; // normalized badness
 	bool Full() const     { return !(NAtoms() < maxNAtoms()); }
@@ -193,11 +192,6 @@ private:
 ////////////////////////////////////////////////////////////////////////
 // Definitions of inline and template methods
 ////////////////////////////////////////////////////////////////////////
-
-inline bool Molecule::isCloseEnough(const double& dd) const
-{
-    return fabs(dd) < tol_dd;
-}
 
 inline int Molecule::NDist()  const
 {

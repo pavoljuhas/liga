@@ -191,13 +191,13 @@ void RunPar_t::processArguments(int argc, char* argv[])
             throw ParseArgsError(emsg);
         }
     }
-    // tol_dd
-    tol_dd = args->GetPar<double>("tol_dd", 0.1);
-    Molecule::tol_dd = tol_dd;
+    // distreuse
+    distreuse = args->GetPar<bool>("distreuse", false);
+    Molecule::distreuse = distreuse;
     // tol_bad
     tol_bad = args->GetPar<double>("tol_bad", 1.0e-4);
     Molecule::tol_nbad = tol_bad;
-    // natoms must be set after tol_dd
+    // natoms must be set after distreuse
     if (args->ispar("natoms"))
     {
 	natoms = args->GetPar<int>("natoms");
@@ -348,9 +348,9 @@ void RunPar_t::print_help()
 "  ndim={1,2,3}          [3] search in n-dimensional space\n"
 "  crystal=bool          [false] assume periodic crystal structure\n"
 "  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
-"  tol_dd=double         [0.1] distance is not used when dd=|d-d0|>=tol_dd\n"
+"  distreuse=bool        [false] keep used distances in distance table\n"
 "  tol_bad=double        [1E-4] target normalized molecule badness\n"
-"  natoms=int            use with loose distfiles or when tol_dd==0\n"
+"  natoms=int            use with loose distfiles or for set distreuse\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  seed_clusters=array   [] triplets of (level, number, trials)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
@@ -438,9 +438,9 @@ void RunPar_t::print_pars()
 	cout << "verbose=" << join(",", verbose) << '\n';
     }
     // liga parameters
-    // ndim, tol_dd, tol_bad 
+    // ndim, distreuse, tol_bad 
     cout << "ndim=" << ndim << '\n';
-    cout << "tol_dd=" << tol_dd << '\n';
+    cout << "distreuse=" << distreuse << '\n';
     cout << "tol_bad=" << tol_bad << '\n';
     // natoms
     if (args->ispar("natoms"))
@@ -533,7 +533,7 @@ const list<string>& RunPar_t::validpars() const
         "framestrace",
         "verbose",
         "ndim",
-        "tol_dd",
+        "distreuse",
         "tol_bad",
         "natoms",
         "fixed_atoms",
