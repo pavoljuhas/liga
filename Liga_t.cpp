@@ -290,14 +290,22 @@ vector<bool> Liga_t::getDefaultVerbose()
 
 int Liga_t::divSize(int level)
 {
-    if (level < rp->base_level)	    return 0;
-    if (level < 2)		    return 1;
-    // default is rp->ligasize, but consult with seed_clusters
+    // start with the default value
     int sz = rp->ligasize;
-    for (   vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
-	    scii != rp->seed_clusters.end(); ++scii )
+    // ignore divisions below base_level
+    if (level < rp->base_level)	        sz = 0;
+    // it is enough to have one team at base_level
+    else if (level == rp->base_level)	sz = 1;
+    // and also at levels 0 and 1
+    else if (level < 2)		        sz = 1;
+    // finally check for special setting in seed_clusters
+    else
     {
-	if (scii->level == level)   sz = scii->number;
+        vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
+        for (; scii != rp->seed_clusters.end(); ++scii)
+        {
+            if (scii->level == level)   sz = scii->number;
+        }
     }
     return sz;
 }
@@ -346,9 +354,9 @@ void Liga_t::makeSeedClusters()
 	{
 	    seeded->at(i)->setMaxNAtoms(keep_max_natoms);
 	}
-	PMOL seed_winner = seeded->at(seeded->find_winner());
-	cout << season << " S " << seed_winner->NAtoms() << ' '
-	    << seed_winner->NormBadness() << endl;
+	PMOL best_seed = seeded->at(seeded->find_best());
+	cout << season << " S " << best_seed->NAtoms() << ' '
+	    << best_seed->NormBadness() << endl;
     }
     Molecule::evolve_jump = keep_evolve_jump;
 }
@@ -460,15 +468,14 @@ void Liga_t::saveOutStru()
 	// something to save here
 	savecnt = 0;
 	bestMNB[level] = level_champ->NormBadness();
-	// obtain file name
-	string fname = rp->outstru;
+	// construct file name
+	ostringstream fname;
+        fname << rp->outstru;
 	if (rp->saveall)
-	{
-	    ostringstream oss;
-	    oss << rp->outstru << ".L" << level;
-	    fname = oss.str();
+        {
+	    fname << ".L" << level;
 	}
-	level_champ->WriteFile(fname.c_str());
+	level_champ->WriteFile(fname.str().c_str());
     }
 }
 

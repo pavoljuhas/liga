@@ -120,7 +120,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     if (args->ispar("outstru"))
     {
 	// saverate
-	saverate = args->GetPar<int>("saverate", 10);
+	saverate = args->GetPar<int>("saverate", 0);
 	// saveall
 	saveall = args->GetPar<bool>("saveall", false);
     }
@@ -349,7 +349,7 @@ void RunPar_t::print_help()
 "  inistru=FILE          [empty] initial structure in Cartesian coordinates\n"
 "  outstru=FILE          where to save the best full molecule\n"
 "  outfmt=string         [xyz], atomeye - outstru file format\n"
-"  saverate=int          [10] minimum iterations between outstru updates\n"
+"  saverate=int          [0] rate of intermediate saves of outstru\n"
 "  saveall=bool          [false] save best molecules from all levels\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [0] number of iterations between frame saves\n"
