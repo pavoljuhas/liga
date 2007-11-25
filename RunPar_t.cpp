@@ -66,7 +66,9 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // assign run parameters
     // distfile
     if (args->args.size())
+    {
 	args->pars["distfile"] = args->args[0];
+    }
     if (args->args.size() > 1)
     {
 	ostringstream emsg;
@@ -96,18 +98,29 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	inistru = args->pars["inistru"];
 	mol->ReadXYZ(inistru.c_str());
     }
-    // outstru, outfmt, saverate, saveall
+    // outstru
     if (args->ispar("outstru"))
     {
-	// outstru
 	outstru = args->pars["outstru"];
-	// outfmt
-	outfmt = args->GetPar<string>("outfmt", "xyz");
-	if (outfmt == "xyz")
-	    mol->OutFmtXYZ();
-	else if (outfmt == "atomeye")
-	    mol->OutFmtAtomEye();
-	else throw ParseArgsError("Invalid value of outfmt parameter");
+    }
+    // outfmt
+    outfmt = args->GetPar<string>("outfmt", "xyz");
+    if (outfmt == "xyz")
+    {
+        Molecule::OutFmtXYZ();
+    }
+    else if (outfmt == "atomeye")
+    {
+        Molecule::OutFmtAtomEye();
+    }
+    else
+    {
+        const char* emsg = "Invalid value of outfmt parameter.";
+        throw ParseArgsError(emsg);
+    }
+    // saverate, saveall
+    if (args->ispar("outstru"))
+    {
 	// saverate
 	saverate = args->GetPar<int>("saverate", 10);
 	// saveall
@@ -122,7 +135,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	if (args->ispar("framestrace"))
 	{
 	    framesrate = 0;
-	    vector<int> stp = args->GetParVec<int>("framestrace");
+	    vector<long> stp = args->GetParVec<long>("framestrace");
 	    if (stp.size() % 3)
 	    {
 		string emsg = "framestrace must have 3n entries";
@@ -142,7 +155,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    {
 		tid.season = stp[i];
 		tid.level = stp[i+1];
-		tid.index = stp[i+2];
+		tid.mol_id = stp[i+2];
 		framestrace.push_back(tid);
 	    }
 	}
@@ -341,7 +354,7 @@ void RunPar_t::print_help()
 "  saveall=bool          [false] save best molecules from all divisions\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [0] number of iterations between frame saves\n"
-"  framestrace=array     [] triplets of (season, initial, final level)\n"
+"  framestrace=array     [] triplets of (season, level, id)\n"
 "  verbose=array         [ad,wc,bc] output flags from (" <<
 	joined_verbose_flags() << ")\n" <<
 "Liga parameters:\n"
@@ -400,11 +413,19 @@ void RunPar_t::print_pars()
     {
 	cout << "inistru=" << inistru << '\n';
     }
-    // outstru, outfmt, saverate, saveall
+    // outstru
     if (args->ispar("outstru"))
     {
         cout << "outstru=" << outstru << '\n';
+    }
+    // outfmt
+    if (args->ispar("outstru") || args->ispar("frames"))
+    {
 	cout << "outfmt=" << outfmt << '\n';
+    }
+    // saverate, saveall
+    if (args->ispar("outstru"))
+    {
         cout << "saverate=" << saverate << '\n';
 	cout << "saveall=" << saveall << '\n';
     }
@@ -422,7 +443,7 @@ void RunPar_t::print_pars()
 		cout << " \\" << '\n';
 		cout << "    " << ii->season;
 		cout << ' ' << ii->level;
-		cout << ' ' << ii->index;
+		cout << ' ' << ii->mol_id;
 	    }
 	    cout << '\n';
 	}
@@ -443,10 +464,7 @@ void RunPar_t::print_pars()
     cout << "distreuse=" << distreuse << '\n';
     cout << "tol_bad=" << tol_bad << '\n';
     // natoms
-    if (args->ispar("natoms"))
-    {
-	cout << "natoms=" << natoms << '\n';
-    }
+    cout << "natoms=" << natoms << '\n';
     // fixed_atoms
     if (args->ispar("fixed_atoms") && !fixed_atoms.empty())
     {

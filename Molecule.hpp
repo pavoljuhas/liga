@@ -20,6 +20,7 @@
 #include "Atom_t.hpp"
 #include "DistanceTable.hpp"
 #include "Matrix.hpp"
+#include "TraceId_t.hpp"
 #include "RegisterSVNId.hpp"
 
 class AtomFilter_t;
@@ -61,7 +62,9 @@ class Molecule
 	static void OutFmtAtomEye();    // output format for operator>>
 
 	// data
-        std::list<int> trace;
+        // unique identifier
+        const long id;
+        std::list<TraceId_t> trace;
 
 	// constructors
 	Molecule();
@@ -157,6 +160,9 @@ class Molecule
 
 	// class data
 	static file_fmt_type output_format;
+
+        // class methods
+        static long getUniqueId();
 
 	// data
 	SymmetricMatrix<double> pmx_used_distances;

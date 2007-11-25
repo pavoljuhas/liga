@@ -10,6 +10,7 @@
 
 #include <queue>
 #include "Liga_t.hpp"
+#include "TraceId_t.hpp"
 #include "Molecule.hpp"
 #include "RunPar_t.hpp"
 #include "TrialDistributor.hpp"
@@ -146,12 +147,11 @@ void Liga_t::playLevel(size_t lo_level)
 	lo_div->push_back(winner_clone);
     }
     // advance as far as possible
-//    const int* est_triang = lo_div->estimateTriangulations(tshares[lo_level]);
     const int* etg = lo_div->estimateTriangulations();
     advancing->Evolve(etg);
     lo_div->noteTriangulations(advancing);
-    modified.insert(advancing);
     size_t hi_level = advancing->NAtoms();
+    if (lo_level != hi_level)   modified.insert(advancing);
     iterator hi_div = begin() + hi_level;
     // fill intermediate empty divisions, loop will stop at non-empty lo_div
     for (iterator empty_div = hi_div; empty_div->empty(); --empty_div)
@@ -177,12 +177,12 @@ void Liga_t::playLevel(size_t lo_level)
 	*descending = *advancing;
     }
     descending->Degenerate(hi_level - lo_level);
-    modified.insert(descending);
+    if (lo_level != hi_level)   modified.insert(descending);
     // all set now so we can swap winner and looser
     hi_div->at(looser_idx) = advancing;
     lo_div->at(winner_idx) = descending;
-    // keep a copy of the original advancing cluster if it was
-    // much much better than whatever left in the low division
+    // make sure the original best cluster is preserved if it was much much
+    // better than whatever left in the low division
     const double spoil_factor = 10.0;
     if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
 		spoil_factor*adv_bad0) )
@@ -203,8 +203,8 @@ void Liga_t::playLevel(size_t lo_level)
 	    hi_level << ' ' << desc_bad0 << ' ' <<
 	    lo_level << ' ' << descending->NormBadness() << '\n';
     }
-    recordFramesTrace(modified);
-    saveFramesTrace(modified);
+    recordFramesTrace(modified, lo_level);
+    saveFramesTrace(modified, lo_level);
     // update world champ so that the season can be cut short by stopFlag()
     if (advancing->Full())  updateWorldChamp();
 }
@@ -219,15 +219,15 @@ void Liga_t::printFramesTrace() const
 {
     if (!rp->trace)	return;
     // needs clean up
-    list<int>::iterator ii = best_champ->trace.begin();
-    for (size_t n = 0; ii != best_champ->trace.end(); ++ii)
+    cout << "Trace - season level natoms cost id:\n";
+    list<TraceId_t>::iterator tii = best_champ->trace.begin();
+    for (; tii != best_champ->trace.end(); ++tii)
     {
-	cout << ((n == 0) ? "TR " : " ") << *ii;
-	if (++n == 3)
-	{
-	    cout << '\n';
-	    n = 0;
-	}
+        cout << "TR " << tii->season <<
+            ' ' << tii->level <<
+            ' ' << tii->mol_natoms <<
+            ' ' << tii->mol_norm_badness <<
+            ' ' << tii->mol_id << '\n';
     }
     cout << endl;
 }
@@ -494,10 +494,10 @@ void Liga_t::saveFrames()
     ostringstream oss;
     oss << rp->frames << '.' << season;
     string fname = oss.str();
-    world_champ->WriteAtomEye(fname.c_str());
+    world_champ->WriteFile(fname.c_str());
 }
 
-void Liga_t::recordFramesTrace(const set<PMOL>& modified)
+void Liga_t::recordFramesTrace(set<PMOL>& modified, size_t lo_level)
 {
     if (!rp->trace) return;
     Division_t::iterator mii;
@@ -505,36 +505,44 @@ void Liga_t::recordFramesTrace(const set<PMOL>& modified)
     {
 	(*mii)->trace.clear();
     }
-    size_t level = base_level;
-    for (iterator dv = begin() + base_level; dv != end(); ++dv, ++level)
+    set<PMOL>::iterator modii;
+    for (modii = modified.begin(); modii != modified.end(); ++modii)
     {
-	size_t index = 0;
-	for (mii = dv->begin(); mii != dv->end(); ++mii, ++index)
-	{
-	    PMOL mp = *mii;
-	    if (!modified.count(mp) && !mp->trace.empty())  continue;
-	    mp->trace.push_back(season);
-	    mp->trace.push_back(level);
-	    mp->trace.push_back(index);
-	}
+        PMOL mp = *modii;
+        TraceId_t tid;
+        tid.season = season;
+        tid.level = lo_level;
+        tid.mol_natoms = mp->NAtoms();
+        tid.mol_norm_badness = mp->NormBadness();
+        tid.mol_id = mp->id;
+        mp->trace.push_back(tid);
     }
 }
 
-void Liga_t::saveFramesTrace(const set<PMOL>& modified)
+void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
 {
+    bool dontsave = rp->frames.empty();
+    if (dontsave)    return;
     static queue<TraceId_t> qtrace(rp->framestrace);
-    while (!qtrace.empty() && season == qtrace.front().season)
+    while (!qtrace.empty())
     {
 	TraceId_t tid = qtrace.front();
-	if (tid.index >= int(at(tid.level).size()))	return;
-	PMOL traced = at(tid.level).at(tid.index);
-	if (!modified.count(traced))	return;
+        if (season != tid.season)   break;
+        if (long(lo_level) != tid.level)  break;
+        PMOL traced = NULL;
+        set<PMOL>::iterator modii = modified.begin();
+        for (; !traced && modii != modified.end(); ++modii)
+        {
+            if (tid.mol_id == (*modii)->id)  traced = *modii;
+        }
+        if (!traced)    break;
+        // traced molecule has been found here
 	qtrace.pop();
 	int tno = rp->framestrace.size() - qtrace.size();
 	ostringstream oss;
 	oss << rp->frames << "." << tid.season << '.' << tno;
 	string fname = oss.str();
-	traced->WriteAtomEye(fname.c_str());
+	traced->WriteFile(fname.c_str());
     }
 }
 

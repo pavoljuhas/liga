@@ -99,8 +99,8 @@ class Liga_t : public std::vector<Division_t>
 	void printTrialShares();
 	void saveOutStru();
 	void saveFrames();
-	void recordFramesTrace(const std::set<PMOL>& modified);
-	void saveFramesTrace(const std::set<PMOL>& modified);
+	void recordFramesTrace(std::set<PMOL>& modified, size_t lo_level);
+	void saveFramesTrace(std::set<PMOL>& modified, size_t lo_level);
 };
 
 // class data

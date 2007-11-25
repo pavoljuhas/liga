@@ -15,19 +15,13 @@
 #include <string>
 #include <memory>
 #include "ParseArgs.hpp"
+#include "TraceId_t.hpp"
 #include "Molecule.hpp"
 #include "RegisterSVNId.hpp"
 
 namespace {
 RegisterSVNId RunPar_t_hpp_id("$Id$");
 }
-
-struct TraceId_t
-{
-    int season;
-    int level;
-    int index;
-};
 
 struct SeedClusterInfo
 {

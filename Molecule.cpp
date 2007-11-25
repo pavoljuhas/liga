@@ -45,14 +45,22 @@ vector<AtomFilter_t*> Molecule::atom_filters;
 double Molecule::lookout_prob = 0.0;
 Molecule::file_fmt_type Molecule::output_format = XYZ;
 
+// class methods
+
+long Molecule::getUniqueId()
+{
+    static long uid = 0;
+    return uid++;
+}
+
 // constructors
-//
-Molecule::Molecule()
+
+Molecule::Molecule() : id(Molecule::getUniqueId())
 {
     init();
 }
 
-Molecule::Molecule(const DistanceTable& dtab)
+Molecule::Molecule(const DistanceTable& dtab) : id(Molecule::getUniqueId())
 {
     init();
     setDistanceTable(dtab);
@@ -60,7 +68,7 @@ Molecule::Molecule(const DistanceTable& dtab)
 
 Molecule::Molecule(const DistanceTable& dtab,
 	const int s, const double* px, const double* py, const double* pz
-	)
+	) : id(Molecule::getUniqueId())
 {
     init();
     setDistanceTable(dtab);
@@ -73,7 +81,7 @@ Molecule::Molecule(const DistanceTable& dtab,
 Molecule::Molecule(const DistanceTable& dtab,
 	const vector<double>& vx, const vector<double>& vy,
 	const vector<double>& vz
-	)
+	) : id(Molecule::getUniqueId())
 {
     init();
     setDistanceTable(dtab);
@@ -88,7 +96,7 @@ Molecule::Molecule(const DistanceTable& dtab,
     }
 }
 
-Molecule::Molecule(const Molecule& M)
+Molecule::Molecule(const Molecule& M) : id(Molecule::getUniqueId())
 {
     init();
     setDistanceTable(*M.dTarget);
@@ -167,13 +175,13 @@ void Molecule::Recalculate()
 {
     if (NAtoms() > maxNAtoms())
     {
-	cerr << "E: molecule too large in Recalculate()" << endl;
-	throw InvalidMolecule();
+	ostringstream emsg;
+	emsg << "E: molecule too large in Recalculate()";
+	throw InvalidMolecule(emsg.str());
     }
     // reset molecule
     badness = 0;
     // reset all atoms
-    typedef vector<Atom_t*>::iterator VPAit;
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
 	seq.ptr()->ResetBadness();
