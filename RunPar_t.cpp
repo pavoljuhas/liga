@@ -294,7 +294,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // seasontrials
     seasontrials = int( args->GetPar<double>("seasontrials", 16384.0) );
     // trials_sharing
-    trials_sharing = args->GetPar<string>("trials_sharing", "equal");
+    trials_sharing = args->GetPar<string>("trials_sharing", "success");
     if (!TrialDistributor::isType(trials_sharing))
     {
 	ostringstream emsg;
@@ -374,7 +374,7 @@ void RunPar_t::print_help()
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.0025] skip division when winner is worse\n"
 "  seasontrials=int      [16384] number of atom placements in one season\n"
-"  trials_sharing=string [equal] sharing method from (" <<
+"  trials_sharing=string [success] sharing method from (" <<
 	join(",", TrialDistributor::getTypes()) << ")\n" <<
 "  lookout_prob=double   [0.0] lookout probability for 2nd and 3rd atoms\n"
 "Constrains (applied only when set):\n"
