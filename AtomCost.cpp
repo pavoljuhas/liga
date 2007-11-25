@@ -272,7 +272,7 @@ size_t AtomCost::nearDistanceIndex(const double& d)
 {
     const DistanceTable& dtgt = *(arg_cluster->dTarget);
     int idx = dtgt.find_nearest(d) - dtgt.begin();
-    if (useflag[idx])
+    if (use_distances && useflag[idx])
     {
         int hi, lo, nidx = -1;
         int sz = dtgt.size();

@@ -100,6 +100,7 @@ class Molecule
 	void setMaxNAtoms(int s);
 	int NDist() const;
 	double max_dTarget() const;
+        void ReassignPairs();	    // improve assignment of distances
 	void Recalculate();	    // update everything
 
 	// methods - molecule operations

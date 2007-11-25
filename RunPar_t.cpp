@@ -36,11 +36,10 @@ RunPar_t::RunPar_t(int argc, char* argv[])
 void RunPar_t::processArguments(int argc, char* argv[])
 {
     char *short_options =
-	"p:qthV";
+	"p:hV";
     // parameters and options
     option long_options[] = {
 	{"parfile", 1, 0, 'p'},
-	{"trace", 0, 0, 't'},
 	{"help", 0, 0, 'h'},
 	{"version", 0, 0, 'V'},
 	{0, 0, 0, 0}
@@ -61,7 +60,6 @@ void RunPar_t::processArguments(int argc, char* argv[])
     {
 	args->ReadPars(args->opts["p"].c_str());
     }
-    trace = args->isopt("t");
     args->ValidatePars(validpars());
     // assign run parameters
     // distfile
@@ -72,13 +70,13 @@ void RunPar_t::processArguments(int argc, char* argv[])
     if (args->args.size() > 1)
     {
 	ostringstream emsg;
-	emsg << argv[0] << ": several DISTFILE arguments";
+	emsg << argv[0] << ": several DISTFILE arguments.";
 	throw ParseArgsError(emsg.str());
     }
     if (!args->ispar("distfile"))
     {
-	string msg = "Distance file not defined";
-	throw ParseArgsError(msg);
+	string emsg = "Distance file not defined.";
+	throw ParseArgsError(emsg);
     }
     distfile = args->pars["distfile"];
     DistanceTable dtab;
@@ -138,7 +136,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    vector<long> stp = args->GetParVec<long>("framestrace");
 	    if (stp.size() % 3)
 	    {
-		string emsg = "framestrace must have 3n entries";
+		string emsg = "framestrace must have 3n entries.";
 		throw ParseArgsError(emsg);
 	    }
 	    // check if seasons in stp are ordered
@@ -146,7 +144,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    {
 		if (stp[i] < stp[i-3])
 		{
-		    string emsg = "framestrace seasons must be sorted";
+		    string emsg = "framestrace seasons must be sorted.";
 		    throw ParseArgsError(emsg);
 		}
 	    }
@@ -165,6 +163,8 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    framesrate = args->GetPar<int>("framesrate", 0);
 	}
     }
+    // trace
+    trace = args->GetPar<bool>("trace", false);
     // verbose
     if (args->ispar("verbose"))
     {
@@ -186,7 +186,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     ndim = args->GetPar<size_t>("ndim", 3);
     if (ndim < 1 || ndim > 3)
     {
-	string emsg = "ndim value must be 1, 2 or 3";
+	string emsg = "ndim value must be 1, 2 or 3.";
 	throw ParseArgsError(emsg);
     }
     // crystal
@@ -234,7 +234,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	}
 	catch (range_error) {
 	    ostringstream emsg;
-	    emsg << "fixed_atoms - invalid index " << *ii;
+	    emsg << "fixed_atoms - invalid index " << *ii << '.';
 	    throw ParseArgsError(emsg.str());
 	}
     }
@@ -245,7 +245,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	vector<int> scs = args->GetParVec<int>("seed_clusters");
 	if (scs.size() % 3)
 	{
-	    string emsg = "seed_clusters must have 3n entries";
+	    string emsg = "seed_clusters must have 3n entries.";
 	    throw ParseArgsError(emsg);
 	}
 	map<int,SeedClusterInfo> lvsc;
@@ -259,7 +259,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    if (scid.level <= base_level || scid.level > mol->maxNAtoms())
 	    {
 		ostringstream emsg;
-		emsg << "seed_clusters - invalid level " << scid.level;
+		emsg << "seed_clusters - invalid level " << scid.level << '.';
 		throw ParseArgsError(emsg.str());
 	    }
 	    lvsc[scid.level] = scid;
@@ -311,7 +311,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	bangle_range = args->GetParVec<double>("bangle_range");
 	if (bangle_range.size() != 2 && bangle_range.size() != 3)
 	{
-	    string emsg = "bangle_range must have 2 or 3 arguments";
+	    string emsg = "bangle_range must have 2 or 3 arguments.";
 	    throw ParseArgsError(emsg);
 	}
 	double max_blen = bangle_range[0];
@@ -342,7 +342,6 @@ void RunPar_t::print_help()
 "be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
-"  -t, --trace           keep and show frame trace of the champion\n"
 "  -h, --help            display this message\n"
 "  -V, --version         show program version\n"
 "IO parameters:\n"
@@ -351,10 +350,11 @@ void RunPar_t::print_help()
 "  outstru=FILE          where to save the best full molecule\n"
 "  outfmt=string         [xyz], atomeye - outstru file format\n"
 "  saverate=int          [10] minimum iterations between outstru updates\n"
-"  saveall=bool          [false] save best molecules from all divisions\n"
+"  saveall=bool          [false] save best molecules from all levels\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"
 "  framesrate=int        [0] number of iterations between frame saves\n"
 "  framestrace=array     [] triplets of (season, level, id)\n"
+"  trace=bool            [false] keep and show trace of the best structure\n"
 "  verbose=array         [ad,wc,bc] output flags from (" <<
 	joined_verbose_flags() << ")\n" <<
 "Liga parameters:\n"
@@ -453,8 +453,9 @@ void RunPar_t::print_pars()
 	    cout << "framesrate=" << framesrate << '\n';
 	}
     }
+    // trace
+    cout << "trace=" << trace << '\n';
     // verbose
-    if (args->ispar("verbose"))
     {
 	cout << "verbose=" << join(",", verbose) << '\n';
     }
@@ -564,6 +565,7 @@ const list<string>& RunPar_t::validpars() const
         "ligasize",
         "stopgame",
         "seasontrials",
+	"trace",
         "trials_sharing",
         "lookout_prob",
         "bangle_range",

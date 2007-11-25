@@ -78,7 +78,8 @@ template<typename T> T ParseArgs::GetPar(std::string par)
     }
     T val;
     std::istringstream iss(pars[par]);
-    if ( !(iss >> val) )
+    iss >> val || (iss.clear(), iss >> std::boolalpha >> val);
+    if (!iss)
     {
 	std::ostringstream oss;
 	oss << "invalid value for parameter '" << par << "'";

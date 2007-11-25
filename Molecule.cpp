@@ -213,7 +213,66 @@ void Molecule::Recalculate()
     }
 }
 
-//void Molecule::ReassignPairs()
+// Local helpers for Molecule::ReassignPairs()
+
+namespace {
+
+class PairMatrixElement
+{
+    public:
+
+        // class methods
+        static bool compareDistance(
+                const PairMatrixElement& p0, const PairMatrixElement& p1)
+        {
+            return p0.d01 < p1.d01;
+        }
+
+        // public data
+        double d01;
+        int i0;
+        int i1;
+};
+
+}   // namespace
+
+void Molecule::ReassignPairs()
+{
+    if (distreuse)  return;
+    vector<PairMatrixElement> pmx_elements;
+    pmx_elements.reserve(NDist());
+    vector<double> used_distances;
+    used_distances.reserve(NDist());
+    PairMatrixElement pme;
+    for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
+    {
+	AtomSequenceIndex seq1 = seq0;
+        for (seq1.next(); !seq1.finished(); seq1.next())
+        {
+            pme.i0 = seq0.ptr()->pmxidx;
+	    pme.i1 = seq1.ptr()->pmxidx;
+            pme.d01 = dist(seq0.ref(), seq1.ref());
+            pmx_elements.push_back(pme);
+            assert(pmx_used_distances(pme.i0, pme.i1) >= 0.0);
+            used_distances.push_back(pmx_used_distances(pme.i0, pme.i1));
+        }
+    }
+    double orgbadness = Badness();
+    sort(pmx_elements.begin(), pmx_elements.end(),
+            PairMatrixElement::compareDistance);
+    sort(used_distances.begin(), used_distances.end());
+    vector<PairMatrixElement>::iterator pmii = pmx_elements.begin();
+    vector<double>::iterator udii = used_distances.begin();
+    assert(pmx_elements.size() == used_distances.size());
+    for (; pmii != pmx_elements.end(); ++pmii, ++udii)
+    {
+        pmx_used_distances(pmii->i0, pmii->i1) = *udii;
+    }
+    Recalculate();
+    // increase orgbadness to avoid failures from round-off errors
+    orgbadness = (1 + 1e-6)*orgbadness + 1e-6;
+    assert(Badness() < orgbadness);
+}
 
 double Molecule::Badness() const
 {
@@ -316,9 +375,9 @@ void Molecule::Pop(const int aidx)
     {
 	throw range_error("in Molecule::Pop(const int aidx)");
     }
-    // Pop should never get called on fixed atom
-    assert(!atoms[aidx]->fixed);
     Atom_t* pa = atoms[aidx];
+    // Pop should never get called on fixed atom
+    assert(!pa->fixed);
     removeAtomPairs(pa);
     free_pmx_slots.insert(pa->pmxidx);
     delete pa;
@@ -387,6 +446,7 @@ void Molecule::Add(const Atom_t& atom)
     // create new pairs while summing up the costs
     addNewAtomPairs(pnew_atom);
     atoms.push_back(pnew_atom);
+    if (Full())     ReassignPairs();
 }
 
 void Molecule::Fix(const int cidx)
@@ -438,8 +498,9 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 {
     if (NAtoms() == maxNAtoms())
     {
-	cerr << "E: Molecule too large in filter_good_atoms()" << endl;
-	throw InvalidMolecule();
+	ostringstream emsg;
+	emsg << "E: Molecule too large in filter_good_atoms()";
+	throw InvalidMolecule(emsg.str());
     }
     typedef vector<Atom_t>::iterator VAit;
     VAit gai;
