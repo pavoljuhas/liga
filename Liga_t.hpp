@@ -48,8 +48,11 @@ class Liga_t : public std::vector<Division_t>
         static const std::vector<std::string> verbose_flags;
 
         // class methods
-        static bool isVerboseFlag(std::string flag);
         static std::vector<bool> getDefaultVerbose();
+        static void setVerboseVector(std::vector<bool>& vb,
+                VerboseFlag flag, bool value=true);
+        static void setVerboseVector(std::vector<bool>& vb,
+                std::string flag, bool value=true);
 
         // instance data
 	int season;
@@ -69,8 +72,7 @@ class Liga_t : public std::vector<Division_t>
 	bool outOfTime() const;
 	void printFramesTrace() const;
 	void printSummary() const;
-        void setVerbose(VerboseFlag flag, bool value=true);
-        void setVerbose(std::string flag, bool value=true);
+        void setVerbose(const std::vector<bool>& vb);
         const std::vector<bool>& getVerbose() const;
 
     private:

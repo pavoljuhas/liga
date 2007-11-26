@@ -166,20 +166,21 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // trace
     trace = args->GetPar<bool>("trace", false);
     // verbose
+    verbose = Liga_t::getDefaultVerbose();
     if (args->ispar("verbose"))
     {
-	verbose = args->GetParVec<string>("verbose");
+        fill(verbose.begin(), verbose.end(), false);
+	vector<string> flagwords = args->GetParVec<string>("verbose");
 	vector<string>::iterator w;
-	for (w = verbose.begin(); w != verbose.end(); ++w)
-	{
-	    if (!Liga_t::isVerboseFlag(*w))
-	    {
-		ostringstream emsg;
-		emsg << "verbose flag must be one of (" <<
-		    joined_verbose_flags() << ")";
-		throw ParseArgsError(emsg.str());
-	    }
-	}
+        try {
+            for (w = flagwords.begin(); w != flagwords.end(); ++w)
+            {
+                Liga_t::setVerboseVector(verbose, *w, true);
+            }
+        }
+        catch (invalid_argument(e)) {
+            throw ParseArgsError(e.what());
+        }
     }
     // liga parameters
     // ndim
@@ -457,7 +458,14 @@ void RunPar_t::print_pars()
     cout << "trace=" << trace << '\n';
     // verbose
     {
-	cout << "verbose=" << join(",", verbose) << '\n';
+	vector<string> flagwords;
+        // scan flags only up to ALL
+        using namespace NS_LIGA_VERBOSE_FLAG;
+	for (size_t i = 0; i < ALL; ++i)
+	{
+	    if (verbose[i]) flagwords.push_back(Liga_t::verbose_flags[i]);
+	}
+	cout << "verbose=" << join(",", flagwords) << '\n';
     }
     // liga parameters
     // ndim, distreuse, tol_bad 

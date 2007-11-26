@@ -32,9 +32,42 @@ const vector<string> Liga_t::verbose_flags(verbose_flags_array,
 
 // class methods
 
-bool Liga_t::isVerboseFlag(string flag)
+vector<bool> Liga_t::getDefaultVerbose()
 {
-    return count(verbose_flags.begin(), verbose_flags.end(), flag);
+    vector<bool> default_verbose(VERBOSE_SIZE, false);
+    default_verbose[AD] = true;
+    default_verbose[WC] = true;
+    default_verbose[BC] = true;
+    return default_verbose;
+}
+
+void Liga_t::setVerboseVector(vector<bool>& vb, VerboseFlag flag, bool value)
+{
+    assert(vb.size() == VERBOSE_SIZE);
+    if (flag < 0 || flag >= VERBOSE_SIZE)
+    {
+        ostringstream emsg;
+        emsg << "Invalid verbose flag '" << flag << "'.";
+        throw invalid_argument(emsg.str());
+    }
+    if (flag == ALL)    vb.assign(VERBOSE_SIZE, value);
+    else                vb[flag] = value;
+}
+
+void Liga_t::setVerboseVector(vector<bool>& vb, string flag, bool value)
+{
+    assert(vb.size() == VERBOSE_SIZE);
+    vector<string>::const_iterator vbsflag;
+    vbsflag = find(verbose_flags.begin(), verbose_flags.end(), flag);
+    if (vbsflag == verbose_flags.end())
+    {
+        ostringstream emsg;
+        emsg << "Invalid verbose flag " << flag;
+        throw invalid_argument(emsg.str());
+    }
+    int vbsindex = vbsflag - verbose_flags.begin();
+    VerboseFlag vbf = static_cast<VerboseFlag>(vbsindex);
+    setVerboseVector(vb, vbf, value);
 }
 
 // Constructor and destructor
@@ -44,17 +77,7 @@ Liga_t::Liga_t(RunPar_t* runpar) :
 {
     world_champ = NULL;
     best_champ = NULL;
-    verbose = getDefaultVerbose();
-    // this needs to be moved to RunPar_t later
-    if (rp->args->ispar("verbose"))
-    {
-        setVerbose(ALL, false);
-        vector<string>::iterator w;
-        for (w = rp->verbose.begin(); w != rp->verbose.end(); ++w)
-        {
-            setVerbose(*w, true);
-        }
-    }
+    setVerbose(rp->verbose);
 }
 
 Liga_t::~Liga_t()
@@ -242,48 +265,15 @@ void Liga_t::printSummary() const
     Counter::printRunStats();
 }
 
-void Liga_t::setVerbose(VerboseFlag flag, bool value)
+void Liga_t::setVerbose(const vector<bool>& vb)
 {
-    if (flag < 0 || flag >= VERBOSE_SIZE)
-    {
-        ostringstream emsg;
-        emsg << "Invalide verbose flag " << flag;
-        throw invalid_argument(emsg.str());
-    }
-    verbose[flag] = value;
-    if (flag == ALL)
-    {
-        fill(verbose.begin(), verbose.end(), value);
-    }
+    assert(vb.size() == VERBOSE_SIZE);
+    verbose = vb;
 }
-
-void Liga_t::setVerbose(string flag, bool value)
-{
-    vector<string>::const_iterator vbsflag;
-    vbsflag = find(verbose_flags.begin(), verbose_flags.end(), flag);
-    if (vbsflag == verbose_flags.end())
-    {
-        ostringstream emsg;
-        emsg << "Invalide verbose flag " << flag;
-        throw invalid_argument(emsg.str());
-    }
-    int vbsindex = vbsflag - verbose_flags.begin();
-    setVerbose(static_cast<VerboseFlag>(vbsindex), value);
-}
-
 
 const vector<bool>& Liga_t::getVerbose() const
 {
     return verbose;
-}
-
-vector<bool> Liga_t::getDefaultVerbose()
-{
-    vector<bool> default_verbose(VERBOSE_SIZE, false);
-    default_verbose[AD] = true;
-    default_verbose[WC] = true;
-    default_verbose[BC] = true;
-    return default_verbose;
 }
 
 // Private methods

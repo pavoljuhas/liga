@@ -48,7 +48,7 @@ struct RunPar_t
     std::string frames;
     int framesrate;
     std::deque<TraceId_t> framestrace;
-    std::vector<std::string> verbose;
+    std::vector<bool> verbose;
     // Liga parameters
     size_t ndim;
     bool crystal;
