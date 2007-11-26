@@ -1597,8 +1597,6 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		xyz_range = xyz_hi - xyz_lo;
 	    }
 	    double xyz_med = (xyz_hi + xyz_lo)/2.0;
-	    fid << "# LIGA molecule format = atomeye" << endl;
-	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    fid << "Number of particles = " << M.NAtoms() << endl;
 	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
 	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
