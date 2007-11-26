@@ -87,8 +87,9 @@ Molecule::Molecule(const DistanceTable& dtab,
     setDistanceTable(dtab);
     if (vx.size() != vy.size() || vx.size() != vz.size())
     {
-	cerr << "E: invalid coordinate vectors" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: invalid coordinate vectors";
+	throw InvalidMolecule(emsg.str());
     }
     for (size_t i = 0; i != vx.size(); ++i)
     {
@@ -201,7 +202,7 @@ void Molecule::Recalculate()
 	    bwi.push_back(BadnessWithIndex(badnesshalf, seq0.idx()));
 	    bwi.push_back(BadnessWithIndex(badnesshalf, seq1.idx()));
 	}
-    }
+	}
     // order pair iterators by corresponding badness for accurate summation
     sort(bwi.begin(), bwi.end());
     // sum over sorted errors
@@ -435,8 +436,9 @@ void Molecule::Add(const Atom_t& atom)
 {
     if (NAtoms() == maxNAtoms())
     {
-	cerr << "E: molecule too large in Add()" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: molecule too large in Add()";
+	throw InvalidMolecule(emsg.str());
     }
     // create new atom
     Atom_t* pnew_atom;
@@ -768,13 +770,15 @@ int Molecule::push_good_distances(
     // add new atom in direction defined by 2 atoms
     if (NAtoms() == maxNAtoms())
     {
-	cerr << "E: molecule too large for finding a new position" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: molecule too large for finding a new position";
+	throw InvalidMolecule(emsg.str());
     }
     else if (NAtoms() < 1)
     {
-	cerr << "E: empty molecule, no way to push_good_distances()" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: empty molecule, no way to push_good_distances()";
+	throw InvalidMolecule(emsg.str());
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
@@ -838,13 +842,15 @@ int Molecule::push_good_triangles(
     // generate randomly oriented triangles
     if (NAtoms() == maxNAtoms())
     {
-	cerr << "E: molecule too large for finding a new position" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: molecule too large for finding a new position";
+	throw InvalidMolecule(emsg.str());
     }
     else if (NAtoms() < 2)
     {
-	cerr << "E: molecule too small, triangulation not possible" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: molecule too small, triangulation not possible";
+	throw InvalidMolecule(emsg.str());
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
@@ -941,13 +947,15 @@ int Molecule::push_good_pyramids(
     if (!ntrials)   return 0;
     if (NAtoms() == maxNAtoms())
     {
-	cerr << "E: molecule too large for finding a new position" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: molecule too large for finding a new position";
+	throw InvalidMolecule(emsg.str());
     }
     else if (NAtoms() < 3)
     {
-	cerr << "E: molecule too small, cannot construct pyramid" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: molecule too small, cannot construct pyramid";
+	throw InvalidMolecule(emsg.str());
     }
     const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
@@ -1065,9 +1073,9 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 {
     if (NAtoms() != 1)
     {
-	cerr << "E: push_second_atoms() must be called with 1-atom molecule"
-	    << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: push_second_atoms() must be called with 1-atom molecule";
+	throw InvalidMolecule(emsg.str());
     }
     // second atoms will be pushed along z-direction from a0
     Atom_t& a0 = *atoms[0];
@@ -1113,9 +1121,9 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 {
     if (NAtoms() != 2)
     {
-	cerr << "E: push_third_atoms() must be called with 2-atom molecule"
-	    << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: push_third_atoms() must be called with 2-atom molecule";
+	throw InvalidMolecule(emsg.str());
     }
     // build list of distances from the base atoms
     list<double> d0, d1;
@@ -1208,8 +1216,9 @@ void Molecule::Evolve(const int* est_triang)
     const int& nspatial = est_triang[SPATIAL];
     if (NAtoms() == maxNAtoms())
     {
-	cerr << "E: full-sized molecule cannot Evolve()" << endl;
-	throw InvalidMolecule();
+        ostringstream emsg;
+	emsg << "E: full-sized molecule cannot Evolve()";
+	throw InvalidMolecule(emsg.str());
     }
     // containter for test atoms
     vector<Atom_t> vta;
@@ -1382,7 +1391,7 @@ Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
     string fmt;
     // initialize members:
     state =
-	read_token("BGA molecule format", fmt) &&
+	read_token("LIGA molecule format", fmt) &&
 	read_token("NAtoms", NAtoms);
     if (!state)
     {
@@ -1437,14 +1446,16 @@ istream& Molecule::ReadXYZ(istream& fid)
     ParseHeader ph(header);
     if (ph && vxyz_NAtoms != ph.NAtoms)
     {
-	cerr << "E: " << opened_file << ": expected " << ph.NAtoms <<
-	    " atoms, read " << vxyz_NAtoms << endl;
-	throw IOError();
+        ostringstream emsg;
+	emsg << "E: " << opened_file << ": expected " << ph.NAtoms <<
+	    " atoms, read " << vxyz_NAtoms;
+	throw IOError(emsg.str());
     }
     if ( vxyz.size() % 3 )
     {
-	cerr << "E: " << opened_file << ": incomplete data" << endl;
-	throw IOError();
+        ostringstream emsg;
+	emsg << "E: " << opened_file << ": incomplete data";
+	throw IOError(emsg.str());
     }
     Clear();
     for (vector<double>::iterator ii = vxyz.begin(); ii < vxyz.end();)
@@ -1460,8 +1471,9 @@ bool Molecule::ReadXYZ(const char* file)
     ifstream fid(file);
     if (!fid)
     {
-	cerr << "E: unable to read '" << file << "'" << endl;
-	throw IOError();
+        ostringstream emsg;
+	emsg << "E: unable to read '" << file << "'";
+	throw IOError(emsg.str());
     }
     opened_file = file;
     bool result = ReadXYZ(fid);
@@ -1476,10 +1488,9 @@ bool Molecule::WriteFile(const char* file)
     ofstream fid(file, ios_base::out|ios_base::ate );
     if (!fid)
     {
-	ostringstream oss;
-	oss << "WriteFile(): unable to write to '" << file << "'";
-	cerr << oss.str() << endl;
-	throw IOError(oss.str());
+	ostringstream emsg;
+	emsg << "WriteFile(): unable to write to '" << file << "'";
+	throw IOError(emsg.str());
     }
     fid.close();
     // write via temporary file
@@ -1497,30 +1508,30 @@ bool Molecule::WriteFile(const char* file)
 
 bool Molecule::WriteXYZ(const char* file)
 {
-    file_fmt_type org_ofmt = output_format;
+    file_fmt_type org_ofmt = Molecule::output_format;
     OutFmtXYZ();
     bool result = WriteFile(file);
-    output_format = org_ofmt;
+    Molecule::output_format = org_ofmt;
     return result;
 }
 
 bool Molecule::WriteAtomEye(const char* file)
 {
-    file_fmt_type org_ofmt = output_format;
+    file_fmt_type org_ofmt = Molecule::output_format;
     OutFmtAtomEye();
     bool result = WriteFile(file);
-    output_format = org_ofmt;
+    Molecule::output_format = org_ofmt;
     return result;
 }
 
 void Molecule::OutFmtXYZ()
 {
-    output_format = XYZ;
+    Molecule::output_format = XYZ;
 }
 
 void Molecule::OutFmtAtomEye()
 {
-    output_format = ATOMEYE;
+    Molecule::output_format = ATOMEYE;
 }
 
 istream& operator>>(istream& fid, Molecule& M)
@@ -1561,7 +1572,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
     typedef vector<Atom_t*>::iterator VPAit;
     VPAit afirst = M.atoms.begin();
     VPAit alast = M.atoms.end();
-    switch (M.output_format)
+    switch (Molecule::output_format)
     {
 	case Molecule::XYZ:
 	    for (VPAit pai = afirst; pai != alast; ++pai)
@@ -1580,11 +1591,8 @@ ostream& operator<<(ostream& fid, Molecule& M)
 	    {
 		const double scale = 1.01;
 		list<double> xyz_extremes;
-                if (!M.dTarget->empty())
-                {
-                    xyz_extremes.push_back(-M.dTarget->back());
-                    xyz_extremes.push_back(+M.dTarget->back());
-                }
+                xyz_extremes.push_back(-M.max_dTarget());
+                xyz_extremes.push_back(+M.max_dTarget());
 		for (VPAit pai = afirst; pai != alast; ++pai)
 		{
                     R3::Vector rsc = (*pai)->r * scale;
@@ -1599,7 +1607,7 @@ ostream& operator<<(ostream& fid, Molecule& M)
 		xyz_range = xyz_hi - xyz_lo;
 	    }
 	    double xyz_med = (xyz_hi + xyz_lo)/2.0;
-	    fid << "# BGA molecule format = atomeye" << endl;
+	    fid << "# LIGA molecule format = atomeye" << endl;
 	    fid << "# NAtoms = " << M.NAtoms() << endl;
 	    fid << "Number of particles = " << M.NAtoms() << endl;
 	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
