@@ -188,29 +188,19 @@ void Molecule::Recalculate()
 	seq.ptr()->ResetBadness();
     }
     // create array of all badness contributions with atom index
-    typedef pair<double,int> BadnessWithIndex;
-    vector<BadnessWithIndex> bwi;
-    bwi.reserve(2*NDist());
     for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
     {
 	AtomSequenceIndex seq1 = seq0;
 	for (seq1.next(); !seq1.finished(); seq1.next())
 	{
-	    int idx0 = seq0.ptr()->pmxidx;
-	    int idx1 = seq1.ptr()->pmxidx;
-	    double badnesshalf = pmx_partial_costs(idx0,idx1) / 2.0;
-	    bwi.push_back(BadnessWithIndex(badnesshalf, seq0.idx()));
-	    bwi.push_back(BadnessWithIndex(badnesshalf, seq1.idx()));
+	    int i0 = seq0.ptr()->pmxidx;
+	    int i1 = seq1.ptr()->pmxidx;
+	    double& paircost = pmx_partial_costs(i0,i1);
+            badness += paircost;
+            double paircosthalf = paircost / 2.0;
+ 	    seq0.ptr()->IncBadness(paircosthalf);
+ 	    seq1.ptr()->IncBadness(paircosthalf);
 	}
-	}
-    // order pair iterators by corresponding badness for accurate summation
-    sort(bwi.begin(), bwi.end());
-    // sum over sorted errors
-    for (vector<BadnessWithIndex>::iterator pbwi = bwi.begin();
-	    pbwi != bwi.end(); ++pbwi)
-    {
-	atoms[pbwi->second]->IncBadness(pbwi->first);
-	badness += pbwi->first;
     }
 }
 
