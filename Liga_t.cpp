@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -91,11 +91,11 @@ Liga_t::~Liga_t()
 void Liga_t::prepare()
 {
     season = 0;
-    isfinished = false;
     clear();
     world_champ = NULL;
     delete best_champ;
     best_champ = NULL;
+    printed_best_champ = false;
     tdistributor.reset( TrialDistributor::create(rp) );
     base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
@@ -232,10 +232,31 @@ void Liga_t::playLevel(size_t lo_level)
     if (advancing->Full())  updateWorldChamp();
 }
 
+bool Liga_t::stopFlag() const
+{
+    return stopflag && *stopflag;
+}
+
+void Liga_t::useStopFlag(int* flag)
+{
+    stopflag = flag;
+}
+
+bool Liga_t::finished() const
+{
+    bool isfinished = stopFlag() || solutionFound() || outOfTime();
+    return isfinished;
+}
+
 bool Liga_t::solutionFound() const
 {
     return world_champ && world_champ->Full() &&
         world_champ->NormBadness() < rp->tol_bad;
+}
+
+bool Liga_t::outOfTime() const
+{
+    return rp->maxcputime > 0.0 && Counter::CPUTime() > rp->maxcputime;
 }
 
 void Liga_t::printFramesTrace() const
@@ -390,6 +411,7 @@ Molecule* Liga_t::updateBestChamp()
     // update needed here
     if (!best_champ)	best_champ = new Molecule(*world_champ);
     else		*best_champ = *world_champ;
+    printed_best_champ = false;
     return best_champ;
 }
 
@@ -402,9 +424,11 @@ void Liga_t::printWorldChamp()
 
 void Liga_t::printBestChamp()
 {
-    if (!verbose[BC])   return;
+    bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
+    if (dontprint)	return;
     cout << season << " BC " << best_champ->NAtoms() << ' '
-	<< best_champ->NormBadness() << '\n';
+	<< best_champ->NormBadness() << endl;
+    printed_best_champ = true;
 }
 
 void Liga_t::printLevelAverages()

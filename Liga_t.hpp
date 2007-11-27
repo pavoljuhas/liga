@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -66,8 +66,8 @@ class Liga_t : public std::vector<Division_t>
 	void playSeason();
 	void playLevel(size_t lo_level);
 	bool stopFlag() const;
-	bool useStopFlag(int* flag);
-	bool finished();
+	void useStopFlag(int* flag);
+	bool finished() const;
 	bool solutionFound() const;
 	bool outOfTime() const;
 	void printFramesTrace() const;
@@ -82,10 +82,10 @@ class Liga_t : public std::vector<Division_t>
 
 	// Data members
 	RunPar_t* rp;
-	bool isfinished;
 	int* stopflag;
 	int base_level;
 	PMOL world_champ, best_champ;
+        bool printed_best_champ;
 	std::auto_ptr<TrialDistributor> tdistributor;
         std::vector<bool> verbose;
 
@@ -104,34 +104,5 @@ class Liga_t : public std::vector<Division_t>
 	void recordFramesTrace(std::set<PMOL>& modified, size_t lo_level);
 	void saveFramesTrace(std::set<PMOL>& modified, size_t lo_level);
 };
-
-// class data
-
-// class methods
-
-// inline methods
-
-inline bool Liga_t::stopFlag() const
-{
-    return stopflag && *stopflag;
-}
-
-inline bool Liga_t::useStopFlag(int* flag)
-{
-    stopflag = flag;
-    return stopflag;
-}
-
-inline bool Liga_t::finished()
-{
-    isfinished = isfinished || stopflag && *stopflag ||
-        solutionFound() || outOfTime();
-    return isfinished;
-}
-
-inline bool Liga_t::outOfTime() const
-{
-    return rp->maxcputime > 0.0 && Counter::CPUTime() > rp->maxcputime;
-}
 
 #endif	// LIGA_T_HPP_INCLUDED
