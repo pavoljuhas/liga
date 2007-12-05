@@ -19,7 +19,7 @@ const double DOUBLE_EPS = std::numeric_limits<double>().epsilon();
 
 namespace LIGA {
 
-const double eps_badness = 1.0e-10;
+const double eps_badness = sqrt(DOUBLE_EPS);
 
 };
 

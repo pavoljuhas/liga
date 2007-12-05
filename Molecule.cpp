@@ -531,12 +531,12 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 
 bool Molecule::check_atom_filters(Atom_t* pa)
 {
-    typedef vector<AtomFilter_t*>::iterator VPAFit;
     bool isgood = true;
-    for (   VPAFit pafi = atom_filters.begin();
-	    isgood && pafi != atom_filters.end(); ++pafi )
+    vector<AtomFilter_t*>::iterator pafi = atom_filters.begin();
+    for (; isgood && pafi != atom_filters.end(); ++pafi)
     {
-	isgood = (*pafi)->Check(pa, this);
+        AtomFilter_t* filter = *pafi;
+	isgood = filter->Check(pa, this);
     }
     return isgood;
 }
@@ -594,11 +594,6 @@ int rxa_df(const gsl_vector* x, void* params, gsl_matrix* J)
 	}
     }
     return GSL_SUCCESS;
-}
-
-void Molecule::RelaxAtom(vector<Atom_t*>::iterator pai)
-{
-    RelaxAtom(pai - atoms.begin());
 }
 
 void Molecule::RelaxAtom(const int cidx)
@@ -1216,7 +1211,6 @@ void Molecule::Evolve(const int* est_triang)
     valarray<double> vafit(NAtoms());
     double* pd = &vafit[0];
     // first fill the array with badness
-    typedef vector<Atom_t*>::iterator VPAit;
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
 	*(pd++) = seq.ptr()->Badness();
@@ -1258,8 +1252,8 @@ void Molecule::Evolve(const int* est_triang)
     while (true)
     {
 	filter_good_atoms(vta, evolve_range, hi_abad);
-	if (vta.size() == 0)
-	    break;
+        // finished when no test atoms left
+	if (vta.empty())   break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
 	if (lookout)
@@ -1293,17 +1287,19 @@ void Molecule::Evolve(const int* est_triang)
 	vta.erase(vta.begin()+idx);
 	if (evolve_relax)
 	{
-	    VPAit worst = max_element(atoms.begin(), atoms.end(),
-		    comp_pAtom_FreeBadness);
-	    if ( eps_gt((*worst)->Badness(), 0.0) && ! (*worst)->fixed )
+	    int worst_idx = max_element(atoms.begin(), atoms.end(),
+		    comp_pAtom_FreeBadness) - atoms.begin();
+            Atom_t* worst = atoms[worst_idx];
+	    if (eps_gt(worst->Badness(), 0.0) && !worst->fixed)
 	    {
-		RelaxAtom(worst);
+		RelaxAtom(worst_idx);
 	    }
 	}
-	if (NAtoms() == maxNAtoms() || !evolve_jump)
-	    break;
+	if (Full() || !evolve_jump)     break;
 	for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
+        {
 	    pai->ResetBadness();
+        }
     }
 }
 
@@ -1334,15 +1330,15 @@ void Molecule::Degenerate(int Npop)
 	ipop.push_back(freeidx[*ii]);
     }
     Pop(ipop);
-    typedef vector<Atom_t*>::iterator VPAit;
     if (degenerate_relax && NAtoms() > 1)
     {
-	VPAit worst = max_element(atoms.begin(), atoms.end(),
-		comp_pAtom_FreeBadness);
-	if ( eps_gt((*worst)->Badness(), 0.0) && ! (*worst)->fixed )
-	{
-	    RelaxAtom(worst);
-	}
+        int worst_idx = max_element(atoms.begin(), atoms.end(),
+                comp_pAtom_FreeBadness) - atoms.begin();
+        Atom_t* worst = atoms[worst_idx];
+        if (eps_gt(worst->Badness(), 0.0) && !worst->fixed)
+        {
+            RelaxAtom(worst_idx);
+        }
     }
 }
 

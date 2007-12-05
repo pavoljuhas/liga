@@ -118,7 +118,6 @@ class Molecule
 	void Fix(const int cidx);	// mark atom as fixed
 	int NFixed() const;		// count fixed atoms
 	void RelaxAtom(const int cidx);	// relax internal atom
-	void RelaxAtom(std::vector<Atom_t*>::iterator);
 	void RelaxExternalAtom(Atom_t& a);
 	void Evolve(const int* est_triang);
 	void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
