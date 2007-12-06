@@ -10,7 +10,7 @@
 
 #include <list>
 #include "AtomFilter_t.hpp"
-#include "BGAutils.hpp"
+#include "LigaUtils.hpp"
 #include "AtomSequence.hpp"
 #include "Molecule.hpp"
 

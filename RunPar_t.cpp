@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <fstream>
 #include "RunPar_t.hpp"
 #include "Random.hpp"
 #include "TrialDistributor.hpp"
@@ -15,6 +16,7 @@
 #include "Molecule.hpp"
 #include "Liga_t.hpp"
 #include "AtomFilter_t.hpp"
+#include "LigaUtils.hpp"
 #include "Exceptions.hpp"
 #include "RegisterSVNId.hpp"
 

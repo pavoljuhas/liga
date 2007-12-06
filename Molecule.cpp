@@ -13,8 +13,8 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlin.h>
-#include "BGAutils.hpp"
 #include "Molecule.hpp"
+#include "LigaUtils.hpp"
 #include "AtomFilter_t.hpp"
 #include "AtomSequence.hpp"
 #include "AtomCost.hpp"

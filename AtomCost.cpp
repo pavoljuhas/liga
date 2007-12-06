@@ -13,7 +13,7 @@
 #include "AtomSequence.hpp"
 #include "AtomCost.hpp"
 #include "Molecule.hpp"
-#include "BGAutils.hpp"
+#include "LigaUtils.hpp"
 #include "Counter.hpp"
 
 using namespace std;

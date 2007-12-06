@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <fstream>
 #include "Exceptions.hpp"
 #include "ParseArgs.hpp"
 

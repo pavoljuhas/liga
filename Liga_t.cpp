@@ -10,6 +10,7 @@
 
 #include <queue>
 #include "Liga_t.hpp"
+#include "LigaUtils.hpp"
 #include "TraceId_t.hpp"
 #include "Molecule.hpp"
 #include "RunPar_t.hpp"

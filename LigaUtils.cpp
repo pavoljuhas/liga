@@ -1,14 +1,13 @@
-#include <iostream>
-#include <string>
+#include <fstream>
 #include <sstream>
-#include <unistd.h>
-#include <sys/times.h>
+#include <string>
+#include <cstring>
+#include "LigaUtils.hpp"
 #include "Exceptions.hpp"
-#include "BGAutils.hpp"
 
 using namespace std;
 
-RegisterSVNId BGAutils_cpp_id("$Id$");
+RegisterSVNId LigaUtils_cpp_id("$Id$");
 
 ////////////////////////////////////////////////////////////////////////
 // Definitions
@@ -63,23 +62,26 @@ ofstream& mktempofstream(ofstream& out, char *writefile)
     {
 	// create random name
 	for (int j = 0; j < 6; ++j)
+        {
 	    pX[j] = alnum[ rand() % alnum.size() ];
+        }
 	ifstream fid(writefile);
-	if (!fid)
-	    break;
-	else
-	    fid.close();
+	if (!fid)   break;
+	else        fid.close();
 	if ( !(i < max_attempts) )
-	    throw IOError("mktempofstream(): max_attempts exceeded");
+        {
+            const char* emsg = "mktempofstream(): max_attempts exceeded.";
+	    throw IOError(emsg);
+        }
     }
     // we should have a good name here
     out.open(writefile);
     if (!out)
     {
-	ostringstream oss;
-	oss << "mktempofstream(): unable to open " <<
-				  writefile << "for writing";
-	throw IOError(oss.str());
+	ostringstream emsg;
+        emsg << "mktempofstream(): unable to open " << writefile <<
+            "for writing.";
+	throw IOError(emsg.str());
     }
     return out;
 }

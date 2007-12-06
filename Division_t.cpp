@@ -10,7 +10,7 @@
 
 #include "Division_t.hpp"
 #include "Molecule.hpp"
-#include "BGAutils.hpp"
+#include "LigaUtils.hpp"
 
 using namespace std;
 

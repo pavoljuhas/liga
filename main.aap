@@ -10,7 +10,7 @@
 
 LigaSources +=
         Atom_t.cpp AtomCost.cpp AtomFilter_t.cpp AtomSequence.cpp
-        BGAutils.cpp Counter.cpp DistanceTable.cpp Division_t.cpp
+        LigaUtils.cpp Counter.cpp DistanceTable.cpp Division_t.cpp
         Liga_t.cpp Molecule.cpp ParseArgs.cpp Random.cpp
         RegisterSVNId.cpp TrialDistributor.cpp
 

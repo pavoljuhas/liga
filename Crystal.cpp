@@ -14,7 +14,7 @@
 #include "Crystal.hpp"
 #include "Lattice.hpp"
 #include "Atom_t.hpp"
-#include "BGAutils.hpp"
+#include "LigaUtils.hpp"
 
 using namespace std;
 

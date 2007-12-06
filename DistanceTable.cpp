@@ -10,8 +10,9 @@
 
 #include <sstream>
 #include <cmath>
-#include "Exceptions.hpp"
 #include "DistanceTable.hpp"
+#include "Exceptions.hpp"
+#include "LigaUtils.hpp"
 
 RegisterSVNId DistanceTable_cpp_id("$Id$");
 
@@ -131,7 +132,7 @@ void DistanceTable::init()
     double xn = ( 1.0 + sqrt(1.0 + 8.0*size()) )/2.0;
     est_num_atoms = int(xn);
     count_unique = -1;
-    resolution = 1e-5;  // same as sqrt(BGA::eps_badness)
+    resolution = LIGA::eps_badness;
     if (empty())    return;
     // check for any negative element
     size_t minidx = min_element(begin(), end()) - begin();

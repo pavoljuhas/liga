@@ -1,5 +1,5 @@
-#ifndef BGAUTILS_HPP_INCLUDED
-#define BGAUTILS_HPP_INCLUDED
+#ifndef LIGAUTILS_HPP_INCLUDED
+#define LIGAUTILS_HPP_INCLUDED
 
 #include <stdexcept>
 #include <fstream>
@@ -10,7 +10,7 @@
 #include "RegisterSVNId.hpp"
 
 namespace {
-RegisterSVNId BGAutils_hpp_id("$Id$");
+RegisterSVNId LigaUtils_hpp_id("$Id$");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -117,4 +117,4 @@ bool read_data(std::istream& fid, std::vector<T>& v)
     return !(fid.rdstate() & std::ios::badbit);
 }
 
-#endif	// BGAUTILS_HPP_INCLUDED
+#endif	// LIGAUTILS_HPP_INCLUDED

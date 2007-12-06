@@ -18,7 +18,6 @@
 #include <map>
 #include <stdexcept>
 #include <getopt.h>
-#include "BGAutils.hpp"
 #include "RegisterSVNId.hpp"
 
 namespace {
