@@ -85,7 +85,7 @@ int Division_t::find_winner()
     for (iterator mi = begin(); mi != end(); ++mi, ++pd)
         *pd = (*mi)->NormBadness();
     // then get the reciprocal value
-    vmfit = recipw0(vmfit);
+    vmfit = costToFitness(vmfit);
     double *mfit = &vmfit[0];
     int idx = randomWeighedInt(size(), mfit);
     return idx;

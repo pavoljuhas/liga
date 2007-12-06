@@ -196,7 +196,7 @@ const vector<double>& AtomCost::lsqWeights() const
 	assert(wtii < lsq_wt.end());
 	*(wtii++) = seq.ptr()->Badness();
     }
-    lsq_wt = recipw0(lsq_wt);
+    lsq_wt = costToFitness(lsq_wt);
     transform(lsq_wt.begin(), lsq_wt.end(), lsq_wt.begin(), sqrt_double);
     return lsq_wt;
 }

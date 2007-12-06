@@ -364,7 +364,9 @@ void Molecule::Pop(const int aidx)
 {
     if (aidx < 0 || aidx >= NAtoms())
     {
-	throw range_error("in Molecule::Pop(const int aidx)");
+	ostringstream emsg;
+	emsg << "Molecule::Pop(const int) invalid index " << aidx << '.';
+	throw range_error(emsg.str());
     }
     Atom_t* pa = atoms[aidx];
     // Pop should never get called on fixed atom
@@ -446,7 +448,7 @@ void Molecule::Fix(const int cidx)
     if (cidx < 0 || cidx >= NAtoms())
     {
 	ostringstream emsg;
-	emsg << "Molecule::Fix(const int) invalid index " << cidx;
+	emsg << "Molecule::Fix(const int) invalid index " << cidx << '.';
 	throw range_error(emsg.str());
     }
     atoms[cidx]->fixed = true;
@@ -600,7 +602,9 @@ void Molecule::RelaxAtom(const int cidx)
 {
     if (cidx < 0 || cidx >= NAtoms())
     {
-	throw range_error("in Molecule::RelaxAtom(const int)");
+	ostringstream emsg;
+	emsg << "Molecule::RelaxAtom(const int) invalid index " << cidx << '.';
+	throw range_error(emsg.str());
     }
     // RelaxAtom should never get called on a fixed atom
     assert(!atoms[cidx]->fixed);
@@ -1208,15 +1212,15 @@ void Molecule::Evolve(const int* est_triang)
     // containter for test atoms
     vector<Atom_t> vta;
     // calculate array of atom fitnesses
+    valarray<double> vacost(NAtoms());
     valarray<double> vafit(NAtoms());
-    double* pd = &vafit[0];
-    // first fill the array with badness
-    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    // first fill the cost array
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
     {
-	*(pd++) = seq.ptr()->Badness();
+	vacost[seq.idx()] = seq.ptr()->Badness();
     }
-    // finally get the reciprocal value
-    vafit = recipw0(vafit);
+    // then convert to fitness
+    vafit = costToFitness(vacost);
     double* afit = &vafit[0];
     bool lookout = NAtoms() && NAtoms() <= 2 &&
 	randomFloat() < lookout_prob;
@@ -1278,7 +1282,7 @@ void Molecule::Evolve(const int* est_triang)
 		*pfit = ai->Badness();
 	    }
 	    // then get the reciprocal value
-	    vtafit = recipw0(vtafit);
+	    costToFitnessInplace(&(vtafit[0]), &(vtafit[vtafit.size()]));
 	}
 	// vtafit is ready here
 	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
@@ -1648,14 +1652,14 @@ void Molecule::PrintBadness() const
 
 void Molecule::PrintFitness()
 {
+    valarray<double> vacost(NAtoms());
     valarray<double> vafit(NAtoms());
-    double* pd = &vafit[0];
-    typedef vector<Atom_t*>::iterator VPAit;
     // first fill the array with badness
-    for (VPAit pai = atoms.begin(); pai != atoms.end(); ++pai, ++pd)
-	*pd = (*pai)->Badness();
+    double* pd = &vacost[0];
+    vector<Atom_t*>::iterator pai = atoms.begin();
+    for (; pai != atoms.end(); ++pai, ++pd)     *pd = (*pai)->Badness();
     // then get the reciprocal value
-    vafit = recipw0(vafit);
+    vafit = costToFitness(vacost);
     cout << "AFitness() =";
     double mab = vafit.max();
     bool marked = false;

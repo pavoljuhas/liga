@@ -13,74 +13,98 @@ namespace {
 RegisterSVNId BGAutils_hpp_id("$Id$");
 }
 
+////////////////////////////////////////////////////////////////////////
+// Declarations
+////////////////////////////////////////////////////////////////////////
+
 // constants
+
 const double DOUBLE_MAX = std::numeric_limits<double>().max();
 const double DOUBLE_EPS = std::numeric_limits<double>().epsilon();
 
 namespace LIGA {
-
 const double eps_badness = sqrt(DOUBLE_EPS);
+};  // namespace LIGA
 
-};
+// functions
 
-inline bool eps_eq(double x, double y)
-{
-    return fabs(x-y) < LIGA::eps_badness;
-}
+// round-off handling
+bool eps_eq(const double& x, const double& y);
+bool eps_gt(const double& x, const double& y);
+bool eps_lt(const double& x, const double& y);
 
-inline bool eps_gt(double x, double y)
-{
-    return x > y + LIGA::eps_badness;
-}
-
-inline bool eps_lt(double x, double y)
-{
-    return x < y - LIGA::eps_badness;
-}
-
-// similar to mkstemp(3)
-std::ofstream& mktempofstream(std::ofstream& out, char *writefile);
-
+// valarray operations
 double vdnorm(const std::valarray<double>&);
-double vddot(const std::valarray<double>&, const std::valarray<double>&);
+double vddot(const std::valarray<double>&,
+        const std::valarray<double>&);
 std::valarray<double> vdcross(const std::valarray<double>&,
 			      const std::valarray<double>&);
+// fitness
+std::valarray<double> costToFitness(const std::valarray<double>&);
+template <typename Container>
+    Container costToFitness(const Container& vc);
+template <typename Iterator>
+    void costToFitnessInplace(Iterator first, Iterator last);
 
-// template function for zero-safe calculation of reciprocal vector
-const double zero_reciprocal_gain = 10.0;
-template <typename T>
-T recipw0(const T& v, double zerogain=zero_reciprocal_gain)
-{
-    // create container with return values
-    T rv = v;
-    double* rvfirst = &rv[0];
-    double* rvlast = &rv[rv.size()];
-    double min_positive = DOUBLE_MAX;
-    for (double* p = rvfirst; p != rvlast; ++p)
-    {
-	double& rvi = *p;
-	if (0.0 < rvi && rvi < min_positive)	min_positive = rvi;
-    }
-    if (min_positive == DOUBLE_MAX)	min_positive = 1.0;
-    double reczero = zerogain*1.0/min_positive;
-    // calculate reciprocal values
-    for (double* p = rvfirst; p != rvlast; ++p)
-    {
-	double& rvi = *p;
-	rvi = (rvi != 0.0) ? 1.0/rvi : reczero;
-    }
-    return rv;
-}
-
+// file utilities
+// similar to mkstemp(3)
+std::ofstream& mktempofstream(std::ofstream& out, char *writefile);
 bool read_header(std::istream& fid, std::string& header);
 bool read_header(std::istream& fid);
 template<typename T> bool read_data(std::istream& fid, std::vector<T>& v);
 
+
 ////////////////////////////////////////////////////////////////////////
-// Definitions
+// Definition for inline and template functions
 ////////////////////////////////////////////////////////////////////////
 
-// template functions
+// round-off handling
+
+inline bool eps_eq(const double& x, const double& y)
+{
+    return fabs(x-y) < LIGA::eps_badness;
+}
+
+inline bool eps_gt(const double& x, const double& y)
+{
+    return x > y + LIGA::eps_badness;
+}
+
+inline bool eps_lt(const double& x, const double& y)
+{
+    return x < y - LIGA::eps_badness;
+}
+
+// fitness
+
+inline std::valarray<double> costToFitness(const std::valarray<double>& vc)
+{
+    std::valarray<double> vf(vc);
+    double* first = &(vf[0]);
+    double* last = &(vf[vf.size()]);
+    costToFitnessInplace(first, last);
+    return vf;
+}
+
+template <typename Container>
+Container costToFitness(const Container& vc)
+{
+    Container vf(vc);
+    costToFitnessInplace(vf.begin(), vf.end());
+    return vf;
+}
+
+template <typename Iterator>
+void costToFitnessInplace(Iterator first, Iterator last)
+{
+    for (Iterator ii = first; ii != last; ++ii)
+    {
+        *ii = 1.0 / (*ii + DOUBLE_EPS);
+    }
+}
+
+// file utilities
+
 template<typename T>
 bool read_data(std::istream& fid, std::vector<T>& v)
 {
@@ -93,6 +117,4 @@ bool read_data(std::istream& fid, std::vector<T>& v)
     return !(fid.rdstate() & std::ios::badbit);
 }
 
-
-
-#endif		// BGAUTILS_HPP_INCLUDED
+#endif	// BGAUTILS_HPP_INCLUDED
