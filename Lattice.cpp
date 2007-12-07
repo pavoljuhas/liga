@@ -42,7 +42,7 @@ double cosd(double x)
 
 inline double sind(double x)
 {
-    return cosd(90.0 - x);
+    return NSLattice::cosd(90.0 - x);
 }
 
 double acosd(double x)
@@ -90,9 +90,9 @@ void Lattice::setLatPar( double a0, double b0, double c0,
     using namespace NSLattice;
     _a = a0; _b = b0; _c = c0;
     _alpha = alpha0; _beta = beta0; _gamma = gamma0;
-    cosa = cosd(_alpha);    sina = sind(_alpha);
-    cosb = cosd(_beta);     sinb = sind(_beta);
-    cosg = cosd(_gamma);    sing = sind(_gamma);
+    cosa = NSLattice::cosd(_alpha);    sina = NSLattice::sind(_alpha);
+    cosb = NSLattice::cosd(_beta);     sinb = NSLattice::sind(_beta);
+    cosg = NSLattice::cosd(_gamma);    sing = NSLattice::sind(_gamma);
     // Vunit is a volume of unit cell with a=b=c=1
     double Vunit = sqrt(
             1.0 + 2.0*cosa*cosb*cosg - cosa*cosa - cosb*cosb - cosg*cosg);
@@ -106,9 +106,9 @@ void Lattice::setLatPar( double a0, double b0, double c0,
     sinar = sqrt(1.0 - cosar*cosar);
     sinbr = sqrt(1.0 - cosbr*cosbr);
     singr = sqrt(1.0 - cosgr*cosgr);
-    _alphar = acosd(cosar);
-    _betar = acosd(cosbr);
-    _gammar = acosd(cosgr);
+    _alphar = NSLattice::acosd(cosar);
+    _betar = NSLattice::acosd(cosbr);
+    _gammar = NSLattice::acosd(cosgr);
     // metric tensor
     _metrics = _a*_a,       _a*_b*cosg,   _a*_c*cosb,
 	       _b*_a*cosg,  _b*_b,        _b*_c*cosa,
@@ -166,9 +166,9 @@ void Lattice::setLatBase(const R3::Vector& va0,
     sina = sqrt(1.0 - cosa*cosa);
     sinb = sqrt(1.0 - cosb*cosb);
     sing = sqrt(1.0 - cosg*cosg);
-    _alpha = acosd(cosa);
-    _beta = acosd(cosb);
-    _gamma = acosd(cosg);
+    _alpha = NSLattice::acosd(cosa);
+    _beta = NSLattice::acosd(cosb);
+    _gamma = NSLattice::acosd(cosg);
     // Vunit is a volume of unit cell with a=b=c=1
     double Vunit = sqrt(
             1.0 + 2.0*cosa*cosb*cosg - cosa*cosa - cosb*cosb - cosg*cosg);
@@ -182,9 +182,9 @@ void Lattice::setLatBase(const R3::Vector& va0,
     sinar = sqrt(1.0 - cosar*cosar);
     sinbr = sqrt(1.0 - cosbr*cosbr);
     singr = sqrt(1.0 - cosgr*cosgr);
-    _alphar = acosd(cosar);
-    _betar = acosd(cosbr);
-    _gammar = acosd(cosgr);
+    _alphar = NSLattice::acosd(cosar);
+    _betar = NSLattice::acosd(cosbr);
+    _gammar = NSLattice::acosd(cosgr);
     // standard orientation of lattice vectors
     _stdbase = 1.0/_ar,     -cosgr/singr/_ar,   cosb*_a,
                0.0,         _b*sina,            _b*cosa,

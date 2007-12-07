@@ -104,9 +104,8 @@ private:
     int count(double Rmin, double Rmax)
     {
 	int c = 0;
-	for (   PointsInSphere sph(Rmin, Rmax, *latpar);
-		not sph.finished(); sph.next(), ++c  )
-	{ }
+	PointsInSphere sph(Rmin, Rmax, *latpar);
+	for (; !sph.finished(); sph.next())     ++c;
 	return c;
     }
 

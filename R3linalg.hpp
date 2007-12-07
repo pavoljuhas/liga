@@ -98,7 +98,7 @@ inline Vector product(const Vector& u, const Matrix& M)
 }
 
 template <class M>
-bool MatricesAlmostEqual(const M& A, const M& B, double precision=0.0)
+bool MatricesAlmostEqual(const M& A, const M& B, double precision)
 {
     for (int i = 0; i < Ndim; ++i)
     {
@@ -111,7 +111,7 @@ bool MatricesAlmostEqual(const M& A, const M& B, double precision=0.0)
 }
 
 template <class V>
-bool VectorsAlmostEqual(const V& u, const V& v, double precision=0.0)
+bool VectorsAlmostEqual(const V& u, const V& v, double precision)
 {
     for (int i = 0; i < Ndim; ++i)
     {

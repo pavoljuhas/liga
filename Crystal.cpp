@@ -1,4 +1,4 @@
-#include "/u24/juhas/programs/include/dbprint.h"
+#include "dbprint.h"
 /***********************************************************************
 * Short Title: object definitions for Biosphere Genetic Algorithm
 *

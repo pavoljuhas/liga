@@ -48,10 +48,12 @@ CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
 Tool ?= `defaultTool()`
 
 @if Tool == "intelcc":
-    CXX ?= icpc
+    CXX = icpc
+    CXXFLAGS += -w1
     ExtraDebug =
     ExtraOptim = -fast -axTW
 @else:
+    CXXFLAGS += -Wall
     ExtraDebug = -gstabs+
     ExtraOptim = -ffast-math
 
@@ -61,7 +63,6 @@ Tool ?= `defaultTool()`
     :syseval pkg-config --libs blitz | :assign BlitzLibs
     INCLUDE += $GSLInclude -I$*LocalInclude
     LIBS += $GSLLibs $BlitzLibs
-    CXXFLAGS += -Wall
 
 :attribute {check = c_md5} *.cpp *.hpp
 :attribute {check = none} $HOME/include/blitz/*
