@@ -1,11 +1,14 @@
 ########################################################################
-# Short Title: aap rules for single element liga algorithm
 #
-# Comments:
+# aap build rules
+#
+# Optional settings:
+#
+#     Build=fast     compile (or test or install) optimized version
+#     Tool=intelcc   build with the Intel C++ compiler
 #
 # $Id$
-########################################################################
-
+#
 ########################################################################
 
 LigaSources +=
@@ -34,16 +37,20 @@ BDIR = $Bdir/$BDIR
 CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
 
 :python
-    def buildOnHPC():
-        from os import uname
-        from socket import gethostname
-        onhpc = gethostname() in ('white','green') and uname()[-1] == 'ia64'
-        return onhpc
+    def defaultTool():
+        """Return default C++ compiler.
+        """
+        if program_path("icpc"):
+            tool = "intelcc"
+        else:
+            tool = "gcc"
+        return tool
+Tool ?= `defaultTool()`
 
-@if buildOnHPC():
+@if Tool == "intelcc":
     CXX ?= icpc
     ExtraDebug =
-    ExtraOptim = -fast
+    ExtraOptim = -fast -axTW
 @else:
     ExtraDebug = -gstabs+
     ExtraOptim = -ffast-math
@@ -75,10 +82,12 @@ CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
 # build targets
 ########################################################################
 
-all: gizaliga
+all \
+{comment = build gizaliga, the standard target} : \
+    gizaliga
 
 :program gizaliga \
-{comment = soccer league of pyramid builders} \
+{comment = program for structure solution from pair distances} \
 {var_LD = $CXX} :
     gizaliga.cpp RunPar_t.cpp $LigaSources
 
@@ -109,23 +118,23 @@ test { comment = exectute all run tests and unit tests } : \
 runtest { virtual } { comment = test gizaliga on shapes and solids } : \
     gizaliga runtest-solids runtest-shapes runtest-bangle_range
 
-gl = ./gizaliga$EXESUF
-runtest_options = maxcputime=1 seasontrials=500
+GL = ./gizaliga$EXESUF
+GLTestOptions = maxcputime=1 seasontrials=500
 
 runtest-solids :
-        solids = tetrahedron.dst octahedron.dst cube.dst \
-                 icosahedron.dst dodecahedron.dst
-        @for f in var2list(solids):
-            :sys {log} $gl $runtest_options solids/$f
+    @for f in ("tetrahedron.dst", "octahedron.dst", "cube.dst", \
+            "icosahedron.dst", "dodecahedron.dst"):
+        :sys {log} $GL $GLTestOptions solids/$f
 
 runtest-shapes :
-        shapes = square.dst pentagon.dst hexagon.dst heptagon.dst octagon.dst
-        @for f in var2list(shapes):
-            :sys {log} $gl $runtest_options ndim=2 shapes/$f
+    @for f in ("square.dst", "pentagon.dst", \
+            "hexagon.dst", "heptagon.dst", "octagon.dst"):
+        :sys {log} $GL $GLTestOptions ndim=2 shapes/$f
 
 runtest-bangle_range :
-        :sys {log} $gl $runtest_options shapes/square.dst bangle_range=1.5,80
-        :sys {log} $gl $runtest_options shapes/hexagon.dst bangle_range=1.5,110
+    :sys {log} $GL $GLTestOptions shapes/square.dst bangle_range=1.5,80
+    @pass
+    :sys {log} $GL $GLTestOptions shapes/hexagon.dst bangle_range=1.5,110
 
 unittest { comment = execute Liga unit tests} : alltests
         :sys ./alltests${EXESUF}
