@@ -64,8 +64,8 @@ Tool ?= `defaultTool()`
     INCLUDE += $GSLInclude -I$*LocalInclude
     LIBS += $GSLLibs $BlitzLibs
 
+DEFAULTCHECK = time
 :attribute {check = c_md5} *.cpp *.hpp
-:attribute {check = none} $HOME/include/blitz/*
 
 :variant Build
     debug
