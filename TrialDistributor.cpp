@@ -28,7 +28,7 @@ const size_t TrialDistributor::histsize = 10;
 
 TrialDistributor* TrialDistributor::create(RunPar_t* rp)
 {
-    const string& tstp = rp->trials_sharing;
+    const string& tstp = rp->trialsharing;
     if (!isType(tstp))
     {
 	ostringstream emsg;
@@ -38,7 +38,7 @@ TrialDistributor* TrialDistributor::create(RunPar_t* rp)
     TrialDistributor* td = create(distributorsRegistry()[tstp]);
     // copy data from rp
     td->resize(rp->natoms + 1);
-    td->tol_bad = rp->tol_bad;
+    td->tolcost = rp->tolcost;
     td->base_level = rp->base_level;
     return td;
 }
@@ -163,7 +163,7 @@ void TrialDistributorSuccess::share(int seasontrials)
 	for (int i = hist.size() - 1;  i > 0 && hwt > 0.0;  --i, --hwt)
 	{
 	    double improvement = (hist[i] < hist[i-1]) ?
-		(hist[i-1] - hist[i])/tol_bad : 0;
+		(hist[i-1] - hist[i])/tolcost : 0;
 	    scwt[lv] += hwt * improvement;
 	    tothwt += hwt;
 	}

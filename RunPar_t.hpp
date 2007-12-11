@@ -54,19 +54,19 @@ struct RunPar_t
     bool crystal;
     std::vector<double> latpar;
     bool distreuse;
-    double tol_bad;
+    double tolcost;
     int natoms;
     std::vector<int> fixed_atoms;
     std::vector<SeedClusterInfo> seed_clusters;
     double maxcputime;
     int rngseed;
-    double evolve_frac;
-    bool evolve_relax;
-    bool degenerate_relax;
+    double promotefrac;
+    bool promoterelax;
+    bool demoterelax;
     int ligasize;
     double stopgame;
     int seasontrials;
-    std::string trials_sharing;
+    std::string trialsharing;
     double lookout_prob;
     // generated data
     std::auto_ptr<Molecule> mol;

@@ -41,7 +41,7 @@ class TrialDistributor
 	// constructor
 	TrialDistributor()
 	{
-	    tol_bad = 1.0e-8;
+	    tolcost = 1.0e-8;
 	}
 	// destructor
 	virtual ~TrialDistributor() { }
@@ -74,7 +74,7 @@ class TrialDistributor
 	std::deque<double> fillrate;
 	int base_level;
 	int top_level;
-	double tol_bad;
+	double tolcost;
 
 	// protected methods
 

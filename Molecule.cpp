@@ -37,10 +37,10 @@ RegisterSVNId Molecule_cpp_id("$Id$");
 bool Molecule::distreuse = false;
 double Molecule::tol_nbad = 0.05*0.05;
 double Molecule::tol_r = 1.0e-8;
-double Molecule::evolve_frac = 0.1;
-bool Molecule::evolve_jump = true;
-bool Molecule::evolve_relax = false;
-bool Molecule::degenerate_relax = false;
+double Molecule::promotefrac = 0.1;
+bool Molecule::promotejump = true;
+bool Molecule::promoterelax = false;
+bool Molecule::demoterelax = false;
 vector<AtomFilter_t*> Molecule::atom_filters;
 double Molecule::lookout_prob = 0.0;
 Molecule::file_fmt_type Molecule::output_format = XYZ;
@@ -1249,7 +1249,7 @@ void Molecule::Evolve(const int* est_triang)
 	    push_good_pyramids(vta, afit, nspatial);
     }
     // set badness range from desired badness
-    double evolve_range = NAtoms()*tol_nbad*evolve_frac;
+    double evolve_range = NAtoms()*tol_nbad*promotefrac;
     double hi_abad = DOUBLE_MAX;
     // try to add as many atoms as possible
     typedef vector<Atom_t>::iterator VAit;
@@ -1289,7 +1289,7 @@ void Molecule::Evolve(const int* est_triang)
 	Add(vta[idx]);
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
-	if (evolve_relax)
+	if (promoterelax)
 	{
 	    int worst_idx = max_element(atoms.begin(), atoms.end(),
 		    comp_pAtom_FreeBadness) - atoms.begin();
@@ -1299,7 +1299,7 @@ void Molecule::Evolve(const int* est_triang)
 		RelaxAtom(worst_idx);
 	    }
 	}
-	if (Full() || !evolve_jump)     break;
+	if (Full() || !promotejump)     break;
 	for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
         {
 	    pai->ResetBadness();
@@ -1334,7 +1334,7 @@ void Molecule::Degenerate(int Npop)
 	ipop.push_back(freeidx[*ii]);
     }
     Pop(ipop);
-    if (degenerate_relax && NAtoms() > 1)
+    if (demoterelax && NAtoms() > 1)
     {
         int worst_idx = max_element(atoms.begin(), atoms.end(),
                 comp_pAtom_FreeBadness) - atoms.begin();

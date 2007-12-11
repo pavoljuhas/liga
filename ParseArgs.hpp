@@ -15,6 +15,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <set>
 #include <map>
 #include <stdexcept>
 #include <getopt.h>
@@ -57,6 +58,9 @@ public:
     template<typename T> T GetPar(std::string par, T defval);
     template<typename T> std::vector<T> GetParVec(std::string par);
     void ValidatePars(const std::list<std::string>& validpars);
+    void defParameterAlias(const std::string& a, const std::string& par);
+    std::string expandParameterAlias(const std::string& p);
+    const std::list<std::string>& usedParameterAliases() const;
     inline bool ispar(const std::string& p) { return pars.count(p); }
     inline bool isopt(const std::string& o) { return opts.count(o); }
 private:
@@ -64,7 +68,9 @@ private:
     void do_getopt();
     void do_getopt_long();
     void arg_or_par(const char *s);
-    std::map<std::string,bool> cmdl_par;
+    std::set<std::string> cmdl_par;
+    std::map<std::string,std::string> par_alias;
+    std::list<std::string> used_par_aliases;
 };
 
 template<typename T> T ParseArgs::GetPar(std::string par)

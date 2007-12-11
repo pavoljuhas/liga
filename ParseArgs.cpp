@@ -48,7 +48,7 @@ void ParseArgs::Parse()
 	do_getopt_long();
     else if (optstring)
 	do_getopt();
-    else 
+    else
     {
 	for (int i = 1; i < argc; ++i)
 	    arg_or_par(argv[i]);
@@ -148,6 +148,30 @@ void ParseArgs::ValidatePars(const list<string>& validpars)
     }
 }
 
+void ParseArgs::defParameterAlias(const string& a, const string& par)
+{
+    par_alias[a] = par;
+}
+
+string ParseArgs::expandParameterAlias(const string& p)
+{
+    string pe = p;
+    if (par_alias.count(p))
+    {
+        pe = par_alias[p];
+        if (!count(used_par_aliases.begin(), used_par_aliases.end(), p))
+        {
+            used_par_aliases.push_back(p);
+        }
+    }
+    return pe;
+}
+
+const list<string>& ParseArgs::usedParameterAliases() const
+{
+    return used_par_aliases;
+}
+
 void ParseArgs::ReadPars(const char *file)
 {
     // open file for reading
@@ -217,7 +241,8 @@ istream& ParseArgs::ReadPars(istream& fid)
 	}
 	pe = pline.find_last_not_of(string(blank) + "=", eq);
 	pe = (pe == string::npos) ? eq : pe+1;
-	string par = pline.substr(0, pe);
+	string par0 = pline.substr(0, pe);
+        string par = expandParameterAlias(par0);
 	bool ispar = isalpha(par[0]);
 	for (   string::iterator ii = par.begin();
 		ii != par.begin() && ispar; ++ii)
@@ -230,8 +255,7 @@ istream& ParseArgs::ReadPars(istream& fid)
 	    emsg_ostream << nr << ": invalid parameter name '" << par << "'";
 	    throw ParseArgsError(emsg_ostream.str());
 	}
-	if (cmdl_par.count(par))
-	    continue;
+	if (cmdl_par.count(par))    continue;
 	vb = pline.find_first_not_of(blank, eq+1);
 	pars[par] = (vb == string::npos) ? "" : pline.substr(vb);
     }
@@ -312,15 +336,20 @@ void ParseArgs::arg_or_par(const char *s)
     // here it looks like a parameter
     bool ispar = isalpha(s[0]);
     for (const char *p = s+1; ispar && p < peq; ++p)
+    {
 	ispar = isalnum(*p) || *p == '_';
+    }
     if (ispar)
     {
-	string par(s, peq-s);
+	string par0(s, peq-s);
+        string par = expandParameterAlias(par0);
 	pars[par] = string(peq+1);
-	cmdl_par[par] = true;
+	cmdl_par.insert(par);
     }
     else
+    {
 	args.push_back(s);
+    }
 }
 
 // End of file

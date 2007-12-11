@@ -252,7 +252,7 @@ bool Liga_t::finished() const
 bool Liga_t::solutionFound() const
 {
     return world_champ && world_champ->Full() &&
-        world_champ->NormBadness() < rp->tol_bad;
+        world_champ->NormBadness() < rp->tolcost;
 }
 
 bool Liga_t::outOfTime() const
@@ -325,8 +325,8 @@ int Liga_t::divSize(int level)
 void Liga_t::makeSeedClusters()
 {
     if (rp->seed_clusters.empty())  return;
-    bool keep_evolve_jump = Molecule::evolve_jump;
-    Molecule::evolve_jump = false;
+    bool keep_promotejump = Molecule::promotejump;
+    Molecule::promotejump = false;
     Molecule mcore( *(at(base_level).back()) );
     int keep_max_natoms = mcore.maxNAtoms();
     cout << "Generating seed clusters" << endl;
@@ -370,7 +370,7 @@ void Liga_t::makeSeedClusters()
 	cout << season << " S " << best_seed->NAtoms() << ' '
 	    << best_seed->NormBadness() << endl;
     }
-    Molecule::evolve_jump = keep_evolve_jump;
+    Molecule::promotejump = keep_promotejump;
 }
 
 void Liga_t::shareSeasonTrials()

@@ -7,11 +7,15 @@
 ***********************************************************************/
 
 #include <limits>
+#include <memory>
 #include <unistd.h>
 #include <signal.h>
+#include "RegisterSVNId.hpp"
 #include "ParseArgs.hpp"
 #include "Exceptions.hpp"
 #include "Liga_t.hpp"
+
+RegisterSVNId gizaliga_cpp_id("$Id$");
 
 using namespace std;
 
@@ -53,21 +57,22 @@ int main(int argc, char *argv[])
     }
     catch (IOError(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_INPUT_ERROR);
+	return EXIT_INPUT_ERROR;
     }
     catch (ParseArgsError(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_INPUT_ERROR);
+	return EXIT_INPUT_ERROR;
     }
     catch (runtime_error(e)) {
 	cerr << e.what() << endl;
-	exit(EXIT_INPUT_ERROR);
+	return EXIT_INPUT_ERROR;
     }
     // figure out exit code
     int exit_code;
     if (SIGHUP_received)	    exit_code = SIGHUP + 128;
     else if (liga->solutionFound()) exit_code = EXIT_SUCCESS;
     else			    exit_code = EXIT_FAILURE;
+    // all done here
     return exit_code;
 }
 

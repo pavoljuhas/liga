@@ -50,10 +50,10 @@ class Molecule
         static bool distreuse;
 	static double tol_nbad;	// tolerance of normalized badness
 	static double tol_r;	// position tolerance in RelaxAtom
-	static bool evolve_jump;
-	static bool evolve_relax;
-	static bool degenerate_relax;
-	static double evolve_frac;
+	static bool promotejump;
+	static bool promoterelax;
+	static bool demoterelax;
+	static double promotefrac;
 	static std::vector<AtomFilter_t*> atom_filters;
 	static double lookout_prob;
 

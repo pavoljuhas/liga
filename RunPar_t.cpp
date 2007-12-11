@@ -47,6 +47,12 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	{0, 0, 0, 0}
     };
     args.reset(new ParseArgs(argc, argv, short_options, long_options));
+    // define aliases for renamed parameters
+    args->defParameterAlias("tol_bad", "tolcost");
+    args->defParameterAlias("evolve_frac", "promotefrac");
+    args->defParameterAlias("evolve_relax", "promoterelax");
+    args->defParameterAlias("degenerate_relax", "demoterelax");
+    args->defParameterAlias("trials_sharing", "trialsharing");
     args->Parse();
     if (args->isopt("h") || argc == 1)
     {
@@ -210,9 +216,9 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // distreuse
     distreuse = args->GetPar<bool>("distreuse", false);
     Molecule::distreuse = distreuse;
-    // tol_bad
-    tol_bad = args->GetPar<double>("tol_bad", 1.0e-4);
-    Molecule::tol_nbad = tol_bad;
+    // tolcost
+    tolcost = args->GetPar<double>("tolcost", 1.0e-4);
+    Molecule::tol_nbad = tolcost;
     // natoms must be set after distreuse
     if (args->ispar("natoms"))
     {
@@ -281,27 +287,27 @@ void RunPar_t::processArguments(int argc, char* argv[])
     {
 	randomSeed(rngseed);
     }
-    // evolve_frac
-    evolve_frac = args->GetPar<double>("evolve_frac", 0.1);
-    Molecule::evolve_frac = evolve_frac;
-    // evolve_relax
-    evolve_relax = args->GetPar<bool>("evolve_relax", false);
-    Molecule::evolve_relax = evolve_relax;
-    // degenerate_relax
-    degenerate_relax = args->GetPar<bool>("degenerate_relax", false);
-    Molecule::degenerate_relax = degenerate_relax;
+    // promotefrac
+    promotefrac = args->GetPar<double>("promotefrac", 0.1);
+    Molecule::promotefrac = promotefrac;
+    // promoterelax
+    promoterelax = args->GetPar<bool>("promoterelax", false);
+    Molecule::promoterelax = promoterelax;
+    // demoterelax
+    demoterelax = args->GetPar<bool>("demoterelax", false);
+    Molecule::demoterelax = demoterelax;
     // ligasize
     ligasize = args->GetPar<int>("ligasize", 10);
     // stopgame
     stopgame = args->GetPar<double>("stopgame", 0.0025);
     // seasontrials
     seasontrials = int( args->GetPar<double>("seasontrials", 16384.0) );
-    // trials_sharing
-    trials_sharing = args->GetPar<string>("trials_sharing", "success");
-    if (!TrialDistributor::isType(trials_sharing))
+    // trialsharing
+    trialsharing = args->GetPar<string>("trialsharing", "success");
+    if (!TrialDistributor::isType(trialsharing))
     {
 	ostringstream emsg;
-	emsg << "trials_sharing must be one of (";
+	emsg << "trialsharing must be one of (";
 	emsg << join(", ", TrialDistributor::getTypes()) << ").";
 	throw ParseArgsError(emsg.str());
     }
@@ -336,13 +342,11 @@ void RunPar_t::processArguments(int argc, char* argv[])
 
 void RunPar_t::print_help()
 {
-    // /usage:/;/;/-s/.*/"&\\n"/
-    // /cou/;/;/s/^\s*"\(.*\)\\n"/\1/ | '[put! ='/*' | /;/put ='*/'
-    string cmd_t = args->cmd_t;
+    const string& cmd_t = args->cmd_t;
     cout << 
-"usage: " << cmd_t << " [-p PAR_FILE] [DISTFILE] [par1=val1 par2=val2...]\n"
+"usage: " << cmd_t << " [-p PARFILE] [DISTFILE] [par1=val1 par2=val2...]\n"
 "run gizaliga simulation using distances from DISTFILE.  Parameters can\n"
-"be set in PAR_FILE or on the command line, which overrides PAR_FILE.\n"
+"be set in PARFILE or on the command line, which overrides PARFILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
 "  -h, --help            display this message\n"
@@ -365,19 +369,19 @@ void RunPar_t::print_help()
 "  crystal=bool          [false] assume periodic crystal structure\n"
 "  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
 "  distreuse=bool        [false] keep used distances in distance table\n"
-"  tol_bad=double        [1E-4] target normalized molecule badness\n"
+"  tolcost=double        [1E-4] target normalized molecule cost\n"
 "  natoms=int            use with loose distfiles or for set distreuse\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  seed_clusters=array   [] triplets of (level, number, trials)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
-"  evolve_frac=double    [0.1] fraction of tol_bad threshold of tested atoms\n"
-"  evolve_relax=bool     [false] relax the worst atom after addition\n"
-"  degenerate_relax=bool [false] relax the worst atom after removal\n"
+"  promotefrac=double    [0.1] fraction of tolcost threshold of tested atoms\n"
+"  promoterelax=bool     [false] relax the worst atom after addition\n"
+"  demoterelax=bool      [false] relax the worst atom after removal\n"
 "  ligasize=int          [10] number of teams per division\n"
 "  stopgame=double       [0.0025] skip division when winner is worse\n"
 "  seasontrials=int      [16384] number of atom placements in one season\n"
-"  trials_sharing=string [success] sharing method from (" <<
+"  trialsharing=string   [success] sharing method from (" <<
 	join(",", TrialDistributor::getTypes()) << ")\n" <<
 "  lookout_prob=double   [0.0] lookout probability for 2nd and 3rd atoms\n"
 "Constrains (applied only when set):\n"
@@ -470,10 +474,10 @@ void RunPar_t::print_pars()
 	cout << "verbose=" << join(",", flagwords) << '\n';
     }
     // liga parameters
-    // ndim, distreuse, tol_bad 
+    // ndim, distreuse, tolcost
     cout << "ndim=" << ndim << '\n';
     cout << "distreuse=" << distreuse << '\n';
-    cout << "tol_bad=" << tol_bad << '\n';
+    cout << "tolcost=" << tolcost << '\n';
     // natoms
     cout << "natoms=" << natoms << '\n';
     // fixed_atoms
@@ -518,15 +522,15 @@ void RunPar_t::print_pars()
     {
 	cout << "rngseed=" << rngseed << '\n';
     }
-    // evolve_frac, evolve_relax, degenerate_relax
-    cout << "evolve_frac=" << evolve_frac << '\n';
-    cout << "evolve_relax=" << evolve_relax << '\n';
-    cout << "degenerate_relax=" << degenerate_relax << '\n';
-    // ligasize, stopgame, seasontrials, trials_sharing, lookout_prob
+    // promotefrac, promoterelax, demoterelax
+    cout << "promotefrac=" << promotefrac << '\n';
+    cout << "promoterelax=" << promoterelax << '\n';
+    cout << "demoterelax=" << demoterelax << '\n';
+    // ligasize, stopgame, seasontrials, trialsharing, lookout_prob
     cout << "ligasize=" << ligasize << '\n';
     cout << "stopgame=" << stopgame << '\n';
     cout << "seasontrials=" << seasontrials << '\n';
-    cout << "trials_sharing=" << trials_sharing << '\n';
+    cout << "trialsharing=" << trialsharing << '\n';
     cout << "lookout_prob=" << lookout_prob << '\n';
     // constraints
     // bangle_range
@@ -550,7 +554,7 @@ void RunPar_t::print_pars()
 
 const list<string>& RunPar_t::validpars() const
 {
-    char *parnames[] = {
+    const char* parnames[] = {
         "distfile",
         "inistru",
         "outstru",
@@ -563,20 +567,20 @@ const list<string>& RunPar_t::validpars() const
         "verbose",
         "ndim",
         "distreuse",
-        "tol_bad",
+        "tolcost",
         "natoms",
         "fixed_atoms",
         "seed_clusters",
         "maxcputime",
         "rngseed",
-        "evolve_frac",
-        "evolve_relax",
-        "degenerate_relax",
+        "promotefrac",
+        "promoterelax",
+        "demoterelax",
         "ligasize",
         "stopgame",
         "seasontrials",
 	"trace",
-        "trials_sharing",
+        "trialsharing",
         "lookout_prob",
         "bangle_range",
         "max_dist",
