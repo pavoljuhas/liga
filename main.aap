@@ -78,7 +78,14 @@ DEFAULTCHECK = time
         DEFINE += -DNDEBUG
         OPTIMIZE = 3
         CXXFLAGS += $ExtraOptim
-        EXESUF = -fast
+        EXESUF = -fast$EXESUF
+
+    profile
+        OPTIMIZE = 0
+        DEBUG = yes
+        EXESUF = -profile$EXESUF
+        CXXFLAGS += $ExtraDebug -pg
+        LIBS += -pg
 
 ########################################################################
 # build targets
