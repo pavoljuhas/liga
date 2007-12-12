@@ -108,6 +108,30 @@ all \
     alltests.cpp $TestedSources $Tests
 
 ########################################################################
+# Version.cpp - definition of SVN version
+########################################################################
+
+VersionDeps =
+@if os.path.isfile('.svn/entries'):
+    VersionDeps += .svn/entries Version.tmpl
+
+Version.cpp : $VersionDeps
+    :python
+        versiontemplate = open('Version.tmpl').read()
+        svninfo = os.popen('TZ=0 svn info .').read()
+        import re
+        pat = '\n'.join([
+            r'^Last Changed Author: (?P<LastChangedAuthor>.*)',
+            r'^Last Changed Rev: (?P<LastChangedRev>.*)',
+            r'^Last Changed Date: (?P<LastChangedDate>\S+ \S+)'])
+        flds = re.search(pat, svninfo, re.M).groupdict()
+        flds['LastChangedDate'] += "Z"
+        VersionCode = versiontemplate.rstrip() % flds
+    :delete {force}{quiet} $target
+    :print >$target $VersionCode
+    :chmod 444 $target
+
+########################################################################
 # tests
 ########################################################################
 

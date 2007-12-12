@@ -1,0 +1,53 @@
+/***********************************************************************
+* Short Title: functions for obtaining subversion information
+*
+* Comments: subversion information definitions
+*
+* $Id: RegisterSVNId.hpp 1106 2007-07-04 07:12:12Z juhas $
+* 
+* <license text>
+***********************************************************************/
+
+#include <sstream>
+#include "Version.hpp"
+
+namespace Version {
+
+int getRevisionNumber()
+{
+    const int revision = %(LastChangedRev)s;
+    return revision;
+}
+
+const string& getRevision()
+{
+    ostringstream rev;
+    rev << getRevisionNumber();
+    static const string srev = rev.str();
+    return srev;
+}
+
+const string& getDate()
+{
+    static const string sdate = "%(LastChangedDate)s";
+    return sdate;
+}
+
+const string& getAuthor()
+{
+    static const string sauthor = "%(LastChangedAuthor)s";
+    return sauthor;
+}
+
+const string& getId()
+{
+    ostringstream idstrm;
+    idstrm << getRevision() << ' ' << getDate() << ' ' << getAuthor();
+    static const string sid = idstrm.str();
+    return sid;
+}
+
+}   // namespace Version
+
+// vim:ft=cpp:
+// End of Version.cpp
