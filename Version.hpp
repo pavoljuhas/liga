@@ -17,7 +17,7 @@ namespace Version {
 
 using namespace std;
 
-int getRevisionNumber();
+const int getRevisionNumber();
 const string& getRevision();
 const string& getDate();
 const string& getAuthor();

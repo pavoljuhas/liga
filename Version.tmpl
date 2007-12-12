@@ -13,17 +13,16 @@
 
 namespace Version {
 
-int getRevisionNumber()
+const int getRevisionNumber()
 {
-    const int revision = %(LastChangedRev)s;
-    return revision;
+    static int rev = 0;
+    if (!rev)   istringstream (getRevision()) >> rev;
+    return rev;
 }
 
 const string& getRevision()
 {
-    ostringstream rev;
-    rev << getRevisionNumber();
-    static const string srev = rev.str();
+    static const string srev = "%(LastChangedRev)s";
     return srev;
 }
 
