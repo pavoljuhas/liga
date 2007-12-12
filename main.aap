@@ -118,17 +118,24 @@ VersionDeps =
 Version.cpp : $VersionDeps
     :python
         versiontemplate = open('Version.tmpl').read()
-        svninfo = os.popen('TZ=0 svn info .').read()
+        svninfo = _no.VersionDeps and \
+            os.popen('TZ=0 svn info .').read() or ""
+        flds = {
+            'LastChangedAuthor' : 'unknown',
+            'LastChangedRev' : '0',
+            'LastChangedDate' : '2007-12-12 00:00:00',
+        }
         import re
         pat = '\n'.join([
             r'^Last Changed Author: (?P<LastChangedAuthor>.*)',
             r'^Last Changed Rev: (?P<LastChangedRev>.*)',
             r'^Last Changed Date: (?P<LastChangedDate>\S+ \S+)'])
-        flds = re.search(pat, svninfo, re.M).groupdict()
+        mx = re.search(pat, svninfo, re.M)
+        if mx:  flds.update(mx.groupdict())
         flds['LastChangedDate'] += "Z"
         VersionCode = versiontemplate.rstrip() % flds
     :delete {force}{quiet} $target
-    :print >$target $VersionCode
+    :print >!$target $VersionCode
     :chmod 444 $target
 
 ########################################################################
