@@ -16,7 +16,7 @@ LigaSources +=
         Atom_t.cpp AtomCost.cpp AtomFilter_t.cpp AtomSequence.cpp
         LigaUtils.cpp Counter.cpp DistanceTable.cpp Division_t.cpp
         Liga_t.cpp Molecule.cpp ParseArgs.cpp Random.cpp
-        RegisterSVNId.cpp TrialDistributor.cpp
+        TrialDistributor.cpp
 
 TestedSources +=
         $LigaSources
@@ -91,7 +91,7 @@ all \
 :program gizaliga \
 {comment = program for structure solution from pair distances} \
 {var_LD = $CXX} :
-    gizaliga.cpp RunPar_t.cpp $LigaSources
+    gizaliga.cpp RunPar_t.cpp Version.cpp $LigaSources
 
 :program mcfitdist \
 {comment = MC shuffling of atoms} :

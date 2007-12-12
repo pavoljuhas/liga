@@ -10,12 +10,9 @@
 #include <memory>
 #include <unistd.h>
 #include <signal.h>
-#include "RegisterSVNId.hpp"
 #include "ParseArgs.hpp"
 #include "Exceptions.hpp"
 #include "Liga_t.hpp"
-
-RegisterSVNId gizaliga_cpp_id("$Id$");
 
 using namespace std;
 

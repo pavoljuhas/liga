@@ -13,12 +13,6 @@
 
 #include <vector>
 #include <iostream>
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId DistanceTable_hpp_id("$Id$");
-}
-
 
 class DistanceTable : public std::vector<double>
 {

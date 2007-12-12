@@ -12,8 +12,6 @@
 #include "Exceptions.hpp"
 #include "ParseArgs.hpp"
 
-RegisterSVNId ParseArgs_cpp_id("$Id$");
-
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////

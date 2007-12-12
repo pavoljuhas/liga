@@ -19,11 +19,6 @@
 #include <map>
 #include <stdexcept>
 #include <getopt.h>
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId ParseArgs_hpp_id("$Id$");
-}
 
 class ParseArgsError : public std::runtime_error
 {

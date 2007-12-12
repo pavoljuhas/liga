@@ -17,11 +17,6 @@
 #include "ParseArgs.hpp"
 #include "TraceId_t.hpp"
 #include "Molecule.hpp"
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId RunPar_t_hpp_id("$Id$");
-}
 
 struct SeedClusterInfo
 {

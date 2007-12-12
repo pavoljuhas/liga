@@ -14,8 +14,6 @@
 #include "Exceptions.hpp"
 #include "LigaUtils.hpp"
 
-RegisterSVNId DistanceTable_cpp_id("$Id$");
-
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////

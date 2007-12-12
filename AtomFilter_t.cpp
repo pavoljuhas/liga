@@ -14,8 +14,6 @@
 #include "AtomSequence.hpp"
 #include "Molecule.hpp"
 
-RegisterSVNId AtomFilter_t_cpp_id("$Id$");
-
 using namespace LIGA;
 using namespace std;
 

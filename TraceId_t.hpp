@@ -21,12 +21,6 @@
 #ifndef TRACEID_T_HPP_INCLUDED
 #define TRACEID_T_HPP_INCLUDED
 
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId TraceId_t_hpp_id("$Id$");
-}
-
 struct TraceId_t
 {
     int season;                 // season when molecule was modified

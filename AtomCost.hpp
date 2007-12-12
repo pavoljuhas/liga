@@ -12,14 +12,9 @@
 #define ATOMCOST_HPP_INCLUDED
 
 #include <vector>
-#include "RegisterSVNId.hpp"
 
 class Molecule;
 class Atom_t;
-
-namespace {
-RegisterSVNId AtomCost_hpp_id = "$Id$";
-}
 
 ////////////////////////////////////////////////////////////////////////
 // Declarations

@@ -11,8 +11,6 @@
 #include "Counter.hpp"
 #include "Atom_t.hpp"
 
-RegisterSVNId Atom_t_cpp_id("$Id$");
-
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////

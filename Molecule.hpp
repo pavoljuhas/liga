@@ -21,14 +21,9 @@
 #include "DistanceTable.hpp"
 #include "Matrix.hpp"
 #include "TraceId_t.hpp"
-#include "RegisterSVNId.hpp"
 
 class AtomFilter_t;
 class AtomCost;
-
-namespace {
-RegisterSVNId Molecule_hpp_id("$Id$");
-}
 
 enum StructureType { MOLECULE, CRYSTAL };
 

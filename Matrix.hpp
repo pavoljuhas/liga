@@ -25,11 +25,6 @@
 
 #include <iostream>
 #include <vector>
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId Matrix_hpp_id("$Id$");
-}
 
 template <class T> class Matrix
 {

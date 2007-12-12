@@ -11,14 +11,8 @@
 #ifndef ATOMFILTER_T_HPP_INCLUDED
 #define ATOMFILTER_T_HPP_INCLUDED
 
-#include "RegisterSVNId.hpp"
-
 class Atom_t;
 class Molecule;
-
-namespace {
-RegisterSVNId AtomFilter_t_hpp_id("$Id$");
-}
 
 ////////////////////////////////////////////////////////////////////////
 // class AtomFilter_t

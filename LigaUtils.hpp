@@ -7,11 +7,6 @@
 #include <vector>
 #include <valarray>
 #include <limits>
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId LigaUtils_hpp_id("$Id$");
-}
 
 ////////////////////////////////////////////////////////////////////////
 // Declarations

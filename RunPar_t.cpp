@@ -18,13 +18,10 @@
 #include "AtomFilter_t.hpp"
 #include "LigaUtils.hpp"
 #include "Exceptions.hpp"
-#include "RegisterSVNId.hpp"
+#include "Version.hpp"
 
 using namespace std;
 using namespace LIGA;
-
-RegisterSVNId RunPar_t_cpp_id("$Id$");
-
 
 ////////////////////////////////////////////////////////////////////////
 // class RunPar_t
@@ -394,7 +391,7 @@ string RunPar_t::version_string(string quote)
 {
     using namespace std;
     ostringstream oss;
-    oss << quote << "gizaliga " << RegisterSVNId::lastId() << '\n' <<
+    oss << quote << "gizaliga " << Version::getId() << '\n' <<
 	quote << "compiler version " << __VERSION__;
     return oss.str();
 }

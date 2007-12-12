@@ -3,7 +3,7 @@
 *
 * Comments: subversion information definitions
 *
-* $Id: RegisterSVNId.hpp 1106 2007-07-04 07:12:12Z juhas $
+* $Id$
 * 
 * <license text>
 ***********************************************************************/

@@ -19,11 +19,6 @@
 #include "Division_t.hpp"
 #include "RunPar_t.hpp"
 #include "Counter.hpp"
-#include "RegisterSVNId.hpp"
-
-namespace {
-RegisterSVNId Liga_t_hpp_id("$Id$");
-}
 
 class TrialDistributor;
 

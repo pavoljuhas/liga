@@ -13,13 +13,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include "Molecule.hpp"
-#include "RegisterSVNId.hpp"
 
 class Lattice;
-
-namespace {
-RegisterSVNId Crystal_hpp_id("$Id$");
-}
 
 class Crystal : public Molecule
 {

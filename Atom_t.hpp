@@ -11,12 +11,7 @@
 #ifndef ATOM_T_HPP_INCLUDED
 #define ATOM_T_HPP_INCLUDED
 
-#include "RegisterSVNId.hpp"
 #include "R3linalg.hpp"
-
-namespace {
-RegisterSVNId Atom_t_hpp_id("$Id$");
-}
 
 // may be later moved to dedicated triangulation class
 enum triangulation_type { LINEAR, PLANAR, SPATIAL, NTGTYPES };

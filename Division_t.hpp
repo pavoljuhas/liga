@@ -14,13 +14,8 @@
 #include <vector>
 #include "Atom_t.hpp"   // for NTGTYPES
 #include "Random.hpp"
-#include "RegisterSVNId.hpp"
 
 class Molecule;
-
-namespace {
-RegisterSVNId Division_t_hpp_id("$Id$");
-}
 
 using namespace LIGA;
 
