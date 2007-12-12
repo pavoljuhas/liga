@@ -111,9 +111,10 @@ all \
 # Version.cpp - definition of SVN version
 ########################################################################
 
+VersionTemplate = Version.tmpl
 VersionDeps =
 @if os.path.isfile('.svn/entries'):
-    VersionDeps += .svn/entries Version.tmpl
+    VersionDeps += .svn/entries $VersionTemplate
 
 :python ENDPYTHON
 def getVersionCode(svnrev=None):
@@ -131,7 +132,7 @@ def getVersionCode(svnrev=None):
         if mx:  flds['LastChangedAuthor'] = mx.group(1)
         mx = re.search('^Last Changed Date: (\S+ \S+)', svninfo, re.M)
         if mx:  flds['LastChangedDate'] = mx.group(1) + "Z"
-    versiontemplate = open('Version.tmpl').read()
+    versiontemplate = open(_no.VersionTemplate).read()
     versioncode = versiontemplate.rstrip() % flds
     return versioncode
 ENDPYTHON
@@ -141,11 +142,11 @@ Version.cpp : $VersionDeps
     @if _no.VersionDeps:
         :syseval svnversion -c | :assign svnrev
         svnrev = `svnrev.split(':')[-1]`
-        :chmod {force} 644 Version.cpp
+        :chmod {force} 644 $target
         :print >!$target `_no.getVersionCode(svnrev)`
         :chmod 444 $target
     @elif not os.path.isfile(target_file):
-        :chmod {force} 644 Version.cpp
+        :chmod {force} 644 $target
         :print >!$target `_no.getVersionCode()`
         :chmod 444 $target
 

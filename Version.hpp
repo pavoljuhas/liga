@@ -13,7 +13,7 @@
 
 #include <string>
 
-namespace Version {
+namespace NS_VERSION {
 
 using namespace std;
 
@@ -23,6 +23,6 @@ const string& getDate();
 const string& getAuthor();
 const string& getId();
 
-}   // namespace Version
+}   // namespace NS_VERSION
 
 #endif	// VERSION_HPP_INCLUDED
