@@ -1219,7 +1219,7 @@ void Molecule::Evolve(const int* est_triang)
     // then convert to fitness
     vafit = costToFitness(vacost);
     double* afit = &vafit[0];
-    bool lookout = NAtoms() && NAtoms() <= 2 &&
+    bool lookout = lookout_prob && 0 < NAtoms() && NAtoms() <= 2 &&
 	randomFloat() < lookout_prob;
     const int lookout_trials = 1500;
     // evolution is trivial for empty or 1-atom molecule
