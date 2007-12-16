@@ -55,7 +55,7 @@ class AtomCost
 	size_t lsqParametersSize() const;
 	const std::vector<double>& lsqWeights() const;
 	const std::vector<double>& lsqComponents() const;
-	double lsqJacobianGet(size_t m, size_t n) const;
+	virtual double lsqJacobianGet(size_t m, size_t n) const;
 
     protected:
 
@@ -84,10 +84,10 @@ class AtomCost
 
 	// protected methods
         const std::vector<Atom_t*>& getClusterAtoms() const;
-	void resizeArrays();
+	virtual void resizeArrays();
 	void resetUseFlags();
 	void resetLSQArrays();
-	size_t nearDistanceIndex(const double& d);
+	size_t nearDistanceIndex(const double& d) const;
 
 };  // class AtomCost
 

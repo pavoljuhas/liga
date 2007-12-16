@@ -229,7 +229,7 @@ double AtomCost::lsqJacobianGet(size_t m, size_t n) const
     return Jmn;
 }
 
-// private methods
+// protected methods
 
 const vector<Atom_t*>& AtomCost::getClusterAtoms() const
 {
@@ -265,7 +265,7 @@ void AtomCost::resetLSQArrays()
     lsq_wt.clear();
 }
 
-size_t AtomCost::nearDistanceIndex(const double& d)
+size_t AtomCost::nearDistanceIndex(const double& d) const
 {
     const DistanceTable& dtgt = *(arg_cluster->dTarget);
     int idx = dtgt.find_nearest(d) - dtgt.begin();

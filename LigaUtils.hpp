@@ -7,6 +7,7 @@
 #include <vector>
 #include <valarray>
 #include <limits>
+#include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////
 // Declarations
@@ -35,11 +36,11 @@ double vddot(const std::valarray<double>&,
 std::valarray<double> vdcross(const std::valarray<double>&,
 			      const std::valarray<double>&);
 // fitness
-std::valarray<double> costToFitness(const std::valarray<double>&);
+double convertCostToFitness(const double& cst);
+double costToFitness(const double& cst);
+std::valarray<double> costToFitness(const std::valarray<double>& vc);
 template <typename Container>
     Container costToFitness(const Container& vc);
-template <typename Iterator>
-    void costToFitnessInplace(Iterator first, Iterator last);
 
 // file utilities
 // similar to mkstemp(3)
@@ -72,12 +73,24 @@ inline bool eps_lt(const double& x, const double& y)
 
 // fitness
 
+inline double convertCostToFitness(const double& cst)
+{
+    double ftn;
+    ftn = 1.0 / (cst + DOUBLE_EPS);
+    return ftn;
+}
+
+inline double costToFitness(const double& cst)
+{
+    return convertCostToFitness(cst);
+}
+
 inline std::valarray<double> costToFitness(const std::valarray<double>& vc)
 {
     std::valarray<double> vf(vc);
     double* first = &(vf[0]);
     double* last = &(vf[vf.size()]);
-    costToFitnessInplace(first, last);
+    std::transform(first, last, first, convertCostToFitness);
     return vf;
 }
 
@@ -85,17 +98,8 @@ template <typename Container>
 Container costToFitness(const Container& vc)
 {
     Container vf(vc);
-    costToFitnessInplace(vf.begin(), vf.end());
+    std::transform(vf.begin(), vf.end(), vf.begin(), convertCostToFitness);
     return vf;
-}
-
-template <typename Iterator>
-void costToFitnessInplace(Iterator first, Iterator last)
-{
-    for (Iterator ii = first; ii != last; ++ii)
-    {
-        *ii = 1.0 / (*ii + DOUBLE_EPS);
-    }
 }
 
 // file utilities

@@ -1279,7 +1279,9 @@ void Molecule::Evolve(const int* est_triang)
 		*pfit = ai->Badness();
 	    }
 	    // then get the reciprocal value
-	    costToFitnessInplace(&(vtafit[0]), &(vtafit[vtafit.size()]));
+            double* ftnfirst = &(vtafit[0]);
+            double* ftnlast = &(vtafit[vtafit.size()]);
+	    transform(ftnfirst, ftnlast, ftnfirst, convertCostToFitness);
 	}
 	// vtafit is ready here
 	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
