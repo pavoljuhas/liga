@@ -42,10 +42,8 @@ public:
     {
         crst.Clear();
         crst.setRRange(0.0, 3.05);
+        crst.setMaxNAtoms(4);
         // do the rest only once
-        static bool did_setup = false;
-        if (did_setup)  return;
-        did_setup = true;
         cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
         rhombohedral.reset(new Lattice(1, 1, 1, 60, 60, 60));
         // distance data up to first distance over 3
@@ -79,10 +77,6 @@ public:
         CPPUNIT_ASSERT(crst.NormBadness() > 0.0);
         crst.Pop(1);
         CPPUNIT_ASSERT_EQUAL(0.0, crst.NormBadness());
-        crst.setLattice(*rhombohedral);
-        CPPUNIT_ASSERT(crst.NormBadness() > 0.0);
-        crst.setLattice(*cubic);
-        CPPUNIT_ASSERT_EQUAL(0.0, crst.NormBadness());
     }
 
     void test_bcc()
@@ -114,6 +108,10 @@ public:
         crst.Add(0.5, 0.0, 0.5);
         CPPUNIT_ASSERT_EQUAL(0.0, crst.NormBadness());
         crst.Add(0.0, 0.5, 0.5);
+        CPPUNIT_ASSERT_EQUAL(0.0, crst.NormBadness());
+        crst.setLattice(*rhombohedral);
+        CPPUNIT_ASSERT(crst.NormBadness() > 0.0);
+        crst.setLattice(*cubic);
         CPPUNIT_ASSERT_EQUAL(0.0, crst.NormBadness());
     }
 

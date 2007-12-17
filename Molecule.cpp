@@ -55,6 +55,8 @@ long Molecule::getUniqueId()
 Molecule::Molecule() : id(Molecule::getUniqueId())
 {
     init();
+    const static DistanceTable nodistances;
+    setDistanceTable(nodistances);
 }
 
 Molecule::Molecule(const DistanceTable& dtab) : id(Molecule::getUniqueId())

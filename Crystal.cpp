@@ -1,4 +1,3 @@
-#include "dbprint.h"
 /***********************************************************************
 * Short Title: object definitions for Biosphere Genetic Algorithm
 *
@@ -25,13 +24,19 @@ using namespace std;
 // constructors
 
 Crystal::Crystal() : Molecule()
-{ }
+{
+    init();
+}
 
 Crystal::Crystal(const DistanceTable& dtab) : Molecule(dtab)
-{ }
+{
+    init();
+}
 
 Crystal::Crystal(const Crystal& crs) : Molecule(crs)
-{ }
+{
+    init();
+}
 
 Crystal::~Crystal()
 { }
@@ -101,9 +106,9 @@ pair<double,double> Crystal::getRExtent() const
 
 void Crystal::init()
 {
-    DBPRINT("in Crystal::init()");
     _rmin = 0.0;
     _rmax = DOUBLE_MAX;
+    distreuse = true;
 }
 
 // End of file
