@@ -192,11 +192,4 @@ runtest-bangle_range :
 unittest { comment = execute Liga unit tests} : alltests
         :sys ./alltests${EXESUF}
 
-########################################################################
-# utility targets
-########################################################################
-
-ctagswatch { comment = start ctagswatch script in background }:
-    :start ctagswatch -R --langmap=c++:.tmpl.hpp.cpp --exclude=Version.cpp .
-
 # End of file
