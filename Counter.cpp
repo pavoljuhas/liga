@@ -34,17 +34,24 @@ double Counter::CPUTime()
     return 1.0*tbuf.tms_utime/sysconf(_SC_CLK_TCK);
 }
 
-void Counter::printRunStats()
+void Counter::printCounters()
 {
-    char hostname[255];
-    gethostname(hostname, 255);
-    cout << "Run statistics:\n";
     CounterStorage::iterator ii;
     for (ii = storage().begin(); ii != storage().end(); ++ii)
     {
         Counter& cii = *(ii->second);
         cout << cii << '\n';
     }
+    cout.flush();
+}
+
+
+void Counter::printRunStats()
+{
+    char hostname[255];
+    gethostname(hostname, 255);
+    cout << "Run statistics:\n";
+    printCounters();
     cout << "UserCPUtime = " << CPUTime() << "s\n";
     cout << "Host = " << hostname << endl;
 }

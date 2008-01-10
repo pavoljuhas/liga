@@ -28,6 +28,7 @@ class Counter
         // class methods
         static Counter* getCounter(std::string name);
 	static double CPUTime();
+	static void printCounters();
 	static void printRunStats();
 
         // public methods
