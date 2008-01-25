@@ -134,17 +134,17 @@ template <class T> class Matrix
 	    return column;
 	}
 
-	inline size_t rows()
+	inline size_t rows() const
 	{
 	    return mrows;
 	}
 
-	inline size_t columns()
+	inline size_t columns() const
 	{
 	    return mcols;
 	}
 
-	inline T& operator()(size_t i, size_t j)
+	inline T& operator()(size_t i, size_t j) const
 	{
 	    return *(mdata + i*mcols + j);
 	}
@@ -217,7 +217,7 @@ template <class T> class SymmetricMatrix : public Matrix<T>
 
 	// Overloaded methods
 
-	inline T& operator()(size_t i, size_t j)
+	inline T& operator()(size_t i, size_t j) const
 	{
 	    if (i > j)	std::swap(i, j);
 	    return Matrix<T>::operator()(i, j);
