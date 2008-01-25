@@ -31,13 +31,13 @@ class AtomCost
     public:
 
 	// constructor
-	AtomCost(Molecule* m);
+	AtomCost(const Molecule* m);
 
 	// destructor
 	virtual ~AtomCost() { }
 
 	// public methods
-	virtual void resetFor(Molecule* m);
+	virtual void resetFor(const Molecule* m);
 	double eval(const Atom_t& pa);
 	virtual double eval(const Atom_t* pa);
 	double lowest() const;
@@ -60,7 +60,7 @@ class AtomCost
     protected:
 
 	// data - arguments
-	Molecule* arg_cluster;
+	const Molecule* arg_cluster;
 	const Atom_t* arg_atom;
 
 	// data - results
@@ -88,6 +88,7 @@ class AtomCost
 	void resetUseFlags();
 	void resetLSQArrays();
 	size_t nearDistanceIndex(const double& d) const;
+        double nearDistance(const double& d) const;
 
 };  // class AtomCost
 

@@ -82,9 +82,9 @@ class Molecule
 	virtual std::string typeStr() const { return "molecule"; }
 
         // methods - molecule configuration
-        void setDistanceTable(const DistanceTable&);
+        virtual void setDistanceTable(const DistanceTable&);
         void setDistanceTable(const std::vector<double>&);
-        const DistanceTable& getDistanceTable() const;
+        virtual const DistanceTable& getDistanceTable() const;
 
 	// methods - fitness/badness evaluation
 	double Badness() const;	    // total badness
@@ -96,7 +96,7 @@ class Molecule
 	int NDist() const;
 	double max_dTarget() const;
         void ReassignPairs();	    // improve assignment of distances
-	void Recalculate();	    // update everything
+	void Recalculate() const;   // update everything
 
 	// methods - molecule operations
 	void Shift(double dh, double dk, double dl);	// move all atoms
@@ -133,7 +133,7 @@ class Molecule
         std::vector<Atom_t*> atoms;	// vector of pointers to atoms
 
 	// methods
-	virtual AtomCost* getAtomCostCalculator();
+	virtual AtomCost* getAtomCostCalculator() const;
 	void addNewAtomPairs(Atom_t* pa);
 	void removeAtomPairs(Atom_t* pa);
         typedef std::vector<Atom_t> AtomArray;

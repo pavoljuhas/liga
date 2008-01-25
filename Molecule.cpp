@@ -148,9 +148,8 @@ void Molecule::setDistanceTable(const DistanceTable& dtbl)
 
 void Molecule::setDistanceTable(const vector<double>& dvec)
 {
-    if (dTarget.get())  *dTarget = dvec;
-    else                dTarget.reset(new DistanceTable(dvec));
-    if (max_natoms < 0) max_natoms = dTarget->estNumAtoms();
+    DistanceTable dtbl(dvec);
+    setDistanceTable(dtbl);
 }
 
 const DistanceTable& Molecule::getDistanceTable() const
@@ -171,7 +170,7 @@ double Molecule::max_dTarget() const
     return mx;
 }
 
-void Molecule::Recalculate()
+void Molecule::Recalculate() const
 {
     if (NAtoms() > maxNAtoms())
     {
@@ -681,7 +680,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     }
 }
 
-AtomCost* Molecule::getAtomCostCalculator()
+AtomCost* Molecule::getAtomCostCalculator() const
 {
     static AtomCost the_acc(this);
     the_acc.resetFor(this);
@@ -707,7 +706,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
 	pa->IncBadness(badnesshalf);
     }
     badness += atomcost->total();
-    if (badness < LIGA::eps_badness)	badness = 0.0;    
+    if (badness < LIGA::eps_badness)	badness = 0.0;
     // remember used distances in pmx_used_distances
     const vector<int>& didcs = atomcost->usedTargetDistanceIndices();
     const vector<int>& aidcs = atomcost->usedTargetAtomIndices();
@@ -747,7 +746,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
 	seq.ptr()->DecBadness(badnesshalf);
 	badness -= pairbadness;
     }
-    if (badness < LIGA::eps_badness)	badness = 0.0;    
+    if (badness < LIGA::eps_badness)	badness = 0.0;
 }
 
 int Molecule::push_good_distances(

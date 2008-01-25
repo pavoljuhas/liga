@@ -15,33 +15,32 @@
 #include <blitz/array.h>
 #include "AtomCost.hpp"
 #include "R3linalg.hpp"
+#include "PointsInSphere.hpp"
 
 class Crystal;
 class Atom_t;
-class PointsInSphere;
 
 class AtomCostCrystal : public AtomCost
 {
     public:
 
 	// constructor
-	AtomCostCrystal(Crystal* m);
+	AtomCostCrystal(const Crystal* m);
 
 	// destructor
 	virtual ~AtomCostCrystal() { }
 
 	// public methods - overloaded
-        virtual void resetFor(Crystal* clust);
+        virtual void resetFor(const Crystal* clust);
 	virtual double eval(const Atom_t* pa);
 	virtual size_t lsqComponentsSize() const;
 	virtual const std::vector<double>& lsqComponents() const;
 	virtual double lsqJacobianGet(size_t m, size_t n) const;
 
+        // public methods - specific
+        double costOfLattice() const;
+
     protected:
-
-        // data
-        mutable std::vector<Atom_t*> cluster_atoms;
-
 
         /* delete once working
 	// data - results
@@ -67,21 +66,20 @@ class AtomCostCrystal : public AtomCost
     private:
 
 	// data - arguments
-	Crystal* arg_cluster;
+	const Crystal* arg_cluster;
 	const Atom_t* arg_atom;
         R3::Vector arg_rcuc;    // cartesian positions offset to unit cell
 
         // data - for intermediate cost evaluation
         // PDF range, actual and extended for sphere summation
-        double rmin;
-        double rmax;
-        std::auto_ptr<PointsInSphere> sph;
+        double _rmin;
+        double _rmax;
+        std::auto_ptr<PointsInSphere> _sph;
         int _lsq_component_size;
         mutable blitz::Array<double,2> _lsq_jacobian;
 
 	// private methods
 	void resizeArrays();
-        Atom_t shiftToUnitCell(const Atom_t& a) const;
 
 };  // class AtomCostCrystal
 

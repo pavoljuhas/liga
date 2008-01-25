@@ -13,13 +13,16 @@
 #include "Crystal.hpp"
 #include "Lattice.hpp"
 #include "Atom_t.hpp"
+#include "AtomCostCrystal.hpp"
 #include "LigaUtils.hpp"
+#include "PointsInSphere.hpp"
 
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 // class Crystal
 ////////////////////////////////////////////////////////////////////////
+
 
 // constructors
 
@@ -50,15 +53,32 @@ Crystal& Crystal::operator=(const Crystal& crs)
     Molecule& molthis = *this;
     molthis = crs;
     // copy Crystal specific data
-    _lattice = crs._lattice;
-    _rmin = crs._rmin;
-    _rmax = crs._rmax;
+    this->_lattice = crs._lattice;
+    this->_rmin = crs._rmin;
+    this->_rmax = crs._rmax;
+    this->_cost = crs._cost;
+    this->_cost_cached = crs._cost_cached;
+    this->_cost_of_lattice = crs._cost_of_lattice;
+    this->_cost_of_lattice_cached = crs._cost_of_lattice_cached;
     return *this;
+}
+
+void Crystal::setDistanceTable(const DistanceTable& dtbl)
+{
+    vector<double> dtblunique = dtbl.unique();
+    this->_distance_table.reset(new DistanceTable(dtblunique));
+    this->uncacheCost();
+}
+
+const DistanceTable& Crystal::getDistanceTable() const
+{
+    return *_distance_table;
 }
 
 void Crystal::setLattice(const Lattice& lat)
 {
     _lattice.reset(new Lattice(lat));
+    this->uncacheCost();
 }
 
 const Lattice& Crystal::getLattice() const
@@ -70,6 +90,7 @@ void Crystal::setRRange(double rmin, double rmax)
 {
     _rmin = rmin;
     _rmax = rmax;
+    this->uncacheCost();
 }
 
 pair<double,double> Crystal::getRRange() const
@@ -102,13 +123,57 @@ pair<double,double> Crystal::getRExtent() const
     return make_pair(_rmin - circum_diameter, _rmax + circum_diameter);
 }
 
+double Crystal::cost() const
+{
+    if (!_cost_cached)
+    {
+        Recalculate();
+        _cost = NormBadness() + costOfLattice();
+        _cost_cached = true;
+    }
+    return _cost;
+}
+
+double Crystal::costOfLattice() const
+{
+    if (!_cost_of_lattice_cached)
+    {
+        _cost_of_lattice = 0.0;
+        if (_lattice.get())
+        {
+            AtomCostCrystal* atomcost = static_cast<AtomCostCrystal*>(
+                    this->getAtomCostCalculator());
+            _cost_of_lattice = atomcost->costOfLattice();
+        }
+        _cost_of_lattice_cached = true;
+    }
+    return _cost_of_lattice;
+}
+
+// protected methods
+
+AtomCost* Crystal::getAtomCostCalculator() const
+{
+    static AtomCostCrystal the_acc(this);
+    the_acc.resetFor(this);
+    return &the_acc;
+}
+
 // private methods
 
 void Crystal::init()
 {
-    _rmin = 0.0;
-    _rmax = DOUBLE_MAX;
-    distreuse = true;
+    this->_rmin = 0.0;
+    this->_rmax = 0.0;
+    this->uncacheCost();
 }
+
+
+void Crystal::uncacheCost()
+{
+    this->_cost_cached = false;
+    this->_cost_of_lattice_cached = false;
+}
+
 
 // End of file

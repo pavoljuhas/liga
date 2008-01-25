@@ -24,8 +24,6 @@ TestedSources +=
         Lattice.cpp R3linalg.cpp Crystal.cpp
 
 Tests ?= `glob('Test*.cpp')`
-# temporary disable TestCrystalCost
-Tests = `[f for f in var2list(Tests) if f != "TestCrystalCost.cpp" ]`
 
 LocalInclude +=
         $HOME/programs/include $HOME/include

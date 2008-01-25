@@ -36,14 +36,14 @@ double penalty(double dd)
 
 // constructor
 
-AtomCost::AtomCost(Molecule* m) : arg_atom(NULL)
+AtomCost::AtomCost(const Molecule* m) : arg_atom(NULL)
 {
     resetFor(m);
 }
 
 // public methods
 
-void AtomCost::resetFor(Molecule* m)
+void AtomCost::resetFor(const Molecule* m)
 {
     arg_cluster = m;
     const DistanceTable& dtgt = arg_cluster->getDistanceTable();
@@ -238,7 +238,7 @@ const vector<Atom_t*>& AtomCost::getClusterAtoms() const
 
 void AtomCost::resizeArrays()
 {
-    if (arg_cluster->NAtoms() == int(partial_costs.size()))	    return;
+    if (arg_cluster->NAtoms() == int(partial_costs.size()))     return;
     partial_costs.resize(arg_cluster->NAtoms());
     target_distances.resize(arg_cluster->NAtoms());
 }
@@ -267,7 +267,7 @@ void AtomCost::resetLSQArrays()
 
 size_t AtomCost::nearDistanceIndex(const double& d) const
 {
-    const DistanceTable& dtgt = *(arg_cluster->dTarget);
+    const DistanceTable& dtgt = arg_cluster->getDistanceTable();
     int idx = dtgt.find_nearest(d) - dtgt.begin();
     if (use_distances && useflag[idx])
     {
@@ -288,6 +288,15 @@ size_t AtomCost::nearDistanceIndex(const double& d) const
         idx = nidx;
     }
     return idx;
+}
+
+double AtomCost::nearDistance(const double& d) const
+{
+    const DistanceTable& dtgt = arg_cluster->getDistanceTable();
+    double dfind = this->use_distances ?
+        dtgt[this->nearDistanceIndex(d)] :
+        *(dtgt.find_nearest(d));
+    return dfind;
 }
 
 // End of AtomCost.cpp
