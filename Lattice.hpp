@@ -86,11 +86,17 @@ class Lattice
             inline double anglerad(const V& u, const V& v) const;
         // conversion of coordinates and tensors
         const R3::Vector& cartesian(const R3::Vector& lv) const;
-        const R3::Vector& fractional(const R3::Vector& cv) const;
         template <class V>
             const R3::Vector& cartesian(const V& lv) const;
+        const R3::Vector& fractional(const R3::Vector& cv) const;
         template <class V>
-        const R3::Vector& fractional(const V& cv) const;
+            const R3::Vector& fractional(const V& cv) const;
+        const R3::Vector& ucvCartesian(const R3::Vector& cv) const;
+        template <class V>
+            const R3::Vector& ucvCartesian(const V& cv) const;
+        const R3::Vector& ucvFractional(const R3::Vector& lv) const;
+        template <class V>
+            const R3::Vector& ucvFractional(const V& lv) const;
         const R3::Matrix& cartesianMatrix(const R3::Matrix& Ml) const;
         const R3::Matrix& fractionalMatrix(const R3::Matrix& Mc) const;
         // lattice related tensors
@@ -209,6 +215,22 @@ inline const R3::Vector& Lattice::fractional(const V& cv) const
     static R3::Vector cvcopy;
     cvcopy = cv[0], cv[1], cv[2];
     return fractional(cvcopy);
+}
+
+template <class V>
+inline const R3::Vector& Lattice::ucvCartesian(const V& cv) const
+{
+    static R3::Vector cvcopy;
+    cvcopy = cv[0], cv[1], cv[2];
+    return ucvCartesian(cvcopy);
+}
+
+template <class V>
+inline const R3::Vector& Lattice::ucvFractional(const V& cv) const
+{
+    static R3::Vector cvcopy;
+    cvcopy = cv[0], cv[1], cv[2];
+    return ucvFractional(cvcopy);
 }
 
 #endif  // LATTICE_HPP_INCLUDED

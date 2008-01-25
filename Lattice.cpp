@@ -224,6 +224,20 @@ const R3::Vector& Lattice::fractional(const R3::Vector& cv) const
     return res;
 }
 
+const R3::Vector& Lattice::ucvCartesian(const R3::Vector& cv) const
+{
+    static R3::Vector res;
+    res = cartesian(ucvFractional(fractional(cv)));
+    return res;
+}
+
+const R3::Vector& Lattice::ucvFractional(const R3::Vector& lv) const
+{
+    static R3::Vector res;
+    res = lv - floor(lv);
+    return res;
+}
+
 const R3::Matrix& Lattice::cartesianMatrix(const R3::Matrix& Ml) const
 {
     using R3::product;
