@@ -26,6 +26,7 @@ class Atom_t
 
         // friends
         friend class Molecule;
+        friend class Crystal;
 
         // constructors
 	Atom_t(double rx0, double ry0, double rz0, double bad0=0.0);
@@ -37,17 +38,17 @@ class Atom_t
 	triangulation_type ttp;
 
         // methods
-	double Badness() const;
+	const double& Badness() const;
 	double FreeBadness() const;
-	double IncBadness(double db);
-	double DecBadness(double db);
-	double ResetBadness(double b=0.0);
+	void IncBadness(const double& db);
+	void DecBadness(const double& db);
+	void ResetBadness(double b=0.0);
 
     private:
 
         // data
-	double badness;
-	int pmxidx;	    // pair matrix index
+	double _badness;
+	mutable int pmxidx;     // pair matrix index
 };
 
 // declarations of non-member operators and functions
@@ -64,7 +65,7 @@ double dist2(const Atom_t& a1, const Atom_t& a2);
 
 template <class V>
 Atom_t::Atom_t(const V& r0, double bad0) :
-    fixed(false), ttp(LINEAR), badness(bad0)
+    fixed(false), ttp(LINEAR), _badness(bad0)
 {
     r = r0[0], r0[1], r0[2];
 }

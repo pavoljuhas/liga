@@ -20,7 +20,7 @@ using namespace std;
 // constructors
 
 Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
-    fixed(false), ttp(LINEAR), badness(bad0)
+    fixed(false), ttp(LINEAR), _badness(bad0)
 {
     r[0] = rx0;
     r[1] = ry0;
@@ -29,33 +29,31 @@ Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
 
 // public methods
 
-double Atom_t::Badness() const
+const double& Atom_t::Badness() const
 {
-    return badness;
+    return this->_badness;
 }
 
 double Atom_t::FreeBadness() const
 {
-    return fixed ? 0.0 : badness;
+    double rv = fixed ? 0.0 : this->Badness();
+    return rv;
 }
 
-double Atom_t::IncBadness(double db)
+void Atom_t::IncBadness(const double& db)
 {
-    badness += db;
-    return badness;
+    this->_badness += db;
 }
 
-double Atom_t::DecBadness(double db)
+void Atom_t::DecBadness(const double& db)
 {
-    badness -= db;
-    if (badness < 0.0)	badness = 0.0;
-    return badness;
+    this->_badness -= db;
+    if (this->_badness < 0.0)	this->ResetBadness();
 }
 
-double Atom_t::ResetBadness(double b)
+void Atom_t::ResetBadness(double b)
 {
-    badness = b;
-    return badness;
+    this->_badness = b;
 }
 
 // non-member operators and functions

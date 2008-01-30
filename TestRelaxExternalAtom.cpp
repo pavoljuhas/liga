@@ -26,7 +26,7 @@ class TestRelaxExternalAtom : public CppUnit::TestFixture
 private:
 
     double double_eps;
-    DistanceTable dTarget;
+    DistanceTable dtgt;
     Molecule* mol_tetrahedron;
     Atom_t* vtx_tetrahedron;
 
@@ -36,8 +36,9 @@ public:
     {
 	double_eps = 1.0e-6;
 	vector<double> dst_tetrahedron(6, 1.0);
-	dTarget = dst_tetrahedron;
-	mol_tetrahedron = new Molecule(dTarget);
+	dtgt = dst_tetrahedron;
+	mol_tetrahedron = new Molecule;
+	mol_tetrahedron->setDistanceTable(dtgt);
 	mol_tetrahedron->Add(-0.5, -sqrt(0.75)*1.0/3, 0.0);
 	mol_tetrahedron->Add(+0.5, -sqrt(0.75)*1.0/3, 0.0);
 	mol_tetrahedron->Add(+0.0, +sqrt(0.75)*2.0/3, 0.0);

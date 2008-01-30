@@ -80,7 +80,7 @@ int Division_t::find_winner()
     valarray<double> vmfit(size());
     double *pd = &vmfit[0];
     for (iterator mi = begin(); mi != end(); ++mi, ++pd)
-        *pd = (*mi)->NormBadness();
+        *pd = (*mi)->cost();
     // then get the reciprocal value
     vmfit = costToFitness(vmfit);
     double *mfit = &vmfit[0];
@@ -94,7 +94,7 @@ int Division_t::find_looser()
     valarray<double> vmbad(size());
     double *pd = &vmbad[0];
     for (iterator mi = begin(); mi != end(); ++mi, ++pd)
-        *pd = (*mi)->NormBadness();
+        *pd = (*mi)->cost();
     double *mbad = &vmbad[0];
     int idx = randomWeighedInt(size(), mbad);
     return idx;
@@ -111,12 +111,12 @@ Division_t::PMOL& Division_t::best()
     return at(find_best());
 }
 
-double Division_t::NormBadness()
+double Division_t::averageCost()
 {
     double total = 0.0;
     for (iterator ii = begin(); ii != end(); ++ii)
     {
-        total += (*ii)->NormBadness();
+        total += (*ii)->cost();
     }
     return size() ? total / size() : 0.0;
 }
@@ -154,17 +154,15 @@ const int* Division_t::estimateTriangulations()
     return est_triang;
 }
 
-void Division_t::noteTriangulations(PMOL advanced)
+void Division_t::noteTriangulations(const pair<int*,int*>& acc_tot)
 {
-    for (int i = level(); i < advanced->NAtoms(); ++i)
-    {
-        triangulation_type attp = advanced->getAtom(i).ttp;
-        ++acc_triang[attp];
-    }
+    const int* acc = acc_tot.first;
+    const int* tot = acc_tot.second;
     for (int i = 0; i < NTGTYPES; ++i)
     {
-        tot_triang[i] += est_triang[i];
-        est_triang[i] = 0;
+        acc_triang[i] += acc[i];
+        tot_triang[i] += tot[i];
+        assert(acc_triang[i] <= tot_triang[i]);
     }
 }
 

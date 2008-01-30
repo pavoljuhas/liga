@@ -48,7 +48,7 @@ void AtomCost::resetFor(const Molecule* m)
     arg_cluster = m;
     const DistanceTable& dtgt = arg_cluster->getDistanceTable();
     noCutoff();
-    use_distances = !arg_cluster->distreuse;
+    use_distances = !arg_cluster->getDistReuse();
     if (use_distances && dtgt.size() > useflag.size())
     {
 	useflag.resize(dtgt.size(), false);
@@ -142,14 +142,14 @@ void AtomCost::noCutoff()
     cutoff_range = DOUBLE_MAX;
 }
 
-double AtomCost::total() const
+double AtomCost::totalCost() const
 {
-    return total_cost;
+    return this->total_cost;
 }
 
 const vector<double>& AtomCost::partialCosts() const
 {
-    return partial_costs;
+    return this->partial_costs;
 }
 
 const vector<double>& AtomCost::targetDistances() const
@@ -238,9 +238,10 @@ const vector<Atom_t*>& AtomCost::getClusterAtoms() const
 
 void AtomCost::resizeArrays()
 {
-    if (arg_cluster->NAtoms() == int(partial_costs.size()))     return;
-    partial_costs.resize(arg_cluster->NAtoms());
-    target_distances.resize(arg_cluster->NAtoms());
+    bool isresized = arg_cluster->countAtoms() == int(partial_costs.size());
+    if (isresized)  return;
+    partial_costs.resize(arg_cluster->countAtoms());
+    target_distances.resize(arg_cluster->countAtoms());
 }
 
 void AtomCost::resetUseFlags()

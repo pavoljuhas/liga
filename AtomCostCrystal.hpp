@@ -33,17 +33,22 @@ class AtomCostCrystal : public AtomCost
 	// public methods - overloaded
         virtual void resetFor(const Crystal* clust);
 	virtual double eval(const Atom_t* pa);
+	int totalPairCount() const;
+	const std::vector<int>& pairCounts() const;
 	virtual size_t lsqComponentsSize() const;
 	virtual const std::vector<double>& lsqComponents() const;
 	virtual double lsqJacobianGet(size_t m, size_t n) const;
 
         // public methods - specific
-        double costOfLattice() const;
+        std::pair<double,int> pairCostCount(const R3::Vector& cv) const;
 
     protected:
 
-        /* delete once working
 	// data - results
+        int total_pair_count;
+        std::vector<int> pair_counts;
+
+        /* delete once working
 	bool use_distances;
 	bool apply_cutoff;
 	double lowest_cost;
@@ -77,6 +82,7 @@ class AtomCostCrystal : public AtomCost
         std::auto_ptr<PointsInSphere> _sph;
         int _lsq_component_size;
         mutable blitz::Array<double,2> _lsq_jacobian;
+        mutable int _count_evaluated_pairs;
 
 	// private methods
 	void resizeArrays();

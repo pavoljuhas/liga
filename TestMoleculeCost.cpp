@@ -47,7 +47,7 @@ public:
 	Molecule line(dst_line);
 	line.Add(-0.5, 0.0, 0.0);
 	line.Add(+0.5, 0.0, 0.0);
-	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, line.NormBadness(), double_eps);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, line.cost(), double_eps);
     }
 
     void test_square()
@@ -57,7 +57,7 @@ public:
 	square.Add(+0.5, -0.5, 0.0);
 	square.Add(+0.5, +0.5, 0.0);
 	square.Add(-0.5, +0.5, 0.0);
-	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, square.NormBadness(), double_eps);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, square.cost(), double_eps);
     }
 
     void test_bad_square()

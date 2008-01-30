@@ -169,9 +169,9 @@ void RunParameters::process_args(int argc, char* argv[])
 	pmol->tol_dd = tol_dd;
 	if (tol_dd == 0.0)
 	{
-	    pmol->setMaxNAtoms(numeric_limits<int>().max());
+	    pmol->setMaxAtomCount(numeric_limits<int>().max());
 	    pmol->ReadXYZ(inistru.c_str());
-	    pmol->setMaxNAtoms(pmol->NAtoms());
+	    pmol->setMaxAtomCount(pmol->countAtoms());
 	}
 	else
 	{
@@ -195,16 +195,16 @@ void RunParameters::process_args(int argc, char* argv[])
 list<int> worst_to_best_atom(Molecule& mol)
 {
     typedef pair<double,int> AtomBadnessAndIdx;
-    AtomBadnessAndIdx bi[mol.NAtoms()];
-    for (int i = 0; i != mol.NAtoms(); ++i)
+    AtomBadnessAndIdx bi[mol.countAtoms()];
+    for (int i = 0; i != mol.countAtoms(); ++i)
     {
 	bi[i].first = mol.getAtom(i).Badness();
 	bi[i].second = i;
     }
-    sort(bi, bi + mol.NAtoms());
+    sort(bi, bi + mol.countAtoms());
     // build list in reverse order
     list<int> w2b;
-    for (AtomBadnessAndIdx* pbi = bi; pbi != bi + mol.NAtoms(); ++pbi)
+    for (AtomBadnessAndIdx* pbi = bi; pbi != bi + mol.countAtoms(); ++pbi)
     {
 	w2b.push_front(pbi->second);
     }
@@ -216,8 +216,8 @@ int main(int argc, char* argv[])
     RunParameters rp(argc, argv);
     Molecule& mol = *(rp.pmol);
     double mnb0 = DOUBLE_MAX;
-    cout << "0 BC " << mol.NormBadness() << endl;
-    for (int iteration = 1; mol.NormBadness() < mnb0; ++iteration)
+    cout << "0 BC " << mol.cost() << endl;
+    for (int iteration = 1; mol.cost() < mnb0; ++iteration)
     {
 	list<int> indices = worst_to_best_atom(mol);
 	for (   list<int>::iterator ii = indices.begin();
@@ -225,10 +225,10 @@ int main(int argc, char* argv[])
 	{
 	    mol.RelaxAtom(*ii);
 	    cout << iteration << " R " << *ii
-		<< " " << mol.NormBadness() << endl;
+		<< " " << mol.cost() << endl;
 	}
-	cout << iteration << " BC " << mol.NormBadness() << endl;
-	if (eps_lt(mol.NormBadness(), mnb0))  mnb0 = mol.NormBadness();
+	cout << iteration << " BC " << mol.cost() << endl;
+	if (eps_lt(mol.cost(), mnb0))  mnb0 = mol.cost();
     }
     if (!rp.outstru.empty())
     {

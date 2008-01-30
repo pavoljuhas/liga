@@ -122,7 +122,7 @@ LoneAtomFilter_t::LoneAtomFilter_t(double _max_dist)
 bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
 {
     // atom is always good with respect to empty molecule
-    if (pm->NAtoms() == 0)
+    if (pm->countAtoms() == 0)
     {
 	return true;
     }

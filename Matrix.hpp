@@ -58,10 +58,11 @@ template <class T> class Matrix
 	}
 
 	// Destructor
-	~Matrix()
+	virtual ~Matrix()
 	{
 	    delete[] mdata;
 	}
+
 	// Methods
 	Matrix& operator=(const Matrix& src)
 	{
@@ -78,10 +79,9 @@ template <class T> class Matrix
 	    return *this;
 	}
 
-	Matrix& operator=(T value)
+	void fill(const T& value)
 	{
 	    std::fill_n(mdata, msize, value);
-	    return *this;
 	}
 
 	void resize(size_t m, size_t n, const T* value=NULL)
@@ -119,12 +119,12 @@ template <class T> class Matrix
 	    mrows = mcols = msize = 0;
 	}
 
-	std::vector<T> rowVector(size_t i)
+	virtual std::vector<T> rowVector(size_t i) const
 	{
 	    return std::vector<T>(mdata + mcols*i, mdata + mcols*(i+1));
 	}
 
-	std::vector<T> columnVector(size_t j)
+	virtual std::vector<T> columnVector(size_t j) const
 	{
 	    std::vector<T> column(mrows);
 	    typename std::vector<T>::iterator vii;
@@ -196,11 +196,12 @@ template <class T> class Matrix
 	    for (size_t i = 0; i != mrows; ++i)
 	    {
 		cout << i << ": ";
+                vector<T> rowi = rowVector(i);
 		for (size_t j = 0; j != mcols; ++j)
 		{
-		    cout << (*this)(i,j) << " ";
+		    cout << rowi[j];
+                    cout << (j != mcols - 1 ? " " : "\n");
 		}
-		cout << endl;
 	    }
 	}
 };
@@ -213,15 +214,39 @@ template <class T> class SymmetricMatrix : public Matrix<T>
 
 	SymmetricMatrix() : Matrix<T>() { }
 	SymmetricMatrix(const Matrix<T>& src) : Matrix<T>(src) { }
-	SymmetricMatrix(size_t m, size_t n) : Matrix<T>(m, n) { }
+	SymmetricMatrix(size_t m) : Matrix<T>(m, m) { }
 
 	// Overloaded methods
 
+	SymmetricMatrix& operator=(const SymmetricMatrix& src)
+	{
+            this->Matrix<T>::operator=(src);
+	    return *this;
+	}
+
 	inline T& operator()(size_t i, size_t j) const
 	{
-	    if (i > j)	std::swap(i, j);
-	    return Matrix<T>::operator()(i, j);
+            T& rv = (i < j) ?
+                Matrix<T>::operator()(i, j) :
+                Matrix<T>::operator()(j, i);
+	    return rv;
 	}
+
+	virtual std::vector<T> rowVector(size_t i) const
+        {
+            std::vector<T> rv(Matrix<T>::columns());
+            for (size_t j = 0; j != Matrix<T>::columns(); ++j)
+            {
+                rv[j] = operator()(i, j);
+            }
+            return rv;
+        }
+
+	virtual std::vector<T> columnVector(size_t j) const
+        {
+            std::vector<T> rv = rowVector(j);
+            return rv;
+        }
 
 	SymmetricMatrix<T> transposed() 
 	{ 
@@ -234,19 +259,19 @@ template <class T>
 std::ostream& operator<<(std::ostream &out, Matrix<T> &mx)
 {
     using namespace std;
-    out << "( ";
-    for (size_t i = 0; i != mx.mrows; ++i)
+    out << "(";
+    for (size_t i = 0; i != mx.rows(); ++i)
     {
 	out << "(";
-	for (size_t j = 0; j != mx.mcols; ++j)
+        vector<T> rowi = mx.rowVector(i);
+	for (size_t j = 0; j != mx.columns(); ++j)
 	{
-	    cout << mx(i,j);
-	    if (j != (mx.mcols-1))  cout << ", "; 
-	    else		    cout << ")";
+	    out << rowi[j];
+            out << ((j != mx.columns() - 1) ? ", " : ")");
 	}
-	if (i != (mx.mrows-1))	    cout << ", ";
-	else			    cout << " )\n";
+        if (i != mx.rows() - 1)     out << ", ";
     }
+    out << ")\n";
     return out;
 }
 

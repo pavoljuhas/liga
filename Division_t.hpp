@@ -47,9 +47,9 @@ class Division_t : public std::vector<Molecule*>
 	inline size_t level();
 	inline void assignTrials(double t);
 	inline double trials();
-	double NormBadness();
+	double averageCost();
 	const int* estimateTriangulations();
-	void noteTriangulations(PMOL advanced);
+	void noteTriangulations(const std::pair<int*,int*>& acc_tot);
 
     private:
 

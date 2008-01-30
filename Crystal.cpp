@@ -9,13 +9,14 @@
 ***********************************************************************/
 
 #include <sstream>
+#include <stdexcept>
 #include <boost/foreach.hpp>
 #include "Crystal.hpp"
 #include "Lattice.hpp"
 #include "Atom_t.hpp"
 #include "AtomCostCrystal.hpp"
 #include "LigaUtils.hpp"
-#include "PointsInSphere.hpp"
+#include "AtomSequence.hpp"
 
 using namespace std;
 
@@ -57,28 +58,33 @@ Crystal& Crystal::operator=(const Crystal& crs)
     this->_rmin = crs._rmin;
     this->_rmax = crs._rmax;
     this->_cost = crs._cost;
-    this->_cost_cached = crs._cost_cached;
-    this->_cost_of_lattice = crs._cost_of_lattice;
-    this->_cost_of_lattice_cached = crs._cost_of_lattice_cached;
+    this->pmx_pair_counts = crs.pmx_pair_counts;
+    this->_count_pairs = crs._count_pairs;
+    this->_cost_data_cached = crs._cost_data_cached;
     return *this;
 }
 
 void Crystal::setDistanceTable(const DistanceTable& dtbl)
 {
-    vector<double> dtblunique = dtbl.unique();
-    this->_distance_table.reset(new DistanceTable(dtblunique));
-    this->uncacheCost();
+    DistanceTable dtblunique(dtbl.unique());
+    this->Molecule::setDistanceTable(dtblunique);
+    this->uncacheCostData();
 }
 
-const DistanceTable& Crystal::getDistanceTable() const
+void Crystal::setDistReuse(bool flag)
 {
-    return *_distance_table;
+    if (!flag)
+    {
+        const char* emsg = "Crystal requires distreuse is true.";
+        throw range_error(emsg);
+    }
+    this->Molecule::setDistReuse(flag);
 }
 
 void Crystal::setLattice(const Lattice& lat)
 {
     _lattice.reset(new Lattice(lat));
-    this->uncacheCost();
+    this->uncacheCostData();
 }
 
 const Lattice& Crystal::getLattice() const
@@ -90,7 +96,7 @@ void Crystal::setRRange(double rmin, double rmax)
 {
     _rmin = rmin;
     _rmax = rmax;
-    this->uncacheCost();
+    this->uncacheCostData();
 }
 
 pair<double,double> Crystal::getRRange() const
@@ -106,7 +112,7 @@ pair<double,double> Crystal::getRExtent() const
     {
         center += ai->r;
     }
-    center /= NAtoms();
+    center /= countAtoms();
     double max_offcenter = 0.0;
     BOOST_FOREACH (Atom_t* ai, atoms)
     {
@@ -114,7 +120,7 @@ pair<double,double> Crystal::getRExtent() const
         if (ri > max_offcenter)     max_offcenter = ri;
     }
     // adjust for round-off errors, when not empty
-    if (NAtoms() != 0)
+    if (countAtoms() != 0)
     {
         const double epsd = sqrt(DOUBLE_EPS);
         max_offcenter = max_offcenter*(1.0 + epsd) + epsd;
@@ -125,29 +131,77 @@ pair<double,double> Crystal::getRExtent() const
 
 double Crystal::cost() const
 {
-    if (!_cost_cached)
-    {
-        Recalculate();
-        _cost = NormBadness() + costOfLattice();
-        _cost_cached = true;
-    }
-    return _cost;
+    if (!this->_cost_data_cached)   recalculate();
+    return this->Molecule::cost();
 }
 
-double Crystal::costOfLattice() const
+
+int Crystal::countPairs() const
 {
-    if (!_cost_of_lattice_cached)
+    if (!this->_cost_data_cached)   recalculate();
+    return this->_count_pairs;
+}
+
+
+void Crystal::recalculate() const
+{
+    // reset molecule
+    this->ResetBadness();
+    this->pmx_partial_costs.fill(0.0);
+    this->pmx_pair_counts.fill(0);
+    this->_count_pairs = 0;
+    // reset all atoms
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-        _cost_of_lattice = 0.0;
-        if (_lattice.get())
-        {
-            AtomCostCrystal* atomcost = static_cast<AtomCostCrystal*>(
-                    this->getAtomCostCalculator());
-            _cost_of_lattice = atomcost->costOfLattice();
-        }
-        _cost_of_lattice_cached = true;
+        seq.ptr()->ResetBadness();
     }
-    return _cost_of_lattice;
+    AtomCostCrystal* atomcost;
+    atomcost = static_cast<AtomCostCrystal*>(getAtomCostCalculator());
+    // fill in diagonal elements
+    R3::Vector zeros(0.0, 0.0, 0.0);
+    pair<double,int> costcount;
+    costcount = atomcost->pairCostCount(zeros);
+    double diagpaircost = costcount.first;
+    int diagpaircount = costcount.second;
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    {
+        int idx = seq.ptr()->pmxidx;
+        this->pmx_partial_costs(idx, idx) = diagpaircost;
+        this->IncBadness(diagpaircost);
+        seq.ptr()->IncBadness(diagpaircost);
+        this->pmx_pair_counts(idx, idx) = diagpaircount;
+        this->_count_pairs += diagpaircount;
+    }
+    // fill off-diagonal elements
+    R3::Vector rc_dd;
+    for (AtomSequence seq0(this); !seq0.finished(); seq0.next())
+    {
+        AtomSequence seq1 = seq0;
+        if (!seq1.finished())   seq1.next();
+        for (; !seq1.finished(); seq1.next())
+        {
+            int idx0 = seq0.ptr()->pmxidx;
+            int idx1 = seq1.ptr()->pmxidx;
+            rc_dd = seq1.ptr()->r - seq0.ptr()->r;
+            costcount = atomcost->pairCostCount(rc_dd);
+            // pmx is SymmetricMatrix, it is sufficient to make one assignment
+            this->pmx_partial_costs(idx0, idx1) = costcount.first;
+            this->IncBadness(costcount.first);
+            double paircosthalf = costcount.first / 2.0;
+            seq0.ptr()->IncBadness(paircosthalf);
+            seq1.ptr()->IncBadness(paircosthalf);
+            this->pmx_pair_counts(idx0, idx1) = costcount.second;
+            this->_count_pairs += costcount.second;
+        }
+    }
+    this->_cost_data_cached = true;
+}
+
+
+void Crystal::Clear()
+{
+    this->Molecule::Clear();
+    uncacheCostData();
 }
 
 // protected methods
@@ -159,20 +213,87 @@ AtomCost* Crystal::getAtomCostCalculator() const
     return &the_acc;
 }
 
+void Crystal::addNewAtomPairs(Atom_t* pa)
+{
+    if (!this->_cost_data_cached)   return;
+    AtomCostCrystal* atomcost;
+    atomcost = static_cast<AtomCostCrystal*>(getAtomCostCalculator());
+    atomcost->eval(pa);
+    // store partial costs
+    const vector<double>& ptcs = atomcost->partialCosts();
+    const vector<int>& pcnt = atomcost->pairCounts();
+    assert(atoms.size() == ptcs.size());
+    assert(atoms.size() == pcnt.size());
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
+    {
+	double paircost = ptcs[seq.idx()];
+	int idx0 = pa->pmxidx;
+	int idx1 = seq.ptr()->pmxidx;
+	this->pmx_partial_costs(idx0, idx1) = paircost;
+	double paircosthalf = paircost / 2.0;
+	seq.ptr()->IncBadness(paircosthalf);
+	pa->IncBadness(paircosthalf);
+        int paircount = pcnt[seq.idx()];
+        this->pmx_pair_counts(idx0, idx1) = paircount;
+    }
+    this->IncBadness(atomcost->totalCost());
+    if (this->Badness() < LIGA::eps_badness)	this->ResetBadness();
+    this->_count_pairs += atomcost->totalPairCount();
+}
+
+
+void Crystal::removeAtomPairs(Atom_t* pa)
+{
+    // remove associated pair costs and pair counts
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    {
+	int idx0 = pa->pmxidx;
+	int idx1 = seq.ptr()->pmxidx;
+	// remove pair costs
+	double paircost = pmx_partial_costs(idx0, idx1);
+	double paircosthalf = paircost/2.0;
+	pa->DecBadness(paircosthalf);
+	seq.ptr()->DecBadness(paircosthalf);
+	this->DecBadness(paircost);
+        // remove pair counts
+        this->_count_pairs -= this->pmx_pair_counts(idx0, idx1);
+    }
+    if (this->Badness() < LIGA::eps_badness)    this->ResetBadness();
+    assert(this->_count_pairs >= 0);
+}
+
+
+void Crystal::resizePairMatrices(int sz)
+{
+    int szcur = this->pmx_partial_costs.rows();
+    if (sz < szcur)     return;
+    Molecule::resizePairMatrices(sz);
+    int sznew = this->pmx_partial_costs.rows();
+    this->pmx_pair_counts.resize(sznew, sznew, 0);
+}
+
+
 // private methods
 
 void Crystal::init()
 {
     this->_rmin = 0.0;
     this->_rmax = 0.0;
-    this->uncacheCost();
+    this->uncacheCostData();
+    this->setDistReuse(true);
 }
 
 
-void Crystal::uncacheCost()
+void Crystal::uncacheCostData()
 {
-    this->_cost_cached = false;
-    this->_cost_of_lattice_cached = false;
+    this->_cost_data_cached = false;
+    if (countAtoms() == 0)
+    {
+        this->ResetBadness();
+        this->_count_pairs = 0;
+        this->pmx_pair_counts.fill(0);
+        this->_cost_data_cached = true;
+    }
 }
 
 

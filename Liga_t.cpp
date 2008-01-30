@@ -106,18 +106,18 @@ void Liga_t::prepare()
     // put initial molecule to its division
     PMOL first_team = new Molecule(*rp->mol);
     cout << "Initial team" << endl;
-    cout << season << " I " << first_team->NAtoms() << ' ' <<
-	first_team->NormBadness() << '\n';
-    at(first_team->NAtoms()).push_back(first_team);
+    cout << season << " I " << first_team->countAtoms() << ' ' <<
+	first_team->cost() << '\n';
+    at(first_team->countAtoms()).push_back(first_team);
     // fill lower divisions
     cout << "Filling lower divisions\n";
-    for (int lev = first_team->NAtoms()-1; lev >= base_level; --lev)
+    for (int lev = first_team->countAtoms()-1; lev >= base_level; --lev)
     {
         PMOL parent_team = at(lev+1).back();
         PMOL lower_team = new Molecule(*parent_team);
         lower_team->Degenerate(1);
-	cout << season << " L " << lower_team->NAtoms() << ' '
-	    << lower_team->NormBadness() << endl;
+	cout << season << " L " << lower_team->countAtoms() << ' '
+	    << lower_team->cost() << endl;
         at(lev).push_back(lower_team);
     }
     makeSeedClusters();
@@ -158,9 +158,9 @@ void Liga_t::playLevel(size_t lo_level)
     // find winner
     int winner_idx = lo_div->find_winner();
     PMOL advancing = lo_div->at(winner_idx);
-    if (advancing->NormBadness() >= rp->stopgame)    return;
+    if (advancing->cost() >= rp->stopgame)    return;
     bool advancing_best = (advancing == lo_div->best());
-    double adv_bad0 = advancing->NormBadness();
+    double adv_bad0 = advancing->cost();
     if (!lo_div->full())
     {
 	// save clone of advancing winner
@@ -169,9 +169,9 @@ void Liga_t::playLevel(size_t lo_level)
     }
     // advance as far as possible
     const int* etg = lo_div->estimateTriangulations();
-    advancing->Evolve(etg);
-    lo_div->noteTriangulations(advancing);
-    size_t hi_level = advancing->NAtoms();
+    const pair<int*,int*> acc_tot = advancing->Evolve(etg);
+    lo_div->noteTriangulations(acc_tot);
+    size_t hi_level = advancing->countAtoms();
     if (lo_level != hi_level)   modified.insert(advancing);
     iterator hi_div = begin() + hi_level;
     // fill intermediate empty divisions, loop will stop at non-empty lo_div
@@ -185,7 +185,7 @@ void Liga_t::playLevel(size_t lo_level)
     // find looser
     int looser_idx = hi_div->find_looser();
     PMOL descending = hi_div->at(looser_idx);
-    double desc_bad0 = descending->NormBadness();
+    double desc_bad0 = descending->cost();
     if (!hi_div->full())
     {
 	// save clone of descending looser
@@ -193,7 +193,7 @@ void Liga_t::playLevel(size_t lo_level)
 	hi_div->push_back(looser_clone);
     }
     // clone winner if he made a good advance
-    if (eps_gt(descending->NormBadness(), advancing->NormBadness()))
+    if (eps_gt(descending->cost(), advancing->cost()))
     {
 	*descending = *advancing;
     }
@@ -205,7 +205,7 @@ void Liga_t::playLevel(size_t lo_level)
     // make sure the original best cluster is preserved if it was much much
     // better than whatever left in the low division
     const double spoil_factor = 10.0;
-    if ( advancing_best && eps_gt(lo_div->best()->NormBadness(),
+    if ( advancing_best && eps_gt(lo_div->best()->cost(),
 		spoil_factor*adv_bad0) )
     {
 	PMOL lo_looser = lo_div->at(lo_div->find_looser());
@@ -219,15 +219,15 @@ void Liga_t::playLevel(size_t lo_level)
 	cout << season;
 	cout << " A " <<
 	    lo_level << ' ' << adv_bad0 << ' ' <<
-	    hi_level << ' ' << advancing->NormBadness() << "    ";
+	    hi_level << ' ' << advancing->cost() << "    ";
 	cout << " D " <<
 	    hi_level << ' ' << desc_bad0 << ' ' <<
-	    lo_level << ' ' << descending->NormBadness() << '\n';
+	    lo_level << ' ' << descending->cost() << '\n';
     }
     recordFramesTrace(modified, lo_level);
     saveFramesTrace(modified, lo_level);
     // update world champ so that the season can be cut short by stopFlag()
-    if (advancing->Full())  updateWorldChamp();
+    if (advancing->full())  updateWorldChamp();
 }
 
 bool Liga_t::stopFlag() const
@@ -248,8 +248,8 @@ bool Liga_t::finished() const
 
 bool Liga_t::solutionFound() const
 {
-    return world_champ && world_champ->Full() &&
-        world_champ->NormBadness() < rp->tolcost;
+    return world_champ && world_champ->full() &&
+        world_champ->cost() < rp->tolcost;
 }
 
 bool Liga_t::outOfTime() const
@@ -325,30 +325,30 @@ void Liga_t::makeSeedClusters()
     bool keep_promotejump = Molecule::promotejump;
     Molecule::promotejump = false;
     Molecule mcore( *(at(base_level).back()) );
-    int keep_max_natoms = mcore.maxNAtoms();
+    int keep_maxatomcnt = mcore.getMaxAtomCount();
     cout << "Generating seed clusters" << endl;
     for (vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
 	    scii != rp->seed_clusters.end(); ++scii )
     {
-	mcore.setMaxNAtoms(scii->level);
+	mcore.setMaxAtomCount(scii->level);
 	iterator seeded = begin() + scii->level;
 	for (int nt = 0; nt < scii->trials; ++nt)
 	{
 	    // make sure mcore is at base_level
-	    while (mcore.NAtoms() > base_level)
+	    while (mcore.countAtoms() > base_level)
 	    {
-		mcore.Pop(mcore.NAtoms() - 1);
+		mcore.Pop(mcore.countAtoms() - 1);
 	    }
 	    int addcnt = scii->level - base_level;
 	    int ntrials = addcnt ? rp->seasontrials/addcnt + 1 : 0;
-	    for (int k = 0; k < addcnt && !mcore.Full(); ++k)
+	    for (int k = 0; k < addcnt && !mcore.full(); ++k)
 	    {
-		iterator lo_div = begin() + mcore.NAtoms();
+		iterator lo_div = begin() + mcore.countAtoms();
 		lo_div->assignTrials(ntrials);
 		const int* etg = lo_div->estimateTriangulations();
 		mcore.Evolve(etg);
 	    }
-	    if (!mcore.Full())  continue;
+	    if (!mcore.full())  continue;
 	    if (!seeded->full())
 	    {
 		seeded->push_back(new Molecule(mcore));
@@ -358,14 +358,14 @@ void Liga_t::makeSeedClusters()
 	    PMOL replaced = seeded->at(seeded->find_looser());
 	    *replaced = mcore;
 	}
-	// restore maxNAtoms
+	// restore max atom count
 	for (size_t i = 0; i != seeded->size(); ++i)
 	{
-	    seeded->at(i)->setMaxNAtoms(keep_max_natoms);
+	    seeded->at(i)->setMaxAtomCount(keep_maxatomcnt);
 	}
 	PMOL best_seed = seeded->at(seeded->find_best());
-	cout << season << " S " << best_seed->NAtoms() << ' '
-	    << best_seed->NormBadness() << endl;
+	cout << season << " S " << best_seed->countAtoms() << ' '
+	    << best_seed->cost() << endl;
     }
     Molecule::promotejump = keep_promotejump;
 }
@@ -376,7 +376,7 @@ void Liga_t::shareSeasonTrials()
     for (size_t level = base_level; level != size(); ++level)
     {
 	Division_t* lvdiv = &(at(level));
-  	tdistributor->setLevelBadness(level, lvdiv->NormBadness());
+  	tdistributor->setLevelBadness(level, lvdiv->averageCost());
 	double fr = 1.0*lvdiv->size() / lvdiv->fullsize();
 	tdistributor->setLevelFillRate(level, fr);
     }
@@ -401,8 +401,8 @@ Molecule* Liga_t::updateWorldChamp()
 Molecule* Liga_t::updateBestChamp()
 {
     if (!world_champ)	return best_champ;
-    if ( best_champ && world_champ->NAtoms() == best_champ->NAtoms() &&
-	 !eps_lt(world_champ->NormBadness(), best_champ->NormBadness()) )
+    if ( best_champ && world_champ->countAtoms() == best_champ->countAtoms() &&
+	 !eps_lt(world_champ->cost(), best_champ->cost()) )
     {
 	return best_champ;
     }
@@ -416,16 +416,16 @@ Molecule* Liga_t::updateBestChamp()
 void Liga_t::printWorldChamp()
 {
     if (!verbose[WC])   return;
-    cout << season << " WC " << world_champ->NAtoms() << ' ' <<
-	world_champ->NormBadness() << '\n';
+    cout << season << " WC " << world_champ->countAtoms() << ' ' <<
+	world_champ->cost() << '\n';
 }
 
 void Liga_t::printBestChamp()
 {
     bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
     if (dontprint)	return;
-    cout << season << " BC " << best_champ->NAtoms() << ' '
-	<< best_champ->NormBadness() << endl;
+    cout << season << " BC " << best_champ->countAtoms() << ' '
+	<< best_champ->cost() << endl;
     printed_best_champ = true;
 }
 
@@ -437,7 +437,7 @@ void Liga_t::printLevelAverages()
     for (; lii != end() && !lii->empty(); ++lii, ++level)
     {
 	cout << season << " AV " << level << ' ' <<
-	    lii->NormBadness() << '\n';
+	    lii->averageCost() << '\n';
     }
 }
 
@@ -454,7 +454,7 @@ void Liga_t::printTrialShares()
 void Liga_t::saveOutStru()
 {
     static int savecnt = 0;
-    static valarray<double> bestMNB(DOUBLE_MAX, size());
+    static valarray<double> bestMcost(DOUBLE_MAX, size());
     ++savecnt;
     bool dontsave = rp->outstru.empty() || this->empty() ||
 	(!this->finished() && 0 < rp->saverate && savecnt < rp->saverate);
@@ -471,15 +471,15 @@ void Liga_t::saveOutStru()
 	// intermediate division may become empty
 	if (save_div->empty())	continue;
 	PMOL level_champ = save_div->best();
-	size_t level = level_champ->NAtoms();
+	size_t level = level_champ->countAtoms();
 	// do not save empty structure
 	if (level == 0)	break;
 	// save only if there is clear improvement
-	bool improved = eps_lt(level_champ->NormBadness(), bestMNB[level]);
+	bool improved = eps_lt(level_champ->cost(), bestMcost[level]);
 	if (!improved)	continue;
 	// something to save here
 	savecnt = 0;
-	bestMNB[level] = level_champ->NormBadness();
+	bestMcost[level] = level_champ->cost();
 	// construct file name
 	ostringstream fname;
         fname << rp->outstru;
@@ -497,18 +497,19 @@ void Liga_t::saveFrames()
 	int cnt;
 	PMOL champ;
 	double level;
-	double norm_badness;
+	double cost;
     } saved = {0, NULL, 0, DOUBLE_MAX};
     bool dontsave = rp->frames.empty() || rp->framesrate == 0 ||
 	++saved.cnt < rp->framesrate && !finished() || empty() ||
-	world_champ == saved.champ && world_champ->NAtoms() == saved.level &&
-	eps_eq(world_champ->NormBadness(), saved.norm_badness);
+	world_champ == saved.champ &&
+        world_champ->countAtoms() == saved.level &&
+	eps_eq(world_champ->cost(), saved.cost);
     if (dontsave)    return;
     // need to do something here
     saved.cnt = 0;
     saved.champ = world_champ;
-    saved.level = world_champ->NAtoms();
-    saved.norm_badness = world_champ->NormBadness();
+    saved.level = world_champ->countAtoms();
+    saved.cost = world_champ->cost();
     // build file name
     ostringstream oss;
     oss << rp->frames << '.' << season;
@@ -531,8 +532,8 @@ void Liga_t::recordFramesTrace(set<PMOL>& modified, size_t lo_level)
         TraceId_t tid;
         tid.season = season;
         tid.level = lo_level;
-        tid.mol_natoms = mp->NAtoms();
-        tid.mol_norm_badness = mp->NormBadness();
+        tid.mol_natoms = mp->countAtoms();
+        tid.mol_norm_badness = mp->cost();
         tid.mol_id = mp->id;
         mp->trace.push_back(tid);
     }

@@ -212,7 +212,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     }
     // distreuse
     distreuse = args->GetPar<bool>("distreuse", false);
-    Molecule::distreuse = distreuse;
+    mol->setDistReuse(distreuse);
     // tolcost
     tolcost = args->GetPar<double>("tolcost", 1.0e-4);
     Molecule::tol_nbad = tolcost;
@@ -220,9 +220,9 @@ void RunPar_t::processArguments(int argc, char* argv[])
     if (args->ispar("natoms"))
     {
 	natoms = args->GetPar<int>("natoms");
-	mol->setMaxNAtoms(natoms);
+	mol->setMaxAtomCount(natoms);
     }
-    natoms = mol->maxNAtoms();
+    natoms = mol->getMaxAtomCount();
     // fixed_atoms must be set after inistru
     if (args->ispar("fixed_atoms"))
     {
@@ -262,7 +262,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	    scid.level = scs[i];
 	    scid.number = scs[i+1];
 	    scid.trials = scs[i+2];
-	    if (scid.level <= base_level || scid.level > mol->maxNAtoms())
+	    if (scid.level <= base_level || scid.level > mol->getMaxAtomCount())
 	    {
 		ostringstream emsg;
 		emsg << "seed_clusters - invalid level " << scid.level << '.';

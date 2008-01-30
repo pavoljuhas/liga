@@ -45,7 +45,7 @@ public:
 	double_eps = DOUBLE_EPS;
         crst.Clear();
         crst.setRRange(0.0, 3.05);
-        crst.setMaxNAtoms(4);
+        crst.setMaxAtomCount(4);
         // do the rest only once
         cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
         rhombohedral.reset(new Lattice(1, 1, 1, 60, 60, 60));

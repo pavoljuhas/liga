@@ -17,6 +17,7 @@
 #include <valarray>
 #include <list>
 #include <set>
+#include <boost/shared_ptr.hpp>
 #include "Atom_t.hpp"
 #include "DistanceTable.hpp"
 #include "Matrix.hpp"
@@ -42,7 +43,6 @@ class Molecule
 
 	// class data
 	// fit parameters
-        static bool distreuse;
 	static double tol_nbad;	// tolerance of normalized badness
 	static double tol_r;	// position tolerance in RelaxAtom
 	static bool promotejump;
@@ -84,19 +84,25 @@ class Molecule
         // methods - molecule configuration
         virtual void setDistanceTable(const DistanceTable&);
         void setDistanceTable(const std::vector<double>&);
-        virtual const DistanceTable& getDistanceTable() const;
+        const DistanceTable& getDistanceTable() const;
+
+        virtual void setDistReuse(bool);
+        bool getDistReuse() const;
 
 	// methods - fitness/badness evaluation
-	double Badness() const;	    // total badness
-	double NormBadness() const; // normalized badness
-	bool Full() const     { return !(NAtoms() < maxNAtoms()); }
-	int NAtoms() const    { return atoms.size(); }
-	int maxNAtoms() const   { return max_natoms; }
-	void setMaxNAtoms(int s);
-	int NDist() const;
-	double max_dTarget() const;
-        void ReassignPairs();	    // improve assignment of distances
-	void Recalculate() const;   // update everything
+	virtual double cost() const;    // normalized badness
+	const double& Badness() const;	// total badness
+        void IncBadness(const double& db) const;
+        void DecBadness(const double& db) const;
+        void ResetBadness(double b=0.0) const;
+	bool full() const;
+	int countAtoms() const;
+	virtual int countPairs() const;
+	int getMaxAtomCount() const;
+	void setMaxAtomCount(int cnt);
+	double maxTableDistance() const;
+        void reassignPairs();	    // improve assignment of distances
+	virtual void recalculate() const;   // recalculate everything
 
 	// methods - molecule operations
 	void Shift(double dh, double dk, double dl);	// move all atoms
@@ -114,7 +120,7 @@ class Molecule
 	int NFixed() const;		// count fixed atoms
 	void RelaxAtom(const int cidx);	// relax internal atom
 	void RelaxExternalAtom(Atom_t& a);
-	void Evolve(const int* est_triang);
+        const std::pair<int*,int*>& Evolve(const int* est_triang);
 	void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
 
 	// IO functions
@@ -128,14 +134,18 @@ class Molecule
     protected:
 
         // data
-        std::auto_ptr<DistanceTable> dTarget;
-	int max_natoms;
+        boost::shared_ptr<DistanceTable> _distance_table;
+	int _max_atom_count;
         std::vector<Atom_t*> atoms;	// vector of pointers to atoms
+	mutable SymmetricMatrix<double> pmx_partial_costs;
+	mutable SymmetricMatrix<double> pmx_used_distances;
+        mutable std::set<int> free_pmx_slots;
+	mutable double _badness;	// molecular badness
 
 	// methods
 	virtual AtomCost* getAtomCostCalculator() const;
-	void addNewAtomPairs(Atom_t* pa);
-	void removeAtomPairs(Atom_t* pa);
+	virtual void addNewAtomPairs(Atom_t* pa);
+	virtual void removeAtomPairs(Atom_t* pa);
         typedef std::vector<Atom_t> AtomArray;
 	int push_good_distances(AtomArray& vta, double* afit, int ntrials);
 	int push_good_triangles(AtomArray& vta, double* afit, int ntrials);
@@ -146,6 +156,7 @@ class Molecule
 	void filter_good_atoms(AtomArray& vta,
 		double evolve_range, double hi_abad);
 	bool check_atom_filters(Atom_t*);
+        virtual void resizePairMatrices(int sz);
 
     private:
 
@@ -160,15 +171,13 @@ class Molecule
         static long getUniqueId();
 
 	// data
-	SymmetricMatrix<double> pmx_used_distances;
-	SymmetricMatrix<double> pmx_partial_costs;
-        std::set<int> free_pmx_slots;
-	mutable double badness;		// molecular badness
+        bool _distreuse;
 
 	// methods
 	// constructor helper
 	void init();
 	int getPairMatrixIndex();
+        void returnUsedDistances();
 	// IO helpers
 	std::istream& ReadXYZ(std::istream& fid);
         std::string opened_file;
@@ -189,15 +198,5 @@ private:
     template<typename T> bool read_token(const char* token, T& value);
     const std::string& header;
 };
-
-////////////////////////////////////////////////////////////////////////
-// Definitions of inline and template methods
-////////////////////////////////////////////////////////////////////////
-
-inline int Molecule::NDist()  const
-{
-    int n = NAtoms();
-    return n*(n-1)/2;
-}
 
 #endif	// MOLECULE_HPP_INCLUDED

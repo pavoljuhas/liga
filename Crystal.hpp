@@ -37,7 +37,7 @@ class Crystal : public Molecule
 
         // methods
         virtual void setDistanceTable(const DistanceTable&);
-        virtual const DistanceTable& getDistanceTable() const;
+        virtual void setDistReuse(bool);
 
         void setLattice(const Lattice&);
         const Lattice& getLattice() const;
@@ -46,29 +46,36 @@ class Crystal : public Molecule
         std::pair<double,double> getRRange() const;
         std::pair<double,double> getRExtent() const;
 
-        double cost() const;
-        double costOfLattice() const;
+        virtual double cost() const;
+	virtual int countPairs() const;
+        virtual void recalculate() const;
+
+	virtual void Clear();
 
     protected:
 
+        // data
+        mutable SymmetricMatrix<int> pmx_pair_counts;
+
         // methods
         virtual AtomCost* getAtomCostCalculator() const;
+	virtual void addNewAtomPairs(Atom_t* pa);
+	virtual void removeAtomPairs(Atom_t* pa);
+        virtual void resizePairMatrices(int sz);
 
     private:
 
 	// crystal specific data
         boost::shared_ptr<Lattice> _lattice;
-        boost::shared_ptr<DistanceTable> _distance_table;
 	double _rmin;
 	double _rmax;
         mutable double _cost;
-        mutable bool _cost_cached;
-        mutable double _cost_of_lattice;
-        mutable double _cost_of_lattice_cached;
+        mutable int _count_pairs;
+        mutable bool _cost_data_cached;
 
         // methods
         void init();
-        void uncacheCost();
+        void uncacheCostData();
 
 };
 

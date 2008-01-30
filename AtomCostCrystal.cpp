@@ -52,45 +52,52 @@ double AtomCostCrystal::eval(const Atom_t* pa)
     arg_atom = pa;
     // begin calculation
     resizeArrays();
-    total_cost = 0.0;
-    const Lattice& lat = arg_cluster->getLattice();
-    // find corresponding atom site in the unit cell
-    R3::Vector aucv = lat.ucvCartesian(arg_atom->r);
-    _lsq_component_size = 0;
+    vector<double>::iterator ptcii = this->partial_costs.begin();
+    vector<int>::iterator pcntii = this->pair_counts.begin();
+    // reset result data
+    this->total_cost = 0.0;
+    this->total_pair_count = 0;
+    // Cartesian separation vector mapped to unit cell
+    R3::Vector rcv;
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
-        const Atom_t& a = seq.ref();
-        R3::Vector rc_dd;
-        for (_sph->rewind(); !_sph->finished(); _sph->next())
-        {
-            rc_dd = a.r + lat.cartesian(_sph->mno) - aucv;
-            double d = R3::norm(rc_dd);
-            if (d < this->_rmin || d > this->_rmax || d == 0.0)     continue;
-            _lsq_component_size++;
-            double dd = this->nearDistance(d) - d;
-            double pcost = penalty(dd);
-            assert(seq.idx() < int(partial_costs.size()));
-            partial_costs[seq.idx()] += pcost;
-            total_cost += pcost;
-        }
+	// assertion checks
+	assert(ptcii < this->partial_costs.end());
+	assert(pcntii < this->pair_counts.end());
+        // calculation
+        rcv = arg_atom->r - seq.ptr()->r;
+        const pair<double,int> costcount = pairCostCount(rcv);
+        *(ptcii++) = costcount.first;
+        *(pcntii++) = costcount.second;
+        this->total_cost += costcount.first;
+        this->total_pair_count += costcount.second;
         bool cutitoff = this->apply_cutoff &&
             this->total_cost + arg_atom->Badness() > this->cutoff_cost;
-        if (cutitoff)
-        {
-            _lsq_component_size = -1;
-            break;
-        }
+        if (cutitoff)   break;
     }
-    bool isnewlowestcost = this->apply_cutoff &&
+    bool islowestcost = this->apply_cutoff &&
         arg_atom->Badness() + this->total_cost < this->lowest_cost;
-    if (isnewlowestcost)
+    if (islowestcost)
     {
 	this->lowest_cost = arg_atom->Badness() + this->total_cost;
         this->cutoff_cost =
             min(this->cutoff_cost, this->lowest_cost + this->cutoff_range);
     }
-    return this->total_cost;
+    return this->totalCost();
 }
+
+
+int AtomCostCrystal::totalPairCount() const
+{
+    return this->total_pair_count;
+}
+
+
+const vector<int>& AtomCostCrystal::pairCounts() const
+{
+    return this->pair_counts;
+}
+
 
 size_t AtomCostCrystal::lsqComponentsSize() const
 {
@@ -152,29 +159,40 @@ double AtomCostCrystal::lsqJacobianGet(size_t m, size_t n) const
 
 // public methods - specific
 
-double AtomCostCrystal::costOfLattice() const
+// Evaluate cost of Cartesian separation between two sites
+// The separation vector is tranformed to unit cell vector.
+// This method also sets
+
+pair<double,int> AtomCostCrystal::pairCostCount(const R3::Vector& cv) const
 {
-    double totcost = 0.0;
-    size_t npts = 0;
+    const Lattice& lat = arg_cluster->getLattice();
+    static R3::Vector ucv;
+    ucv = lat.ucvCartesian(cv);
+    R3::Vector rc_dd;
+    double paircost = 0.0;
+    int paircount = 0;
     for (_sph->rewind(); !_sph->finished(); _sph->next())
     {
-        double d = _sph->r();
+        rc_dd = ucv + lat.cartesian(_sph->mno);
+        double d = R3::norm(rc_dd);
         if (d < this->_rmin || d > this->_rmax || d == 0.0)   continue;
         double dd = this->nearDistance(d) - d;
-        totcost += penalty(dd);
-        npts++;
+        paircost += penalty(dd);
+        paircount += 1;
     }
-    double latcost = npts ? totcost/npts : 0.0;
-    return latcost;
+    pair<double,int> rv(paircost, paircount);
+    return rv;
 }
-
 
 // protected methods
 
 void AtomCostCrystal::resizeArrays()
 {
-    partial_costs.resize(arg_cluster->NAtoms());
-    fill(partial_costs.begin(), partial_costs.end(), 0.0);
+    size_t sz = arg_cluster->countAtoms();
+    bool isresized = (sz == this->partial_costs.size());
+    if (isresized)  return;
+    this->partial_costs.resize(sz);
+    this->pair_counts.resize(sz);
 }
 
 // End of file

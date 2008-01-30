@@ -46,7 +46,7 @@ class AtomCost
 	double cutoffRange() const;
 	void setCutoffRange(double cutrng);
 	void noCutoff();
-	double total() const;
+	double totalCost() const;
 	const std::vector<double>& partialCosts() const;
 	const std::vector<double>& targetDistances() const;
 	const std::vector<int>& usedTargetDistanceIndices() const;
