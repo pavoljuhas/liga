@@ -35,8 +35,10 @@ AtomCostCrystal::AtomCostCrystal(const Crystal* cluster) : AtomCost(cluster)
 
 void AtomCostCrystal::resetFor(const Crystal* clust)
 {
+    this->AtomCost::resetFor(clust);
     arg_cluster = clust;
-    noCutoff();
+    assert(this->arg_cluster == this->AtomCost::arg_cluster);
+    assert(!this->use_distances);
     pair<double,double> r_range = arg_cluster->getRRange();
     this->_rmin = r_range.first;
     this->_rmax = r_range.second;

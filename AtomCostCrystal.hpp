@@ -71,8 +71,7 @@ class AtomCostCrystal : public AtomCost
     private:
 
 	// data - arguments
-	const Crystal* arg_cluster;
-	const Atom_t* arg_atom;
+        const Crystal* arg_cluster;
         R3::Vector arg_rcuc;    // cartesian positions offset to unit cell
 
         // data - for intermediate cost evaluation

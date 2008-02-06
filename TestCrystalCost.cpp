@@ -25,7 +25,7 @@ class TestCrystalCost : public CppUnit::TestFixture
     CPPUNIT_TEST(test_cube);
     CPPUNIT_TEST(test_bcc);
     CPPUNIT_TEST(test_fcc);
-//    CPPUNIT_TEST(test_fcc_rhomb);
+    CPPUNIT_TEST(test_fcc_rhomb);
     CPPUNIT_TEST_SUITE_END();
 
 private:
