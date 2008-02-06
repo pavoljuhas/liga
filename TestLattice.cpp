@@ -32,12 +32,13 @@ class TestLattice : public CppUnit::TestFixture
     CPPUNIT_TEST(test_setLatBase);
     CPPUNIT_TEST(test_dist);
     CPPUNIT_TEST(test_angle);
+    CPPUNIT_TEST(test_ucvCartesian);
     CPPUNIT_TEST_SUITE_END();
 
 private:
 
     Lattice* lattice;
-    static const double precision = 1.0e-12;
+    static const double precision = 1.0e-8;
 
 public:
 
@@ -168,6 +169,23 @@ public:
 	lattice->setLatPar(2.0, 2.0, 2.0, 90.0, 90.0, 120.0);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(120.0,
 		lattice->angledeg(va, vb), precision);
+    }
+
+    void test_ucvCartesian()
+    {
+        R3::Vector ucv, ucv_check;
+        ucv = lattice->ucvCartesian(R3::Vector(0.1, 0.2, 0.3));
+        ucv_check = 0.1, 0.2, 0.3;
+        CPPUNIT_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
+        ucv = lattice->ucvCartesian(R3::Vector(1.1, 13.2, -0.7));
+        CPPUNIT_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
+        ucv = lattice->ucvCartesian(R3::Vector(0.5, 0.5, 0.5));
+        ucv_check = 0.5, 0.5, 0.5;
+        CPPUNIT_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
+        lattice->setLatPar(13, 17, 19, 37, 41, 47);
+        ucv = lattice->ucvCartesian(R3::Vector(100.0, 100.0, 100.0));
+        ucv_check = 8.09338442077, 9.55056747225, 30.0389043325;
+        CPPUNIT_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
     }
 
 };
