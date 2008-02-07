@@ -14,7 +14,7 @@
 
 namespace NS_VERSION {
 
-const int getRevisionNumber()
+int getRevisionNumber()
 {
     static int rev = 0;
     if (!rev)   istringstream (getRevision()) >> rev;

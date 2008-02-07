@@ -31,7 +31,7 @@ class AtomCostCrystal : public AtomCost
 	virtual ~AtomCostCrystal() { }
 
 	// public methods - overloaded
-        virtual void resetFor(const Crystal* clust);
+        virtual void resetFor(const Molecule* clust);
 	virtual double eval(const Atom_t* pa);
 	int totalPairCount() const;
 	const std::vector<int>& pairCounts() const;

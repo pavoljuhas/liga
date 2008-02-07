@@ -33,10 +33,10 @@ AtomCostCrystal::AtomCostCrystal(const Crystal* cluster) : AtomCost(cluster)
 
 // public methods - overloaded
 
-void AtomCostCrystal::resetFor(const Crystal* clust)
+void AtomCostCrystal::resetFor(const Molecule* clust)
 {
     this->AtomCost::resetFor(clust);
-    arg_cluster = clust;
+    this->arg_cluster = static_cast<const Crystal*>(clust);
     assert(this->arg_cluster == this->AtomCost::arg_cluster);
     assert(!this->use_distances);
     pair<double,double> r_range = arg_cluster->getRRange();
