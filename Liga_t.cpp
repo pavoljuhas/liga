@@ -104,7 +104,7 @@ void Liga_t::prepare()
         push_back(Division_t(divsize, lev));
     }
     // put initial molecule to its division
-    PMOL first_team = new Molecule(*rp->mol);
+    PMOL first_team = rp->mol->clone();
     cout << "Initial team" << endl;
     cout << season << " I " << first_team->countAtoms() << ' ' <<
 	first_team->cost() << '\n';
@@ -114,7 +114,7 @@ void Liga_t::prepare()
     for (int lev = first_team->countAtoms()-1; lev >= base_level; --lev)
     {
         PMOL parent_team = at(lev+1).back();
-        PMOL lower_team = new Molecule(*parent_team);
+        PMOL lower_team = parent_team->clone();
         lower_team->Degenerate(1);
 	cout << season << " L " << lower_team->countAtoms() << ' '
 	    << lower_team->cost() << endl;
@@ -164,7 +164,7 @@ void Liga_t::playLevel(size_t lo_level)
     if (!lo_div->full())
     {
 	// save clone of advancing winner
-	PMOL winner_clone = new Molecule(*advancing);
+	PMOL winner_clone = advancing->clone();
 	lo_div->push_back(winner_clone);
     }
     // advance as far as possible
@@ -177,7 +177,7 @@ void Liga_t::playLevel(size_t lo_level)
     // fill intermediate empty divisions, loop will stop at non-empty lo_div
     for (iterator empty_div = hi_div; empty_div->empty(); --empty_div)
     {
-	PMOL pioneer = new Molecule(*advancing);
+	PMOL pioneer = advancing->clone();
 	pioneer->Degenerate(hi_div - empty_div);
 	empty_div->push_back(pioneer);
 	modified.insert(pioneer);
@@ -189,7 +189,7 @@ void Liga_t::playLevel(size_t lo_level)
     if (!hi_div->full())
     {
 	// save clone of descending looser
-	PMOL looser_clone = new Molecule(*descending);
+	PMOL looser_clone = descending->clone();
 	hi_div->push_back(looser_clone);
     }
     // clone winner if he made a good advance
@@ -324,39 +324,40 @@ void Liga_t::makeSeedClusters()
     if (rp->seed_clusters.empty())  return;
     bool keep_promotejump = Molecule::promotejump;
     Molecule::promotejump = false;
-    Molecule mcore( *(at(base_level).back()) );
-    int keep_maxatomcnt = mcore.getMaxAtomCount();
+    const Molecule* mcoresrc = at(base_level).back();
+    auto_ptr<Molecule> mcore(mcoresrc->clone());
+    int keep_maxatomcnt = mcore->getMaxAtomCount();
     cout << "Generating seed clusters" << endl;
     for (vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
 	    scii != rp->seed_clusters.end(); ++scii )
     {
-	mcore.setMaxAtomCount(scii->level);
+	mcore->setMaxAtomCount(scii->level);
 	iterator seeded = begin() + scii->level;
 	for (int nt = 0; nt < scii->trials; ++nt)
 	{
 	    // make sure mcore is at base_level
-	    while (mcore.countAtoms() > base_level)
+	    while (mcore->countAtoms() > base_level)
 	    {
-		mcore.Pop(mcore.countAtoms() - 1);
+		mcore->Pop(mcore->countAtoms() - 1);
 	    }
 	    int addcnt = scii->level - base_level;
 	    int ntrials = addcnt ? rp->seasontrials/addcnt + 1 : 0;
-	    for (int k = 0; k < addcnt && !mcore.full(); ++k)
+	    for (int k = 0; k < addcnt && !mcore->full(); ++k)
 	    {
-		iterator lo_div = begin() + mcore.countAtoms();
+		iterator lo_div = begin() + mcore->countAtoms();
 		lo_div->assignTrials(ntrials);
 		const int* etg = lo_div->estimateTriangulations();
-		mcore.Evolve(etg);
+		mcore->Evolve(etg);
 	    }
-	    if (!mcore.full())  continue;
+	    if (!mcore->full())  continue;
 	    if (!seeded->full())
 	    {
-		seeded->push_back(new Molecule(mcore));
+		seeded->push_back(mcore->clone());
 		continue;
 	    }
 	    // replace the worst cluster
 	    PMOL replaced = seeded->at(seeded->find_looser());
-	    *replaced = mcore;
+	    *replaced = *mcore;
 	}
 	// restore max atom count
 	for (size_t i = 0; i != seeded->size(); ++i)
@@ -407,7 +408,7 @@ Molecule* Liga_t::updateBestChamp()
 	return best_champ;
     }
     // update needed here
-    if (!best_champ)	best_champ = new Molecule(*world_champ);
+    if (!best_champ)	best_champ = world_champ->clone();
     else		*best_champ = *world_champ;
     printed_best_champ = false;
     return best_champ;

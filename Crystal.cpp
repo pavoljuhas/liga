@@ -37,9 +37,10 @@ Crystal::Crystal(const DistanceTable& dtab) : Molecule(dtab)
     init();
 }
 
-Crystal::Crystal(const Crystal& crs) : Molecule(crs)
+Crystal::Crystal(const Crystal& crs) : Molecule()
 {
     init();
+    *this = crs;
 }
 
 Crystal::~Crystal()
@@ -63,6 +64,14 @@ Crystal& Crystal::operator=(const Crystal& crs)
     this->_cost_data_cached = crs._cost_data_cached;
     return *this;
 }
+
+
+Molecule* Crystal::clone() const
+{
+    Molecule* pclone = new Crystal(*this);
+    return pclone;
+}
+
 
 void Crystal::setDistanceTable(const DistanceTable& dtbl)
 {

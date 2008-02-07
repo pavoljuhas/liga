@@ -14,6 +14,8 @@
 #include "TrialDistributor.hpp"
 #include "StringUtils.hpp"
 #include "Molecule.hpp"
+#include "Crystal.hpp"
+#include "Lattice.hpp"
 #include "Liga_t.hpp"
 #include "AtomFilter_t.hpp"
 #include "LigaUtils.hpp"
@@ -93,8 +95,43 @@ void RunPar_t::processArguments(int argc, char* argv[])
         throw IOError(emsg.str());
     }
     dstfid >> dtab;
+    // figure out if we have Molecule or Crystal
+    // crystal
+    crystal = args->GetPar<bool>("crystal", false);
+    // latpar
+    latpar.resize(6);
+    latpar[0] = latpar[1] = latpar[2] = 1.0;
+    latpar[3] = latpar[4] = latpar[5] = 90.0;
+    if (args->ispar("latpar"))
+    {
+        latpar = args->GetParVec<double>("latpar");
+        if (latpar.size() != 6)
+        {
+            char* emsg = "latpar must define 6 lattice parameters";
+            throw ParseArgsError(emsg);
+        }
+        if (!this->crystal)
+        {
+            char* emsg = "latpar has no sense when crystal=false.";
+            throw ParseArgsError(emsg);
+        }
+    }
     // create empty molecule
-    mol.reset(new Molecule(dtab));
+    if (this->crystal)
+    {
+        Crystal crst;
+        crst.setLattice( Lattice(latpar[0], latpar[1], latpar[2],
+                                 latpar[3], latpar[4], latpar[5]));
+        // TODO add option for rrange
+        if (!dtab.empty())  crst.setRRange(0.0, dtab.back());
+        mol.reset(new Crystal(crst));
+    }
+    else
+    {
+        mol.reset(new Molecule);
+    }
+    // assign distance table
+    mol->setDistanceTable(dtab);
     // inistru
     if (args->ispar("inistru"))
     {
@@ -195,23 +232,8 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	string emsg = "ndim value must be 1, 2 or 3.";
 	throw ParseArgsError(emsg);
     }
-    // crystal
-    crystal = args->GetPar<bool>("crystal", false);
-    // latpar
-    latpar.resize(6);
-    latpar[0] = latpar[1] = latpar[2] = 1.0;
-    latpar[3] = latpar[4] = latpar[5] = 90.0;
-    if (args->ispar("latpar"))
-    {
-        latpar = args->GetParVec<double>("latpar");
-        if (latpar.size() != 6)
-        {
-            char* emsg = "latpar must define 6 lattice parameters";
-            throw ParseArgsError(emsg);
-        }
-    }
     // distreuse
-    distreuse = args->GetPar<bool>("distreuse", false);
+    distreuse = args->GetPar<bool>("distreuse", this->crystal);
     mol->setDistReuse(distreuse);
     // tolcost
     tolcost = args->GetPar<double>("tolcost", 1.0e-4);
@@ -473,6 +495,14 @@ void RunPar_t::print_pars()
     // liga parameters
     // ndim, distreuse, tolcost
     cout << "ndim=" << ndim << '\n';
+    cout << "crystal=" << this->crystal << '\n';
+    if (this->crystal)
+    {
+        cout << "latpar=" <<
+            this->latpar[0] << ',' << this->latpar[1] << ',' <<
+            this->latpar[2] << ',' << this->latpar[3] << ',' <<
+            this->latpar[4] << ',' << this->latpar[5] << '\n';
+    }
     cout << "distreuse=" << distreuse << '\n';
     cout << "tolcost=" << tolcost << '\n';
     // natoms
@@ -563,6 +593,8 @@ const list<string>& RunPar_t::validpars() const
         "framestrace",
         "verbose",
         "ndim",
+        "crystal",
+        "latpar",
         "distreuse",
         "tolcost",
         "natoms",

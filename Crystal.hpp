@@ -30,10 +30,17 @@ class Crystal : public Molecule
 	Crystal();
 	Crystal(const DistanceTable&);
 	Crystal(const Crystal&);
+
+        // destructor
 	virtual ~Crystal();
 
         // operators
 	Crystal& operator=(const Crystal&);
+        virtual Molecule* clone() const;        // create a clone
+
+	// methods - class registration and type info
+	virtual StructureType type() const  { return CRYSTAL; }
+	virtual std::string typeStr() const { return "crystal"; }
 
         // methods
         virtual void setDistanceTable(const DistanceTable&);

@@ -71,13 +71,15 @@ class Molecule
 		const std::vector<double>& vy,
                 const std::vector<double>& vz);
 	Molecule(const Molecule& M);		// copy constructor
-	Molecule& operator=(const Molecule&);	// assignment
 
 	// destructor
 	virtual ~Molecule();
 
+        // operators
+	Molecule& operator=(const Molecule&);	// assignment
+        virtual Molecule* clone() const;        // create a clone
+
 	// methods - class registration and type info
-	bool Register();
 	virtual StructureType type() const  { return MOLECULE; }
 	virtual std::string typeStr() const { return "molecule"; }
 

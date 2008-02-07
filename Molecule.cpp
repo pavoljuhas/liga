@@ -109,7 +109,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     // assign distance table - share reference when distances are reused
     if (M.getDistReuse())
     {
-        this->_distance_table.reset(M._distance_table.get());
+        this->_distance_table = M._distance_table;
     }
     else
     {
@@ -134,6 +134,14 @@ Molecule& Molecule::operator=(const Molecule& M)
     return *this;
 }
 
+
+Molecule* Molecule::clone() const
+{
+    Molecule* pclone = new Molecule(*this);
+    return pclone;
+}
+
+
 void Molecule::init()
 {
     this->_badness = 0;
@@ -149,14 +157,7 @@ Molecule::~Molecule()
 
 void Molecule::setDistanceTable(const DistanceTable& dtbl)
 {
-    if (this->_distance_table.get())
-    {
-        *this->_distance_table = dtbl;
-    }
-    else
-    {
-        this->_distance_table.reset(new DistanceTable(dtbl));
-    }
+    this->_distance_table.reset(new DistanceTable(dtbl));
 }
 
 void Molecule::setDistanceTable(const vector<double>& dvec)
