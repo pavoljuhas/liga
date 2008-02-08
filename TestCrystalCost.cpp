@@ -48,15 +48,16 @@ public:
         crst.setMaxAtomCount(4);
         // do the rest only once
         cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
-        rhombohedral.reset(new Lattice(1, 1, 1, 60, 60, 60));
+        rhombohedral.reset(
+                new Lattice(sqrt(0.5), sqrt(0.5), sqrt(0.5), 60, 60, 60));
         // distance data up to first distance over 3
-        double cube_data[] = { 0.0, 1.0, 1.41421356237, 1.73205080757, 2.0,
+        double cube_data[] = { 1.0, 1.41421356237, 1.73205080757, 2.0,
             2.2360679775, 2.44948974278, 2.82842712475, 3.0, 3.16227766017 };
-        double bcc_data[] = { 0.0, 0.866025403784, 1.0, 1.41421356237,
+        double bcc_data[] = { 0.866025403784, 1.0, 1.41421356237,
             1.65831239518, 1.73205080757, 2.0, 2.17944947177, 2.2360679775,
             2.44948974278, 2.59807621135, 2.82842712475, 2.95803989155, 3.0,
             3.16227766017 };
-        double fcc_data[] = { 0.0, 0.707106781187, 1.0, 1.22474487139,
+        double fcc_data[] = { 0.707106781187, 1.0, 1.22474487139,
             1.41421356237, 1.58113883008, 1.73205080757, 1.87082869339, 2.0,
             2.12132034356, 2.2360679775, 2.34520787991, 2.44948974278,
             2.5495097568, 2.73861278753, 2.82842712475, 2.91547594742, 3.0,
@@ -120,7 +121,6 @@ public:
 
     void test_fcc_rhomb()
     {
-        Crystal crst;
         crst.setLattice(*rhombohedral);
         crst.setDistanceTable(dst_fcc);
         crst.setRRange(0.0, 3.05);

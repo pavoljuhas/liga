@@ -43,7 +43,7 @@ Matrix transpose(const Matrix& A);
 template <class V> double norm(const V&);
 template <class V> double dot(const V&);
 template <class V> Vector cross(const V&);
-Vector product(const Vector&, const Matrix&);
+const Vector& product(const Vector&, const Matrix&);
 
 template <class M>
     bool MatricesAlmostEqual(const M& A, const M& B, double precision=0.0);
@@ -88,9 +88,9 @@ inline Vector cross(const V& u, const V& v)
     return res;
 }
 
-inline Vector product(const Vector& u, const Matrix& M)
+inline const Vector& product(const Vector& u, const Matrix& M)
 {
-    Vector res;
+    static Vector res;
     res[0] = u[0]*M(0,0) + u[1]*M(1,0)+ u[2]*M(2,0);
     res[1] = u[0]*M(0,1) + u[1]*M(1,1)+ u[2]*M(2,1);
     res[2] = u[0]*M(0,2) + u[1]*M(1,2)+ u[2]*M(2,2);

@@ -40,7 +40,8 @@ class AtomCostCrystal : public AtomCost
 	virtual double lsqJacobianGet(size_t m, size_t n) const;
 
         // public methods - specific
-        std::pair<double,int> pairCostCount(const R3::Vector& cv) const;
+        std::pair<double,int>
+            pairCostCount(const R3::Vector& cv, bool skipzero=false) const;
 
     protected:
 

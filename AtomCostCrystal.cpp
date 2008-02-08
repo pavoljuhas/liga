@@ -165,7 +165,8 @@ double AtomCostCrystal::lsqJacobianGet(size_t m, size_t n) const
 // The separation vector is tranformed to unit cell vector.
 // This method also sets
 
-pair<double,int> AtomCostCrystal::pairCostCount(const R3::Vector& cv) const
+pair<double,int>
+AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero) const
 {
     const Lattice& lat = arg_cluster->getLattice();
     static R3::Vector ucv;
@@ -177,7 +178,8 @@ pair<double,int> AtomCostCrystal::pairCostCount(const R3::Vector& cv) const
     {
         rc_dd = ucv + lat.cartesian(_sph->mno);
         double d = R3::norm(rc_dd);
-        if (d < this->_rmin || d > this->_rmax || d == 0.0)   continue;
+        if (d < this->_rmin || d > this->_rmax)     continue;
+        if (skipzero && d == 0.0)   continue;
         double dd = this->nearDistance(d) - d;
         paircost += penalty(dd);
         paircount += 1;

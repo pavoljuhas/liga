@@ -169,7 +169,7 @@ void Crystal::recalculate() const
     // fill in diagonal elements
     R3::Vector zeros(0.0, 0.0, 0.0);
     pair<double,int> costcount;
-    costcount = atomcost->pairCostCount(zeros);
+    costcount = atomcost->pairCostCount(zeros, true);
     double diagpaircost = costcount.first;
     int diagpaircount = costcount.second;
     for (AtomSequence seq(this); !seq.finished(); seq.next())
@@ -246,8 +246,33 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
         this->pmx_pair_counts(idx0, idx1) = paircount;
     }
     this->IncBadness(atomcost->totalCost());
-    if (this->Badness() < LIGA::eps_badness)	this->ResetBadness();
     this->_count_pairs += atomcost->totalPairCount();
+    // add self contribution:
+    // calculates self cost and self pair count
+    double diagpaircost;
+    int diagpaircount;
+    if (this->atoms.empty())
+    {
+        R3::Vector zeros(0.0, 0.0, 0.0);
+        pair<double,int> costcount;
+        costcount = atomcost->pairCostCount(zeros, true);
+        diagpaircost = costcount.first;
+        diagpaircount = costcount.second;
+    }
+    else
+    {
+        int idx1 = atoms.front()->pmxidx;
+        diagpaircost = this->pmx_partial_costs(idx1, idx1);
+        diagpaircount = this->pmx_pair_counts(idx1, idx1);
+    }
+    int idx0 = pa->pmxidx;
+    this->pmx_partial_costs(idx0, idx0) = diagpaircost;
+    pa->IncBadness(diagpaircost);
+    this->IncBadness(diagpaircost);
+    this->pmx_pair_counts(idx0, idx0) = diagpaircount;
+    this->_count_pairs += diagpaircount;
+    // take care of small round offs
+    if (this->Badness() < LIGA::eps_badness)	this->ResetBadness();
 }
 
 
