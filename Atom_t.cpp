@@ -63,12 +63,4 @@ bool operator==(const Atom_t& a1, const Atom_t& a2)
     return equal(a1.r.data(), a1.r.data() + 3, a2.r.data());
 }
 
-double dist2(const Atom_t& a1, const Atom_t& a2)
-{
-    static Counter* distance_calls = Counter::getCounter("distance_calls");
-    distance_calls->count();
-    double dr[3] = { a1.r[0]-a2.r[0], a1.r[1]-a2.r[1], a1.r[2]-a2.r[2] };
-    return dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-}
-
 // End of file

@@ -13,6 +13,7 @@
 #include "LigaUtils.hpp"
 
 using namespace std;
+using namespace NS_LIGA;
 
 ////////////////////////////////////////////////////////////////////////
 // local helper routines

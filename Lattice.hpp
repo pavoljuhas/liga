@@ -77,7 +77,7 @@ class Lattice
         template <class V>
             inline double norm(const V& u) const;
         template <class V>
-            inline double dist( const V& u, const V& v) const;
+            inline double distance(const V& u, const V& v) const;
         // angle in degrees
         template <class V>
             inline double angledeg(const V& u, const V& v) const;
@@ -179,7 +179,7 @@ inline double Lattice::norm(const V& u) const
 }
 
 template <class V>
-inline double Lattice::dist(const V& u, const V& v) const
+inline double Lattice::distance(const V& u, const V& v) const
 {
     static R3::Vector duv;
     duv[0] = u[0] - v[0];

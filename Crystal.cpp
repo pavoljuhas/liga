@@ -272,7 +272,7 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
     this->pmx_pair_counts(idx0, idx0) = diagpaircount;
     this->_count_pairs += diagpaircount;
     // take care of small round offs
-    if (this->Badness() < LIGA::eps_badness)	this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_badness)	this->ResetBadness();
 }
 
 
@@ -292,7 +292,7 @@ void Crystal::removeAtomPairs(Atom_t* pa)
         // remove pair counts
         this->_count_pairs -= this->pmx_pair_counts(idx0, idx1);
     }
-    if (this->Badness() < LIGA::eps_badness)    this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_badness) this->ResetBadness();
     assert(this->_count_pairs >= 0);
 }
 

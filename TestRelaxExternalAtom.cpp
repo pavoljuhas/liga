@@ -55,7 +55,7 @@ public:
     {
 	Atom_t vtx(1.0, 2.0, 3.0);
 	mol_tetrahedron->RelaxExternalAtom(vtx);
-	double dvtx = dist(vtx, *vtx_tetrahedron);
+	double dvtx = R3::distance(vtx.r, vtx_tetrahedron->r);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, dvtx, double_eps);
     }
 

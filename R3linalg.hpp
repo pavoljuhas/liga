@@ -41,8 +41,9 @@ Matrix inverse(const Matrix& A);
 Matrix transpose(const Matrix& A);
 
 template <class V> double norm(const V&);
-template <class V> double dot(const V&);
-template <class V> Vector cross(const V&);
+template <class V> double distance(const V& u, const V& v);
+template <class V> double dot(const V& u, const V& v);
+template <class V> Vector cross(const V& u, const V& v);
 const Vector& product(const Vector&, const Matrix&);
 
 template <class M>
@@ -51,9 +52,11 @@ template <class M>
 template <class V>
     bool VectorsAlmostEqual(const V& A, const V& B, double precision=0.0);
 
+
 ////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////
+
 
 inline Matrix transpose(const Matrix& A)
 {
@@ -64,19 +67,36 @@ inline Matrix transpose(const Matrix& A)
     return res;
 }
 
+
 template <class V>
 inline double norm(const V& u)
 {
     static Counter* R3_norm_calls = Counter::getCounter("R3_norm_calls");
     R3_norm_calls->count();
-    return sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
+    return sqrt(R3::dot(u, u));
 }
+
+
+template <class V>
+inline double distance(const V& u, const V& v)
+{
+    static Counter* R3_distance_calls =
+        Counter::getCounter("R3_distance_calls");
+    R3_distance_calls->count();
+    static R3::Vector duv;
+    duv[0] = u[0] - v[0];
+    duv[1] = u[1] - v[1];
+    duv[2] = u[2] - v[2];
+    return R3::norm(duv);
+}
+
 
 template <class V>
 inline double dot(const V& u, const V& v)
 {
     return (u[0]*v[0] + u[1]*v[1] + u[2]*v[2]);
 }
+
 
 template <class V>
 inline Vector cross(const V& u, const V& v)
@@ -88,6 +108,7 @@ inline Vector cross(const V& u, const V& v)
     return res;
 }
 
+
 inline const Vector& product(const Vector& u, const Matrix& M)
 {
     static Vector res;
@@ -96,6 +117,7 @@ inline const Vector& product(const Vector& u, const Matrix& M)
     res[2] = u[0]*M(0,2) + u[1]*M(1,2)+ u[2]*M(2,2);
     return res;
 }
+
 
 template <class M>
 bool MatricesAlmostEqual(const M& A, const M& B, double precision)
@@ -110,6 +132,7 @@ bool MatricesAlmostEqual(const M& A, const M& B, double precision)
     return true;
 }
 
+
 template <class V>
 bool VectorsAlmostEqual(const V& u, const V& v, double precision)
 {
@@ -119,6 +142,7 @@ bool VectorsAlmostEqual(const V& u, const V& v, double precision)
     }
     return true;
 }
+
 
 }	// End of namespace R3
 

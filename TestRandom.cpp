@@ -15,7 +15,7 @@
 #include "Random.hpp"
 
 using namespace std;
-using namespace LIGA;
+using namespace NS_LIGA;
 using R3::MatricesAlmostEqual;
 using R3::VectorsAlmostEqual;
 

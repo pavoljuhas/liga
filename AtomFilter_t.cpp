@@ -14,7 +14,7 @@
 #include "AtomSequence.hpp"
 #include "Molecule.hpp"
 
-using namespace LIGA;
+using namespace NS_LIGA;
 using namespace std;
 
 
@@ -44,7 +44,7 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
     typedef vector<Atom_t*>::iterator VPAit;
     for (AtomSequence seq(pm); !seq.finished(); seq.next())
     {
-	double blen = dist(*pta, *seq.ptr());
+	double blen = R3::distance(pta->r, seq.ptr()->r);
 	if (0.0 < blen && blen < 2*max_blen)
 	{
 	    second_neighbors.push_back(seq.ptr());
@@ -69,9 +69,9 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
 	dfn2i = dfn1i; ++dfn2i;
 	for (; pfn2i != first_neighbors.end(); ++pfn2i, ++dfn2i)
 	{
-	    double dsqneib = dist2(**pfn1i, **pfn2i);
+	    double dneib = R3::distance((*pfn1i)->r, (*pfn2i)->r);
 	    double ta_angle = 180.0 / M_PI * acos(
-		    ( (*dfn1i)*(*dfn1i) + (*dfn2i)*(*dfn2i) - dsqneib ) /
+		    ( (*dfn1i)*(*dfn1i) + (*dfn2i)*(*dfn2i) - dneib*dneib ) /
 		    (2.0*(*dfn1i)*(*dfn2i))  );
 	    if (ta_angle < lo_bangle || ta_angle > hi_bangle)
 	    {
@@ -83,7 +83,7 @@ bool BondAngleFilter_t::Check(Atom_t* pta, Molecule* pm)
 	LDit dsni = second_distances.begin();
 	for (; psni != second_neighbors.end(); ++psni, ++dsni)
 	{
-	    double dneib = dist(**pfn1i, **psni);
+	    double dneib = R3::distance((*pfn1i)->r, (*psni)->r);
 	    if (dneib == 0.0 || !(dneib < max_blen))
 	    {
 		continue;
@@ -130,7 +130,7 @@ bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
     bool has_buddy = false;
     for (AtomSequence seq(pm); !seq.finished() && !has_buddy; seq.next())
     {
-	double d = dist(*pta, *seq.ptr());
+	double d = R3::distance(pta->r, seq.ptr()->r);
 	has_buddy = (0.0 < d) && (d < max_dist);
     }
     return has_buddy;

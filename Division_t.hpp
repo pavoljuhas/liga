@@ -17,8 +17,6 @@
 
 class Molecule;
 
-using namespace LIGA;
-
 class Division_t : public std::vector<Molecule*>
 {
     public:

@@ -18,7 +18,7 @@
 #include <gsl/gsl_randist.h>
 #include "R3linalg.hpp"
 
-namespace LIGA {
+namespace NS_LIGA {
 
 ////////////////////////////////////////////////////////////////////////
 // Types and global variables
@@ -64,18 +64,18 @@ class RandomWeighedGenerator
 
         // methods
         template <class Iter> void setWeights(Iter first, Iter last);
-        inline size_t numChoices();
-        const PickType& weighedPick(size_t k);
-        size_t weighedInt();
+        inline size_t numChoices() const;
+        const PickType& weighedPick(size_t k) const;
+        size_t weighedInt() const;
 
     private:
 
         // data
-        std::vector<double> weight;
-        std::vector<double> cumul_weight;
-        double total_weight;
-        PickType pick_index;
-        PickType pick;
+        std::vector<double> _weight;
+        std::vector<double> _cumul_weight;
+        double _total_weight;
+        mutable PickType _pick_index;
+        mutable PickType _pick;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -156,28 +156,29 @@ template <class Iter>
 void RandomWeighedGenerator::setWeights(Iter first, Iter last)
 {
     using namespace std;
-    weight.clear();
-    for (Iter ii = first; ii != last; ++ii)
+    this->_weight.resize(last - first);
+    vector<double>::iterator wii = this->_weight.begin();
+    for (Iter ii = first; ii != last; ++ii, ++wii)
     {
-	double wi = *ii;
-	if (wi < 0.0)
+	if (*ii < 0.0)
 	{
             const char* emsg = "setWeights(): negative choice probability";
 	    throw out_of_range(emsg);
 	}
-        weight.push_back(wi);
+        *wii = *ii;
     }
-    cumul_weight.resize(weight.size());
-    partial_sum(weight.begin(), weight.end(), cumul_weight.begin());
-    total_weight = cumul_weight.back();
+    this->_cumul_weight.resize(this->_weight.size());
+    partial_sum(this->_weight.begin(), this->_weight.end(),
+            this->_cumul_weight.begin());
+    this->_total_weight = this->_cumul_weight.back();
 }
 
-inline size_t RandomWeighedGenerator::numChoices()
+inline size_t RandomWeighedGenerator::numChoices() const
 {
-    return weight.size();
+    return this->_weight.size();
 }
 
 
-}   // namespace LIGA
+}   // namespace NS_LIGA
 
 #endif	// RANDOM_HPP_INCLUDED

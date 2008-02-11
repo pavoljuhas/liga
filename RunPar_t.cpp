@@ -23,7 +23,7 @@
 #include "Version.hpp"
 
 using namespace std;
-using namespace LIGA;
+using namespace NS_LIGA;
 
 ////////////////////////////////////////////////////////////////////////
 // class RunPar_t

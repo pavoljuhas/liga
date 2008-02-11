@@ -24,7 +24,7 @@
 #include "Exceptions.hpp"
 
 using namespace std;
-using namespace LIGA;
+using namespace NS_LIGA;
 
 ////////////////////////////////////////////////////////////////////////
 // Molecule definitions
@@ -264,7 +264,7 @@ void Molecule::reassignPairs()
         {
             pme.i0 = seq0.ptr()->pmxidx;
 	    pme.i1 = seq1.ptr()->pmxidx;
-            pme.d01 = dist(seq0.ref(), seq1.ref());
+            pme.d01 = R3::distance(seq0.ptr()->r, seq1.ptr()->r);
             pmx_elements.push_back(pme);
             assert(pmx_used_distances(pme.i0, pme.i1) >= 0.0);
             used_distances.push_back(pmx_used_distances(pme.i0, pme.i1));
@@ -531,7 +531,7 @@ valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
 	for (   a2i = a1i+1, pcnt2 = pcnt1+1; a2i != vta.end();
 		++a2i, ++pcnt2 )
 	{
-	    double d = dist(*a1i, *a2i);
+	    double d = R3::distance(a1i->r, a2i->r);
 	    double dd = *(this->_distance_table->find_nearest(d)) - d;
 	    if (penalty(dd) < hi_pbad)
 	    {
@@ -689,7 +689,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	lo_abad = tbad;
 	ta = rta;
 	// get out if lo_abad is very low
-	if (lo_abad < LIGA::eps_badness)    break;
+	if (lo_abad < NS_LIGA::eps_badness)     break;
 	// carry out relaxation otherwise
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
@@ -726,7 +726,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    // scale f_i with atom fitness
 	    // pj: test gradient or do a simplex search?
 	    gsl_multifit_gradient(lms->J, lms->f, G);
-	    status = gsl_multifit_test_gradient(G, LIGA::eps_badness/tol_r);
+	    status = gsl_multifit_test_gradient(G, NS_LIGA::eps_badness/tol_r);
 //	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
 	}
 	while (status == GSL_CONTINUE && iter < maximum_iterations);
@@ -763,7 +763,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
 	pa->IncBadness(badnesshalf);
     }
     this->IncBadness(atomcost->totalCost());
-    if (this->Badness() < LIGA::eps_badness)	this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_badness)     this->ResetBadness();
     // remember used distances in pmx_used_distances
     if (!getDistReuse())
     {
@@ -818,12 +818,13 @@ void Molecule::removeAtomPairs(Atom_t* pa)
             udst = 0.0;
         }
     }
-    if (this->Badness() < LIGA::eps_badness)    this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_badness)     this->ResetBadness();
 }
 
 int Molecule::push_good_distances(
-	vector<Atom_t>& vta, double* afit, int ntrials
-	)
+        AtomArray& vta,
+        const RandomWeighedGenerator& rwg,
+        int ntrials)
 {
     if (!ntrials)   return 0;
     // add new atom in direction defined by 2 atoms
@@ -843,30 +844,22 @@ int Molecule::push_good_distances(
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
-        size_t basesize = min(countAtoms(),2);
-	const PickType& aidx = randomWeighedPick(basesize, countAtoms(), afit);
-	Atom_t& a0 = *atoms[aidx[0]];
-        R3::Vector rdir(0.0, 0.0, 0.0);
-	if (countAtoms() > 1)
+        const TriangulationAnchor& anch = this->getLineAnchor(rwg);
+        R3::Vector direction(0.0, 0.0, 0.0);
+        if (anch.count > 1)     direction = anch.B1 - anch.B0;
+	// normalize direction if defined
+	bool lattice_direction;
+	double nm_direction = R3::norm(direction);
+	if (nm_direction > eps_d)
 	{
-	    Atom_t& a1 = *atoms[aidx[1]];
-            rdir = a1.r - a0.r;
-	}
-	// normalize rdir if defined
-	bool lattice_rdir;
-	double nm_rdir = R3::norm(rdir);
-	if (nm_rdir > eps_d)
-	{
-	    rdir /= nm_rdir;
-	    lattice_rdir = true;
+	    direction /= nm_direction;
+	    lattice_direction = true;
 	}
 	// otherwise orient along the z-axis
 	else
 	{
-	    rdir[0] = 0.0;
-	    rdir[1] = 0.0;
-	    rdir[2] = 1.0;
-	    lattice_rdir = false;
+            direction = 0.0, 0.0, 1.0;
+	    lattice_direction = false;
 	}
 	// pick free distance
         const DistanceTable& dtbl = *this->_distance_table;
@@ -874,17 +867,17 @@ int Molecule::push_good_distances(
 	double radius = dtbl[didx];
 	// add front atom
         R3::Vector nr;
-        nr = a0.r + rdir*radius;
+        nr = anch.B0 + direction*radius;
 	Atom_t ad1front(nr);
 	ad1front.ttp = LINEAR;
 	vta.push_back(ad1front);
 	++push_count;
 	// check opposite direction when it makes sense
 	// this accounts for extra trial
-	if (lattice_rdir)
+	if (lattice_direction)
 	{
 	    ++nt;
-            nr = a0.r - rdir*radius;
+            nr = anch.B0 - direction*radius;
 	    Atom_t ad1back(nr);
 	    ad1back.ttp = LINEAR;
 	    vta.push_back(ad1back);
@@ -895,8 +888,9 @@ int Molecule::push_good_distances(
 }
 
 int Molecule::push_good_triangles(
-	vector<Atom_t>& vta, double* afit, int ntrials
-	)
+	AtomArray& vta,
+        const RandomWeighedGenerator& rwg,
+        int ntrials)
 {
     if (!ntrials)   return 0;
     // generate randomly oriented triangles
@@ -916,42 +910,34 @@ int Molecule::push_good_triangles(
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
-	// pick 2 atoms for base and 3rd for plane orientation
-	int nchoose = countAtoms() > 2 ? 3 : 2;
-	const PickType& aidx = randomWeighedPick(nchoose, countAtoms(), afit);
-	Atom_t& a0 = *atoms[aidx[0]];
-	Atom_t& a1 = *atoms[aidx[1]];
+        const TriangulationAnchor& anch = getPlaneAnchor(rwg);
         const DistanceTable& dtbl = *this->_distance_table;
 	// pick 2 vertex distances
         const PickType& didx = getDistReuse() ?
             randomPickWithRepeat(2, dtbl.size()) :
             randomPickFew(2, dtbl.size());
-	double r13 = dtbl[didx[0]];
-	double r23 = dtbl[didx[1]];
-	double r12 = dist(a0, a1);
+	double r02 = dtbl[didx[0]];
+	double r12 = dtbl[didx[1]];
+	double r01 = R3::distance(anch.B0, anch.B1);
 	// is triangle base reasonably large?
-	if (r12 < eps_d)
-	    continue;
+	if (r01 < eps_d)  continue;
 	// get and store both possible values of xlong
-	double xl0 = (r13*r13 + r12*r12 - r23*r23) / (2.0*r12);
-	double xlong[2] = { xl0, r12-xl0 };
+	double xl0 = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
+	double xlong[2] = { xl0, r01-xl0 };
 	// get and store both possible values of xperp
-	double xp2 = r13*r13 - xlong[0]*xlong[0];
+	double xp2 = r02*r02 - xlong[0]*xlong[0];
 	double xp = sqrt(fabs(xp2));
-	if (xp < eps_d)
-	    xp = 0.0;
-	else if (xp2 < 0.0)
-	    continue;
+	if (xp < eps_d)  xp = 0.0;
+	else if (xp2 < 0.0)  continue;
 	double xperp[2] = { -xp, xp };
 	// find direction along triangle base:
         R3::Vector longdir;
-        longdir = (a1.r - a0.r)/r12;
+        longdir = (anch.B1 - anch.B0)/r01;
 	// generate direction perpendicular to longdir
         R3::Vector perpdir(0.0, 0.0, 0.0);
-	if (nchoose > 2)
+	if (anch.count > 2)
 	{
-	    Atom_t& a2 = *atoms[aidx[2]];
-            perpdir = a2.r - a0.r;
+            perpdir = anch.B2 - anch.B0;
 	    perpdir -= longdir*R3::dot(longdir, perpdir);
 	}
 	// normalize perpdir if defined
@@ -975,7 +961,6 @@ int Molecule::push_good_triangles(
 	    lattice_plane = false;
 	}
 	// allocate vallarays for positions of a0 and vertex P
-        R3::Vector Pa0 = a0.r;
         R3::Vector P;
 	// if vertex search has already failed above, nt would increase by 1
 	// here we want nt to count number of added vertices
@@ -986,24 +971,23 @@ int Molecule::push_good_triangles(
 	    for (double* pxp = xperp; pxp != xperp+2; ++pxp)
 	    {
 		++nt;
-		P = Pa0 + (*pxl)*longdir + (*pxp)*perpdir;
+		P = anch.B0 + (*pxl)*longdir + (*pxp)*perpdir;
 		Atom_t ad2(P);
 		ad2.ttp = PLANAR;
 		vta.push_back(ad2);
 		++push_count;
-		if (!lattice_plane)
-		    break;
+		if (!lattice_plane)  break;
 	    }
-	    if (!lattice_plane)
-		break;
+	    if (!lattice_plane)  break;
 	}
     }
     return push_count;
 }
 
 int Molecule::push_good_pyramids(
-	vector<Atom_t>& vta, double* afit, int ntrials
-	)
+        AtomArray& vta,
+        const RandomWeighedGenerator& rwg,
+        int ntrials)
 {
     if (!ntrials)   return 0;
     if (countAtoms() == getMaxAtomCount())
@@ -1023,10 +1007,7 @@ int Molecule::push_good_pyramids(
     for (int nt = 0; nt < ntrials;)
     {
 	// pick 3 base atoms
-        const PickType& aidx = randomWeighedPick(3, countAtoms(), afit);
-	Atom_t& a0 = *atoms[aidx[0]];
-	Atom_t& a1 = *atoms[aidx[1]];
-	Atom_t& a2 = *atoms[aidx[2]];
+        const TriangulationAnchor& anch = getPyramidAnchor(rwg);
         const DistanceTable& dtbl = *this->_distance_table;
 	// pick 3 vertex distances
 	PickType didx = getDistReuse() ?
@@ -1037,55 +1018,49 @@ int Molecule::push_good_pyramids(
 	do
 	{
 	    ++nt;
-	    double r14 = dtbl[didx[0]];
-	    double r24 = dtbl[didx[1]];
-	    double r34 = dtbl[didx[2]];
-	    // uvi is a unit vector in a0a1 direction
+	    double r03 = dtbl[didx[0]];
+	    double r13 = dtbl[didx[1]];
+	    double r23 = dtbl[didx[2]];
+	    // uvi is a unit vector in B0B1 direction
             R3::Vector uvi;
-            uvi = a1.r - a0.r;
-	    double r12 = R3::norm(uvi);
-	    if (r12 < eps_d)
-		continue;
-	    uvi /= r12;
-	    // v13 is a0a2 vector
-            R3::Vector v13;
-            v13 = a2.r - a0.r;
-	    // uvj lies in a0a1a2 plane and is perpendicular to uvi
-            R3::Vector uvj = v13;
+            uvi = anch.B1 - anch.B0;
+	    double r01 = R3::norm(uvi);
+	    if (r01 < eps_d)    continue;
+	    uvi /= r01;
+	    // v02 is B0B2 vector
+            R3::Vector v02;
+            v02 = anch.B2 - anch.B0;
+	    // uvj lies in B0B1B2 plane and is perpendicular to uvi
+            R3::Vector uvj = v02;
 	    uvj -= uvi*R3::dot(uvi, uvj);
 	    double nm_uvj = R3::norm(uvj);
-	    if (nm_uvj < eps_d)
-		continue;
+	    if (nm_uvj < eps_d)  continue;
 	    uvj /= nm_uvj;
-	    // uvk is a unit vector perpendicular to a0a1a2 plane
+	    // uvk is a unit vector perpendicular to B0B1B2 plane
             R3::Vector uvk = R3::cross(uvi, uvj);
-	    double xP1 = -0.5/(r12)*(r12*r12 + r14*r14 - r24*r24);
+	    double xP1 = -0.5/(r01)*(r01*r01 + r03*r03 - r13*r13);
 	    // Pn are coordinates in pyramid coordinate system
-            R3::Vector P1;
-	    P1[0] = xP1; P1[1] = P1[2] = 0.0;
+            R3::Vector P1(xP1, 0.0, 0.0);
 	    // vT is translation from pyramid to normal system
             R3::Vector vT;
-	    vT[0] = a0.r[0] - xP1*uvi[0];
-	    vT[1] = a0.r[1] - xP1*uvi[1];
-	    vT[2] = a0.r[2] - xP1*uvi[2];
+            vT = anch.B0 - xP1*uvi;
 	    // obtain coordinates of P3
             R3::Vector P3 = P1;
-	    P3[0] += R3::dot(uvi, v13);
-	    P3[1] += R3::dot(uvj, v13);
+	    P3[0] += R3::dot(uvi, v02);
+	    P3[1] += R3::dot(uvj, v02);
 	    P3[2] = 0.0;
 	    double xP3 = P3[0];
 	    double yP3 = P3[1];
 	    // find pyramid vertices
-            R3::Vector P4(0.0, 3);
-	    double h2 = r14*r14 - xP1*xP1;
-	    // does P4 belong to a0a1 line?
+            R3::Vector P4;
+	    double h2 = r03*r03 - xP1*xP1;
+	    // does P4 belong to B0B1 line?
 	    if (fabs(h2) < eps_d)
 	    {
-		// is vertex on a0a1
-		if (fabs(R3::norm(P3) - r14) > eps_d)
-		    continue;
+		// is vertex on B0B1
+		if (fabs(R3::norm(P3) - r03) > eps_d)  continue;
 		P4 = vT;
-		Atom_t ad3(P4[0], P4[1], P4[2]);
+		Atom_t ad3(P4);
 		ad3.ttp = SPATIAL;
 		vta.push_back(ad3);
 		++push_count;
@@ -1095,13 +1070,13 @@ int Molecule::push_good_pyramids(
 	    {
 		continue;
 	    }
-	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r34*r34);
+	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r23*r23);
 	    double z2P4 = h2 - yP4*yP4;
-	    // does P4 belong to a0a1a2 plane?
+	    // does P4 belong to B0B1B2 plane?
 	    if (fabs(z2P4) < eps_d)
 	    {
 		P4 = yP4*uvj + vT;
-		Atom_t ad3(P4[0], P4[1], P4[2]);
+		Atom_t ad3(P4);
 		ad3.ttp = SPATIAL;
 		vta.push_back(ad3);
 		++push_count;
@@ -1115,14 +1090,14 @@ int Molecule::push_good_pyramids(
 	    double zP4 = sqrt(z2P4);
 	    // top one
 	    P4 = yP4*uvj + zP4*uvk + vT;
-	    Atom_t ad3top(P4[0], P4[1], P4[2]);
+	    Atom_t ad3top(P4);
 	    ad3top.ttp = SPATIAL;
 	    vta.push_back(ad3top);
 	    ++push_count;
 	    // and bottom one, which makes an extra trial
 	    ++nt;
 	    P4 = yP4*uvj - zP4*uvk + vT;
-	    Atom_t ad3bottom(P4[0], P4[1], P4[2]);
+	    Atom_t ad3bottom(P4);
 	    ad3bottom.ttp = SPATIAL;
 	    vta.push_back(ad3bottom);
 	    push_count++;
@@ -1130,6 +1105,53 @@ int Molecule::push_good_pyramids(
     }
     return push_count;
 }
+
+
+const Molecule::TriangulationAnchor&
+Molecule::getLineAnchor(const RandomWeighedGenerator& rwg)
+{
+    assert(countAtoms() >= 1);
+    static TriangulationAnchor anch;
+    anch.count = min(countAtoms(),2);
+    const PickType& aidx = rwg.weighedPick(anch.count);
+    anch.B0 = this->atoms[aidx[0]]->r;
+    if (anch.count > 1)
+    {
+        anch.B1 = this->atoms[aidx[1]]->r;
+    }
+    return anch;
+}
+
+
+const Molecule::TriangulationAnchor&
+Molecule::getPlaneAnchor(const RandomWeighedGenerator& rwg)
+{
+    assert(countAtoms() >= 2);
+    static TriangulationAnchor anch;
+    // pick 2 atoms for base and 3rd for plane orientation
+    anch.count = min(countAtoms(), 3);
+    const PickType& aidx = rwg.weighedPick(anch.count);
+    anch.B0 = this->atoms[aidx[0]]->r;
+    anch.B1 = this->atoms[aidx[1]]->r;
+    if (anch.count > 2)     anch.B2 = this->atoms[aidx[2]]->r;
+    return anch;
+}
+
+
+const Molecule::TriangulationAnchor&
+Molecule::getPyramidAnchor(const RandomWeighedGenerator& rwg)
+{
+    assert(countAtoms() >= 3);
+    static TriangulationAnchor anch;
+    // pick 3 base atoms
+    const PickType& aidx = rwg.weighedPick(3);
+    anch.count = 3;
+    anch.B0 = this->atoms[aidx[0]]->r;
+    anch.B1 = this->atoms[aidx[1]]->r;
+    anch.B2 = this->atoms[aidx[2]]->r;
+    return anch;
+}
+
 
 int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 {
@@ -1222,7 +1244,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
     int push_count = 0;
     Atom_t a0 = *atoms[0];
     Atom_t a1 = *atoms[1];
-    double r01 = dist(a0, a1);
+    double r01 = R3::distance(a0.r, a1.r);
     // longitudinal direction along triangle base
     R3::Vector longdir;
     longdir = (a1.r - a0.r)/r01;
@@ -1294,17 +1316,6 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     }
     // containter for test atoms
     vector<Atom_t> vta;
-    // calculate array of atom fitnesses
-    valarray<double> vacost(countAtoms());
-    valarray<double> vafit(countAtoms());
-    // first fill the cost array
-    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
-    {
-	vacost[seq.idx()] = seq.ptr()->Badness();
-    }
-    // then convert to fitness
-    vafit = costToFitness(vacost);
-    double* afit = &vafit[0];
     bool lookout = lookout_prob && 0 < countAtoms() && countAtoms() <= 2 &&
 	randomFloat() < lookout_prob;
     const int lookout_trials = 1500;
@@ -1329,9 +1340,22 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
 		break;
 	    }
 	default:
-	    push_good_distances(vta, afit, nlinear);
-	    push_good_triangles(vta, afit, nplanar);
-	    push_good_pyramids(vta, afit, nspatial);
+            // create random generator weighed with atom fitnesses
+            // calculate array of atom fitnesses
+            vector<double> vacost(countAtoms());
+            vector<double> vafit(countAtoms());
+            // first fill the cost array
+            for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
+            {
+                vacost[seq.idx()] = seq.ptr()->Badness();
+            }
+            // then convert to fitness
+            vafit = costToFitness(vacost);
+            // finally create RandomWeighedGenerator
+            RandomWeighedGenerator rwg(vafit.begin(), vafit.end());
+	    push_good_distances(vta, rwg, nlinear);
+	    push_good_triangles(vta, rwg, nplanar);
+	    push_good_pyramids(vta, rwg, nspatial);
     }
     typedef vector<Atom_t>::iterator VAit;
     // count total triangulation attempts

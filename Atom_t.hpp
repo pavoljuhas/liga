@@ -53,9 +53,7 @@ class Atom_t
 
 // declarations of non-member operators and functions
 
-double dist(const Atom_t& a1, const Atom_t& a2);
 bool operator==(const Atom_t& a1, const Atom_t& a2);
-double dist2(const Atom_t& a1, const Atom_t& a2);
 
 ////////////////////////////////////////////////////////////////////////
 // template and inline functions
@@ -70,11 +68,5 @@ Atom_t::Atom_t(const V& r0, double bad0) :
     r = r0[0], r0[1], r0[2];
 }
 
-// inline non-member functions
-
-inline double dist(const Atom_t& a1, const Atom_t& a2)
-{
-    return sqrt(1.0*dist2(a1, a2));
-}
 
 #endif	// ATOM_T_HPP_INCLUDED

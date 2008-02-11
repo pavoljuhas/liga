@@ -18,7 +18,7 @@ using namespace blitz;
 // helper functions
 ////////////////////////////////////////////////////////////////////////
 
-namespace NSLattice {
+namespace NS_LATTICE {
 
 double cosd(double x)
 {
@@ -42,7 +42,7 @@ double cosd(double x)
 
 inline double sind(double x)
 {
-    return NSLattice::cosd(90.0 - x);
+    return NS_LATTICE::cosd(90.0 - x);
 }
 
 double acosd(double x)
@@ -61,7 +61,7 @@ double acosd(double x)
     return acos(x)/M_PI*180.0;
 }
 
-} // namespace NSLattice
+} // namespace NS_LATTICE
 
 ////////////////////////////////////////////////////////////////////////
 // Lattice definitions
@@ -87,12 +87,12 @@ Lattice::Lattice( double a0, double b0, double c0,
 void Lattice::setLatPar( double a0, double b0, double c0,
 	    double alpha0, double beta0, double gamma0 )
 {
-    using namespace NSLattice;
+    using namespace NS_LATTICE;
     _a = a0; _b = b0; _c = c0;
     _alpha = alpha0; _beta = beta0; _gamma = gamma0;
-    cosa = NSLattice::cosd(_alpha);    sina = NSLattice::sind(_alpha);
-    cosb = NSLattice::cosd(_beta);     sinb = NSLattice::sind(_beta);
-    cosg = NSLattice::cosd(_gamma);    sing = NSLattice::sind(_gamma);
+    cosa = NS_LATTICE::cosd(_alpha);    sina = NS_LATTICE::sind(_alpha);
+    cosb = NS_LATTICE::cosd(_beta);     sinb = NS_LATTICE::sind(_beta);
+    cosg = NS_LATTICE::cosd(_gamma);    sing = NS_LATTICE::sind(_gamma);
     // Vunit is a volume of unit cell with a=b=c=1
     double Vunit = sqrt(
             1.0 + 2.0*cosa*cosb*cosg - cosa*cosa - cosb*cosb - cosg*cosg);
@@ -106,9 +106,9 @@ void Lattice::setLatPar( double a0, double b0, double c0,
     sinar = sqrt(1.0 - cosar*cosar);
     sinbr = sqrt(1.0 - cosbr*cosbr);
     singr = sqrt(1.0 - cosgr*cosgr);
-    _alphar = NSLattice::acosd(cosar);
-    _betar = NSLattice::acosd(cosbr);
-    _gammar = NSLattice::acosd(cosgr);
+    _alphar = NS_LATTICE::acosd(cosar);
+    _betar = NS_LATTICE::acosd(cosbr);
+    _gammar = NS_LATTICE::acosd(cosgr);
     // metric tensor
     _metrics = _a*_a,       _a*_b*cosg,   _a*_c*cosb,
 	       _b*_a*cosg,  _b*_b,        _b*_c*cosa,
@@ -141,7 +141,7 @@ void Lattice::setLatBase(const R3::Vector& va0,
 	const R3::Vector& vb0,
 	const R3::Vector& vc0)
 {
-    using namespace NSLattice;
+    using namespace NS_LATTICE;
     _base = va0[0], va0[1], va0[2],
             vb0[0], vb0[1], vb0[2],
             vc0[0], vc0[1], vc0[2];
@@ -166,9 +166,9 @@ void Lattice::setLatBase(const R3::Vector& va0,
     sina = sqrt(1.0 - cosa*cosa);
     sinb = sqrt(1.0 - cosb*cosb);
     sing = sqrt(1.0 - cosg*cosg);
-    _alpha = NSLattice::acosd(cosa);
-    _beta = NSLattice::acosd(cosb);
-    _gamma = NSLattice::acosd(cosg);
+    _alpha = NS_LATTICE::acosd(cosa);
+    _beta = NS_LATTICE::acosd(cosb);
+    _gamma = NS_LATTICE::acosd(cosg);
     // Vunit is a volume of unit cell with a=b=c=1
     double Vunit = sqrt(
             1.0 + 2.0*cosa*cosb*cosg - cosa*cosa - cosb*cosb - cosg*cosg);
@@ -182,9 +182,9 @@ void Lattice::setLatBase(const R3::Vector& va0,
     sinar = sqrt(1.0 - cosar*cosar);
     sinbr = sqrt(1.0 - cosbr*cosbr);
     singr = sqrt(1.0 - cosgr*cosgr);
-    _alphar = NSLattice::acosd(cosar);
-    _betar = NSLattice::acosd(cosbr);
-    _gammar = NSLattice::acosd(cosgr);
+    _alphar = NS_LATTICE::acosd(cosar);
+    _betar = NS_LATTICE::acosd(cosbr);
+    _gammar = NS_LATTICE::acosd(cosgr);
     // standard orientation of lattice vectors
     _stdbase = 1.0/_ar,     -cosgr/singr/_ar,   cosb*_a,
                0.0,         _b*sina,            _b*cosa,

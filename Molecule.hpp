@@ -21,10 +21,12 @@
 #include "Atom_t.hpp"
 #include "DistanceTable.hpp"
 #include "Matrix.hpp"
+#include "Random.hpp"
 #include "TraceId_t.hpp"
 
 class AtomFilter_t;
 class AtomCost;
+using NS_LIGA::RandomWeighedGenerator;
 
 enum StructureType { MOLECULE, CRYSTAL };
 
@@ -135,6 +137,16 @@ class Molecule
 
     protected:
 
+        // types
+        typedef std::vector<Atom_t> AtomArray;
+        struct TriangulationAnchor
+        {
+            R3::Vector B0;
+            R3::Vector B1;
+            R3::Vector B2;
+            int count;
+        };
+
         // data
         boost::shared_ptr<DistanceTable> _distance_table;
 	int _max_atom_count;
@@ -148,10 +160,18 @@ class Molecule
 	virtual AtomCost* getAtomCostCalculator() const;
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
-        typedef std::vector<Atom_t> AtomArray;
-	int push_good_distances(AtomArray& vta, double* afit, int ntrials);
-	int push_good_triangles(AtomArray& vta, double* afit, int ntrials);
-	int push_good_pyramids(AtomArray& vta, double* afit, int ntrials);
+	int push_good_distances(AtomArray& vta,
+                const RandomWeighedGenerator& rwg, int ntrials);
+	int push_good_triangles(AtomArray& vta,
+                const RandomWeighedGenerator& rwg, int ntrials);
+	int push_good_pyramids(AtomArray& vta,
+                const RandomWeighedGenerator& rwg, int ntrials);
+        virtual const TriangulationAnchor&
+            getLineAnchor(const RandomWeighedGenerator& rwg);
+        virtual const TriangulationAnchor&
+            getPlaneAnchor(const RandomWeighedGenerator& rwg);
+        virtual const TriangulationAnchor&
+            getPyramidAnchor(const RandomWeighedGenerator& rwg);
 	int push_second_atoms(AtomArray& vta, int ntrials);
 	int push_third_atoms(AtomArray& vta, int ntrials);
         std::valarray<int> good_neighbors_count(const AtomArray& vta);

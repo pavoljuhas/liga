@@ -154,9 +154,11 @@ public:
 	R3::Vector va, vb;
 	va = 1.0, 2.0, 2.0;
 	vb = 0.0, 0.0, 0.0;
-	CPPUNIT_ASSERT_DOUBLES_EQUAL(3.0, lattice->dist(va, vb), precision);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL(3.0,
+                lattice->distance(va, vb), precision);
 	lattice->setLatPar(2.0, 2.0, 2.0, 90.0, 90.0, 90.0);
-	CPPUNIT_ASSERT_DOUBLES_EQUAL(6.0, lattice->dist(va, vb), precision);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL(6.0,
+                lattice->distance(va, vb), precision);
     }
 
     void test_angle()

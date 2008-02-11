@@ -78,7 +78,7 @@ double AtomCost::eval(const Atom_t* pa)
 	assert(tgdii < target_distances.end());
 	assert(ptcii < partial_costs.end());
 	// calculation
-	double d = dist(*arg_atom, *seq.ptr());
+	double d = R3::distance(arg_atom->r, seq.ptr()->r);
 	size_t nearidx = nearDistanceIndex(d);
 	const double& dnear = dtgt[nearidx];
 	*(tgdii++) = dnear;
@@ -214,7 +214,7 @@ const vector<double>& AtomCost::lsqComponents() const
 	assert(dii < lsq_di.end());
 	assert(tgdii < target_distances.end());
 	assert(wtii < lsq_wt.end());
-	*dii = dist(*arg_atom, *seq.ptr());
+	*dii = R3::distance(arg_atom->r, seq.ptr()->r);
 	*fii = *wtii * (*tgdii - *dii);
     }
     return lsq_fi;
