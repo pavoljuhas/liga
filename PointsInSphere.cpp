@@ -39,8 +39,8 @@ LatticeParameters::LatticeParameters( double _a, double _b, double _c,
 
 void LatticeParameters::update()
 {
-    ca = cosd(alpha); cb = cosd(beta); cg = cosd(gamma);
-    sa = sind(alpha); sb = sind(beta); sg = sind(gamma);
+    ca = _cosd(alpha); cb = _cosd(beta); cg = _cosd(gamma);
+    sa = _sind(alpha); sb = _sind(beta); sg = _sind(gamma);
     // Vunit is a volume of unit cell with a=b=c=1
     const double Vunit = sqrt(1.0 + 2.0*ca*cb*cg - ca*ca - cb*cb - cg*cg);
     ar = sa/(a*Vunit);
@@ -73,6 +73,30 @@ LatticeParameters LatticeParameters::reciprocal() const
     return rec;
 }
 
+double LatticeParameters::_cosd(double x)
+{
+    double xp = fmod(fabs(x), 360.0);
+    if (remainder(xp, 60.0) == 0.0 || remainder(xp, 90.0) == 0.0)
+    {
+	switch(int(round(xp)))
+	{
+	    case 0: return 1.0;
+	    case 60:
+	    case 300: return 0.5;
+	    case 90:
+	    case 270: return 0.0;
+	    case 120:
+	    case 240: return -0.5;
+	    case 180: return -1.0;
+	};
+    }
+    return cos(x/180.0*M_PI);
+}
+
+double LatticeParameters::_sind(double x)
+{
+    return _cosd(90.0 - x);
+}
 
 ////////////////////////////////////////////////////////////////////////
 // PointsInSphere

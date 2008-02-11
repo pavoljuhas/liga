@@ -1,3 +1,4 @@
+#include "dbprint.h"
 /***********************************************************************
 *
 * pdffit2           by DANSE Diffraction group
@@ -86,8 +87,8 @@ class LatticeParameters
     private:
 
         // methods
-        inline double cosd(double x) { return cos(M_PI/180.0*x); }
-        inline double sind(double x) { return sin(M_PI/180.0*x); }
+        static double _cosd(double x);
+        static double _sind(double x);
 };
 
 }	// namespace NS_POINTSINSPHERE
