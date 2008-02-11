@@ -65,18 +65,6 @@ Molecule::Molecule(const DistanceTable& dtab) : id(Molecule::getUniqueId())
 }
 
 Molecule::Molecule(const DistanceTable& dtab,
-	const int s, const double* px, const double* py, const double* pz
-	) : id(Molecule::getUniqueId())
-{
-    init();
-    setDistanceTable(dtab);
-    for (int i = 0; i < s; ++i)
-    {
-	Add(px[i], py[i], pz[i]);
-    }
-}
-
-Molecule::Molecule(const DistanceTable& dtab,
 	const vector<double>& vx, const vector<double>& vy,
 	const vector<double>& vz
 	) : id(Molecule::getUniqueId())
@@ -91,7 +79,8 @@ Molecule::Molecule(const DistanceTable& dtab,
     }
     for (size_t i = 0; i != vx.size(); ++i)
     {
-	Add(vx[i], vy[i], vz[i]);
+        R3::Vector rc(vx[i], vy[i], vz[i]);
+	AddAt(rc);
     }
 }
 
@@ -474,11 +463,20 @@ void Molecule::Add(const Molecule& M)
     }
 }
 
-void Molecule::Add(double rx0, double ry0, double rz0)
+
+void Molecule::AddAt(double rx0, double ry0, double rz0)
 {
     Atom_t a(rx0, ry0, rz0);
     Add(a);
 }
+
+
+void Molecule::AddAt(const R3::Vector& rc)
+{
+    Atom_t a(rc);
+    Add(a);
+}
+
 
 void Molecule::Add(const Atom_t& atom)
 {
@@ -498,6 +496,7 @@ void Molecule::Add(const Atom_t& atom)
     atoms.push_back(pnew_atom);
     if (full())     reassignPairs();
 }
+
 
 void Molecule::Fix(const int cidx)
 {
@@ -1323,7 +1322,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     switch (countAtoms())
     {
 	case 0:
-	    Add(0.0, 0.0, 0.0);
+	    AddAt(0.0, 0.0, 0.0);
             acc[LINEAR] = 1;
             tot[LINEAR] = 1;
 	    return acc_tot;

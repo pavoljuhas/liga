@@ -45,28 +45,28 @@ public:
     void test_line()
     {
 	Molecule line(dst_line);
-	line.Add(-0.5, 0.0, 0.0);
-	line.Add(+0.5, 0.0, 0.0);
+	line.AddAt(-0.5, 0.0, 0.0);
+	line.AddAt(+0.5, 0.0, 0.0);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, line.cost(), double_eps);
     }
 
     void test_square()
     {
 	Molecule square(dst_square);
-	square.Add(-0.5, -0.5, 0.0);
-	square.Add(+0.5, -0.5, 0.0);
-	square.Add(+0.5, +0.5, 0.0);
-	square.Add(-0.5, +0.5, 0.0);
+	square.AddAt(-0.5, -0.5, 0.0);
+	square.AddAt(+0.5, -0.5, 0.0);
+	square.AddAt(+0.5, +0.5, 0.0);
+	square.AddAt(-0.5, +0.5, 0.0);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, square.cost(), double_eps);
     }
 
     void test_bad_square()
     {
 	Molecule bad_square(dst_square);
-	bad_square.Add(-0.5, -0.5, 0.0);
-	bad_square.Add(+0.5, -0.5, 0.0);
-	bad_square.Add(+0.5, +0.5, 0.0);
-	bad_square.Add(+0.0, +0.0, 0.0);
+	bad_square.AddAt(-0.5, -0.5, 0.0);
+	bad_square.AddAt(+0.5, -0.5, 0.0);
+	bad_square.AddAt(+0.5, +0.5, 0.0);
+	bad_square.AddAt(+0.0, +0.0, 0.0);
 	double expectcost[4] = {
 	    pow(1.0 - sqrt(0.5), 2)/2,
 	    pow(1.0 - sqrt(0.5), 2)/2,

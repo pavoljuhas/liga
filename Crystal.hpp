@@ -58,6 +58,7 @@ class Crystal : public Molecule
         virtual void recalculate() const;
 
 	virtual void Clear();
+	virtual void Add(const Atom_t& a);  // add single atom
 
     protected:
 
@@ -68,6 +69,12 @@ class Crystal : public Molecule
         virtual AtomCost* getAtomCostCalculator() const;
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
+        virtual const TriangulationAnchor&
+            getLineAnchor(const RandomWeighedGenerator& rwg);
+        virtual const TriangulationAnchor&
+            getPlaneAnchor(const RandomWeighedGenerator& rwg);
+        virtual const TriangulationAnchor&
+            getPyramidAnchor(const RandomWeighedGenerator& rwg);
         virtual void resizePairMatrices(int sz);
 
     private:
@@ -83,6 +90,8 @@ class Crystal : public Molecule
         // methods
         void init();
         void uncacheCostData();
+        const R3::Vector&
+            anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const;
 
 };
 

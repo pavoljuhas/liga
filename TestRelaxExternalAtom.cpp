@@ -39,9 +39,9 @@ public:
 	dtgt = dst_tetrahedron;
 	mol_tetrahedron = new Molecule;
 	mol_tetrahedron->setDistanceTable(dtgt);
-	mol_tetrahedron->Add(-0.5, -sqrt(0.75)*1.0/3, 0.0);
-	mol_tetrahedron->Add(+0.5, -sqrt(0.75)*1.0/3, 0.0);
-	mol_tetrahedron->Add(+0.0, +sqrt(0.75)*2.0/3, 0.0);
+	mol_tetrahedron->AddAt(-0.5, -sqrt(0.75)*1.0/3, 0.0);
+	mol_tetrahedron->AddAt(+0.5, -sqrt(0.75)*1.0/3, 0.0);
+	mol_tetrahedron->AddAt(+0.0, +sqrt(0.75)*2.0/3, 0.0);
 	vtx_tetrahedron = new Atom_t(0.0, 0.0, sqrt(2.0/3));
     }
 

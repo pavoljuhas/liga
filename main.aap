@@ -60,9 +60,8 @@ Tool ?= `defaultTool()`
 @if has_build_target():
     :syseval gsl-config --cflags | :assign GSLInclude
     :syseval gsl-config --libs | :assign GSLLibs
-    :syseval pkg-config --libs blitz | :assign BlitzLibs
     INCLUDE += $GSLInclude -I$*LocalInclude
-    LIBS += $GSLLibs $BlitzLibs
+    LIBS += $GSLLibs
 
 DEFAULTCHECK = time
 :attribute {check = c_md5} *.cpp *.hpp

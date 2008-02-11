@@ -19,6 +19,7 @@
 #include "AtomSequence.hpp"
 
 using namespace std;
+using namespace NS_LIGA;
 
 ////////////////////////////////////////////////////////////////////////
 // class Crystal
@@ -213,6 +214,17 @@ void Crystal::Clear()
     uncacheCostData();
 }
 
+
+void Crystal::Add(const Atom_t& a)
+{
+    Molecule::Add(a);
+    Atom_t* pa = this->atoms.back();
+    R3::Vector ruc;
+    ruc = this->getLattice().ucvCartesian(pa->r);
+    pa->r = ruc;
+}
+
+
 // protected methods
 
 AtomCost* Crystal::getAtomCostCalculator() const
@@ -297,6 +309,38 @@ void Crystal::removeAtomPairs(Atom_t* pa)
 }
 
 
+const Crystal::TriangulationAnchor&
+Crystal::getLineAnchor(const RandomWeighedGenerator& rwg)
+{
+    assert(countAtoms() >= 1);
+    static TriangulationAnchor anch;
+    anch.count = 2;
+    anch.B0 = anyOffsetAtomSite(rwg);
+    anch.B1 = anyOffsetAtomSite(rwg);
+    return anch;
+}
+
+
+const Crystal::TriangulationAnchor&
+Crystal::getPlaneAnchor(const RandomWeighedGenerator& rwg)
+{
+    assert(countAtoms() >= 1);
+    static TriangulationAnchor anch;
+    anch.count = 3;
+    anch.B0 = anyOffsetAtomSite(rwg);
+    anch.B1 = anyOffsetAtomSite(rwg);
+    anch.B2 = anyOffsetAtomSite(rwg);
+    return anch;
+}
+
+
+const Crystal::TriangulationAnchor&
+Crystal::getPyramidAnchor(const RandomWeighedGenerator& rwg)
+{
+    return Crystal::getPlaneAnchor(rwg);
+}
+
+
 void Crystal::resizePairMatrices(int sz)
 {
     int szcur = this->pmx_partial_costs.rows();
@@ -308,6 +352,7 @@ void Crystal::resizePairMatrices(int sz)
 
 
 // private methods
+
 
 void Crystal::init()
 {
@@ -328,6 +373,19 @@ void Crystal::uncacheCostData()
         this->pmx_pair_counts.fill(0);
         this->_cost_data_cached = true;
     }
+}
+
+
+// position of random atom site offset by random lattice vector
+const R3::Vector&
+Crystal::anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const
+{
+    assert(countAtoms() >= 1);
+    static R3::Vector rv;
+    int idx = rwg.weighedInt();
+    R3::Vector mno(randomInt(2), randomInt(2), randomInt(2));
+    rv = this->atoms[idx]->r + getLattice().cartesian(mno);
+    return rv;
 }
 
 

@@ -66,8 +66,6 @@ class Molecule
 	// constructors
 	Molecule();
 	Molecule(const DistanceTable&);
-	Molecule(const DistanceTable&, const int s, const double* px,
-		const double* py, const double* pz);
 	Molecule(const DistanceTable&,
                 const std::vector<double>& vx,
 		const std::vector<double>& vy,
@@ -117,9 +115,10 @@ class Molecule
 	void Pop(const int cidx);	// erase
 	void Pop(const std::list<int>& cidx);
 	virtual void Clear();		// remove all atoms
+	void AddAt(double rx0, double ry0, double rz0);
+	void AddAt(const R3::Vector& rc);
 	void Add(const Molecule& M);	// add specified molecule
-	void Add(double rx0, double ry0, double rz0);	// add single atom
-	void Add(const Atom_t& a);	// add single atom
+	virtual void Add(const Atom_t& a);  // add single atom
 	void Fix(const int cidx);	// mark atom as fixed
 	int NFixed() const;		// count fixed atoms
 	void RelaxAtom(const int cidx);	// relax internal atom

@@ -75,9 +75,9 @@ public:
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_cube);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.0, 0.0, 0.0);
+        crst.AddAt(0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.1, 0.2, 0.3);
+        crst.AddAt(0.1, 0.2, 0.3);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
@@ -88,12 +88,12 @@ public:
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_bcc);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.0, 0.0, 0.0);
+        crst.AddAt(0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.1, 0.2, 0.3);
+        crst.AddAt(0.1, 0.2, 0.3);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
-        crst.Add(0.5, 0.5, 0.5);
+        crst.AddAt(0.5, 0.5, 0.5);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
     }
 
@@ -102,16 +102,16 @@ public:
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_fcc);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.0, 0.0, 0.0);
+        crst.AddAt(0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.5, 0.5, 0.5);
+        crst.AddAt(0.5, 0.5, 0.5);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
-        crst.Add(0.5, 0.5, 0.0);
+        crst.AddAt(0.5, 0.5, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.5, 0.0, 0.5);
+        crst.AddAt(0.5, 0.0, 0.5);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.0, 0.5, 0.5);
+        crst.AddAt(0.0, 0.5, 0.5);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
         crst.setLattice(*rhombohedral);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
@@ -125,9 +125,9 @@ public:
         crst.setDistanceTable(dst_fcc);
         crst.setRRange(0.0, 3.05);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.0, 0.0, 0.0);
+        crst.AddAt(0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.Add(0.1, 0.2, 0.3);
+        crst.AddAt(0.1, 0.2, 0.3);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
