@@ -60,6 +60,8 @@ Tool ?= `defaultTool()`
 @if has_build_target():
     :syseval gsl-config --cflags | :assign GSLInclude
     :syseval gsl-config --libs | :assign GSLLibs
+    :syseval cppunit-config --cflags | :assign CPPUnitInclude
+    :syseval cppunit-config --libs | :assign CPPUnitLibs
     INCLUDE += $GSLInclude -I$*LocalInclude
     LIBS += $GSLLibs
 
@@ -108,7 +110,8 @@ all \
 
 :program alltests \
 {comment = build unit tests} \
-{add_LIBS = -lcppunit -ldl} \
+{add_INCLUDE = $?CPPUnitInclude} \
+{add_LIBS = $?CPPUnitLibs} \
 {var_LD = $CXX} :
     alltests.cpp $TestedSources $Tests
 
