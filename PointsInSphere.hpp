@@ -1,4 +1,3 @@
-#include "dbprint.h"
 /***********************************************************************
 *
 * pdffit2           by DANSE Diffraction group
@@ -130,6 +129,9 @@ class PointsInSphere
         const NS_POINTSINSPHERE::LatticeParameters latpar;
         // output
         int _mno[3];
+        int& _m;
+        int& _n;
+        int& _o;
         // calculated constants set by init()
         double RminSquare, RmaxSquare;
         // 2D reciprocal parameters and cosine in bc plane
@@ -151,9 +153,6 @@ class PointsInSphere
         void next_m();
         void next_n();
         void next_o();
-        int& m();
-        int& n();
-        int& o();
         void init();
 };
 
@@ -162,6 +161,7 @@ class PointsInSphere
 template <class L>
 PointsInSphere::PointsInSphere(double rmin, double rmax, const L& lat) :
     _Rmin(rmin), _Rmax(rmax),
+    _m(_mno[0]), _n(_mno[1]), _o(_mno[2]),
     latpar(lat.a(), lat.b(), lat.c(), lat.alpha(), lat.beta(), lat.gamma())
 {
     init();

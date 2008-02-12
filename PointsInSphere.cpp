@@ -108,7 +108,8 @@ double LatticeParameters::_sind(double x)
 PointsInSphere::PointsInSphere(double rmin, double rmax,
 	const LatticeParameters& _latpar ) :
             _Rmin(rmin), _Rmax(rmax),
-	    latpar(_latpar)
+	    latpar(_latpar),
+            _m(_mno[0]), _n(_mno[1]), _o(_mno[2])
 {
     init();
     rewind();
@@ -119,7 +120,8 @@ PointsInSphere::PointsInSphere(double rmin, double rmax,
 	double _a, double _b, double _c,
 	double _alpha, double _beta, double _gamma) :
 	    _Rmin(rmin), _Rmax(rmax),
-	    latpar(_a, _b, _c, _alpha, _beta, _gamma)
+	    latpar(_a, _b, _c, _alpha, _beta, _gamma),
+            _m(_mno[0]), _n(_mno[1]), _o(_mno[2])
 {
     init();
     rewind();
@@ -131,10 +133,10 @@ void PointsInSphere::rewind()
 {
     mHalfSpan = Rmax()*latpar.ar;
     hi_m = int(ceil(mHalfSpan));
-    m() = -hi_m;
+    this->_m = -hi_m;
     // make indices n, o invalid, reset the neares point
-    n() = hi_n = 0;
-    o() = hi_o = outside_o = 0;
+    this->_n = hi_n = 0;
+    this->_o = hi_o = outside_o = 0;
     n0plane = o0plane = o0line = 0.0;
     // unset excluded zone
     oExclHalfSpan = 0.0;
@@ -200,7 +202,7 @@ double PointsInSphere::r() const
 
 void PointsInSphere::next_m()
 {
-    m()++;
+    this->_m += 1;
     if (finished())
     {
 	return;
@@ -210,7 +212,7 @@ void PointsInSphere::next_m()
     o0plane = m()*do0dm;
     RplaneSquare = RmaxSquare - pow(m()/latpar.ar,2);
     nHalfSpan = RplaneSquare > 0.0 ? sqrt(RplaneSquare)*b2r : 0.0;
-    n() = int(floor(n0plane - nHalfSpan));
+    this->_n = int(floor(n0plane - nHalfSpan));
     hi_n = int(ceil(n0plane + nHalfSpan));
 }
 
@@ -218,7 +220,7 @@ void PointsInSphere::next_n()
 {
     do
     {
-	n()++;
+	this->_n += 1;
 	if (n() < hi_n)
 	{
 	    o0line = o0plane + (n()-n0plane)*do0dn;
@@ -227,7 +229,7 @@ void PointsInSphere::next_n()
 	    // parentheses improve round-off errors around [0,0,0]
 	    double RExclSquare = RminSquare + (RlineSquare - RmaxSquare);
 	    oExclHalfSpan = RExclSquare > 0.0 ? sqrt(RExclSquare)*c1r : 0.0;
-	    o() = int(floor(o0line - oHalfSpan));
+	    this->_o = int(floor(o0line - oHalfSpan));
 	    outside_o = int(ceil(o0line + oHalfSpan));
 	    hi_o = outside_o;
 	    if (oExclHalfSpan)
@@ -246,7 +248,7 @@ void PointsInSphere::next_o()
 {
     do
     {
-	o()++;
+	this->_o += 1;
 	if (o() < hi_o)
 	{
 	    return;
@@ -254,27 +256,12 @@ void PointsInSphere::next_o()
 	if (hi_o != outside_o)
 	{
 	    hi_o = outside_o;
-	    o() = int( ceil(o0line+oExclHalfSpan) ) - 1;
+	    this->_o = int( ceil(o0line+oExclHalfSpan) ) - 1;
 	    continue;
 	}
 	next_n();
     }
     while (!finished());
-}
-
-int& PointsInSphere::m() 
-{
-    return this->_mno[0];
-}
-
-int& PointsInSphere::n() 
-{
-    return this->_mno[1];
-}
-
-int& PointsInSphere::o() 
-{
-    return this->_mno[2];
 }
 
 void PointsInSphere::init()
