@@ -155,15 +155,14 @@ RandomWeighedGenerator::RandomWeighedGenerator(Iter first, Iter last)
 template <class Iter>
 void RandomWeighedGenerator::setWeights(Iter first, Iter last)
 {
-    using namespace std;
     this->_weight.resize(last - first);
-    vector<double>::iterator wii = this->_weight.begin();
+    std::vector<double>::iterator wii = this->_weight.begin();
     for (Iter ii = first; ii != last; ++ii, ++wii)
     {
 	if (*ii < 0.0)
 	{
             const char* emsg = "setWeights(): negative choice probability";
-	    throw out_of_range(emsg);
+	    throw std::out_of_range(emsg);
 	}
         *wii = *ii;
     }
