@@ -37,7 +37,7 @@ const double eps = 1.0e-12;
 struct vidxgroup
 {
     double vijk[4];
-    vidxgroup(double v, int* ijk)
+    vidxgroup(double v, const int* ijk)
     {
 	vijk[0] = v;
 	for (size_t i = 0; i != 3; ++i) { vijk[i+1] = ijk[i]; }
@@ -115,7 +115,7 @@ private:
 	for (   PointsInSphere sph(Rmin, Rmax, *latpar);
 		not sph.finished(); sph.next()  )
 	{
-	    ridx.push_back(vidxgroup(sph.r(), sph.mno));
+	    ridx.push_back(vidxgroup(sph.r(), sph.mno()));
 	}
 	sort(ridx.begin(), ridx.end());
 	return ridx;

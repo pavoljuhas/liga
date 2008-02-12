@@ -102,50 +102,39 @@ double LatticeParameters::_sind(double x)
 // PointsInSphere
 ////////////////////////////////////////////////////////////////////////
 
-PointsInSphere::PointsInSphere( double _Rmin, double _Rmax,
+
+// constructors
+
+PointsInSphere::PointsInSphere(double rmin, double rmax,
 	const LatticeParameters& _latpar ) :
-            Rmin(_Rmin), Rmax(_Rmax),
-	    m(mno[0]), n(mno[1]), o(mno[2]),
+            _Rmin(rmin), _Rmax(rmax),
 	    latpar(_latpar)
 {
     init();
     rewind();
 }
 
-PointsInSphere::PointsInSphere( double _Rmin, double _Rmax,
+
+PointsInSphere::PointsInSphere(double rmin, double rmax,
 	double _a, double _b, double _c,
-	double _alpha, double _beta, double _gamma ) :
-	    Rmin(_Rmin), Rmax(_Rmax),
-	    m(mno[0]), n(mno[1]), o(mno[2]),
+	double _alpha, double _beta, double _gamma) :
+	    _Rmin(rmin), _Rmax(rmax),
 	    latpar(_a, _b, _c, _alpha, _beta, _gamma)
 {
     init();
     rewind();
 }
 
-void PointsInSphere::init()
-{
-    RminSquare = (Rmin < 0.0) ? -(Rmin*Rmin) : Rmin*Rmin;
-    RmaxSquare = (Rmax < 0.0) ? -(Rmax*Rmax) : Rmax*Rmax;
-    dn0dm = latpar.cgr*latpar.br/latpar.ar;
-    do0dm = latpar.cbr*latpar.cr/latpar.ar;
-    // 2D reciprocal parameters in bc plane
-    b2r = 1.0/(latpar.b*latpar.sa);
-    c2r = 1.0/(latpar.c*latpar.sa);
-    ca2r = -latpar.ca;
-    do0dn = ca2r*c2r/b2r;
-    // 1D reciprocal along c axis
-    c1r = 1.0/latpar.c;
-}
+
 
 void PointsInSphere::rewind()
 {
-    mHalfSpan = Rmax*latpar.ar;
+    mHalfSpan = Rmax()*latpar.ar;
     hi_m = int(ceil(mHalfSpan));
-    m = -hi_m;
+    m() = -hi_m;
     // make indices n, o invalid, reset the neares point
-    n = hi_n = 0;
-    o = hi_o = outside_o = 0;
+    n() = hi_n = 0;
+    o() = hi_o = outside_o = 0;
     n0plane = o0plane = o0line = 0.0;
     // unset excluded zone
     oExclHalfSpan = 0.0;
@@ -153,40 +142,92 @@ void PointsInSphere::rewind()
     next_o();
 }
 
-void PointsInSphere::next_o()
+
+void PointsInSphere::next()
 {
-    do
+    next_o();
+}
+
+
+bool PointsInSphere::finished() const
+{
+    return !(m() < this->hi_m);
+}
+
+
+// public methods - data access
+
+const double& PointsInSphere::Rmin() const
+{
+    return this->_Rmin;
+}
+
+const double& PointsInSphere::Rmax() const
+{
+    return this->_Rmax;
+}
+
+const int* PointsInSphere::mno() const
+{
+    return this->_mno;
+}
+
+const int& PointsInSphere::m() const
+{
+    return this->_mno[0];
+}
+
+const int& PointsInSphere::n() const
+{
+    return this->_mno[1];
+}
+
+const int& PointsInSphere::o() const
+{
+    return this->_mno[2];
+}
+
+double PointsInSphere::r() const
+{
+    const double &a = latpar.a, &b = latpar.b, &c = latpar.c;
+    const double &ca = latpar.ca, &cb = latpar.cb, &cg = latpar.cg;
+    return sqrt( m()*m()*a*a + n()*n()*b*b + o()*o()*c*c
+	    + 2*m()*n()*a*b*cg + 2*m()*o()*a*c*cb + 2*n()*o()*b*c*ca );
+}
+
+
+// private methods
+
+void PointsInSphere::next_m()
+{
+    m()++;
+    if (finished())
     {
-	o++;
-	if (o < hi_o)
-	{
-	    return;
-	}
-	if (hi_o != outside_o)
-	{
-	    hi_o = outside_o;
-	    o = int( ceil(o0line+oExclHalfSpan) ) - 1;
-	    continue;
-	}
-	next_n();
+	return;
     }
-    while (!finished());
+    // not finished here
+    n0plane = m()*dn0dm;
+    o0plane = m()*do0dm;
+    RplaneSquare = RmaxSquare - pow(m()/latpar.ar,2);
+    nHalfSpan = RplaneSquare > 0.0 ? sqrt(RplaneSquare)*b2r : 0.0;
+    n() = int(floor(n0plane - nHalfSpan));
+    hi_n = int(ceil(n0plane + nHalfSpan));
 }
 
 void PointsInSphere::next_n()
 {
     do
     {
-	n++;
-	if (n < hi_n)
+	n()++;
+	if (n() < hi_n)
 	{
-	    o0line = o0plane + (n-n0plane)*do0dn;
-	    double RlineSquare = RplaneSquare - pow((n-n0plane)/b2r,2);
+	    o0line = o0plane + (n()-n0plane)*do0dn;
+	    double RlineSquare = RplaneSquare - pow((n()-n0plane)/b2r,2);
 	    oHalfSpan = RlineSquare > 0.0 ? sqrt(RlineSquare)*c1r : 0.0;
 	    // parentheses improve round-off errors around [0,0,0]
 	    double RExclSquare = RminSquare + (RlineSquare - RmaxSquare);
 	    oExclHalfSpan = RExclSquare > 0.0 ? sqrt(RExclSquare)*c1r : 0.0;
-	    o = int(floor(o0line - oHalfSpan));
+	    o() = int(floor(o0line - oHalfSpan));
 	    outside_o = int(ceil(o0line + oHalfSpan));
 	    hi_o = outside_o;
 	    if (oExclHalfSpan)
@@ -201,69 +242,170 @@ void PointsInSphere::next_n()
     while (!finished());
 }
 
-void PointsInSphere::next_m()
+void PointsInSphere::next_o()
 {
-    m++;
-    if (finished())
+    do
     {
-	return;
+	o()++;
+	if (o() < hi_o)
+	{
+	    return;
+	}
+	if (hi_o != outside_o)
+	{
+	    hi_o = outside_o;
+	    o() = int( ceil(o0line+oExclHalfSpan) ) - 1;
+	    continue;
+	}
+	next_n();
     }
-    // not finished here
-    n0plane = m*dn0dm;
-    o0plane = m*do0dm;
-    RplaneSquare = RmaxSquare - pow(m/latpar.ar,2);
-    nHalfSpan = RplaneSquare > 0.0 ? sqrt(RplaneSquare)*b2r : 0.0;
-    n = int(floor(n0plane - nHalfSpan));
-    hi_n = int(ceil(n0plane + nHalfSpan));
+    while (!finished());
 }
 
-double PointsInSphere::r() const
+int& PointsInSphere::m() 
 {
-    const double &a = latpar.a, &b = latpar.b, &c = latpar.c;
-    const double &ca = latpar.ca, &cb = latpar.cb, &cg = latpar.cg;
-    return sqrt( m*m*a*a + n*n*b*b + o*o*c*c
-	    + 2*m*n*a*b*cg + 2*m*o*a*c*cb + 2*n*o*b*c*ca );
+    return this->_mno[0];
 }
 
+int& PointsInSphere::n() 
+{
+    return this->_mno[1];
+}
+
+int& PointsInSphere::o() 
+{
+    return this->_mno[2];
+}
+
+void PointsInSphere::init()
+{
+    RminSquare = (_Rmin < 0.0) ? -(_Rmin*_Rmin) : _Rmin*_Rmin;
+    RmaxSquare = (_Rmax < 0.0) ? -(_Rmax*_Rmax) : _Rmax*_Rmax;
+    dn0dm = latpar.cgr*latpar.br/latpar.ar;
+    do0dm = latpar.cbr*latpar.cr/latpar.ar;
+    // 2D reciprocal parameters in bc plane
+    b2r = 1.0/(latpar.b*latpar.sa);
+    c2r = 1.0/(latpar.c*latpar.sa);
+    ca2r = -latpar.ca;
+    do0dn = ca2r*c2r/b2r;
+    // 1D reciprocal along c axis
+    c1r = 1.0/latpar.c;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // ReflectionsInQminQmax
 ////////////////////////////////////////////////////////////////////////
 
-ReflectionsInQminQmax::ReflectionsInQminQmax(double _Qmin, double _Qmax,
+// constructors
+
+ReflectionsInQminQmax::ReflectionsInQminQmax(double qmin, double qmax,
 	const LatticeParameters& _latpar) :
+	    _Qmin(qmin), _Qmax(qmax),
 	    latpar(_latpar),
-	    sph(Qmin*M_1_PI/2.0, Qmax*M_1_PI/2.0, latpar.reciprocal()),
-	    Qmin(_Qmin), Qmax(_Qmax),
-	    hkl(sph.mno), h(hkl[0]), k(hkl[1]), l(hkl[2])
+	    sph(qmin*M_1_PI/2.0, qmax*M_1_PI/2.0, latpar.reciprocal())
 { }
 
-ReflectionsInQminQmax::ReflectionsInQminQmax( double _Qmin, double _Qmax,
+ReflectionsInQminQmax::ReflectionsInQminQmax(double qmin, double qmax,
 	double _a, double _b, double _c,
 	double _alpha, double _beta, double _gamma ) :
+	    _Qmin(qmin), _Qmax(qmax),
 	    latpar(_a, _b, _c, _alpha, _beta, _gamma),
-	    sph(Qmin*M_1_PI/2.0, Qmax*M_1_PI/2.0, latpar.reciprocal()),
-	    Qmin(_Qmin), Qmax(_Qmax),
-	    hkl(sph.mno), h(hkl[0]), k(hkl[1]), l(hkl[2])
+	    sph(qmin*M_1_PI/2.0, qmax*M_1_PI/2.0, latpar.reciprocal())
 { }
+
+// public methods - loop control
+
+void ReflectionsInQminQmax::rewind()
+{
+    this->sph.rewind();
+}
+
+void ReflectionsInQminQmax::next()
+{
+    this->sph.next();
+}
+
+bool ReflectionsInQminQmax::finished() const
+{
+    return this->sph.finished();
+}
+
+
+// public methods - data access
+
+const double& ReflectionsInQminQmax::Qmin() const
+{
+    return this->_Qmin;
+}
+
+const double& ReflectionsInQminQmax::Qmax() const
+{
+    return this->_Qmax;
+}
+
+const int* ReflectionsInQminQmax::hkl() const
+{
+    return this->sph.mno();
+}
+
+const int& ReflectionsInQminQmax::h() const
+{
+    return this->sph.m();
+}
+
+const int& ReflectionsInQminQmax::k() const
+{
+    return this->sph.n();
+}
+
+const int& ReflectionsInQminQmax::l() const
+{
+    return this->sph.o();
+}
+
+double ReflectionsInQminQmax::Q() const
+{
+    return 2.0*M_PI*sph.r();
+}
+
+double ReflectionsInQminQmax::d() const
+{
+    return 1.0/sph.r();
+}
 
 
 ////////////////////////////////////////////////////////////////////////
 // ReflectionsInDmaxDmin
 ////////////////////////////////////////////////////////////////////////
 
-ReflectionsInDmaxDmin::ReflectionsInDmaxDmin( double _Dmax, double _Dmin,
-	const LatticeParameters& _latpar ) :
-	    ReflectionsInQminQmax(2.0*M_PI/_Dmax, 2.0*M_PI/_Dmin, _latpar),
-	    Dmax(_Dmax), Dmin(_Dmin)
+
+// constructors
+
+ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(double dmax, double dmin,
+	const LatticeParameters& _latpar) :
+	    ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin, _latpar),
+            _Dmin(dmin), _Dmax(dmax)
 { }
 
-ReflectionsInDmaxDmin::ReflectionsInDmaxDmin( double _Dmax, double _Dmin,
+ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(double dmax, double dmin,
 	double _a, double _b, double _c,
-	double _alpha, double _beta, double _gamma ) :
-	    ReflectionsInQminQmax( 2.0*M_PI/_Dmax, 2.0*M_PI/_Dmin,
-		    _a, _b, _c, _alpha, _beta, _gamma ),
-	    Dmax(_Dmax), Dmin(_Dmin)
+	double _alpha, double _beta, double _gamma) :
+	    ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin,
+		    _a, _b, _c, _alpha, _beta, _gamma),
+	    _Dmin(dmin), _Dmax(dmax)
 { }
+
+
+// public methods - data access
+
+const double& ReflectionsInDmaxDmin::Dmin() const
+{
+    return this->_Dmin;
+}
+
+const double& ReflectionsInDmaxDmin::Dmax() const
+{
+    return this->_Dmax;
+}
 
 // End of file

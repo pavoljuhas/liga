@@ -31,16 +31,16 @@
 *     PointsInSphere sph(Rmin, Rmax, a, b, c, alpha, beta, gamma)
 *     for (sph.rewind(); !sph.finished(); sph.next())
 *     { 
-*         // lattice indices are in sph.m, sph.n, sph.o or sph.mno[3]
+*         // lattice indices are in sph.m(), sph.n(), sph.o() or sph.mno()
 *         // sph.r() is distance from origin,
-*         // where Rmin < sph.r() < Rmax
+*         // where sph.Rmin() < sph.r() < sph.Rmax()
 *     }
 *
-*     ReflectionsInQminQmax refl(Qmin, Qmax, a, b, c, alpha, beta, gamma)
+*     ReflectionsInQminQmax ref(Qmin, Qmax, a, b, c, alpha, beta, gamma)
 *     for (ReflectionsInQminQmax ref(Qmin, Qmax, a, b, c, alpha, beta, gamma);
 *	   !ref.finished(); ref.next() )
 *     { 
-*         // Miller indices are in ref.h, ref.k, ref.l or ref.hkl[3]
+*         // Miller indices are in ref.h(), ref.k(), ref.l() or ref.hkl()
 *         // ref.Q() is magnitude of Q vector
 *         // ref.d() is lattice plane spacing
 *     }
@@ -98,33 +98,38 @@ class PointsInSphere
 {
     public:
 
-        // data
-        // input arguments
-        const double Rmin, Rmax;
-        // results
-        // mno array and m, n, o aliases are supposed to be read only
-        int mno[3];
-        int &m, &n, &o;
-
         // constructors
-        PointsInSphere(double _Rmin, double _Rmax,
+        PointsInSphere(double rmin, double rmax,
                 const NS_POINTSINSPHERE::LatticeParameters& _latpar);
-        PointsInSphere(double _Rmin, double _Rmax,
+        PointsInSphere(double rmin, double rmax,
                 double _a, double _b, double _c,
                 double _alpha, double _beta, double _gamma);
         template <class L>
-        PointsInSphere(double _Rmin, double _Rmax, const L&);
+            PointsInSphere(double rmin, double rmax, const L&);
 
         // methods
+        // loop control
         void rewind();
-        inline void next()              { next_o(); }
-        inline bool finished() const    { return !(m < hi_m); }
+        void next();
+        bool finished() const;
+        // data access
+        const double& Rmin() const;
+        const double& Rmax() const;
+        const int* mno() const;
+        const int& m() const;
+        const int& n() const;
+        const int& o() const;
         double r() const;
 
     private:
 
         // data
+        // inputs
+        const double _Rmin;
+        const double _Rmax;
         const NS_POINTSINSPHERE::LatticeParameters latpar;
+        // output
+        int _mno[3];
         // calculated constants set by init()
         double RminSquare, RmaxSquare;
         // 2D reciprocal parameters and cosine in bc plane
@@ -146,15 +151,17 @@ class PointsInSphere
         void next_m();
         void next_n();
         void next_o();
+        int& m();
+        int& n();
+        int& o();
         void init();
 };
 
 // template constructor
 
 template <class L>
-PointsInSphere::PointsInSphere(double _Rmin, double _Rmax, const L& lat) :
-    Rmin(_Rmin), Rmax(_Rmax),
-    m(mno[0]), n(mno[1]), o(mno[2]),
+PointsInSphere::PointsInSphere(double rmin, double rmax, const L& lat) :
+    _Rmin(rmin), _Rmax(rmax),
     latpar(lat.a(), lat.b(), lat.c(), lat.alpha(), lat.beta(), lat.gamma())
 {
     init();
@@ -164,20 +171,7 @@ PointsInSphere::PointsInSphere(double _Rmin, double _Rmax, const L& lat) :
 
 class ReflectionsInQminQmax
 {
-    private:
-
-        // data - sph must be initialized before hkl and h, k, l
-        const NS_POINTSINSPHERE::LatticeParameters latpar;
-        PointsInSphere sph;
-
     public:
-
-        // data
-        // input arguments
-        const double Qmin, Qmax;
-        // results - hkl array and h, k, l aliases are read only
-        int *hkl;
-        int &h, &k, &l;
 
         // constructors
         ReflectionsInQminQmax(double _Qmin, double _Qmax,
@@ -186,25 +180,42 @@ class ReflectionsInQminQmax
                 double _a, double _b, double _c,
                 double _alpha, double _beta, double _gamma);
         template <class L>
-        ReflectionsInQminQmax(double _Qmin, double _Qmax, const L&);
+            ReflectionsInQminQmax(double _Qmin, double _Qmax, const L&);
 
         // methods
-        inline void rewind()            { sph.rewind(); }
-        inline void next()              { sph.next(); }
-        inline bool finished() const    { return sph.finished(); }
-        inline double Q() const         { return 2.0*M_PI*sph.r(); }
-        inline double d() const         { return 1.0/sph.r(); }
+        // loop control
+        void rewind();
+        void next();
+        bool finished() const;
+        // data access
+        const double& Qmin() const;
+        const double& Qmax() const;
+        const int* hkl() const;
+        const int& h() const;
+        const int& k() const;
+        const int& l() const;
+        double Q() const;
+        double d() const;
+
+    private:
+
+        // data
+        // inputs
+        const double _Qmin;
+        const double _Qmax;
+        const NS_POINTSINSPHERE::LatticeParameters latpar;
+        // composite
+        PointsInSphere sph;
 };
 
 // template constructor
 template <class L>
 ReflectionsInQminQmax::ReflectionsInQminQmax(
-        double _Qmin, double _Qmax, const L& lat) :
+        double _qmin, double _qmax, const L& lat) :
 	    latpar(lat.a(), lat.b(), lat.c(),
                     lat.alpha(), lat.beta(), lat.gamma()),
-	    sph(Qmin*M_1_PI/2.0, Qmax*M_1_PI/2.0, latpar.reciprocal()),
-	    Qmin(_Qmin), Qmax(_Qmax),
-	    hkl(sph.mno), h(hkl[0]), k(hkl[1]), l(hkl[2])
+	    sph(_qmin*M_1_PI/2.0, _qmax*M_1_PI/2.0, latpar.reciprocal()),
+	    _Qmin(_qmin), _Qmax(_qmax)
 { }
 
 
@@ -212,26 +223,34 @@ class ReflectionsInDmaxDmin : public ReflectionsInQminQmax
 {
     public:
 
-        // data
-        // input arguments
-        const double Dmax, Dmin;
-
         // constructors
-        ReflectionsInDmaxDmin(double _Dmax, double _Dmin,
+        ReflectionsInDmaxDmin(double dmax, double dmin,
                 const NS_POINTSINSPHERE::LatticeParameters& _latpar);
-        ReflectionsInDmaxDmin(double _Dmax, double _Dmin,
+        ReflectionsInDmaxDmin(double dmax, double dmin,
                 double _a, double _b, double _c,
                 double _alpha, double _beta, double _gamma);
         template <class L>
-        ReflectionsInDmaxDmin(double _Dmax, double _Dmin, const L&);
+            ReflectionsInDmaxDmin(double dmax, double dmin, const L&);
+
+        // methods
+        // data access
+        const double& Dmin() const;
+        const double& Dmax() const;
+
+    private:
+
+        // data
+        // inputs
+        const double _Dmin;
+        const double _Dmax;
 };
 
 // template constructor
 template <class L>
 ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(
-        double _Dmax, double _Dmin, const L& lat) :
-	    ReflectionsInQminQmax(2.0*M_PI/_Dmax, 2.0*M_PI/_Dmin, lat),
-	    Dmax(_Dmax), Dmin(_Dmin)
+        double dmax, double dmin, const L& lat) :
+	    ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin, lat),
+	    _Dmax(dmax), _Dmin(dmin)
 { }
 
 #endif	// POINTSINSPHERE_HPP_INCLUDED

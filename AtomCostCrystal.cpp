@@ -132,7 +132,7 @@ const vector<double>& AtomCostCrystal::lsqComponents() const
         double wt = sqrt(costToFitness(a.Badness()));
         for (_sph->rewind(); !_sph->finished(); _sph->next())
         {
-            rc_dd = a.r + lat.cartesian(_sph->mno) - aucv;
+            rc_dd = a.r + lat.cartesian(_sph->mno()) - aucv;
             double d = R3::norm(rc_dd);
             if (d < this->_rmin || d > this->_rmax || d == 0.0)   continue;
             lsqidx++;
@@ -176,7 +176,7 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero) const
     int paircount = 0;
     for (_sph->rewind(); !_sph->finished(); _sph->next())
     {
-        rc_dd = ucv + lat.cartesian(_sph->mno);
+        rc_dd = ucv + lat.cartesian(_sph->mno());
         double d = R3::norm(rc_dd);
         if (d < this->_rmin || d > this->_rmax)     continue;
         if (skipzero && d == 0.0)   continue;
