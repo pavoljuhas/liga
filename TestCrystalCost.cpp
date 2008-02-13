@@ -44,7 +44,7 @@ public:
     {
 	double_eps = DOUBLE_EPS;
         crst.Clear();
-        crst.setRRange(0.0, 3.05);
+        crst.setRmax(3.05);
         crst.setMaxAtomCount(4);
         // do the rest only once
         cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
@@ -123,7 +123,7 @@ public:
     {
         crst.setLattice(*rhombohedral);
         crst.setDistanceTable(dst_fcc);
-        crst.setRRange(0.0, 3.05);
+        crst.setRmax(3.05);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
         crst.AddAt(0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);

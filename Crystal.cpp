@@ -102,16 +102,15 @@ const Lattice& Crystal::getLattice() const
     return *_lattice;
 }
 
-void Crystal::setRRange(double rmin, double rmax)
+void Crystal::setRmax(double rmax)
 {
-    _rmin = rmin;
-    _rmax = rmax;
+    this->_rmax = rmax;
     this->uncacheCostData();
 }
 
-pair<double,double> Crystal::getRRange() const
+const double& Crystal::getRmax() const
 {
-    return make_pair(_rmin, _rmax);
+    return this->_rmax;
 }
 
 // r-range extended by circum diameter of the primitive cell
@@ -136,7 +135,9 @@ pair<double,double> Crystal::getRExtent() const
         max_offcenter = max_offcenter*(1.0 + eps_distance) + eps_distance;
     }
     double circum_diameter = 2*max_offcenter;
-    return make_pair(_rmin - circum_diameter, _rmax + circum_diameter);
+    double rextlo = 0.0 - circum_diameter;
+    double rexthi = this->_rmax + circum_diameter;
+    return make_pair(rextlo, rexthi);
 }
 
 double Crystal::cost() const
@@ -218,10 +219,23 @@ void Crystal::Clear()
 void Crystal::Add(const Atom_t& a)
 {
     Molecule::Add(a);
+    // shift to unit cell and take care of zero round-off
+    using NS_LIGA::eps_distance;
     Atom_t* pa = this->atoms.back();
-    R3::Vector ruc;
-    ruc = this->getLattice().ucvCartesian(pa->r);
-    pa->r = ruc;
+    const Lattice& lat = this->getLattice();
+    R3::Vector ucl, ucs0, ucs1;
+    ucl = lat.ucvFractional(lat.fractional(pa->r));
+    for (int i = 0; i != R3::Ndim; ++i)
+    {
+        ucs0 = ucs1 = ucl;
+        ucs0[i] = 0.0;
+        ucs1[i] = 1.0;
+        bool nearzero = 
+            lat.distance(ucl, ucs0) < eps_distance ||
+            lat.distance(ucl, ucs1) < eps_distance;
+        if (nearzero)   ucl[i] = 0.0;
+    }
+    pa->r = lat.cartesian(ucl);
 }
 
 

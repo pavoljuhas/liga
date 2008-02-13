@@ -39,9 +39,7 @@ void AtomCostCrystal::resetFor(const Molecule* clust)
     this->arg_cluster = static_cast<const Crystal*>(clust);
     assert(this->arg_cluster == this->AtomCost::arg_cluster);
     assert(!this->use_distances);
-    pair<double,double> r_range = arg_cluster->getRRange();
-    this->_rmin = r_range.first;
-    this->_rmax = r_range.second;
+    this->_rmax = arg_cluster->getRmax();
     pair<double,double> rext = arg_cluster->getRExtent();
     _sph.reset(new PointsInSphere(rext.first, rext.second,
                 arg_cluster->getLattice()) );
@@ -134,7 +132,8 @@ const vector<double>& AtomCostCrystal::lsqComponents() const
         {
             rc_dd = a.r + lat.cartesian(_sph->mno()) - aucv;
             double d = R3::norm(rc_dd);
-            if (d < this->_rmin || d > this->_rmax || d == 0.0)   continue;
+            // FIXME probably wrong
+            if (d > this->_rmax || d < NS_LIGA::eps_distance)   continue;
             lsqidx++;
             assert(fii < lsq_fi.end());
             assert(dii < lsq_di.end());
@@ -178,8 +177,8 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero) const
     {
         rc_dd = ucv + lat.cartesian(_sph->mno());
         double d = R3::norm(rc_dd);
-        if (d < this->_rmin || d > this->_rmax)     continue;
-        if (skipzero && d == 0.0)   continue;
+        if (d > this->_rmax)    continue;
+        if (skipzero && d < NS_LIGA::eps_distance)  continue;
         double dd = this->nearDistance(d) - d;
         paircost += penalty(dd);
         paircount += 1;

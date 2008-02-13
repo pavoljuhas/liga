@@ -49,8 +49,8 @@ class Crystal : public Molecule
         void setLattice(const Lattice&);
         const Lattice& getLattice() const;
 
-        void setRRange(double rmin, double rmax);
-        std::pair<double,double> getRRange() const;
+        void setRmax(double rmax);
+        const double& getRmax() const;
         std::pair<double,double> getRExtent() const;
 
         virtual double cost() const;

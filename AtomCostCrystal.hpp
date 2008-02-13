@@ -76,9 +76,9 @@ class AtomCostCrystal : public AtomCost
         R3::Vector arg_rcuc;    // cartesian positions offset to unit cell
 
         // data - for intermediate cost evaluation
-        // PDF range, actual and extended for sphere summation
-        double _rmin;
+        // maximum r for PDF range
         double _rmax;
+        // lattice points sequencer
         std::auto_ptr<PointsInSphere> _sph;
         int _lsq_component_size;
         mutable blitz::Array<double,2> _lsq_jacobian;

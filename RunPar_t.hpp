@@ -48,6 +48,7 @@ struct RunPar_t
     size_t ndim;
     bool crystal;
     std::vector<double> latpar;
+    double rmax;
     bool distreuse;
     double tolcost;
     int natoms;

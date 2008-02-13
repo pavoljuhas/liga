@@ -107,7 +107,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
         latpar = args->GetParVec<double>("latpar");
         if (latpar.size() != 6)
         {
-            char* emsg = "latpar must define 6 lattice parameters";
+            char* emsg = "latpar must define 6 lattice parameters.";
             throw ParseArgsError(emsg);
         }
         if (!this->crystal)
@@ -116,14 +116,25 @@ void RunPar_t::processArguments(int argc, char* argv[])
             throw ParseArgsError(emsg);
         }
     }
+    // rmax
+    if (this->crystal)
+    {
+        this->rmax = args->ispar("rmax") ?
+            args->GetPar<double>("rmax") :
+            dtab.empty() ? 0.0 : dtab.back();
+    }
+    else if (args->ispar("rmax"))
+    {
+        char* emsg = "rmax has no sense when crystal=false.";
+        throw ParseArgsError(emsg);
+    }
     // create empty molecule
     if (this->crystal)
     {
         Crystal crst;
         crst.setLattice( Lattice(latpar[0], latpar[1], latpar[2],
                                  latpar[3], latpar[4], latpar[5]));
-        // TODO add option for rrange
-        if (!dtab.empty())  crst.setRRange(0.0, dtab.back());
+        crst.setRmax(this->rmax);
         mol.reset(new Crystal(crst));
     }
     else
@@ -243,6 +254,11 @@ void RunPar_t::processArguments(int argc, char* argv[])
     {
 	natoms = args->GetPar<int>("natoms");
 	mol->setMaxAtomCount(natoms);
+    }
+    else if (this->crystal)
+    {
+        const char* emsg = "natoms must be specified when crystal=true.";
+        throw ParseArgsError(emsg);
     }
     natoms = mol->getMaxAtomCount();
     // fixed_atoms must be set after inistru
@@ -387,9 +403,10 @@ void RunPar_t::print_help()
 "  ndim={1,2,3}          [3] search in n-dimensional space\n"
 "  crystal=bool          [false] assume periodic crystal structure\n"
 "  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
+"  rmax=double           [dmax] distance cutoff when crystal=true\n"
 "  distreuse=bool        [false] keep used distances in distance table\n"
 "  tolcost=double        [1E-4] target normalized molecule cost\n"
-"  natoms=int            use with loose distfiles or for set distreuse\n"
+"  natoms=int            use for loose distfile or active distreuse/crystal\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  seed_clusters=array   [] triplets of (level, number, trials)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
@@ -493,8 +510,9 @@ void RunPar_t::print_pars()
 	cout << "verbose=" << join(",", flagwords) << '\n';
     }
     // liga parameters
-    // ndim, distreuse, tolcost
+    // ndim
     cout << "ndim=" << ndim << '\n';
+    // crystal, latpar, rmax
     cout << "crystal=" << this->crystal << '\n';
     if (this->crystal)
     {
@@ -502,8 +520,11 @@ void RunPar_t::print_pars()
             this->latpar[0] << ',' << this->latpar[1] << ',' <<
             this->latpar[2] << ',' << this->latpar[3] << ',' <<
             this->latpar[4] << ',' << this->latpar[5] << '\n';
+        cout << "rmax=" << this->rmax << '\n';
     }
+    // distreuse
     cout << "distreuse=" << distreuse << '\n';
+    // tolcost
     cout << "tolcost=" << tolcost << '\n';
     // natoms
     cout << "natoms=" << natoms << '\n';
@@ -595,6 +616,7 @@ const list<string>& RunPar_t::validpars() const
         "ndim",
         "crystal",
         "latpar",
+        "rmax",
         "distreuse",
         "tolcost",
         "natoms",
