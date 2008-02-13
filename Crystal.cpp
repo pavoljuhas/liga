@@ -126,14 +126,14 @@ pair<double,double> Crystal::getRExtent() const
     double max_offcenter = 0.0;
     BOOST_FOREACH (Atom_t* ai, atoms)
     {
-        double ri = R3::norm(ai->r - center);
+        double ri = R3::distance(ai->r, center);
         if (ri > max_offcenter)     max_offcenter = ri;
     }
     // adjust for round-off errors, when not empty
     if (countAtoms() != 0)
     {
-        const double epsd = sqrt(DOUBLE_EPS);
-        max_offcenter = max_offcenter*(1.0 + epsd) + epsd;
+        using NS_LIGA::eps_distance;
+        max_offcenter = max_offcenter*(1.0 + eps_distance) + eps_distance;
     }
     double circum_diameter = 2*max_offcenter;
     return make_pair(_rmin - circum_diameter, _rmax + circum_diameter);
@@ -284,7 +284,7 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
     this->pmx_pair_counts(idx0, idx0) = diagpaircount;
     this->_count_pairs += diagpaircount;
     // take care of small round offs
-    if (this->Badness() < NS_LIGA::eps_badness)	this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
 }
 
 
@@ -304,7 +304,7 @@ void Crystal::removeAtomPairs(Atom_t* pa)
         // remove pair counts
         this->_count_pairs -= this->pmx_pair_counts(idx0, idx1);
     }
-    if (this->Badness() < NS_LIGA::eps_badness) this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
     assert(this->_count_pairs >= 0);
 }
 

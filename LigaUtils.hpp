@@ -19,7 +19,8 @@ const double DOUBLE_MAX = std::numeric_limits<double>().max();
 const double DOUBLE_EPS = std::numeric_limits<double>().epsilon();
 
 namespace NS_LIGA {
-const double eps_badness = sqrt(DOUBLE_EPS);
+const double eps_cost = sqrt(DOUBLE_EPS);
+const double eps_distance = sqrt(DOUBLE_EPS);
 }   // namespace NS_LIGA
 
 // functions
@@ -58,17 +59,17 @@ template<typename T> bool read_data(std::istream& fid, std::vector<T>& v);
 
 inline bool eps_eq(const double& x, const double& y)
 {
-    return fabs(x-y) < NS_LIGA::eps_badness;
+    return fabs(x-y) < NS_LIGA::eps_cost;
 }
 
 inline bool eps_gt(const double& x, const double& y)
 {
-    return x > y + NS_LIGA::eps_badness;
+    return x > y + NS_LIGA::eps_cost;
 }
 
 inline bool eps_lt(const double& x, const double& y)
 {
-    return x < y - NS_LIGA::eps_badness;
+    return x < y - NS_LIGA::eps_cost;
 }
 
 // fitness

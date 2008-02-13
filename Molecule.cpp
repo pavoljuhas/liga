@@ -688,7 +688,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	lo_abad = tbad;
 	ta = rta;
 	// get out if lo_abad is very low
-	if (lo_abad < NS_LIGA::eps_badness)     break;
+	if (lo_abad < NS_LIGA::eps_cost)    break;
 	// carry out relaxation otherwise
 	// define function to be minimized
 	gsl_multifit_function_fdf f;
@@ -725,7 +725,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	    // scale f_i with atom fitness
 	    // pj: test gradient or do a simplex search?
 	    gsl_multifit_gradient(lms->J, lms->f, G);
-	    status = gsl_multifit_test_gradient(G, NS_LIGA::eps_badness/tol_r);
+	    status = gsl_multifit_test_gradient(G, NS_LIGA::eps_cost/tol_r);
 //	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
 	}
 	while (status == GSL_CONTINUE && iter < maximum_iterations);
@@ -762,7 +762,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
 	pa->IncBadness(badnesshalf);
     }
     this->IncBadness(atomcost->totalCost());
-    if (this->Badness() < NS_LIGA::eps_badness)     this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_cost)     this->ResetBadness();
     // remember used distances in pmx_used_distances
     if (!getDistReuse())
     {
@@ -817,7 +817,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
             udst = 0.0;
         }
     }
-    if (this->Badness() < NS_LIGA::eps_badness)     this->ResetBadness();
+    if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
 }
 
 int Molecule::push_good_distances(
@@ -825,6 +825,7 @@ int Molecule::push_good_distances(
         const RandomWeighedGenerator& rwg,
         int ntrials)
 {
+    using NS_LIGA::eps_distance;
     if (!ntrials)   return 0;
     // add new atom in direction defined by 2 atoms
     if (countAtoms() == getMaxAtomCount())
@@ -839,7 +840,6 @@ int Molecule::push_good_distances(
 	emsg << "E: empty molecule, no way to push_good_distances()";
 	throw InvalidMolecule(emsg.str());
     }
-    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
@@ -849,7 +849,7 @@ int Molecule::push_good_distances(
 	// normalize direction if defined
 	bool lattice_direction;
 	double nm_direction = R3::norm(direction);
-	if (nm_direction > eps_d)
+	if (nm_direction > eps_distance)
 	{
 	    direction /= nm_direction;
 	    lattice_direction = true;
@@ -891,6 +891,7 @@ int Molecule::push_good_triangles(
         const RandomWeighedGenerator& rwg,
         int ntrials)
 {
+    using NS_LIGA::eps_distance;
     if (!ntrials)   return 0;
     // generate randomly oriented triangles
     if (countAtoms() == getMaxAtomCount())
@@ -905,7 +906,6 @@ int Molecule::push_good_triangles(
 	emsg << "E: molecule too small, triangulation not possible";
 	throw InvalidMolecule(emsg.str());
     }
-    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
@@ -919,14 +919,14 @@ int Molecule::push_good_triangles(
 	double r12 = dtbl[didx[1]];
 	double r01 = R3::distance(anch.B0, anch.B1);
 	// is triangle base reasonably large?
-	if (r01 < eps_d)  continue;
+	if (r01 < eps_distance)    continue;
 	// get and store both possible values of xlong
 	double xl0 = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
 	double xlong[2] = { xl0, r01-xl0 };
 	// get and store both possible values of xperp
 	double xp2 = r02*r02 - xlong[0]*xlong[0];
 	double xp = sqrt(fabs(xp2));
-	if (xp < eps_d)  xp = 0.0;
+	if (xp < eps_distance)  xp = 0.0;
 	else if (xp2 < 0.0)  continue;
 	double xperp[2] = { -xp, xp };
 	// find direction along triangle base:
@@ -942,7 +942,7 @@ int Molecule::push_good_triangles(
 	// normalize perpdir if defined
 	bool lattice_plane;
 	double nm_perpdir = R3::norm(perpdir);
-	if (nm_perpdir > eps_d)
+	if (nm_perpdir > eps_distance)
 	{
 	    perpdir /= nm_perpdir;
 	    lattice_plane = true;
@@ -988,6 +988,7 @@ int Molecule::push_good_pyramids(
         const RandomWeighedGenerator& rwg,
         int ntrials)
 {
+    using NS_LIGA::eps_distance;
     if (!ntrials)   return 0;
     if (countAtoms() == getMaxAtomCount())
     {
@@ -1001,7 +1002,6 @@ int Molecule::push_good_pyramids(
 	emsg << "E: molecule too small, cannot construct pyramid";
 	throw InvalidMolecule(emsg.str());
     }
-    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
     {
@@ -1024,7 +1024,7 @@ int Molecule::push_good_pyramids(
             R3::Vector uvi;
             uvi = anch.B1 - anch.B0;
 	    double r01 = R3::norm(uvi);
-	    if (r01 < eps_d)    continue;
+	    if (r01 < eps_distance)    continue;
 	    uvi /= r01;
 	    // v02 is B0B2 vector
             R3::Vector v02;
@@ -1033,7 +1033,7 @@ int Molecule::push_good_pyramids(
             R3::Vector uvj = v02;
 	    uvj -= uvi*R3::dot(uvi, uvj);
 	    double nm_uvj = R3::norm(uvj);
-	    if (nm_uvj < eps_d)  continue;
+	    if (nm_uvj < eps_distance)  continue;
 	    uvj /= nm_uvj;
 	    // uvk is a unit vector perpendicular to B0B1B2 plane
             R3::Vector uvk = R3::cross(uvi, uvj);
@@ -1054,10 +1054,10 @@ int Molecule::push_good_pyramids(
             R3::Vector P4;
 	    double h2 = r03*r03 - xP1*xP1;
 	    // does P4 belong to B0B1 line?
-	    if (fabs(h2) < eps_d)
+	    if (fabs(h2) < eps_distance)
 	    {
 		// is vertex on B0B1
-		if (fabs(R3::norm(P3) - r03) > eps_d)  continue;
+		if (fabs(R3::norm(P3) - r03) > eps_distance)   continue;
 		P4 = vT;
 		Atom_t ad3(P4);
 		ad3.ttp = SPATIAL;
@@ -1072,7 +1072,7 @@ int Molecule::push_good_pyramids(
 	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r23*r23);
 	    double z2P4 = h2 - yP4*yP4;
 	    // does P4 belong to B0B1B2 plane?
-	    if (fabs(z2P4) < eps_d)
+	    if (fabs(z2P4) < eps_distance)
 	    {
 		P4 = yP4*uvj + vT;
 		Atom_t ad3(P4);
@@ -1203,6 +1203,7 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 
 int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 {
+    using NS_LIGA::eps_distance;
     if (countAtoms() != 2)
     {
         ostringstream emsg;
@@ -1239,7 +1240,6 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	}
     }
     // define some constants and base atoms
-    const double eps_d = 10.0*sqrt(numeric_limits<double>().epsilon());
     int push_count = 0;
     Atom_t a0 = *atoms[0];
     Atom_t a1 = *atoms[1];
@@ -1271,19 +1271,15 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	double& r02 = *d0i;
 	double& r12 = *d1i;
 	// is triangle base reasonably large?
-	if (r01 < eps_d)
-	    continue;
+	if (r01 < eps_distance)     continue;
 	// calculate xlong
 	double xlong = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
 	// calculate xperp
 	double xp2 = r02*r02 - xlong*xlong;
 	double xperp = sqrt(fabs(xp2));
-	if (xperp < eps_d)
-	    xperp = 0.0;
-	else if (xp2 < 0.0)
-	    continue;
-	else if (randomInt(2) == 0)
-	    xperp = -xperp;
+	if (xperp < eps_distance)   xperp = 0.0;
+	else if (xp2 < 0.0)         continue;
+	else if (randomInt(2) == 0) xperp = -xperp;
 	// add atom
         R3::Vector Pn;
 	Pn = Pa0 + xlong*longdir + xperp*perpdir;
