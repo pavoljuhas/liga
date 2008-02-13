@@ -49,7 +49,7 @@ Tool ?= `defaultTool()`
 
 @if Tool == "intelcc":
     CXX = icpc
-    CXXFLAGS += -w1
+    CXXFLAGS += -w1 -fp-model precise
     ExtraDebug ?=
     ExtraOptim = -fast -axTW
 @else:
