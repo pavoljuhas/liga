@@ -148,7 +148,7 @@ ENDPYTHON
 Version.cpp : $VersionDeps
     target_file = $-target
     @if _no.VersionDeps:
-        :syseval svnversion -c | :assign svnrev
+        :syseval svnversion -c . | :assign svnrev
         svnrev = `svnrev.split(':')[-1]`
         :chmod {force} 644 $target
         :print >!$target `_no.getVersionCode(svnrev)`

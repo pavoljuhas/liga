@@ -227,7 +227,7 @@ void PointsInSphere::next_n()
 	    double RlineSquare = RplaneSquare - pow((n()-n0plane)/b2r,2);
 	    oHalfSpan = RlineSquare > 0.0 ? sqrt(RlineSquare)*c1r : 0.0;
 	    // parentheses improve round-off errors around [0,0,0]
-	    double RExclSquare = RminSquare + (RlineSquare - RmaxSquare);
+	    double RExclSquare = (RlineSquare - RmaxSquare) + RminSquare;
 	    oExclHalfSpan = RExclSquare > 0.0 ? sqrt(RExclSquare)*c1r : 0.0;
 	    this->_o = int(floor(o0line - oHalfSpan));
 	    outside_o = int(ceil(o0line + oHalfSpan));

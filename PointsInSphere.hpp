@@ -161,8 +161,8 @@ class PointsInSphere
 template <class L>
 PointsInSphere::PointsInSphere(double rmin, double rmax, const L& lat) :
     _Rmin(rmin), _Rmax(rmax),
-    _m(_mno[0]), _n(_mno[1]), _o(_mno[2]),
-    latpar(lat.a(), lat.b(), lat.c(), lat.alpha(), lat.beta(), lat.gamma())
+    latpar(lat.a(), lat.b(), lat.c(), lat.alpha(), lat.beta(), lat.gamma()),
+    _m(_mno[0]), _n(_mno[1]), _o(_mno[2])
 {
     init();
     rewind();
