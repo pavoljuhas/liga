@@ -41,9 +41,13 @@ const string& getAuthor()
 
 const string& getId()
 {
-    ostringstream idstrm;
-    idstrm << getRevision() << ' ' << getDate() << ' ' << getAuthor();
-    static const string sid = idstrm.str();
+    static string sid;
+    if (sid.empty())
+    {
+        ostringstream idstrm;
+        idstrm << getRevision() << ' ' << getDate() << ' ' << getAuthor();
+        sid = idstrm.str();
+    }
     return sid;
 }
 
