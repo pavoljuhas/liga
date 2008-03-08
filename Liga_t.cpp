@@ -74,14 +74,11 @@ Liga_t::Liga_t(RunPar_t* runpar) :
     vector<Division_t>(), rp(runpar), stopflag(NULL)
 {
     world_champ = NULL;
-    best_champ = NULL;
     setVerbose(rp->verbose);
 }
 
 Liga_t::~Liga_t()
 {
-    delete best_champ;
-    best_champ = NULL;
 }
 
 // Public methods
@@ -90,12 +87,11 @@ void Liga_t::prepare()
 {
     season = 0;
     clear();
-    world_champ = NULL;
-    delete best_champ;
-    best_champ = NULL;
-    printed_best_champ = false;
-    tdistributor.reset( TrialDistributor::create(rp) );
-    base_level = rp->base_level;
+    this->world_champ = NULL;
+    this->best_champ.reset(NULL);
+    this->printed_best_champ = false;
+    this->tdistributor.reset( TrialDistributor::create(rp) );
+    this->base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
     Division_t::ndim = rp->ndim;
     for (int lev = 0; lev <= rp->natoms; ++lev)
@@ -262,8 +258,8 @@ void Liga_t::printFramesTrace() const
     if (!rp->trace)	return;
     // needs clean up
     cout << "Trace - season level natoms cost id:\n";
-    list<TraceId_t>::iterator tii = best_champ->trace.begin();
-    for (; tii != best_champ->trace.end(); ++tii)
+    list<TraceId_t>::iterator tii = this->best_champ->trace.begin();
+    for (; tii != this->best_champ->trace.end(); ++tii)
     {
         cout << "TR " << tii->season <<
             ' ' << tii->level <<
@@ -399,19 +395,17 @@ Molecule* Liga_t::updateWorldChamp()
     return world_champ;
 }
 
-Molecule* Liga_t::updateBestChamp()
+void Liga_t::updateBestChamp()
 {
-    if (!world_champ)	return best_champ;
-    if ( best_champ && world_champ->countAtoms() == best_champ->countAtoms() &&
-	 !eps_lt(world_champ->cost(), best_champ->cost()) )
+    bool hasnewchamp =
+        this->world_champ && !this->best_champ.get() ||
+        this->world_champ->countAtoms() > this->best_champ->countAtoms() ||
+        eps_lt(this->world_champ->cost(), this->best_champ->cost());
+    if (hasnewchamp)
     {
-	return best_champ;
+        this->best_champ.reset(this->world_champ->clone());
+        this->printed_best_champ = false;
     }
-    // update needed here
-    if (!best_champ)	best_champ = world_champ->clone();
-    else		*best_champ = *world_champ;
-    printed_best_champ = false;
-    return best_champ;
 }
 
 void Liga_t::printWorldChamp()
@@ -425,9 +419,10 @@ void Liga_t::printBestChamp()
 {
     bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
     if (dontprint)	return;
-    cout << season << " BC " << best_champ->countAtoms() << ' '
-	<< best_champ->cost() << endl;
-    printed_best_champ = true;
+    cout << this->season << " BC " << 
+        this->best_champ->countAtoms() << ' '
+	<< this->best_champ->cost() << endl;
+    this->printed_best_champ = true;
 }
 
 void Liga_t::printLevelAverages()

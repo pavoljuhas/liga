@@ -79,7 +79,8 @@ class Liga_t : public std::vector<Division_t>
 	RunPar_t* rp;
 	int* stopflag;
 	int base_level;
-	PMOL world_champ, best_champ;
+	PMOL world_champ;
+        std::auto_ptr<Molecule> best_champ;
         bool printed_best_champ;
 	std::auto_ptr<TrialDistributor> tdistributor;
         std::vector<bool> verbose;
@@ -89,7 +90,7 @@ class Liga_t : public std::vector<Division_t>
 	void makeSeedClusters();
 	void shareSeasonTrials();
 	PMOL updateWorldChamp();
-	PMOL updateBestChamp();
+	void updateBestChamp();
 	void printWorldChamp();
 	void printBestChamp();
 	void printLevelAverages();
