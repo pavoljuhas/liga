@@ -76,7 +76,7 @@ class Molecule
 	virtual ~Molecule();
 
         // operators
-	Molecule& operator=(const Molecule&);	// assignment
+	virtual Molecule& operator=(const Molecule&);
         virtual Molecule* clone() const;        // create a clone
 
 	// methods - class registration and type info

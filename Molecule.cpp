@@ -1467,19 +1467,22 @@ int Molecule::getPairMatrixIndex()
 	set<int>::iterator firstfree = free_pmx_slots.begin();
 	idx = *firstfree;
 	free_pmx_slots.erase(firstfree);
-	return idx;
     }
-    // no free slots here
-    idx = atoms.size();
-    resizePairMatrices(idx);
+    else
+    {
+        // no free slots here
+        idx = atoms.size();
+        resizePairMatrices(idx + 1);
+    }
+    assert(idx < (int) this->pmx_partial_costs.rows());
     return idx;
 }
 
 void Molecule::resizePairMatrices(int sz)
 {
     int szcur = this->pmx_partial_costs.rows();
-    if (sz < szcur)     return;
-    int sznew1 = sz + 1;
+    if (sz <= szcur)    return;
+    int sznew1 = sz;
     int sznew2 = min(2*szcur, getMaxAtomCount());
     int sznew = max(sznew1, sznew2);
     assert(sznew <= getMaxAtomCount());

@@ -47,14 +47,22 @@ Crystal::Crystal(const Crystal& crs) : Molecule()
 Crystal::~Crystal()
 { }
 
+
 // public methods
+
+
+Crystal& Crystal::operator=(const Molecule& mol)
+{
+    const Crystal& crs = dynamic_cast<const Crystal&>(mol);
+    return operator=(crs);
+}
+
 
 Crystal& Crystal::operator=(const Crystal& crs)
 {
     if (this == &crs)   return *this;
-    // use base class copy
-    Molecule& molthis = *this;
-    molthis = crs;
+    // execute base assignment
+    Molecule::operator=(crs);
     // copy Crystal specific data
     this->_lattice = crs._lattice;
     this->_rmin = crs._rmin;
@@ -357,10 +365,8 @@ Crystal::getPyramidAnchor(const RandomWeighedGenerator& rwg)
 
 void Crystal::resizePairMatrices(int sz)
 {
-    int szcur = this->pmx_partial_costs.rows();
-    if (sz < szcur)     return;
     Molecule::resizePairMatrices(sz);
-    int sznew = this->pmx_partial_costs.rows();
+    size_t sznew = this->pmx_partial_costs.rows();
     this->pmx_pair_counts.resize(sznew, sznew, 0);
 }
 

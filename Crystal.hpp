@@ -35,6 +35,7 @@ class Crystal : public Molecule
 	virtual ~Crystal();
 
         // operators
+	virtual Crystal& operator=(const Molecule&);
 	Crystal& operator=(const Crystal&);
         virtual Molecule* clone() const;        // create a clone
 
