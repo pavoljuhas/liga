@@ -135,7 +135,14 @@ const int* Division_t::estimateTriangulations()
         double b = tot_triang[i] - acc_triang[i] + 1;
         pbtg[i] = randomBeta(a, b);
     }
-    size_t nd = min(ndim, level());
+    // nasty hack to fix triangulation probabilities for Crystal object
+    // Triangulation statistics should be moved to Molecule and Crystal.
+    // size_t nd = min(ndim, level());
+    size_t nd = ndim;
+    if (!this->empty() && this->front()->type() == MOLECULE)
+    {
+        nd = min(ndim, this->level());
+    }
     switch (nd) 
     {
         case 0:

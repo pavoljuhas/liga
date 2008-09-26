@@ -900,12 +900,6 @@ int Molecule::push_good_triangles(
 	emsg << "E: molecule too large for finding a new position";
 	throw InvalidMolecule(emsg.str());
     }
-    else if (countAtoms() < 2)
-    {
-        ostringstream emsg;
-	emsg << "E: molecule too small, triangulation not possible";
-	throw InvalidMolecule(emsg.str());
-    }
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
@@ -994,12 +988,6 @@ int Molecule::push_good_pyramids(
     {
         ostringstream emsg;
 	emsg << "E: molecule too large for finding a new position";
-	throw InvalidMolecule(emsg.str());
-    }
-    else if (countAtoms() < 3)
-    {
-        ostringstream emsg;
-	emsg << "E: molecule too small, cannot construct pyramid";
 	throw InvalidMolecule(emsg.str());
     }
     int push_count = 0;
