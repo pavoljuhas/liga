@@ -1595,9 +1595,9 @@ istream& Molecule::ReadXYZ(istream& fid)
 	throw IOError(emsg.str());
     }
     Clear();
-    for (vector<double>::iterator ii = vxyz.begin(); ii < vxyz.end();)
+    for (size_t i = 0; i + 2 < vxyz.size(); i += 3)
     {
-	Add(Atom_t(*ii++, *ii++, *ii++));
+	AddAt(vxyz[i], vxyz[i + 1], vxyz[i + 2]);
     }
     return fid;
 }
