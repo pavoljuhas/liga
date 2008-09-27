@@ -36,8 +36,7 @@ RunPar_t::RunPar_t(int argc, char* argv[])
 
 void RunPar_t::processArguments(int argc, char* argv[])
 {
-    char *short_options =
-	"p:hV";
+    const char* short_options = "p:hV";
     // parameters and options
     option long_options[] = {
 	{"parfile", 1, 0, 'p'},
@@ -107,12 +106,12 @@ void RunPar_t::processArguments(int argc, char* argv[])
         latpar = args->GetParVec<double>("latpar");
         if (latpar.size() != 6)
         {
-            char* emsg = "latpar must define 6 lattice parameters.";
+            const char* emsg = "latpar must define 6 lattice parameters.";
             throw ParseArgsError(emsg);
         }
         if (!this->crystal)
         {
-            char* emsg = "latpar has no sense when crystal=false.";
+            const char* emsg = "latpar has no sense when crystal=false.";
             throw ParseArgsError(emsg);
         }
     }
@@ -125,7 +124,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     }
     else if (args->ispar("rmax"))
     {
-        char* emsg = "rmax has no sense when crystal=false.";
+        const char* emsg = "rmax has no sense when crystal=false.";
         throw ParseArgsError(emsg);
     }
     // create empty molecule

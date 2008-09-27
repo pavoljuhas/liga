@@ -18,7 +18,7 @@ using namespace std;
 // class ParseArgs
 ////////////////////////////////////////////////////////////////////////
 
-ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
+ParseArgs::ParseArgs(int nargc, char* const nargv[]) :
     argc(nargc), argv(nargv)
 {
     optstring = NULL;
@@ -26,14 +26,14 @@ ParseArgs::ParseArgs(int nargc, char * const nargv[]) :
     init();
 }
 
-ParseArgs::ParseArgs(int nargc, char * const nargv[], char *noptstring) :
+ParseArgs::ParseArgs(int nargc, char* const nargv[], const char *noptstring) :
     argc(nargc), argv(nargv), optstring(noptstring)
 {
     longopts = NULL;
     init();
 }
 
-ParseArgs::ParseArgs(int nargc, char * const nargv[], char *noptstring,
+ParseArgs::ParseArgs(int nargc, char* const nargv[], const char *noptstring,
 	    const struct option *nlongopts) :
     argc(nargc), argv(nargv), optstring(noptstring), longopts(nlongopts)
 {

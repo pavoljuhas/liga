@@ -33,12 +33,12 @@ class ParseArgs
 public:
     // constructor
     ParseArgs(int nargc, char * const nargv[]);
-    ParseArgs(int nargc, char * const nargv[], char *optstring);
-    ParseArgs(int nargc, char * const nargv[], char *optstring,
+    ParseArgs(int nargc, char * const nargv[], const char *optstring);
+    ParseArgs(int nargc, char * const nargv[], const char *optstring,
 	    const struct option *longopts);
     int argc;
     char * const * argv;
-    char *optstring;
+    const char* optstring;
     const struct option *longopts;
     std::map<std::string,std::string> opts;
     std::map<std::string,std::string> pars;
