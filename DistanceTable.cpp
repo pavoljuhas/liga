@@ -13,12 +13,14 @@
 #include "DistanceTable.hpp"
 #include "Exceptions.hpp"
 #include "LigaUtils.hpp"
+#include "StringUtils.hpp"
 
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 // class DistanceTable
 ////////////////////////////////////////////////////////////////////////
+
 
 // constructors
 
@@ -43,6 +45,9 @@ DistanceTable::DistanceTable(const DistanceTable& d0)
     *this = d0;
 }
 
+
+// operators
+
 DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
     vector<double>& this_vector = *this;
@@ -60,6 +65,9 @@ DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
     resolution = d0.resolution;
     return *this;
 }
+
+
+// public methods
 
 DistanceTable::const_iterator
 DistanceTable::find_nearest(const double& dfind) const
@@ -120,6 +128,7 @@ void DistanceTable::setResolution(double res)
     count_unique = -1;
 }
 
+
 // private methods
 
 void DistanceTable::init()
@@ -141,21 +150,81 @@ void DistanceTable::init()
     sort(begin(), end());
 }
 
+void DistanceTable::readPWAFormat(istream& fid)
+{
+    vector<double> positions;
+    vector<double> widths;
+    vector<double> areas;
+    string line;
+    vector<string> words;
+    while (!fid.eof() && getline(fid, line))
+    {
+        split(line, words);
+        if (words.empty() || words[0][0] == '#')    continue;
+        istringstream istrs(line);
+        double p, w, a;
+        if (istrs >> p >> w >> a)
+        {
+            positions.push_back(p);
+            widths.push_back(w);
+            areas.push_back(a);
+        }
+        else
+        {
+            ostringstream emsg;
+            int line_start = int(fid.tellg()) - int(line.size());
+            emsg << "Invalid PWA format at file position " << line_start;
+            throw IOError(emsg.str());
+        }
+    }
+    // widths and areas are ignored
+    this->swap(positions);
+    this->init();
+}
+
+void DistanceTable::readSimpleFormat(istream& fid)
+{
+    vector<double> positions;
+    double x;
+    while (fid >> x)    positions.push_back(x);
+    this->swap(positions);
+    this->init();
+}
+
+
 // non-member operators
 
 istream& operator>>(istream& fid, DistanceTable& dstbl)
 {
-    vector<double> data_buffer;
-    // skip header
-    string word;
-    while (!fid.eof() && fid >> word && !word.empty() && word[0] == '#')
-    {}
-    istringstream wstrm(word);
-    double x;
-    if (wstrm >> x)     data_buffer.push_back(x);
-    while (fid >> x)    data_buffer.push_back(x);
-    dstbl.swap(data_buffer);
-    dstbl.init();
+    // skip any lines that do not start with number
+    istream::pos_type data_start = fid.tellg();
+    string line;
+    vector<string> pwa_marker;
+    split("#L position fwhm area", pwa_marker);
+    vector<string> words;
+    for (; !fid.eof() && getline(fid, line); data_start = fid.tellg())
+    {
+        split(line, words);
+        // check if we found marker of PWA file
+        if (words == pwa_marker)
+        {
+            dstbl.readPWAFormat(fid);
+            break;
+        }
+        // otherwise check if line starts with a number
+        if (!words.empty())
+        {
+            // check if the fi
+            istringstream wrd0(words[0]);
+            double x;
+            if (wrd0 >> x && wrd0.eof())
+            {
+                fid.seekg(data_start);
+                dstbl.readSimpleFormat(fid);
+                break;
+            }
+        }
+    }
     return fid;
 }
 

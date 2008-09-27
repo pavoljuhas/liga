@@ -47,6 +47,8 @@ class DistanceTable : public std::vector<double>
 
         // methods
         void init();
+        void readPWAFormat(std::istream&);
+        void readSimpleFormat(std::istream&);
 };
 
 // non-member operators

@@ -12,6 +12,7 @@
 #define STRINGUTILS_HPP_INCLUDED
 
 #include <string>
+#include <sstream>
 
 template<typename StrType, typename Sequence>
 std::string join(StrType sep, Sequence words)
@@ -40,6 +41,15 @@ std::string join(StrType sep, Iterator first, Iterator last)
 	joined += *w;
     }
     return joined;
+}
+
+template<typename Container>
+void split(const std::string& s, Container& words)
+{
+    std::istringstream istrs(s);
+    std::string w;
+    words.clear();
+    while (istrs >> w)  words.push_back(w);
 }
 
 
