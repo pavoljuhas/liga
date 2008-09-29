@@ -46,34 +46,34 @@ valarray<double> vdcross(const valarray<double>& v1, const valarray<double>& v2)
 
 // file utilities
 
-ofstream& mktempofstream(ofstream& out, char *writefile)
+ofstream& mktempofstream(ofstream& out, string& writefile)
 {
     const int max_attempts = 10;
-    char *pX = strstr(writefile, "XXXXXX");
-    if (!pX)
+    string::size_type pX = writefile.find("XXXXXX");
+    if (pX == string::npos)
     {
 	throw IOError("mktempofstream(): XXXXXX missing in filename");
     }
-    string alnum = "0123456789"
+    const string alnum = "0123456789"
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     for (int i = 0; ; ++i)
     {
 	// create random name
 	for (int j = 0; j < 6; ++j)
         {
-	    pX[j] = alnum[ rand() % alnum.size() ];
+	    writefile[pX + j] = alnum[rand() % alnum.size()];
         }
-	ifstream fid(writefile);
+	ifstream fid(writefile.c_str());
 	if (!fid)   break;
 	else        fid.close();
-	if ( !(i < max_attempts) )
+	if (i >= max_attempts)
         {
             const char* emsg = "mktempofstream(): max_attempts exceeded.";
 	    throw IOError(emsg);
         }
     }
     // we should have a good name here
-    out.open(writefile);
+    out.open(writefile.c_str());
     if (!out)
     {
 	ostringstream emsg;

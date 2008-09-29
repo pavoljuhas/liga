@@ -97,24 +97,6 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // figure out if we have Molecule or Crystal
     // crystal
     crystal = args->GetPar<bool>("crystal", false);
-    // latpar
-    latpar.resize(6);
-    latpar[0] = latpar[1] = latpar[2] = 1.0;
-    latpar[3] = latpar[4] = latpar[5] = 90.0;
-    if (args->ispar("latpar"))
-    {
-        latpar = args->GetParVec<double>("latpar");
-        if (latpar.size() != 6)
-        {
-            const char* emsg = "latpar must define 6 lattice parameters.";
-            throw ParseArgsError(emsg);
-        }
-        if (!this->crystal)
-        {
-            const char* emsg = "latpar has no sense when crystal=false.";
-            throw ParseArgsError(emsg);
-        }
-    }
     // rmax
     if (this->crystal)
     {
@@ -131,10 +113,9 @@ void RunPar_t::processArguments(int argc, char* argv[])
     if (this->crystal)
     {
         Crystal crst;
-        crst.setLattice( Lattice(latpar[0], latpar[1], latpar[2],
-                                 latpar[3], latpar[4], latpar[5]));
         crst.setRmax(this->rmax);
-        mol.reset(new Crystal(crst));
+        crst.setMaxAtomCount(0);
+        this->mol.reset(new Crystal(crst));
     }
     else
     {
@@ -145,8 +126,41 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // inistru
     if (args->ispar("inistru"))
     {
-	inistru = args->pars["inistru"];
-	mol->ReadXYZ(inistru.c_str());
+	this->inistru = args->pars["inistru"];
+	this->mol->ReadFile(inistru);
+        this->natoms = this->crystal ? this->mol->countAtoms() : 0;
+    }
+    // latpar
+    // must be processed after reading inistru, which may define lattice
+    latpar.resize(6);
+    if (this->crystal)
+    {
+        Crystal& crst = dynamic_cast<Crystal&>(*mol);
+        const Lattice& L = crst.getLattice();
+        latpar[0] = L.a();
+        latpar[1] = L.b();
+        latpar[2] = L.c();
+        latpar[3] = L.alpha();
+        latpar[4] = L.beta();
+        latpar[5] = L.gamma();
+    }
+    if (args->ispar("latpar"))
+    {
+        if (!this->crystal)
+        {
+            const char* emsg = "latpar has no sense when crystal=false.";
+            throw ParseArgsError(emsg);
+        }
+        latpar = args->GetParVec<double>("latpar");
+        if (latpar.size() != 6)
+        {
+            const char* emsg = "latpar must define 6 lattice parameters.";
+            throw ParseArgsError(emsg);
+        }
+        Lattice L(latpar[0], latpar[1], latpar[2],
+                latpar[3], latpar[4], latpar[5]);
+        Crystal& crst = dynamic_cast<Crystal&>(*mol);
+        crst.setLattice(L);
     }
     // outstru
     if (args->ispar("outstru"))
@@ -239,13 +253,8 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // natoms must be set after distreuse
     if (args->ispar("natoms"))
     {
-	natoms = args->GetPar<int>("natoms");
-	mol->setMaxAtomCount(natoms);
-    }
-    else if (this->crystal)
-    {
-        const char* emsg = "natoms must be specified when crystal=true.";
-        throw ParseArgsError(emsg);
+	this->natoms = args->GetPar<int>("natoms");
+	this->mol->setMaxAtomCount(natoms);
     }
     natoms = mol->getMaxAtomCount();
     // fixed_atoms must be set after inistru
@@ -441,7 +450,7 @@ void RunPar_t::print_pars()
     // inistru
     if (args->ispar("inistru"))
     {
-	cout << "inistru=" << inistru << '\n';
+	cout << "inistru=" << this->inistru << '\n';
     }
     // outstru
     if (args->ispar("outstru"))

@@ -382,6 +382,38 @@ boost::python::object Crystal::newDiffPyStructure()
     return stru;
 }
 
+void Crystal::setFromDiffPyStructure(boost::python::object stru)
+{
+    namespace python = boost::python;
+    boost::python::object lattice;
+    lattice = stru.attr("lattice");
+    double a, b, c, alpha, beta, gamma;
+    a = python::extract<double>(lattice.attr("a"));
+    b = python::extract<double>(lattice.attr("b"));
+    c = python::extract<double>(lattice.attr("c"));
+    alpha = python::extract<double>(lattice.attr("alpha"));
+    beta = python::extract<double>(lattice.attr("beta"));
+    gamma = python::extract<double>(lattice.attr("gamma"));
+    Lattice L(a, b, c, alpha, beta, gamma);
+    this->setLattice(L);
+    this->setMaxAtomCount(python::len(stru));
+    this->Molecule::setFromDiffPyStructure(stru);
+}
+
+
+// private class methods
+
+
+boost::shared_ptr<Lattice> Crystal::getDefaultLattice()
+{
+    static boost::shared_ptr<Lattice> default_lattice;
+    if (!default_lattice.get())
+    {
+        default_lattice.reset(new Lattice());
+    }
+    return default_lattice;
+}
+
 
 // private methods
 
@@ -390,6 +422,7 @@ void Crystal::init()
 {
     this->_rmin = 0.0;
     this->_rmax = 0.0;
+    this->_lattice = Crystal::getDefaultLattice();
     this->uncacheCostData();
     this->setDistReuse(true);
 }

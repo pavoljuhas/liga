@@ -42,7 +42,6 @@ class Molecule
 	friend class BondAngleFilter_t;
 	friend class LoneAtomFilter_t;
 	friend std::ostream& operator<<(std::ostream& os, Molecule& M);
-	friend std::istream& operator>>(std::istream& is, Molecule& M);
 
 	// class data
 	// fit parameters
@@ -127,8 +126,8 @@ class Molecule
 	void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
 
 	// IO functions
-	bool ReadXYZ(const char*); 	// read real coordinates
-	void WriteFile(const char*); 	// save in current output_format
+	void ReadFile(const std::string&);  // read from existing file
+	void WriteFile(const std::string&); // write to file
 	void PrintBadness() const;	// total and per-atomic badness
 	void PrintFitness();		// total and per-atomic fitness
 
@@ -180,6 +179,7 @@ class Molecule
 	bool check_atom_filters(Atom_t*);
         virtual void resizePairMatrices(int sz);
         virtual boost::python::object newDiffPyStructure();
+        virtual void setFromDiffPyStructure(boost::python::object);
 
     private:
 
@@ -198,13 +198,11 @@ class Molecule
 	void init();
 	int getPairMatrixIndex();
         void returnUsedDistances();
-	// IO helpers
-	std::istream& ReadXYZ(std::istream& fid);
-        std::string opened_file;
 };
 
 // non-member operators
 bool operator==(const Molecule& m1, const Molecule& m2);
+std::ostream& operator<<(std::ostream& os, const Molecule& M);
 
 class Molecule::ParseHeader
 {

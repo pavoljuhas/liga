@@ -78,6 +78,7 @@ class Crystal : public Molecule
             getPyramidAnchor(const RandomWeighedGenerator& rwg);
         virtual void resizePairMatrices(int sz);
         virtual boost::python::object newDiffPyStructure();
+        virtual void setFromDiffPyStructure(boost::python::object);
 
     private:
 
@@ -88,6 +89,9 @@ class Crystal : public Molecule
         mutable double _cost;
         mutable int _count_pairs;
         mutable bool _cost_data_cached;
+
+        // class methods
+        boost::shared_ptr<Lattice> getDefaultLattice();
 
         // methods
         void init();

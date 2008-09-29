@@ -45,7 +45,7 @@ template <typename Container>
 
 // file utilities
 // similar to mkstemp(3)
-std::ofstream& mktempofstream(std::ofstream& out, char *writefile);
+std::ofstream& mktempofstream(std::ofstream& out, std::string& writefile);
 bool read_header(std::istream& fid, std::string& header);
 bool read_header(std::istream& fid);
 template<typename T> bool read_data(std::istream& fid, std::vector<T>& v);

@@ -118,7 +118,6 @@ Molecule& Molecule::operator=(const Molecule& M)
     this->_badness = M._badness;
     this->_distreuse = M._distreuse;
     // IO helpers
-    opened_file = M.opened_file;
     trace = M.trace;
     return *this;
 }
@@ -344,19 +343,6 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
 
-bool operator==(const Molecule& m0, const Molecule& m1)
-{
-    if (&m0 == &m1)
-	return true;
-    if (m0.getMaxAtomCount() != m1.getMaxAtomCount())
-	return false;
-    AtomSequence seq0(&m0), seq1(&m1);
-    for (; !seq0.finished() && !seq1.finished() && *seq0.ptr() == *seq1.ptr();
-	    seq0.next(), seq1.next() )
-    { }
-    return seq0.finished() && seq1.finished();
-}
-
 void Molecule::setMaxAtomCount(int cnt)
 {
     if (cnt > this->_distance_table->estNumAtoms() && !getDistReuse())
@@ -366,7 +352,7 @@ void Molecule::setMaxAtomCount(int cnt)
             cnt << '.' << "  Forgot to set distreuse?";
 	throw InvalidMolecule(emsg.str());
     }
-    else if (cnt < 1)
+    else if (cnt < 0)
     {
 	ostringstream emsg;
 	emsg << "E: invalid value of max atom count = " << cnt;
@@ -1559,6 +1545,7 @@ template<typename T> bool Molecule::ParseHeader::read_token(
     return result;
 }
 
+/* FIXME: remove this
 istream& Molecule::ReadXYZ(istream& fid)
 {
     // read values to integer vector vxyz
@@ -1589,32 +1576,32 @@ istream& Molecule::ReadXYZ(istream& fid)
     }
     return fid;
 }
+*/
 
-bool Molecule::ReadXYZ(const char* file)
+void Molecule::ReadFile(const string& filename)
 {
-    // open file for reading
-    ifstream fid(file);
-    if (!fid)
-    {
-        ostringstream emsg;
-	emsg << "E: unable to read '" << file << "'";
-	throw IOError(emsg.str());
+    namespace python = boost::python;
+    try {
+        initializePython();
+        python::object stru = this->newDiffPyStructure();
+        python::call_method<void>(stru.ptr(), "read", filename);
+        this->setFromDiffPyStructure(stru);
     }
-    opened_file = file;
-    bool result = ReadXYZ(fid);
-    opened_file.clear();
-    fid.close();
-    return result;
+    catch (python::error_already_set) {
+        if (PyErr_Occurred())   PyErr_Print();
+        const char* emsg = "Cannot read structure.";
+        throw IOError(emsg);
+    }
 }
 
-void Molecule::WriteFile(const char* filename)
+void Molecule::WriteFile(const string& filename)
 {
     // invalid structure format can throw exception,
     // check if write operator works first
     ostringstream output;
     output << *this;
     // test if filename is writeable
-    ofstream fid(filename, ios_base::out|ios_base::ate);
+    ofstream fid(filename.c_str(), ios_base::out|ios_base::ate);
     if (!fid)
     {
 	ostringstream emsg;
@@ -1623,87 +1610,16 @@ void Molecule::WriteFile(const char* filename)
     }
     fid.close();
     // write via temporary file
-    int filelen = strlen(filename);
-    char writefile[filelen+6+1];
-    strcpy(writefile, filename);
-    memset(writefile+filelen, 'X', 6);
-    writefile[filelen+6] = '\0';
+    string writefile = filename + "XXXXXX";
     mktempofstream(fid, writefile);
     fid << output.str();
     fid.close();
-    rename(writefile, filename);
+    rename(writefile.c_str(), filename.c_str());
 }
 
 void Molecule::setOutputFormat(const std::string& format)
 {
     Molecule::output_format = format;
-}
-
-istream& operator>>(istream& fid, Molecule& M)
-{
-    string header;
-    istream::pos_type p = fid.tellg();
-    if( !read_header(fid, header) )
-    {
-	fid.setstate(ios_base::failbit);
-	return fid;
-    }
-    fid.seekg(p);
-    Molecule::ParseHeader ph(header);
-    if (!ph)
-    {
-	fid.setstate(ios_base::failbit);
-	return fid;
-    }
-    bool result = true;
-    switch (ph.format)
-    {
-	case Molecule::XYZ:
-	    result = M.ReadXYZ(fid);
-	    break;
-	case Molecule::ATOMEYE:
-	    throw runtime_error("reading of atomeye files not implemented");
-	    break;
-    }
-    if (!result)
-    {
-	fid.setstate(ios_base::failbit);
-    }
-    return fid;
-}
-
-ostream& operator<<(ostream& fid, Molecule& M)
-{
-    namespace python = boost::python;
-    try {
-        initializePython();
-        string element;
-        element = (Molecule::output_format == "rawxyz") ? "" : "C";
-        python::object stru = M.newDiffPyStructure();
-        typedef vector<Atom_t*>::iterator VPAit;
-        for (VPAit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
-        {
-            Atom_t& ai = **pai;
-            stru.attr("addNewAtom")(element);
-            python::object alast = stru.attr("getLastAtom")();
-            python::object xyz_cartn;
-            xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
-            alast.attr("xyz_cartn") = xyz_cartn;
-        }
-        string s;
-        s = python::call_method<string>(stru.ptr(),
-                "writeStr", Molecule::output_format);
-        fid << s;
-    }
-    catch (python::error_already_set) {
-        if (PyErr_Occurred())
-        {
-            PyErr_Print();
-        }
-        const char* emsg = "Cannot output structure.";
-        throw IOError(emsg);
-    }
-    return fid;
 }
 
 boost::python::object Molecule::newDiffPyStructure()
@@ -1712,6 +1628,25 @@ boost::python::object Molecule::newDiffPyStructure()
     python::object mstru = python::import("diffpy.Structure");
     python::object stru = mstru.attr("Structure")();
     return stru;
+}
+
+void Molecule::setFromDiffPyStructure(boost::python::object stru)
+{
+    namespace python = boost::python;
+    int num_atoms = python::len(stru);
+    this->Clear();
+    for (int i = 0; i != num_atoms; ++i)
+    {
+        python::object ai;
+        python::object xyz_cartn;
+        double x, y, z;
+        ai = python::call_method<python::object>(stru.ptr(), "getAtom", i);
+        xyz_cartn = ai.attr("xyz_cartn");
+        x = python::extract<double>(xyz_cartn[0]);
+        y = python::extract<double>(xyz_cartn[1]);
+        z = python::extract<double>(xyz_cartn[2]);
+        this->AddAt(x, y, z);
+    }
 }
 
 void Molecule::PrintBadness() const
@@ -1760,5 +1695,55 @@ void Molecule::PrintFitness()
     }
     cout << endl;
 }
+
+////////////////////////////////////////////////////////////////////////
+// non-member operators
+////////////////////////////////////////////////////////////////////////
+
+bool operator==(const Molecule& m0, const Molecule& m1)
+{
+    if (&m0 == &m1)
+	return true;
+    if (m0.getMaxAtomCount() != m1.getMaxAtomCount())
+	return false;
+    AtomSequence seq0(&m0), seq1(&m1);
+    for (; !seq0.finished() && !seq1.finished() && *seq0.ptr() == *seq1.ptr();
+	    seq0.next(), seq1.next() )
+    { }
+    return seq0.finished() && seq1.finished();
+}
+
+
+ostream& operator<<(ostream& fid, Molecule& M)
+{
+    namespace python = boost::python;
+    try {
+        initializePython();
+        string element;
+        element = (Molecule::output_format == "rawxyz") ? "" : "C";
+        python::object stru = M.newDiffPyStructure();
+        typedef vector<Atom_t*>::iterator VPAit;
+        for (VPAit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
+        {
+            Atom_t& ai = **pai;
+            stru.attr("addNewAtom")(element);
+            python::object alast = stru.attr("getLastAtom")();
+            python::object xyz_cartn;
+            xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
+            alast.attr("xyz_cartn") = xyz_cartn;
+        }
+        string s;
+        s = python::call_method<string>(stru.ptr(),
+                "writeStr", Molecule::output_format);
+        fid << s;
+    }
+    catch (python::error_already_set) {
+        if (PyErr_Occurred())   PyErr_Print();
+        const char* emsg = "Cannot output structure.";
+        throw IOError(emsg);
+    }
+    return fid;
+}
+
 
 // End of file
