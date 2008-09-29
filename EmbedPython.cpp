@@ -1,3 +1,4 @@
+#include <signal.h>
 #include "EmbedPython.hpp"
 
 using namespace std;
@@ -19,6 +20,8 @@ void initializePython()
     static char* py_argv[] = {arg0};
     Py_Initialize();
     PySys_SetArgv(py_argc, py_argv);
+    // Make sure Python does not eat SIGINT.
+    signal(SIGINT, SIG_DFL);
     is_initialized = true;
 }
 
