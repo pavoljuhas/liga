@@ -77,6 +77,7 @@ class Crystal : public Molecule
         virtual const TriangulationAnchor&
             getPyramidAnchor(const RandomWeighedGenerator& rwg);
         virtual void resizePairMatrices(int sz);
+        virtual boost::python::object newDiffPyStructure();
 
     private:
 

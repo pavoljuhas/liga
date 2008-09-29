@@ -23,6 +23,7 @@
 #include "Matrix.hpp"
 #include "Random.hpp"
 #include "TraceId_t.hpp"
+#include "EmbedPython.hpp"
 
 class AtomFilter_t;
 class AtomCost;
@@ -55,8 +56,7 @@ class Molecule
 	static double lookout_prob;
 
 	// class methods
-	static void OutFmtXYZ();	// output format for operator>>
-	static void OutFmtAtomEye();    // output format for operator>>
+        static void setOutputFormat(const std::string& format);
 
 	// data
         // unique identifier
@@ -128,9 +128,7 @@ class Molecule
 
 	// IO functions
 	bool ReadXYZ(const char*); 	// read real coordinates
-	bool WriteFile(const char*); 	// save in current output_format
-	bool WriteXYZ(const char*); 	// save real coordinates
-	bool WriteAtomEye(const char*);	// export in AtomEye format
+	void WriteFile(const char*); 	// save in current output_format
 	void PrintBadness() const;	// total and per-atomic badness
 	void PrintFitness();		// total and per-atomic fitness
 
@@ -145,6 +143,9 @@ class Molecule
             R3::Vector B2;
             int count;
         };
+
+        // class data
+        static std::string output_format;
 
         // data
         boost::shared_ptr<DistanceTable> _distance_table;
@@ -178,15 +179,13 @@ class Molecule
 		double evolve_range, double hi_abad);
 	bool check_atom_filters(Atom_t*);
         virtual void resizePairMatrices(int sz);
+        virtual boost::python::object newDiffPyStructure();
 
     private:
 
 	// types
 	enum file_fmt_type {XYZ = 1, ATOMEYE};
 	class ParseHeader;
-
-	// class data
-	static file_fmt_type output_format;
 
         // class methods
         static long getUniqueId();

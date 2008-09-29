@@ -370,6 +370,18 @@ void Crystal::resizePairMatrices(int sz)
     this->pmx_pair_counts.resize(sznew, sznew, 0);
 }
 
+boost::python::object Crystal::newDiffPyStructure()
+{
+    boost::python::object stru;
+    stru = this->Molecule::newDiffPyStructure();
+    const Lattice& L = this->getLattice();
+    boost::python::object lattice;
+    lattice = stru.attr("lattice");
+    boost::python::call_method<void>(lattice.ptr(), "setLatPar",
+            L.a(), L.b(), L.c(), L.alpha(), L.beta(), L.gamma());
+    return stru;
+}
+
 
 // private methods
 

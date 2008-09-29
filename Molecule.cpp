@@ -39,7 +39,7 @@ bool Molecule::promoterelax = false;
 bool Molecule::demoterelax = false;
 vector<AtomFilter_t*> Molecule::atom_filters;
 double Molecule::lookout_prob = 0.0;
-Molecule::file_fmt_type Molecule::output_format = XYZ;
+string Molecule::output_format = "rawxyz";
 
 // class methods
 
@@ -1607,56 +1607,36 @@ bool Molecule::ReadXYZ(const char* file)
     return result;
 }
 
-bool Molecule::WriteFile(const char* file)
+void Molecule::WriteFile(const char* filename)
 {
-    // test if file is writeable
-    ofstream fid(file, ios_base::out|ios_base::ate );
+    // invalid structure format can throw exception,
+    // check if write operator works first
+    ostringstream output;
+    output << *this;
+    // test if filename is writeable
+    ofstream fid(filename, ios_base::out|ios_base::ate);
     if (!fid)
     {
 	ostringstream emsg;
-	emsg << "WriteFile(): unable to write to '" << file << "'";
+	emsg << "WriteFile(): unable to write to '" << filename << "'";
 	throw IOError(emsg.str());
     }
     fid.close();
     // write via temporary file
-    int filelen = strlen(file);
+    int filelen = strlen(filename);
     char writefile[filelen+6+1];
-    strcpy(writefile, file);
+    strcpy(writefile, filename);
     memset(writefile+filelen, 'X', 6);
     writefile[filelen+6] = '\0';
     mktempofstream(fid, writefile);
-    bool result = (fid << *this);
+    fid << output.str();
     fid.close();
-    rename(writefile, file);
-    return result;
+    rename(writefile, filename);
 }
 
-bool Molecule::WriteXYZ(const char* file)
+void Molecule::setOutputFormat(const std::string& format)
 {
-    file_fmt_type org_ofmt = Molecule::output_format;
-    OutFmtXYZ();
-    bool result = WriteFile(file);
-    Molecule::output_format = org_ofmt;
-    return result;
-}
-
-bool Molecule::WriteAtomEye(const char* file)
-{
-    file_fmt_type org_ofmt = Molecule::output_format;
-    OutFmtAtomEye();
-    bool result = WriteFile(file);
-    Molecule::output_format = org_ofmt;
-    return result;
-}
-
-void Molecule::OutFmtXYZ()
-{
-    Molecule::output_format = XYZ;
-}
-
-void Molecule::OutFmtAtomEye()
-{
-    Molecule::output_format = ATOMEYE;
+    Molecule::output_format = format;
 }
 
 istream& operator>>(istream& fid, Molecule& M)
@@ -1694,74 +1674,44 @@ istream& operator>>(istream& fid, Molecule& M)
 
 ostream& operator<<(ostream& fid, Molecule& M)
 {
-    typedef vector<Atom_t*>::iterator VPAit;
-    VPAit afirst = M.atoms.begin();
-    VPAit alast = M.atoms.end();
-    switch (Molecule::output_format)
-    {
-	case Molecule::XYZ:
-	    for (VPAit pai = afirst; pai != alast; ++pai)
-	    {
-		fid <<
-		    (*pai)->r[0] << " " <<
-		    (*pai)->r[1] << " " <<
-		    (*pai)->r[2] << endl;
-	    }
-	    break;
-	case Molecule::ATOMEYE:
-	    double xyz_lo = 0.0;
-	    double xyz_hi = 1.0;
-	    double xyz_range = xyz_hi - xyz_lo;
-	    if (M.countAtoms() > 0)
-	    {
-		const double scale = 1.01;
-		list<double> xyz_extremes;
-                xyz_extremes.push_back(-M.maxTableDistance());
-                xyz_extremes.push_back(+M.maxTableDistance());
-		for (VPAit pai = afirst; pai != alast; ++pai)
-		{
-                    R3::Vector rsc = (*pai)->r * scale;
-                    xyz_extremes.insert(xyz_extremes.end(),
-                            rsc.data(), rsc.data() + 3);
-		}
-		// make atomeye happy
-		xyz_extremes.push_back(-1.75);
-		xyz_extremes.push_back(+1.75);
-		xyz_lo = *min_element(xyz_extremes.begin(), xyz_extremes.end());
-		xyz_hi = *max_element(xyz_extremes.begin(), xyz_extremes.end());
-		xyz_range = xyz_hi - xyz_lo;
-	    }
-	    double xyz_med = (xyz_hi + xyz_lo)/2.0;
-	    fid << "Number of particles = " << M.countAtoms() << endl;
-	    fid << "A = 1.0 Angstrom (basic length-scale)" << endl;
-	    fid << "H0(1,1) = " << xyz_range << " A" << endl;
-	    fid << "H0(1,2) = 0 A" << endl;
-	    fid << "H0(1,3) = 0 A" << endl;
-	    fid << "H0(2,1) = 0 A" << endl;
-	    fid << "H0(2,2) = " << xyz_range << " A" << endl;
-	    fid << "H0(2,3) = 0 A" << endl;
-	    fid << "H0(3,1) = 0 A" << endl;
-	    fid << "H0(3,2) = 0 A" << endl;
-	    fid << "H0(3,3) = " << xyz_range << " A" << endl;
-	    fid << ".NO_VELOCITY." << endl;
-	    // 4 entries: x, y, z, Uiso
-	    fid << "entry_count = 4" << endl;
-	    fid << "auxiliary[0] = abad [au]" << endl;
-	    fid << endl;
-	    // pj: now it only works for a single Carbon atom in the molecule
-	    fid << "12.0111" << endl;
-	    fid << "C" << endl;
-	    for (VPAit pai = afirst; pai != alast; ++pai)
-	    {
-		fid <<
-		    ((*pai)->r[0] - xyz_med) / xyz_range + 0.5 << " " <<
-		    ((*pai)->r[1] - xyz_med) / xyz_range + 0.5 << " " <<
-		    ((*pai)->r[2] - xyz_med) / xyz_range + 0.5 << " " <<
-		    (*pai)->Badness() << endl;
-	    }
-	    break;
+    namespace python = boost::python;
+    try {
+        initializePython();
+        string element;
+        element = (Molecule::output_format == "rawxyz") ? "" : "C";
+        python::object stru = M.newDiffPyStructure();
+        typedef vector<Atom_t*>::iterator VPAit;
+        for (VPAit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
+        {
+            Atom_t& ai = **pai;
+            stru.attr("addNewAtom")(element);
+            python::object alast = stru.attr("getLastAtom")();
+            python::object xyz_cartn;
+            xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
+            alast.attr("xyz_cartn") = xyz_cartn;
+        }
+        string s;
+        s = python::call_method<string>(stru.ptr(),
+                "writeStr", Molecule::output_format);
+        fid << s;
+    }
+    catch (python::error_already_set) {
+        if (PyErr_Occurred())
+        {
+            PyErr_Print();
+        }
+        const char* emsg = "Cannot output structure.";
+        throw IOError(emsg);
     }
     return fid;
+}
+
+boost::python::object Molecule::newDiffPyStructure()
+{
+    namespace python = boost::python;
+    python::object mstru = python::import("diffpy.Structure");
+    python::object stru = mstru.attr("Structure")();
+    return stru;
 }
 
 void Molecule::PrintBadness() const

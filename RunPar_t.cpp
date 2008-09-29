@@ -154,20 +154,8 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	outstru = args->pars["outstru"];
     }
     // outfmt
-    outfmt = args->GetPar<string>("outfmt", "xyz");
-    if (outfmt == "xyz")
-    {
-        Molecule::OutFmtXYZ();
-    }
-    else if (outfmt == "atomeye")
-    {
-        Molecule::OutFmtAtomEye();
-    }
-    else
-    {
-        const char* emsg = "Invalid value of outfmt parameter.";
-        throw ParseArgsError(emsg);
-    }
+    outfmt = args->GetPar<string>("outfmt", "rawxyz");
+    Molecule::setOutputFormat(outfmt);
     // saverate, saveall
     if (args->ispar("outstru"))
     {
@@ -389,7 +377,7 @@ void RunPar_t::print_help()
 "  distfile=FILE         target distance table\n"
 "  inistru=FILE          [empty] initial structure in Cartesian coordinates\n"
 "  outstru=FILE          where to save the best full molecule\n"
-"  outfmt=string         [xyz], atomeye - outstru file format\n"
+"  outfmt=string         [rawxyz], cif, discus,... - outstru file format\n"
 "  saverate=int          [0] rate of intermediate saves of outstru\n"
 "  saveall=bool          [false] save best molecules from all levels\n"
 "  frames=FILE           save intermediate structures to FILE.season\n"

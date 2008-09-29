@@ -15,7 +15,7 @@
 LigaSources +=
         AtomCost.cpp AtomCostCrystal.cpp AtomFilter_t.cpp 
         AtomSequence.cpp Atom_t.cpp Counter.cpp Crystal.cpp 
-        DistanceTable.cpp Division_t.cpp Lattice.cpp
+        DistanceTable.cpp Division_t.cpp EmbedPython.cpp Lattice.cpp
         LigaUtils.cpp Liga_t.cpp Molecule.cpp ParseArgs.cpp
         PointsInSphere.cpp R3linalg.cpp Random.cpp
         TrialDistributor.cpp
@@ -62,8 +62,12 @@ Tool ?= `defaultTool()`
     :syseval gsl-config --libs | :assign GSLLibs
     :syseval cppunit-config --cflags | :assign CPPUnitInclude
     :syseval cppunit-config --libs | :assign CPPUnitLibs
-    INCLUDE += $GSLInclude -I$*LocalInclude
-    LIBS += $GSLLibs
+    :syseval python-config --includes | :assign PythonInclude
+    :syseval python-config --libs | :assign PythonLibs
+    INCLUDE += $GSLInclude -I$*LocalInclude $PythonInclude
+    LIBS += $GSLLibs $PythonLibs
+    DEFINE += -DBOOST_PYTHON_DYNAMIC_LIB
+    LIBS += -lboost_python
 
 DEFAULTCHECK = time
 :attribute {check = c_md5} *.cpp *.hpp
