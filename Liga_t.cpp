@@ -453,7 +453,7 @@ void Liga_t::saveOutStru()
     static valarray<double> bestMcost(DOUBLE_MAX, size());
     ++savecnt;
     bool dontsave = rp->outstru.empty() || this->empty() ||
-	(!this->finished() && 0 < rp->saverate && savecnt < rp->saverate);
+	(!this->finished() && (rp->saverate == 0 || savecnt < rp->saverate));
     // get out if there is nothing to do
     if (dontsave)   return;
     // find the largest non-empty division
