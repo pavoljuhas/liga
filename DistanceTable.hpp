@@ -37,11 +37,11 @@ class DistanceTable : public std::vector<double>
         std::vector<double> unique() const;
         double getResolution() const;
         void setResolution(double res);
+        double maxDistance() const;
 
     private:
 
         // data
-        int est_num_atoms;
         mutable int count_unique;
         double resolution;
 

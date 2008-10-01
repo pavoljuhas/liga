@@ -132,6 +132,9 @@ Molecule* Molecule::clone() const
 
 void Molecule::init()
 {
+    static boost::shared_ptr<DistanceTable> 
+        empty_distance_table(new DistanceTable());
+    this->_distance_table = empty_distance_table;
     this->_badness = 0;
     this->_max_atom_count = -1;
     this->_distreuse = false;
@@ -157,8 +160,15 @@ void Molecule::setDistanceTable(const vector<double>& dvec)
 const DistanceTable& Molecule::getDistanceTable() const
 {
     assert(this->_distance_table.get() != NULL);
-    return *_distance_table;
+    return *(this->_distance_table);
 }
+
+DistanceTable Molecule::getDistanceTable()
+{
+    assert(this->_distance_table.get() != NULL);
+    return *(this->_distance_table);
+}
+
 
 void Molecule::setDistReuse(bool flag)
 {
@@ -173,14 +183,6 @@ bool Molecule::getDistReuse() const
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation
 //////////////////////////////////////////////////////////////////////////
-
-double Molecule::maxTableDistance() const
-{
-    bool hasdistance =
-        this->_distance_table.get() && !this->_distance_table->empty();
-    double mx = hasdistance ? this->_distance_table->back() : 0.0;
-    return mx;
-}
 
 void Molecule::recalculate() const
 {
@@ -345,7 +347,7 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 
 void Molecule::setMaxAtomCount(int cnt)
 {
-    if (cnt > this->_distance_table->estNumAtoms() && !getDistReuse())
+    if (cnt > getDistanceTable().estNumAtoms() && !getDistReuse())
     {
 	ostringstream emsg;
 	emsg << "E: not enough distances for max atom count = " <<
@@ -369,11 +371,12 @@ void Molecule::setMaxAtomCount(int cnt)
 
 int Molecule::getMaxAtomCount() const
 {
-    int cnt;
-    cnt = this->_max_atom_count < 0 ?
-        this->getDistanceTable().estNumAtoms() :
-        _max_atom_count;
-    return cnt;
+    if (this->_max_atom_count < 0)
+    {
+        this->_max_atom_count = this->getDistReuse() ?
+            0 : this->getDistanceTable().estNumAtoms();
+    }
+    return this->_max_atom_count;
 }
 
 void Molecule::Shift(double dx, double dy, double dz)

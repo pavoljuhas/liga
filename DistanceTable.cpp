@@ -60,7 +60,6 @@ DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
 {
     if (this == &d0)    return *this;
     assign(d0.begin(), d0.end());
-    est_num_atoms = d0.est_num_atoms;
     count_unique = d0.count_unique;
     resolution = d0.resolution;
     return *this;
@@ -87,7 +86,8 @@ DistanceTable::iterator DistanceTable::return_back(const double& dback)
 
 int DistanceTable::estNumAtoms() const
 {
-    return est_num_atoms;
+    double xn = ( 1.0 + sqrt(1.0 + 8.0*this->size()) )/2.0;
+    return int(xn);
 }
 
 int DistanceTable::countUnique() const
@@ -128,13 +128,18 @@ void DistanceTable::setResolution(double res)
     count_unique = -1;
 }
 
+double DistanceTable::maxDistance() const
+{
+    double mxd;
+    mxd = this->empty() ? 0.0 : this->back();
+    return mxd;
+}
+
 
 // private methods
 
 void DistanceTable::init()
 {
-    double xn = ( 1.0 + sqrt(1.0 + 8.0*size()) )/2.0;
-    est_num_atoms = int(xn);
     count_unique = -1;
     resolution = NS_LIGA::eps_cost;
     if (empty())    return;

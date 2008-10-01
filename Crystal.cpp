@@ -68,6 +68,7 @@ Crystal& Crystal::operator=(const Crystal& crs)
     this->_rmin = crs._rmin;
     this->_rmax = crs._rmax;
     this->_cost = crs._cost;
+    this->_full_distance_table = crs._full_distance_table;
     this->pmx_pair_counts = crs.pmx_pair_counts;
     this->_count_pairs = crs._count_pairs;
     this->_cost_data_cached = crs._cost_data_cached;
@@ -84,8 +85,9 @@ Molecule* Crystal::clone() const
 
 void Crystal::setDistanceTable(const DistanceTable& dtbl)
 {
-    DistanceTable dtblunique(dtbl.unique());
-    this->Molecule::setDistanceTable(dtblunique);
+    vector<double> dtbl_unique = dtbl.unique();
+    this->_full_distance_table.reset(new DistanceTable(dtbl_unique));
+    this->cropDistanceTable();
     this->uncacheCostData();
 }
 
@@ -113,12 +115,15 @@ const Lattice& Crystal::getLattice() const
 void Crystal::setRmax(double rmax)
 {
     this->_rmax = rmax;
+    this->cropDistanceTable();
     this->uncacheCostData();
 }
 
-const double& Crystal::getRmax() const
+double Crystal::getRmax() const
 {
-    return this->_rmax;
+    double rv = (this->_rmax > 0) ?
+        this->_rmax : this->_full_distance_table->maxDistance();
+    return rv;
 }
 
 // r-range extended by circum diameter of the primitive cell
@@ -144,7 +149,7 @@ pair<double,double> Crystal::getRExtent() const
     }
     double circum_diameter = 2*max_offcenter;
     double rextlo = 0.0 - circum_diameter;
-    double rexthi = this->_rmax + circum_diameter;
+    double rexthi = this->getRmax() + circum_diameter;
     return make_pair(rextlo, rexthi);
 }
 
@@ -423,6 +428,9 @@ void Crystal::init()
     this->_rmin = 0.0;
     this->_rmax = 0.0;
     this->_lattice = Crystal::getDefaultLattice();
+    this->_full_distance_table = this->Molecule::_distance_table;
+    // the default _distance_table should exist and be blank
+    assert(this->_full_distance_table.get());
     this->uncacheCostData();
     this->setDistReuse(true);
 }
@@ -438,6 +446,20 @@ void Crystal::uncacheCostData()
         this->pmx_pair_counts.fill(0);
         this->_cost_data_cached = true;
     }
+}
+
+
+void Crystal::cropDistanceTable()
+{
+    DistanceTable::const_iterator lo, hi;
+    lo = this->_full_distance_table->begin();
+    hi = upper_bound(this->_full_distance_table->begin(),
+            this->_full_distance_table->end(), this->getRmax());
+    vector<double> vcropped(lo, hi);
+    // Molecule::setDistanceTable must be passed DistanceTable
+    // otherwise there would be infinite loop.
+    DistanceTable dcropped(vcropped);
+    this->Molecule::setDistanceTable(dcropped);
 }
 
 

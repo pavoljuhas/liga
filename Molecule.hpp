@@ -86,6 +86,7 @@ class Molecule
         virtual void setDistanceTable(const DistanceTable&);
         void setDistanceTable(const std::vector<double>&);
         const DistanceTable& getDistanceTable() const;
+        DistanceTable getDistanceTable();
 
         virtual void setDistReuse(bool);
         bool getDistReuse() const;
@@ -101,7 +102,6 @@ class Molecule
 	virtual int countPairs() const;
 	int getMaxAtomCount() const;
 	void setMaxAtomCount(int cnt);
-	double maxTableDistance() const;
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
 
@@ -148,7 +148,7 @@ class Molecule
 
         // data
         boost::shared_ptr<DistanceTable> _distance_table;
-	int _max_atom_count;
+	mutable int _max_atom_count;
         std::vector<Atom_t*> atoms;	// vector of pointers to atoms
 	mutable SymmetricMatrix<double> pmx_partial_costs;
 	mutable SymmetricMatrix<double> pmx_used_distances;

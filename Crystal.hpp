@@ -51,7 +51,7 @@ class Crystal : public Molecule
         const Lattice& getLattice() const;
 
         void setRmax(double rmax);
-        const double& getRmax() const;
+        double getRmax() const;
         std::pair<double,double> getRExtent() const;
 
         virtual double cost() const;
@@ -64,6 +64,7 @@ class Crystal : public Molecule
     protected:
 
         // data
+        boost::shared_ptr<DistanceTable> _full_distance_table;
         mutable SymmetricMatrix<int> pmx_pair_counts;
 
         // methods
@@ -96,6 +97,7 @@ class Crystal : public Molecule
         // methods
         void init();
         void uncacheCostData();
+        void cropDistanceTable();
         const R3::Vector&
             anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const;
 
