@@ -97,23 +97,10 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // figure out if we have Molecule or Crystal
     // crystal
     crystal = args->GetPar<bool>("crystal", false);
-    // rmax
-    if (this->crystal)
-    {
-        this->rmax = args->ispar("rmax") ?
-            args->GetPar<double>("rmax") :
-            dtab.empty() ? 0.0 : dtab.back();
-    }
-    else if (args->ispar("rmax"))
-    {
-        const char* emsg = "rmax has no sense when crystal=false.";
-        throw ParseArgsError(emsg);
-    }
     // create empty molecule
     if (this->crystal)
     {
         Crystal crst;
-        crst.setRmax(this->rmax);
         crst.setMaxAtomCount(0);
         this->mol.reset(new Crystal(crst));
     }
@@ -161,6 +148,23 @@ void RunPar_t::processArguments(int argc, char* argv[])
                 latpar[3], latpar[4], latpar[5]);
         Crystal& crst = dynamic_cast<Crystal&>(*mol);
         crst.setLattice(L);
+    }
+    // rmax
+    if (args->ispar("rmax"))
+    {
+        if (!this->crystal)
+        {
+            const char* emsg = "rmax has no sense when crystal=false.";
+            throw ParseArgsError(emsg);
+        }
+        this->rmax = args->GetPar<double>("rmax");
+        Crystal& crst = dynamic_cast<Crystal&>(*mol);
+        crst.setRmax(rmax);
+    }
+    if (crystal)
+    {
+        Crystal& crst = dynamic_cast<Crystal&>(*mol);
+        this->rmax = crst.getRmax();
     }
     // outstru
     if (args->ispar("outstru"))
