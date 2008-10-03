@@ -1734,6 +1734,16 @@ ostream& operator<<(ostream& fid, Molecule& M)
             python::object xyz_cartn;
             xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
             alast.attr("xyz_cartn") = xyz_cartn;
+            alast.attr("cost") = ai.Badness();
+        }
+        // xcfg format can save atom cost as an auxiliary property
+        if (Molecule::output_format == "xcfg")
+        {
+            python::list auxiliaries;
+            auxiliaries.append("cost");
+            python::dict xcfg;
+            xcfg["auxiliaries"] = auxiliaries;
+            stru.attr("xcfg") = xcfg;
         }
         string s;
         s = python::call_method<string>(stru.ptr(),
