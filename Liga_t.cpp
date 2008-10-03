@@ -33,7 +33,6 @@ const vector<string> Liga_t::verbose_flags(verbose_flags_array,
 vector<bool> Liga_t::getDefaultVerbose()
 {
     vector<bool> default_verbose(VERBOSE_SIZE, false);
-    default_verbose[AD] = true;
     default_verbose[WC] = true;
     default_verbose[BC] = true;
     return default_verbose;
