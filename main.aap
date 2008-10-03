@@ -25,11 +25,6 @@ TestedSources +=
 
 Tests ?= `glob('Test*.cpp')`
 
-LocalInclude +=
-        $HOME/programs/include $HOME/include
-        /usr/local/include /u24/local/include
-LocalInclude = `[d for d in var2list(LocalInclude) if os.path.isdir(d)]`
-
 prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 Bdir ?= AAPDIR
@@ -64,10 +59,8 @@ Tool ?= `defaultTool()`
     :syseval cppunit-config --libs | :assign CPPUnitLibs
     :syseval python-config --includes | :assign PythonInclude
     :syseval python-config --libs | :assign PythonLibs
-    INCLUDE += $GSLInclude -I$*LocalInclude $PythonInclude
-    LIBS += $GSLLibs $PythonLibs
-    DEFINE += -DBOOST_PYTHON_DYNAMIC_LIB
-    LIBS += -lboost_python
+    INCLUDE += $GSLInclude $PythonInclude
+    LIBS += $GSLLibs $PythonLibs -lboost_python
 
 DEFAULTCHECK = time
 :attribute {check = c_md5} *.cpp *.hpp
