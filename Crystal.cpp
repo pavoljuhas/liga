@@ -120,6 +120,7 @@ void Crystal::setRmax(double rmax)
     this->_rmax = rmax;
     this->cropDistanceTable();
     this->uncacheCostData();
+    this->uncacheRExtent();
 }
 
 double Crystal::getRmax() const
@@ -144,24 +145,8 @@ pair<double,double> Crystal::getRExtent() const
 
 void Crystal::updateRExtent() const
 {
-    static list<R3::Vector> ucdiagonals;
-    if (ucdiagonals.empty())
-    {
-        ucdiagonals.push_back(R3::Vector(1, 0, 0));
-        ucdiagonals.push_back(R3::Vector(0, 1, 0));
-        ucdiagonals.push_back(R3::Vector(0, 0, 1));
-        ucdiagonals.push_back(R3::Vector(1, 1, 0));
-        ucdiagonals.push_back(R3::Vector(0, 1, 1));
-        ucdiagonals.push_back(R3::Vector(1, 0, 1));
-        ucdiagonals.push_back(R3::Vector(1, 1, 1));
-    }
-    double max_ucd = 0.0;
     const Lattice& lat = this->getLattice();
-    BOOST_FOREACH (R3::Vector ucd, ucdiagonals)
-    {
-        double norm_ucd = lat.norm(ucd);
-        if (norm_ucd > max_ucd)    max_ucd = norm_ucd;
-    }
+    double max_ucd = lat.ucMaxDiagonalLength();
     max_ucd = max_ucd*(1.0 + eps_distance) + eps_distance;
     // rmin is not defined
     double rmin = 0.0;

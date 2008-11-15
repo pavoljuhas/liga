@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <list>
 #include <stdexcept>
 #include "Lattice.hpp"
 
@@ -255,3 +256,46 @@ const R3::Matrix& Lattice::fractionalMatrix(const R3::Matrix& Mc) const
     return res;
 }
 
+
+R3::Vector Lattice::ucMaxDiagonal() const
+{
+    static list<R3::Vector> ucdiagonals;
+    if (ucdiagonals.empty())
+    {
+        ucdiagonals.push_back(R3::Vector(+1, +0, +0));
+        ucdiagonals.push_back(R3::Vector(+0, +1, +0));
+        ucdiagonals.push_back(R3::Vector(+0, +0, +1));
+        ucdiagonals.push_back(R3::Vector(+1, +1, +0));
+        ucdiagonals.push_back(R3::Vector(+1, -1, +0));
+        ucdiagonals.push_back(R3::Vector(+0, +1, +1));
+        ucdiagonals.push_back(R3::Vector(+0, +1, -1));
+        ucdiagonals.push_back(R3::Vector(+1, +0, +1));
+        ucdiagonals.push_back(R3::Vector(+1, +0, -1));
+        ucdiagonals.push_back(R3::Vector(+1, +1, +1));
+        ucdiagonals.push_back(R3::Vector(-1, +1, +1));
+        ucdiagonals.push_back(R3::Vector(+1, -1, +1));
+        ucdiagonals.push_back(R3::Vector(+1, +1, -1));
+    }
+    double maxnorm = -1;
+    list<R3::Vector>::iterator ucd;
+    list<R3::Vector>::iterator maxucd = ucdiagonals.end();
+    for (ucd = ucdiagonals.begin(); ucd != ucdiagonals.end(); ++ucd)
+    {
+        double normucd = this->norm(*ucd);
+        if (normucd > maxnorm)
+        {
+            maxnorm = normucd;
+            maxucd = ucd;
+        }
+    }
+    assert(maxucd != ucdiagonals.end());
+    return *maxucd;
+}
+
+
+double Lattice::ucMaxDiagonalLength() const
+{
+    R3::Vector ucmd = this->ucMaxDiagonal();
+    double res = this->norm(ucmd);
+    return res;
+}

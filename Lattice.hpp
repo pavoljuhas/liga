@@ -99,6 +99,9 @@ class Lattice
             const R3::Vector& ucvFractional(const V& lv) const;
         const R3::Matrix& cartesianMatrix(const R3::Matrix& Ml) const;
         const R3::Matrix& fractionalMatrix(const R3::Matrix& Mc) const;
+        // largest cell diagonal in fractional coordinates
+        R3::Vector ucMaxDiagonal() const;
+        double ucMaxDiagonalLength() const;
         // lattice related tensors
         // metrics tensor
         const R3::Matrix& metrics() const   { return _metrics; }
