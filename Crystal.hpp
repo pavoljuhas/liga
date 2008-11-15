@@ -84,19 +84,23 @@ class Crystal : public Molecule
     private:
 
 	// crystal specific data
-        boost::shared_ptr<Lattice> _lattice;
+        boost::shared_ptr<const Lattice> _lattice;
 	double _rmin;
 	double _rmax;
         mutable double _cost;
         mutable int _count_pairs;
         mutable bool _cost_data_cached;
+        mutable std::pair<double,double> _rextent;
+        mutable bool _rextent_cached;
 
         // class methods
         boost::shared_ptr<Lattice> getDefaultLattice();
 
         // methods
         void init();
-        void uncacheCostData();
+        void uncacheCostData() const;
+        void uncacheRExtent() const;
+        void updateRExtent() const;
         void cropDistanceTable();
         const R3::Vector&
             anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const;

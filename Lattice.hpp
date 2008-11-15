@@ -163,7 +163,8 @@ void Lattice::setLatBase(const V& va0, const V& vb0, const V& vc0)
 template <class V>
 inline double Lattice::dot(const V& u, const V& v) const
 {
-    double dp = u[0]*v[0]*_metrics(0,0) +
+    double dp =
+        u[0]*v[0]*_metrics(0,0) +
         u[1]*v[1]*_metrics(1,1) +
         u[2]*v[2]*_metrics(2,2) +
         (u[0]*v[1] + u[1]*v[0])*_metrics(0,1) +

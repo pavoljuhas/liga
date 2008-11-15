@@ -72,6 +72,8 @@ Crystal& Crystal::operator=(const Crystal& crs)
     this->pmx_pair_counts = crs.pmx_pair_counts;
     this->_count_pairs = crs._count_pairs;
     this->_cost_data_cached = crs._cost_data_cached;
+    this->_rextent = crs._rextent;
+    this->_rextent_cached = crs._rextent_cached;
     return *this;
 }
 
@@ -105,6 +107,7 @@ void Crystal::setLattice(const Lattice& lat)
 {
     _lattice.reset(new Lattice(lat));
     this->uncacheCostData();
+    this->uncacheRExtent();
 }
 
 const Lattice& Crystal::getLattice() const
@@ -126,32 +129,49 @@ double Crystal::getRmax() const
     return rv;
 }
 
+
 // r-range extended by circum diameter of the primitive cell
 pair<double,double> Crystal::getRExtent() const
 {
-    R3::Vector center(0.0, 0.0, 0.0);
-    BOOST_FOREACH (Atom_t* ai, atoms)
-    {
-        center += ai->r;
-    }
-    center /= countAtoms();
-    double max_offcenter = 0.0;
-    BOOST_FOREACH (Atom_t* ai, atoms)
-    {
-        double ri = R3::distance(ai->r, center);
-        if (ri > max_offcenter)     max_offcenter = ri;
-    }
-    // adjust for round-off errors, when not empty
-    if (countAtoms() != 0)
-    {
-        using NS_LIGA::eps_distance;
-        max_offcenter = max_offcenter*(1.0 + eps_distance) + eps_distance;
-    }
-    double circum_diameter = 2*max_offcenter;
-    double rextlo = 0.0 - circum_diameter;
-    double rexthi = this->getRmax() + circum_diameter;
-    return make_pair(rextlo, rexthi);
+    if (!this->_rextent_cached)     this->updateRExtent();
+    return this->_rextent;
 }
+
+
+// The equivalent unit cell vectors are mapped to fractional coordinates
+// from 0 <= xi < 1.  Due to round-off errors, some vectors can end very close
+// to 1.  Therefore the r-extent has to equal the largest diagonal in the cell.
+
+void Crystal::updateRExtent() const
+{
+    static list<R3::Vector> ucdiagonals;
+    if (ucdiagonals.empty())
+    {
+        ucdiagonals.push_back(R3::Vector(1, 0, 0));
+        ucdiagonals.push_back(R3::Vector(0, 1, 0));
+        ucdiagonals.push_back(R3::Vector(0, 0, 1));
+        ucdiagonals.push_back(R3::Vector(1, 1, 0));
+        ucdiagonals.push_back(R3::Vector(0, 1, 1));
+        ucdiagonals.push_back(R3::Vector(1, 0, 1));
+        ucdiagonals.push_back(R3::Vector(1, 1, 1));
+    }
+    double max_ucd = 0.0;
+    const Lattice& lat = this->getLattice();
+    BOOST_FOREACH (R3::Vector ucd, ucdiagonals)
+    {
+        double norm_ucd = lat.norm(ucd);
+        if (norm_ucd > max_ucd)    max_ucd = norm_ucd;
+    }
+    max_ucd = max_ucd*(1.0 + eps_distance) + eps_distance;
+    // rmin is not defined
+    double rmin = 0.0;
+    double rextlo = rmin - max_ucd;
+    double rexthi = this->getRmax() + max_ucd;
+    // cache the results
+    this->_rextent = make_pair(rextlo, rexthi);
+    this->_rextent_cached = true;
+}
+
 
 double Crystal::cost() const
 {
@@ -432,11 +452,12 @@ void Crystal::init()
     // the default _distance_table should exist and be blank
     assert(this->_full_distance_table.get());
     this->uncacheCostData();
+    this->uncacheRExtent();
     this->setDistReuse(true);
 }
 
 
-void Crystal::uncacheCostData()
+void Crystal::uncacheCostData() const
 {
     this->_cost_data_cached = false;
     if (countAtoms() == 0)
@@ -446,6 +467,12 @@ void Crystal::uncacheCostData()
         this->pmx_pair_counts.fill(0);
         this->_cost_data_cached = true;
     }
+}
+
+
+void Crystal::uncacheRExtent() const
+{
+    this->_rextent_cached = false;
 }
 
 
