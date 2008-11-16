@@ -262,15 +262,6 @@ R3::Vector Lattice::ucMaxDiagonal() const
     static list<R3::Vector> ucdiagonals;
     if (ucdiagonals.empty())
     {
-        ucdiagonals.push_back(R3::Vector(+1, +0, +0));
-        ucdiagonals.push_back(R3::Vector(+0, +1, +0));
-        ucdiagonals.push_back(R3::Vector(+0, +0, +1));
-        ucdiagonals.push_back(R3::Vector(+1, +1, +0));
-        ucdiagonals.push_back(R3::Vector(+1, -1, +0));
-        ucdiagonals.push_back(R3::Vector(+0, +1, +1));
-        ucdiagonals.push_back(R3::Vector(+0, +1, -1));
-        ucdiagonals.push_back(R3::Vector(+1, +0, +1));
-        ucdiagonals.push_back(R3::Vector(+1, +0, -1));
         ucdiagonals.push_back(R3::Vector(+1, +1, +1));
         ucdiagonals.push_back(R3::Vector(-1, +1, +1));
         ucdiagonals.push_back(R3::Vector(+1, -1, +1));
