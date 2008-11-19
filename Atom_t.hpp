@@ -11,6 +11,7 @@
 #ifndef ATOM_T_HPP_INCLUDED
 #define ATOM_T_HPP_INCLUDED
 
+#include <string>
 #include "R3linalg.hpp"
 
 // may be later moved to dedicated triangulation class
@@ -29,10 +30,13 @@ class Atom_t
         friend class Crystal;
 
         // constructors
-	Atom_t(double rx0, double ry0, double rz0, double bad0=0.0);
-        template <class V> Atom_t(const V& r0, double bad0=0.0);
+	Atom_t(const std::string& elsmbl,
+                double rx0, double ry0, double rz0, double bad0=0.0);
+        template <class V>
+            Atom_t(const std::string& elsmbl, const V& r0, double bad0=0.0);
 
         // data
+        const std::string element;
         R3::Vector r;
 	bool fixed;
 	triangulation_type ttp;
@@ -62,8 +66,8 @@ bool operator==(const Atom_t& a1, const Atom_t& a2);
 // template constructor
 
 template <class V>
-Atom_t::Atom_t(const V& r0, double bad0) :
-    fixed(false), ttp(LINEAR), _badness(bad0)
+Atom_t::Atom_t(const std::string& elsmbl, const V& r0, double bad0) :
+    element(elsmbl), fixed(false), ttp(LINEAR), _badness(bad0)
 {
     r = r0[0], r0[1], r0[2];
 }

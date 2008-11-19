@@ -19,8 +19,10 @@ using namespace std;
 
 // constructors
 
-Atom_t::Atom_t(double rx0, double ry0, double rz0, double bad0) :
-    fixed(false), ttp(LINEAR), _badness(bad0)
+Atom_t::Atom_t(const string& elsmbl,
+        double rx0, double ry0, double rz0,
+        double bad0) :
+    element(elsmbl), fixed(false), ttp(LINEAR), _badness(bad0)
 {
     r[0] = rx0;
     r[1] = ry0;
