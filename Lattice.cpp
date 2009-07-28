@@ -13,7 +13,6 @@
 #include "Lattice.hpp"
 
 using namespace std;
-using namespace blitz;
 
 ////////////////////////////////////////////////////////////////////////
 // helper functions

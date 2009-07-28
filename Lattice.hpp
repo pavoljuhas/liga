@@ -209,7 +209,7 @@ template <class V>
 inline const R3::Vector& Lattice::cartesian(const V& lv) const
 {
     static R3::Vector lvcopy;
-    lvcopy = lv[0], lv[1], lv[2];
+    lvcopy = double(lv[0]), double(lv[1]), double(lv[2]);
     return cartesian(lvcopy);
 }
 

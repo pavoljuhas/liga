@@ -8,6 +8,8 @@
 * <license text>
 ***********************************************************************/
 
+#include <cassert>
+
 #include "Division_t.hpp"
 #include "Molecule.hpp"
 #include "LigaUtils.hpp"
