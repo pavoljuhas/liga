@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <algorithm>
 #include <stdexcept>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>

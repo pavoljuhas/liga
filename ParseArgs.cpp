@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <algorithm>
 #include <fstream>
 #include "Exceptions.hpp"
 #include "ParseArgs.hpp"
@@ -211,17 +212,22 @@ bool check_backslash(string& s)
 
 istream& ParseArgs::ReadPars(istream& fid)
 {
-    const char *blank = " \t\r\n";
+    const char* blank = " \t\r\n";
+    // Configure a set of lines that terminate data reading.
+    // This allows to read parameters directly from a logfile.
+    static set<string> par_terminators;
+    if (par_terminators.empty())
+    {
+        par_terminators.insert("Initial team");
+    }
     string pline, fline;
     bool line_continues = false;
     for (int nr = 1; !fid.eof() && getline(fid, fline); ++nr)
     {
-	if (!line_continues)
-	    pline.clear();
 	line_continues = check_backslash(fline);
-	pline += fline;
-	if (line_continues)
-	    continue;
+	pline = line_continues ? (pline + fline) : fline;
+	if (line_continues)    continue;
+        if (par_terminators.count(pline))    break;
 	// here we should have complete pline
 	string::size_type lb, le;
 	lb = pline.find_first_not_of(blank);
@@ -325,28 +331,29 @@ void ParseArgs::do_getopt_long()
 
 void ParseArgs::arg_or_par(const char *s)
 {
-    char *peq = strchr(s, '=');
-    if (peq == NULL)
+    string a(s);
+    string::size_type peq = a.find('=');
+    if (peq == string::npos)
     {
-	args.push_back(s);
+	args.push_back(a);
 	return;
     }
     // here it looks like a parameter
-    bool ispar = isalpha(s[0]);
-    for (const char *p = s+1; ispar && p < peq; ++p)
+    string pname = a.substr(0, peq);
+    bool ispar = true;
+    for (string::iterator p = pname.begin(); ispar && p != pname.end(); ++p)
     {
 	ispar = isalnum(*p) || *p == '_';
     }
     if (ispar)
     {
-	string par0(s, peq-s);
-        string par = expandParameterAlias(par0);
-	pars[par] = string(peq+1);
-	cmdl_par.insert(par);
+        string parname = expandParameterAlias(pname);
+	pars[parname] = a.substr(peq + 1);
+	cmdl_par.insert(parname);
     }
     else
     {
-	args.push_back(s);
+	args.push_back(a);
     }
 }
 

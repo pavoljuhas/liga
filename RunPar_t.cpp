@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <cstdlib>
 #include <fstream>
 #include "RunPar_t.hpp"
 #include "Random.hpp"
@@ -212,6 +213,8 @@ void RunPar_t::processArguments(int argc, char* argv[])
 		tid.season = stp[i];
 		tid.level = stp[i+1];
 		tid.mol_id = stp[i+2];
+                tid.mol_natoms = 0;
+                tid.mol_norm_badness = 0.0;
 		framestrace.push_back(tid);
 	    }
 	}

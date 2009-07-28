@@ -29,6 +29,11 @@ double penalty(double dd)
     return dd*dd;
 }
 
+double penalty_gradient(double dd)
+{
+    return 2*dd;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // class AtomCost
@@ -55,19 +60,20 @@ void AtomCost::resetFor(const Molecule* m)
     }
 }
 
-double AtomCost::eval(const Atom_t& a)
+double AtomCost::eval(const Atom_t& a, int flags)
 {
-    return eval(&a);
+    return eval(&a, flags);
 }
 
-double AtomCost::eval(const Atom_t* pa)
+double AtomCost::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
-    arg_atom = pa;
+    this->arg_atom = pa;
+    this->_gradient_flag = flags & GRADIENT;
     // begin calculation
     resizeArrays();
     resetUseFlags();
-    resetLSQArrays();
+    resetGradient();
     total_cost = 0.0;
     vector<double>::iterator tgdii = target_distances.begin();
     vector<double>::iterator ptcii = partial_costs.begin();
@@ -92,16 +98,23 @@ double AtomCost::eval(const Atom_t* pa)
 	    useflag_indices.push_back(nearidx);
 	    useatom_indices.push_back(seq.idx());
 	}
-	if (apply_cutoff && total_cost + arg_atom->Badness() > cutoff_cost)
-	{
-	    break;
-	}
+        bool cutitoff = !this->_gradient_flag && this->apply_cutoff &&
+            this->total_cost + arg_atom->Badness() > this->cutoff_cost;
+	if (cutitoff)   break;
+        if (this->_gradient_flag && d > NS_LIGA::eps_distance)
+        {
+            static R3::Vector g_dd_xyz;
+            g_dd_xyz = (-1.0/d) * (arg_atom->r - seq.ptr()->r);
+            double g_pcost_dd = penalty_gradient(dd);
+            this->_gradient += g_pcost_dd * g_dd_xyz;
+        }
     }
     if (apply_cutoff && arg_atom->Badness() + total_cost < lowest_cost)
     {
 	lowest_cost = arg_atom->Badness() + total_cost;
 	cutoff_cost = min(cutoff_cost, lowest_cost + cutoff_range);
     }
+    this->_gradient_cached = this->_gradient_flag;
     return total_cost;
 }
 
@@ -167,66 +180,10 @@ const vector<int>& AtomCost::usedTargetAtomIndices() const
     return useatom_indices;
 }
 
-size_t AtomCost::lsqComponentsSize() const
+const R3::Vector& AtomCost::gradient()
 {
-    if (lsq_anchors.empty())	lsq_anchors = arg_cluster->atoms;
-    return lsq_anchors.size();
-}
-
-size_t AtomCost::lsqParametersSize() const
-{
-    return 3;
-}
-
-namespace {
-inline double sqrt_double(double x) { return sqrt(x); }
-}
-
-const vector<double>& AtomCost::lsqWeights() const
-{
-    if (!lsq_wt.empty())    return lsq_wt;
-    lsq_wt.resize(lsqComponentsSize());
-    vector<double>::iterator wtii = lsq_wt.begin();
-    for (AtomSequence seq(lsq_anchors); !seq.finished(); seq.next())
-    {
-	// assertion checks
-	assert(wtii < lsq_wt.end());
-	*(wtii++) = seq.ptr()->Badness();
-    }
-    lsq_wt = costToFitness(lsq_wt);
-    transform(lsq_wt.begin(), lsq_wt.end(), lsq_wt.begin(), sqrt_double);
-    return lsq_wt;
-}
-
-const vector<double>& AtomCost::lsqComponents() const
-{
-    if (!lsq_fi.empty())    return lsq_fi;
-    lsq_fi.resize(lsqComponentsSize());
-    lsq_di.resize(lsqComponentsSize());
-    vector<double>::iterator fii = lsq_fi.begin();
-    vector<double>::iterator dii = lsq_di.begin();
-    vector<double>::const_iterator tgdii = target_distances.begin();
-    vector<double>::const_iterator wtii = lsqWeights().begin();
-    for (AtomSequence seq(lsq_anchors); !seq.finished();
-	    seq.next(), ++fii, ++dii, ++tgdii, ++wtii)
-    {
-	assert(fii < lsq_fi.end());
-	assert(dii < lsq_di.end());
-	assert(tgdii < target_distances.end());
-	assert(wtii < lsq_wt.end());
-	*dii = R3::distance(arg_atom->r, seq.ptr()->r);
-	*fii = *wtii * (*tgdii - *dii);
-    }
-    return lsq_fi;
-}
-
-double AtomCost::lsqJacobianGet(size_t m, size_t n) const
-{
-    // make sure all lsq_vectors are cached
-    if (lsq_fi.empty())	    lsqComponents();
-    double Jmn;
-    Jmn = lsq_wt[m] * (lsq_anchors[m]->r[n] - arg_atom->r[n]) / lsq_di[m];
-    return Jmn;
+    assert(this->_gradient_cached);
+    return this->_gradient;
 }
 
 // protected methods
@@ -257,13 +214,10 @@ void AtomCost::resetUseFlags()
     useatom_indices.clear();
 }
 
-void AtomCost::resetLSQArrays()
+void AtomCost::resetGradient()
 {
-    if (lsq_anchors.empty())	return;
-    lsq_anchors.clear();
-    lsq_di.clear();
-    lsq_fi.clear();
-    lsq_wt.clear();
+    this->_gradient = 0.0;
+    this->_gradient_cached = false;
 }
 
 size_t AtomCost::nearDistanceIndex(const double& d) const

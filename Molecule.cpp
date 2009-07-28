@@ -10,9 +10,7 @@
 
 #include <sstream>
 #include <cassert>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_multifit_nlin.h>
+#include <gsl/gsl_multimin.h>
 #include "Molecule.hpp"
 #include "LigaUtils.hpp"
 #include "AtomFilter_t.hpp"
@@ -216,6 +214,15 @@ void Molecule::recalculate() const
     }
 }
 
+
+AtomCost* Molecule::getAtomCostCalculator() const
+{
+    static AtomCost the_acc(this);
+    the_acc.resetFor(this);
+    return &the_acc;
+}
+
+
 // Local helpers for Molecule::reassignPairs()
 
 namespace {
@@ -379,31 +386,25 @@ int Molecule::getMaxAtomCount() const
     return this->_max_atom_count;
 }
 
-void Molecule::Shift(double dx, double dy, double dz)
+void Molecule::Shift(const R3::Vector& drc)
 {
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
 	Atom_t* pa = seq.ptr();
-	pa->r[0] += dx;
-	pa->r[1] += dy;
-	pa->r[2] += dz;
+	pa->r += drc;
     }
 }
 
 void Molecule::Center()
 {
-    double avg_rx = 0.0, avg_ry = 0.0, avg_rz = 0.0;
+    R3::Vector avg_rc(0.0, 0.0, 0.0);
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
 	Atom_t* pa = seq.ptr();
-	avg_rx += pa->r[0];
-	avg_ry += pa->r[1];
-	avg_rz += pa->r[2];
+        avg_rc += pa->r;
     }
-    avg_rx /= countAtoms();
-    avg_ry /= countAtoms();
-    avg_rz /= countAtoms();
-    Shift(-avg_rx, -avg_ry, -avg_rz);
+    avg_rc /= countAtoms();
+    Shift(-avg_rc);
 }
 
 void Molecule::Pop(const int aidx)
@@ -587,60 +588,53 @@ bool Molecule::check_atom_filters(Atom_t* pa)
     return isgood;
 }
 
-struct rxa_par
-{
-    typedef vector<Atom_t*> VPA;
-    typedef valarray<double> VAD;
-    VPA* atoms;
-    VAD* ad0;
-    VAD* wt;
-};
+// GSL helper functions for RelaxExternalAtom
+namespace {
 
-int rxa_fdf(const gsl_vector* x, void* params, gsl_vector* f, gsl_matrix* J)
+template <class V> void copyGSLvector(const gsl_vector* src, V& dest)
 {
-    static Atom_t ta(0.0, 0.0, 0.0);
-    copy(x->data, x->data + x->size, ta.r.data());
-    AtomCost* atomcost = static_cast<AtomCost*>(params);
-    atomcost->eval(ta);
-    for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
+    for (size_t i = 0; i < src->size; i++)
     {
-	gsl_vector_set(f, m, atomcost->lsqComponents()[m]);
-	for (size_t n = 0; n != atomcost->lsqParametersSize(); ++n)
-	{
-	    gsl_matrix_set(J, m, n, atomcost->lsqJacobianGet(m, n));
-	}
+        dest[i] = gsl_vector_get(src, i);
     }
-    return GSL_SUCCESS;
 }
 
-int rxa_f(const gsl_vector* x, void* params, gsl_vector* f)
+template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
 {
-    static Atom_t ta(0.0, 0.0, 0.0);
-    copy(x->data, x->data + x->size, ta.r.data());
-    AtomCost* atomcost = static_cast<AtomCost*>(params);
-    atomcost->eval(ta);
-    for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
+    for (size_t i = 0; i < dest->size; i++)
     {
-	gsl_vector_set(f, m, atomcost->lsqComponents()[m]);
+        gsl_vector_set(dest, i, src[i]);
     }
-    return GSL_SUCCESS;
 }
 
-int rxa_df(const gsl_vector* x, void* params, gsl_matrix* J)
+AtomCost* rxa_atomcost = NULL;
+
+double rxa_f(const gsl_vector* x, void* params)
 {
     static Atom_t ta(0.0, 0.0, 0.0);
-    copy(x->data, x->data + x->size, ta.r.data());
-    AtomCost* atomcost = static_cast<AtomCost*>(params);
-    atomcost->eval(ta);
-    for (size_t m = 0; m != atomcost->lsqComponentsSize(); ++m)
-    {
-	for (size_t n = 0; n != atomcost->lsqParametersSize(); ++n)
-	{
-	    gsl_matrix_set(J, m, n, atomcost->lsqJacobianGet(m, n));
-	}
-    }
-    return GSL_SUCCESS;
+    copyGSLvector(x, ta.r);
+    double rv = rxa_atomcost->eval(ta);
+    return rv;
 }
+
+void rxa_df(const gsl_vector* x, void* params, gsl_vector* g)
+{
+    static Atom_t ta(0.0, 0.0, 0.0);
+    copyGSLvector(x, ta.r);
+    rxa_atomcost->eval(ta, AtomCost::GRADIENT);
+    copyGSLvector(rxa_atomcost->gradient(), g);
+}
+
+void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
+{
+    static Atom_t ta(0.0, 0.0, 0.0);
+    copyGSLvector(x, ta.r);
+    *f = rxa_atomcost->eval(ta, AtomCost::GRADIENT);
+    copyGSLvector(rxa_atomcost->gradient(), g);
+}
+
+}   // namespace
+
 
 void Molecule::RelaxAtom(const int cidx)
 {
@@ -660,10 +654,20 @@ void Molecule::RelaxAtom(const int cidx)
 
 void Molecule::RelaxExternalAtom(Atom_t& ta)
 {
+    // Configuration of the GSL multidimensional minimizer
+    // For details, see info pages
+    //     '(gsl-ref)Multidimensional Minimization'
+    //     '(gsl-ref)Initializing the Multidimensional Minimizer'
     const int maximum_relaxations = 20;
     const int maximum_iterations = 500;
+    const gsl_multimin_fdfminimizer_type* minimizer_type;
+    minimizer_type = gsl_multimin_fdfminimizer_vector_bfgs2;
+    const double minimizer_step = 1.0e-4;
+    const double minimizer_tol = 0.1;
+    const double minimizer_stop_gradient = eps_cost;
+    // FIXME: fix handling of ndim and remove this check.
     // pj: this seems to be crashing when countAtoms() < 3
-    if (countAtoms() < 3)   return;
+//    if (countAtoms() < 3)   return;
     // do relaxation on a copy of ta
     Atom_t rta(ta);
     // loop while badness is improved
@@ -680,56 +684,44 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	if (lo_abad < NS_LIGA::eps_cost)    break;
 	// carry out relaxation otherwise
 	// define function to be minimized
-	gsl_multifit_function_fdf f;
-	f.f = &rxa_f;
-	f.df = &rxa_df;
-	f.fdf = &rxa_fdf;
-	f.n = atomcost->lsqComponentsSize();
-	f.p = atomcost->lsqParametersSize();
-	f.params = static_cast<void*>(atomcost);
-	// bind rta coordinates to vector x
-	gsl_vector_view x = gsl_vector_view_array(rta.r.data(), 3);
-	// allocate solver
-	gsl_multifit_fdfsolver* lms = gsl_multifit_fdfsolver_alloc(
-		gsl_multifit_fdfsolver_lmsder, f.n, f.p);
-	gsl_multifit_fdfsolver_set(lms, &f, &x.vector);
-	// allocate vector for gradient test
-	gsl_vector* G = gsl_vector_alloc(3);
-	// minimize atom badness
-	int iter = 0, status;
-	do
-	{
-	    ++iter;
-	    status = gsl_multifit_fdfsolver_iterate(lms);
-	    if (status)
-	    {
-		if ( status != GSL_ETOLF && status != GSL_ETOLX &&
-			status != GSL_CONTINUE )
-		{
-		    cerr << "LM solver status = " << status << " " <<
-			gsl_strerror(status) << endl;
-		}
-		break;
-	    }
-	    // scale f_i with atom fitness
-	    // pj: test gradient or do a simplex search?
-	    gsl_multifit_gradient(lms->J, lms->f, G);
-	    status = gsl_multifit_test_gradient(G, NS_LIGA::eps_cost/tol_r);
-//	    status = gsl_multifit_test_delta(lms->dx, lms->x, tol_r, tol_r);
-	}
-	while (status == GSL_CONTINUE && iter < maximum_iterations);
-	for (int i = 0; i < 3; ++i)
-	    rta.r[i] = gsl_vector_get(lms->x, i);
-	gsl_vector_free(G);
-	gsl_multifit_fdfsolver_free(lms);
+	gsl_multimin_function_fdf fdfmin;
+        rxa_atomcost = atomcost;
+  	fdfmin.f = &rxa_f;
+	fdfmin.df = &rxa_df;
+	fdfmin.fdf = &rxa_fdf;
+        // FIXME handling of ndim
+	fdfmin.n = 3;
+	fdfmin.params = NULL;
+	// copy rta coordinates to vector x
+        gsl_vector* x = gsl_vector_alloc(3);
+        gsl_vector_set(x, 0, rta.r[0]);
+        gsl_vector_set(x, 1, rta.r[1]);
+        gsl_vector_set(x, 2, rta.r[2]);
+	// allocate minimizer
+	gsl_multimin_fdfminimizer* minimizer;
+        minimizer = gsl_multimin_fdfminimizer_alloc(minimizer_type, fdfmin.n);
+        gsl_multimin_fdfminimizer_set(minimizer,
+                &fdfmin, x, minimizer_step, minimizer_tol);
+	// iterate
+        int iter, status;
+        for (iter = 0; iter < maximum_iterations; ++iter)
+        {
+	    status = gsl_multimin_fdfminimizer_iterate(minimizer);
+	    if (status != GSL_SUCCESS)  break;
+            status = gsl_multimin_test_gradient(minimizer->gradient,
+                    minimizer_stop_gradient);
+            if (status == GSL_SUCCESS)  break;
+            if (status != GSL_CONTINUE) break;
+        }
+        // copy new coordinates to rta
+        for (int i = 0; i < 3; ++i)
+        {
+            rta.r[i] = gsl_vector_get(minimizer->x, i);
+        }
+        gsl_multimin_fdfminimizer_free(minimizer);
+        gsl_vector_free(x);
+        rxa_atomcost = NULL;
     }
-}
-
-AtomCost* Molecule::getAtomCostCalculator() const
-{
-    static AtomCost the_acc(this);
-    the_acc.resetFor(this);
-    return &the_acc;
 }
 
 void Molecule::addNewAtomPairs(Atom_t* pa)
@@ -1499,87 +1491,6 @@ void Molecule::returnUsedDistances()
 // Molecule IO functions
 ////////////////////////////////////////////////////////////////////////
 
-Molecule::ParseHeader::ParseHeader(const string& s) : header(s)
-{
-    // parse format
-    string fmt;
-    // initialize members:
-    state =
-	read_token("LIGA molecule format", fmt) &&
-	read_token("NAtoms", NAtoms);
-    if (!state)
-    {
-	if (read_token("Number of particles", NAtoms))
-	{
-	    format = ATOMEYE;
-	    fmt = "atomeye";
-	}
-	else
-	    return;
-    }
-    else if (fmt == "xyz")
-	format = XYZ;
-    else if (fmt == "atomeye")
-	format = ATOMEYE;
-    else
-    {
-	state = false;
-	return;
-    }
-}
-
-template<typename T> bool Molecule::ParseHeader::read_token(
-	const char* token, T& value
-	)
-{
-    const char* fieldsep = ":= ";
-    int ltoken = strlen(token);
-    string::size_type sp;
-    const string::size_type npos = string::npos;
-    if (
-	    npos == (sp = header.find(token)) ||
-	    npos == (sp = header.find_first_not_of(fieldsep, sp+ltoken))
-       )
-    {
-	return false;
-    }
-    istringstream istrs(header.substr(sp));
-    bool result = (istrs >> value);
-    return result;
-}
-
-/* FIXME: remove this
-istream& Molecule::ReadXYZ(istream& fid)
-{
-    // read values to integer vector vxyz
-    string header;
-    vector<double> vxyz;
-    bool result = read_header(fid, header) && read_data(fid, vxyz);
-    if (!result) return fid;
-    int vxyz_NAtoms = vxyz.size()/3;
-    // check how many numbers were read
-    ParseHeader ph(header);
-    if (ph && vxyz_NAtoms != ph.NAtoms)
-    {
-        ostringstream emsg;
-	emsg << "E: " << opened_file << ": expected " << ph.NAtoms <<
-	    " atoms, read " << vxyz_NAtoms;
-	throw IOError(emsg.str());
-    }
-    if ( vxyz.size() % 3 )
-    {
-        ostringstream emsg;
-	emsg << "E: " << opened_file << ": incomplete data";
-	throw IOError(emsg.str());
-    }
-    Clear();
-    for (size_t i = 0; i + 2 < vxyz.size(); i += 3)
-    {
-	AddAt(vxyz[i], vxyz[i + 1], vxyz[i + 2]);
-    }
-    return fid;
-}
-*/
 
 void Molecule::ReadFile(const string& filename)
 {
@@ -1596,6 +1507,7 @@ void Molecule::ReadFile(const string& filename)
         throw IOError(emsg);
     }
 }
+
 
 void Molecule::WriteFile(const string& filename)
 {
@@ -1625,7 +1537,48 @@ void Molecule::setOutputFormat(const std::string& format)
     Molecule::output_format = format;
 }
 
-boost::python::object Molecule::newDiffPyStructure()
+
+void Molecule::WriteStream(ostream& fid) const
+{
+    namespace python = boost::python;
+    try {
+        initializePython();
+        string element;
+        element = (Molecule::output_format == "rawxyz") ? "" : "C";
+        python::object stru = this->newDiffPyStructure();
+        for (AtomSequence seq(this); !seq.finished(); seq.next())
+        {
+            const Atom_t& ai = seq.ref();
+            stru.attr("addNewAtom")(element);
+            python::object alast = stru.attr("getLastAtom")();
+            python::object xyz_cartn;
+            xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
+            alast.attr("xyz_cartn") = xyz_cartn;
+            alast.attr("cost") = ai.Badness();
+        }
+        // xcfg format can save atom cost as an auxiliary property
+        if (Molecule::output_format == "xcfg")
+        {
+            python::list auxiliaries;
+            auxiliaries.append("cost");
+            python::dict xcfg;
+            xcfg["auxiliaries"] = auxiliaries;
+            stru.attr("xcfg") = xcfg;
+        }
+        string s;
+        s = python::call_method<string>(stru.ptr(),
+                "writeStr", Molecule::output_format);
+        fid << s;
+    }
+    catch (python::error_already_set) {
+        if (PyErr_Occurred())   PyErr_Print();
+        const char* emsg = "Cannot output structure.";
+        throw IOError(emsg);
+    }
+}
+
+
+boost::python::object Molecule::newDiffPyStructure() const
 {
     namespace python = boost::python;
     python::object mstru = python::import("diffpy.Structure");
@@ -1719,42 +1672,7 @@ bool operator==(const Molecule& m0, const Molecule& m1)
 
 ostream& operator<<(ostream& fid, Molecule& M)
 {
-    namespace python = boost::python;
-    try {
-        initializePython();
-        string element;
-        element = (Molecule::output_format == "rawxyz") ? "" : "C";
-        python::object stru = M.newDiffPyStructure();
-        typedef vector<Atom_t*>::iterator VPAit;
-        for (VPAit pai = M.atoms.begin(); pai != M.atoms.end(); ++pai)
-        {
-            Atom_t& ai = **pai;
-            stru.attr("addNewAtom")(element);
-            python::object alast = stru.attr("getLastAtom")();
-            python::object xyz_cartn;
-            xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
-            alast.attr("xyz_cartn") = xyz_cartn;
-            alast.attr("cost") = ai.Badness();
-        }
-        // xcfg format can save atom cost as an auxiliary property
-        if (Molecule::output_format == "xcfg")
-        {
-            python::list auxiliaries;
-            auxiliaries.append("cost");
-            python::dict xcfg;
-            xcfg["auxiliaries"] = auxiliaries;
-            stru.attr("xcfg") = xcfg;
-        }
-        string s;
-        s = python::call_method<string>(stru.ptr(),
-                "writeStr", Molecule::output_format);
-        fid << s;
-    }
-    catch (python::error_already_set) {
-        if (PyErr_Occurred())   PyErr_Print();
-        const char* emsg = "Cannot output structure.";
-        throw IOError(emsg);
-    }
+    M.WriteStream(fid);
     return fid;
 }
 

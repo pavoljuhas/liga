@@ -12,6 +12,7 @@
 #define ATOMCOST_HPP_INCLUDED
 
 #include <vector>
+#include "R3linalg.hpp"
 
 class Molecule;
 class Atom_t;
@@ -23,12 +24,15 @@ class Atom_t;
 // functions
 
 double penalty(double dd);
+double penalty_gradient(double dd);
 
 // classes 
 
 class AtomCost
 {
     public:
+
+	enum EvalFlag { NONE, GRADIENT=1 };
 
 	// constructor
 	AtomCost(const Molecule* m);
@@ -38,8 +42,9 @@ class AtomCost
 
 	// public methods
 	virtual void resetFor(const Molecule* m);
-	double eval(const Atom_t& pa);
-	virtual double eval(const Atom_t* pa);
+	double eval(const Atom_t& pa, int flags=NONE);
+	virtual double eval(const Atom_t* pa, int flags=NONE);
+        const R3::Vector& gradient();
 	double lowest() const;
 	double cutoff() const;
 	void setCutoff(double cf);
@@ -51,11 +56,6 @@ class AtomCost
 	const std::vector<double>& targetDistances() const;
 	const std::vector<int>& usedTargetDistanceIndices() const;
 	const std::vector<int>& usedTargetAtomIndices() const;
-	virtual size_t lsqComponentsSize() const;
-	size_t lsqParametersSize() const;
-	const std::vector<double>& lsqWeights() const;
-	const std::vector<double>& lsqComponents() const;
-	virtual double lsqJacobianGet(size_t m, size_t n) const;
 
     protected:
 
@@ -76,17 +76,16 @@ class AtomCost
 	std::vector<int> useflag_indices;
 	std::vector<int> useatom_indices;
 
-	// LSQ specific data
-	mutable std::vector<Atom_t*> lsq_anchors;   // anchor atoms
-	mutable std::vector<double> lsq_di;	    // model distances
-	mutable std::vector<double> lsq_fi;	    // LSQ components
-	mutable std::vector<double> lsq_wt;	    // weights
+        // optimizer specific data
+        bool _gradient_flag;
+        bool _gradient_cached;
+        R3::Vector _gradient;
 
 	// protected methods
         const std::vector<Atom_t*>& getClusterAtoms() const;
 	virtual void resizeArrays();
 	void resetUseFlags();
-	void resetLSQArrays();
+	void resetGradient();
 	size_t nearDistanceIndex(const double& d) const;
         double nearDistance(const double& d) const;
 

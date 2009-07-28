@@ -6,6 +6,7 @@
 * $Id$
 ***********************************************************************/
 
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <unistd.h>

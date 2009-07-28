@@ -58,16 +58,6 @@ template <class V>
 ////////////////////////////////////////////////////////////////////////
 
 
-inline Matrix transpose(const Matrix& A)
-{
-    Matrix res;
-    res = A(0,0), A(1,0), A(2,0),
-          A(0,1), A(1,1), A(2,1),
-          A(0,2), A(1,2), A(2,2);
-    return res;
-}
-
-
 template <class V>
 inline double norm(const V& u)
 {
@@ -147,5 +137,3 @@ bool VectorsAlmostEqual(const V& u, const V& v, double precision)
 }	// End of namespace R3
 
 #endif	// R3LINALG_HPP_INCLUDED
-
-// End of file

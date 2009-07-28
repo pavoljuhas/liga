@@ -43,15 +43,16 @@ void AtomCostCrystal::resetFor(const Molecule* clust)
     pair<double,double> rext = arg_cluster->getRExtent();
     _sph.reset(new PointsInSphere(rext.first, rext.second,
                 arg_cluster->getLattice()) );
-    this->_lsq_component_size = -1;
 }
 
-double AtomCostCrystal::eval(const Atom_t* pa)
+double AtomCostCrystal::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
-    arg_atom = pa;
+    this->arg_atom = pa;
+    this->_gradient_flag = flags & GRADIENT;
     // begin calculation
     resizeArrays();
+    resetGradient();
     vector<double>::iterator ptcii = this->partial_costs.begin();
     vector<int>::iterator pcntii = this->pair_counts.begin();
     // reset result data
@@ -71,7 +72,7 @@ double AtomCostCrystal::eval(const Atom_t* pa)
         *(pcntii++) = costcount.second;
         this->total_cost += costcount.first;
         this->total_pair_count += costcount.second;
-        bool cutitoff = this->apply_cutoff &&
+        bool cutitoff = !this->_gradient_flag && this->apply_cutoff &&
             this->total_cost + arg_atom->Badness() > this->cutoff_cost;
         if (cutitoff)   break;
     }
@@ -83,6 +84,7 @@ double AtomCostCrystal::eval(const Atom_t* pa)
         this->cutoff_cost =
             min(this->cutoff_cost, this->lowest_cost + this->cutoff_range);
     }
+    this->_gradient_cached = this->_gradient_flag;
     return this->totalCost();
 }
 
@@ -99,65 +101,6 @@ const vector<int>& AtomCostCrystal::pairCounts() const
 }
 
 
-size_t AtomCostCrystal::lsqComponentsSize() const
-{
-    if (_lsq_component_size < 0)
-    {
-        const char* emsg = "Undetermined number of LSQ components.";
-        throw runtime_error(emsg);
-    }
-    return size_t(_lsq_component_size);
-}
-
-const vector<double>& AtomCostCrystal::lsqComponents() const
-{
-    if (!lsq_fi.empty())    return lsq_fi;
-    lsq_fi.resize(lsqComponentsSize());
-    lsq_di.resize(lsqComponentsSize());
-    lsq_wt.resize(lsqComponentsSize());
-    _lsq_jacobian.resize(lsqComponentsSize(), lsqParametersSize());
-    const Lattice& lat = arg_cluster->getLattice();
-    // find corresponding atom site in the unit cell
-    R3::Vector aucv = lat.ucvCartesian(arg_atom->r);
-    int lsqidx = 0;
-    vector<double>::iterator fii = lsq_fi.begin();
-    vector<double>::iterator dii = lsq_di.begin();
-    vector<double>::iterator wtii = lsq_wt.begin();
-    for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
-    {
-        const Atom_t& a = seq.ref();
-        R3::Vector rc_dd;
-        double wt = sqrt(costToFitness(a.Badness()));
-        for (_sph->rewind(); !_sph->finished(); _sph->next())
-        {
-            rc_dd = a.r + lat.cartesian(_sph->mno()) - aucv;
-            double d = R3::norm(rc_dd);
-            // FIXME probably wrong
-            if (d > this->_rmax || d < NS_LIGA::eps_distance)   continue;
-            lsqidx++;
-            assert(fii < lsq_fi.end());
-            assert(dii < lsq_di.end());
-            assert(wtii < lsq_wt.end());
-            *(dii++) = d;
-            *(wtii++) = wt;
-            double dd = this->nearDistance(d) - d;
-            *(fii++) = wt * dd;
-            for (int j = 0; j < int(lsqParametersSize()); ++j)
-            {
-                _lsq_jacobian(lsqidx, j) = wt * (rc_dd[j]) / d;
-            }
-        }
-    }
-    return lsq_fi;
-}
-
-double AtomCostCrystal::lsqJacobianGet(size_t m, size_t n) const
-{
-    // make sure all lsq_vectors are cached
-    if (lsq_fi.empty())	    lsqComponents();
-    return _lsq_jacobian(int(m), int(n));
-}
-
 // public methods - specific
 
 // Evaluate cost of Cartesian separation between two sites
@@ -165,7 +108,7 @@ double AtomCostCrystal::lsqJacobianGet(size_t m, size_t n) const
 // This method also sets
 
 pair<double,int>
-AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero) const
+AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
 {
     const Lattice& lat = arg_cluster->getLattice();
     static R3::Vector ucv;
@@ -182,6 +125,13 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero) const
         double dd = this->nearDistance(d) - d;
         paircost += penalty(dd);
         paircount += 1;
+        if (this->_gradient_flag && d > NS_LIGA::eps_distance)
+        {
+            static R3::Vector g_dd_xyz;
+            g_dd_xyz = (-1.0/d) * rc_dd;
+            double g_pcost_dd = penalty_gradient(dd);
+            this->_gradient += g_pcost_dd * g_dd_xyz;
+        }
     }
     pair<double,int> rv(paircost, paircount);
     return rv;

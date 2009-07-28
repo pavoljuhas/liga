@@ -14,6 +14,7 @@
 
 #include "R3linalg.hpp"
 
+
 double R3::determinant(const R3::Matrix& A)
 {
     gsl_matrix* gA = gsl_matrix_alloc(R3::Ndim, R3::Ndim);
@@ -32,6 +33,7 @@ double R3::determinant(const R3::Matrix& A)
     gsl_matrix_free(gA);
     return det;
 }
+
 
 R3::Matrix R3::inverse(const R3::Matrix& A)
 {
@@ -53,3 +55,16 @@ R3::Matrix R3::inverse(const R3::Matrix& A)
     gsl_matrix_free(gA);
     return B;
 }
+
+
+R3::Matrix R3::transpose(const R3::Matrix& A)
+{
+    R3::Matrix res;
+    res = A(0,0), A(1,0), A(2,0),
+          A(0,1), A(1,1), A(2,1),
+          A(0,2), A(1,2), A(2,2);
+    return res;
+}
+
+
+// End of file

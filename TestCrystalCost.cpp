@@ -15,6 +15,7 @@
 #include "Lattice.hpp"
 #include "Crystal.hpp"
 #include "LigaUtils.hpp"
+#include "AtomCost.hpp"
 
 using namespace std;
 
@@ -26,11 +27,14 @@ class TestCrystalCost : public CppUnit::TestFixture
     CPPUNIT_TEST(test_bcc);
     CPPUNIT_TEST(test_fcc);
     CPPUNIT_TEST(test_fcc_rhomb);
+    CPPUNIT_TEST(test_gradient_bcc);
+    CPPUNIT_TEST(test_gradient_triclinic);
     CPPUNIT_TEST_SUITE_END();
 
 private:
 
     double double_eps;
+    double gradient_eps;
     Crystal crst;
     auto_ptr<Lattice> cubic;
     auto_ptr<Lattice> rhombohedral;
@@ -43,12 +47,13 @@ public:
     void setUp()
     {
 	double_eps = DOUBLE_EPS;
+	gradient_eps = 1e-6;
         crst.Clear();
         crst.setRmax(3.05);
         crst.setMaxAtomCount(4);
         // do the rest only once
-        cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
-        rhombohedral.reset(
+        if (!cubic.get())   cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
+        if (!rhombohedral.get())    rhombohedral.reset(
                 new Lattice(sqrt(0.5), sqrt(0.5), sqrt(0.5), 60, 60, 60));
         // distance data up to first distance over 3
         double cube_data[] = { 1.0, 1.41421356237, 1.73205080757, 2.0,
@@ -131,6 +136,62 @@ public:
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
+    }
+
+    R3::Vector analytical_gradient(const Atom_t& a0)
+    {
+        AtomCost* atomcost = crst.getAtomCostCalculator();
+        atomcost->eval(a0, AtomCost::GRADIENT);
+        R3::Vector grad = atomcost->gradient();
+        return grad;
+    }
+
+    R3::Vector numerical_gradient(const Atom_t& a0)
+    {
+        const double delta = 1e-8;
+        AtomCost* atomcost = crst.getAtomCostCalculator();
+        double ac0 = atomcost->eval(a0);
+        R3::Vector numgrad;
+        for (int i = 0; i < 3; ++i)
+        {
+            Atom_t a1 = a0;
+            a1.r[i] += delta;
+            double ac1 = atomcost->eval(a1);
+            numgrad[i] = (ac1 - ac0) / delta;
+        }
+        return numgrad;
+    }
+
+    void test_gradient_bcc()
+    {
+        crst.setLattice(*cubic);
+        crst.setDistanceTable(dst_bcc);
+        crst.AddAt(0.0, 0.0, 0.0);
+        Atom_t a1(0.5, 0.5, 0.5);
+        R3::Vector ga = analytical_gradient(a1);
+        R3::Vector gn = numerical_gradient(a1);
+        double gdiff = R3::distance(gn, ga);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, gdiff, gradient_eps);
+    }
+
+    void test_gradient_triclinic()
+    {
+        DistanceTable dst;
+        ifstream fid("crystals/triclinic.dst");
+        fid >> dst;
+        crst.setDistanceTable(dst);
+        crst.ReadFile("crystals/triclinic.stru");
+        Atom_t a1 = crst.getAtom(1);
+        crst.Pop(1);
+        R3::Vector ga = analytical_gradient(a1);
+        double ganorm = R3::norm(ga);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, ganorm, gradient_eps);
+        Atom_t a2(0.5, 0.5, 0.5);
+        R3::Vector gn;
+        ga = analytical_gradient(a2);
+        gn = numerical_gradient(a2);
+        double gdiff = R3::distance(gn, ga);
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, gdiff, gradient_eps);
     }
 
 };

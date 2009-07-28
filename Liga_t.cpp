@@ -397,7 +397,7 @@ Molecule* Liga_t::updateWorldChamp()
 void Liga_t::updateBestChamp()
 {
     bool hasnewchamp =
-        this->world_champ && !this->best_champ.get() ||
+        (this->world_champ && !this->best_champ.get()) ||
         this->world_champ->countAtoms() > this->best_champ->countAtoms() ||
         eps_lt(this->world_champ->cost(), this->best_champ->cost());
     if (hasnewchamp)
@@ -495,10 +495,10 @@ void Liga_t::saveFrames()
 	double cost;
     } saved = {0, NULL, 0, DOUBLE_MAX};
     bool dontsave = rp->frames.empty() || rp->framesrate == 0 ||
-	++saved.cnt < rp->framesrate && !finished() || empty() ||
-	world_champ == saved.champ &&
-        world_champ->countAtoms() == saved.level &&
-	eps_eq(world_champ->cost(), saved.cost);
+	(++saved.cnt < rp->framesrate && !finished()) || empty() ||
+        (world_champ == saved.champ &&
+         world_champ->countAtoms() == saved.level &&
+         eps_eq(world_champ->cost(), saved.cost));
     if (dontsave)    return;
     // need to do something here
     saved.cnt = 0;

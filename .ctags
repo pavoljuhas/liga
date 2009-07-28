@@ -1,2 +1,2 @@
---langmap=c++:.tmpl.hpp.cpp
+--langmap=c++:.tpl.hpp.cpp
 --exclude=Version.cpp

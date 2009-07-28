@@ -10,6 +10,8 @@
 
 #include <cassert>
 #include <map>
+#include <memory>
+#include <algorithm>
 #include "Random.hpp"
 
 using namespace std;

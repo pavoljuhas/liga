@@ -227,6 +227,25 @@ void Crystal::recalculate() const
 }
 
 
+AtomCost* Crystal::getAtomCostCalculator() const
+{
+    static AtomCostCrystal the_acc(this);
+    the_acc.resetFor(this);
+    return &the_acc;
+}
+
+
+void Crystal::Shift(const R3::Vector& drc)
+{
+    this->Molecule::Shift(drc);
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    {
+	Atom_t* pa = seq.ptr();
+  	pa->r = this->ucvCartesianAdjusted(pa->r);
+    }
+}
+
+
 void Crystal::Clear()
 {
     this->Molecule::Clear();
@@ -237,34 +256,28 @@ void Crystal::Clear()
 void Crystal::Add(const Atom_t& a)
 {
     Molecule::Add(a);
-    // shift to unit cell and take care of zero round-off
-    using NS_LIGA::eps_distance;
     Atom_t* pa = this->atoms.back();
-    const Lattice& lat = this->getLattice();
-    R3::Vector ucl, ucs0, ucs1;
-    ucl = lat.ucvFractional(lat.fractional(pa->r));
-    for (int i = 0; i != R3::Ndim; ++i)
-    {
-        ucs0 = ucs1 = ucl;
-        ucs0[i] = 0.0;
-        ucs1[i] = 1.0;
-        bool nearzero = 
-            lat.distance(ucl, ucs0) < eps_distance ||
-            lat.distance(ucl, ucs1) < eps_distance;
-        if (nearzero)   ucl[i] = 0.0;
-    }
-    pa->r = lat.cartesian(ucl);
+    // shift to unit cell and take care of zero round-off
+    pa->r = this->ucvCartesianAdjusted(pa->r);
+}
+
+
+const pair<int*,int*>& Crystal::Evolve(const int* est_triang)
+{
+    const pair<int*,int*>& acc_tot = this->Molecule::Evolve(est_triang);
+    this->shiftToOrigin();
+    return acc_tot;
+}
+
+
+void Crystal::Degenerate(int Npop)
+{
+    this->Molecule::Degenerate(Npop);
+    this->shiftToOrigin();
 }
 
 
 // protected methods
-
-AtomCost* Crystal::getAtomCostCalculator() const
-{
-    static AtomCostCrystal the_acc(this);
-    the_acc.resetFor(this);
-    return &the_acc;
-}
 
 void Crystal::addNewAtomPairs(Atom_t* pa)
 {
@@ -380,7 +393,8 @@ void Crystal::resizePairMatrices(int sz)
     this->pmx_pair_counts.resize(sznew, sznew, 0);
 }
 
-boost::python::object Crystal::newDiffPyStructure()
+
+boost::python::object Crystal::newDiffPyStructure() const
 {
     boost::python::object stru;
     stru = this->Molecule::newDiffPyStructure();
@@ -485,6 +499,39 @@ Crystal::anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const
     R3::Vector mno(randomInt(2), randomInt(2), randomInt(2));
     rv = this->atoms[idx]->r + getLattice().cartesian(mno);
     return rv;
+}
+
+
+// shift cartesian vector to unit cell and adjust fractional
+// coordinates that are very close to zero
+R3::Vector Crystal::ucvCartesianAdjusted(const R3::Vector& cv) const
+{
+    const Lattice& lat = this->getLattice();
+    R3::Vector ucl;
+    ucl = lat.ucvFractional(lat.fractional(cv));
+    R3::Vector ucs0, ucs1;
+    for (int i = 0; i != R3::Ndim; ++i)
+    {
+        ucs0 = ucs1 = ucl;
+        ucs0[i] = 0.0;
+        ucs1[i] = 1.0;
+        bool nearzero = 
+            lat.distance(ucl, ucs0) < NS_LIGA::eps_distance ||
+            lat.distance(ucl, ucs1) < NS_LIGA::eps_distance;
+        if (nearzero)   ucl[i] = 0.0;
+    }
+    R3::Vector res = lat.cartesian(ucl);
+    return res;
+}
+
+
+// Move first atom to the origin of the lattice coordinate system.
+void Crystal::shiftToOrigin()
+{
+    if (this->countAtoms() == 0)    return;
+    // make sure the first atom is at the origin
+    const R3::Vector rc0 = this->getAtom(0).r;
+    if (R3::norm(rc0) > NS_LIGA::eps_distance)  this->Shift(-rc0);
 }
 
 

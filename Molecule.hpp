@@ -104,14 +104,15 @@ class Molecule
 	void setMaxAtomCount(int cnt);
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
+	virtual AtomCost* getAtomCostCalculator() const;
 
 	// methods - molecule operations
-	void Shift(double dh, double dk, double dl);	// move all atoms
+	virtual void Shift(const R3::Vector& drc);  // cartesian shift
 	void Center();	  // center w/r to the center of mass
 
 	// atom operations
 	inline const Atom_t& getAtom(const int cidx) { return *(atoms[cidx]); }
-	void Pop(const int cidx);	// erase
+	void Pop(const int cidx);
 	void Pop(const std::list<int>& cidx);
 	virtual void Clear();		// remove all atoms
 	void AddAt(double rx0, double ry0, double rz0);
@@ -122,8 +123,8 @@ class Molecule
 	int NFixed() const;		// count fixed atoms
 	void RelaxAtom(const int cidx);	// relax internal atom
 	void RelaxExternalAtom(Atom_t& a);
-        const std::pair<int*,int*>& Evolve(const int* est_triang);
-	void Degenerate(int Npop=1);	// Pop Npop atoms with abad[i] weight
+        virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
+	virtual void Degenerate(int Npop=1);
 
 	// IO functions
 	void ReadFile(const std::string&);  // read from existing file
@@ -156,7 +157,6 @@ class Molecule
 	mutable double _badness;	// molecular badness
 
 	// methods
-	virtual AtomCost* getAtomCostCalculator() const;
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
 	int push_good_distances(AtomArray& vta,
@@ -178,14 +178,11 @@ class Molecule
 		double evolve_range, double hi_abad);
 	bool check_atom_filters(Atom_t*);
         virtual void resizePairMatrices(int sz);
-        virtual boost::python::object newDiffPyStructure();
+	void WriteStream(std::ostream&) const;
+        virtual boost::python::object newDiffPyStructure() const;
         virtual void setFromDiffPyStructure(boost::python::object);
 
     private:
-
-	// types
-	enum file_fmt_type {XYZ = 1, ATOMEYE};
-	class ParseHeader;
 
         // class methods
         static long getUniqueId();
@@ -203,18 +200,5 @@ class Molecule
 // non-member operators
 bool operator==(const Molecule& m1, const Molecule& m2);
 std::ostream& operator<<(std::ostream& os, const Molecule& M);
-
-class Molecule::ParseHeader
-{
-public:
-    ParseHeader(const std::string& s);
-    int NAtoms;
-    file_fmt_type format;
-    operator bool() {return state;}
-private:
-    bool state;
-    template<typename T> bool read_token(const char* token, T& value);
-    const std::string& header;
-};
 
 #endif	// MOLECULE_HPP_INCLUDED

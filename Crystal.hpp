@@ -57,9 +57,14 @@ class Crystal : public Molecule
         virtual double cost() const;
 	virtual int countPairs() const;
         virtual void recalculate() const;
+        virtual AtomCost* getAtomCostCalculator() const;
+
+	virtual void Shift(const R3::Vector& drc);
 
 	virtual void Clear();
 	virtual void Add(const Atom_t& a);  // add single atom
+        virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
+	virtual void Degenerate(int Npop=1);
 
     protected:
 
@@ -68,7 +73,6 @@ class Crystal : public Molecule
         mutable SymmetricMatrix<int> pmx_pair_counts;
 
         // methods
-        virtual AtomCost* getAtomCostCalculator() const;
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
         virtual const TriangulationAnchor&
@@ -78,7 +82,7 @@ class Crystal : public Molecule
         virtual const TriangulationAnchor&
             getPyramidAnchor(const RandomWeighedGenerator& rwg);
         virtual void resizePairMatrices(int sz);
-        virtual boost::python::object newDiffPyStructure();
+        virtual boost::python::object newDiffPyStructure() const;
         virtual void setFromDiffPyStructure(boost::python::object);
 
     private:
@@ -104,7 +108,8 @@ class Crystal : public Molecule
         void cropDistanceTable();
         const R3::Vector&
             anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const;
-
+        R3::Vector ucvCartesianAdjusted(const R3::Vector& cv) const;
+        void shiftToOrigin();
 };
 
 

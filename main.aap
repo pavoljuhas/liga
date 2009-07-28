@@ -45,6 +45,7 @@ Tool ?= `defaultTool()`
 @if Tool == "intelcc":
     CXX = icpc
     CXXFLAGS += -w1 -fp-model precise
+    LIBS += -limf
     ExtraDebug ?=
     ExtraOptim = -fast -axTW
 @else:
@@ -116,7 +117,7 @@ all \
 # Version.cpp - definition of SVN version
 ########################################################################
 
-VersionTemplate = Version.tmpl
+VersionTemplate = Version.tpl
 VersionDeps =
 @if os.path.isfile('.svn/entries'):
     VersionDeps += .svn/entries $VersionTemplate
