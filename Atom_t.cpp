@@ -8,7 +8,7 @@
 * <license text>
 ***********************************************************************/
 
-#include "Counter.hpp"
+#include "LigaUtils.hpp"
 #include "Atom_t.hpp"
 
 using namespace std;
@@ -20,13 +20,9 @@ using namespace std;
 // constructors
 
 Atom_t::Atom_t(const string& elsmbl,
-        double rx0, double ry0, double rz0,
-        double bad0) :
-    element(elsmbl), fixed(false), ttp(LINEAR), _badness(bad0)
+        double rx, double ry, double rz) : element(elsmbl)
 {
-    r[0] = rx0;
-    r[1] = ry0;
-    r[2] = rz0;
+    this->init(rx, ry, rz);
 }
 
 // public methods
@@ -38,7 +34,7 @@ const double& Atom_t::Badness() const
 
 double Atom_t::FreeBadness() const
 {
-    double rv = fixed ? 0.0 : this->Badness();
+    double rv = this->fixed ? 0.0 : this->Badness();
     return rv;
 }
 
@@ -50,7 +46,8 @@ void Atom_t::IncBadness(const double& db)
 void Atom_t::DecBadness(const double& db)
 {
     this->_badness -= db;
-    if (this->_badness < 0.0)	this->ResetBadness();
+    // take care of round-off errors
+    if (this->_badness < NS_LIGA::eps_cost)     this->ResetBadness(0.0);
 }
 
 void Atom_t::ResetBadness(double b)
@@ -58,11 +55,23 @@ void Atom_t::ResetBadness(double b)
     this->_badness = b;
 }
 
+// private methods
+
+void Atom_t::init(double rx, double ry, double rz)
+{
+    this->r = rx, ry, rz;
+    this->fixed = false;
+    this->ttp = LINEAR;
+    this->ResetBadness(0.0);
+}
+
 // non-member operators and functions
 
 bool operator==(const Atom_t& a1, const Atom_t& a2)
 {
-    return equal(a1.r.data(), a1.r.data() + 3, a2.r.data());
+    bool rv = (a1.element == a2.element &&
+            equal(a1.r.data(), a1.r.data() + 3, a2.r.data()));
+    return rv;
 }
 
 // End of file
