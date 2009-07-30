@@ -98,14 +98,6 @@ all \
 {var_LD = $CXX} :
     gizaliga.cpp RunPar_t.cpp Version.cpp $LigaSources
 
-:program mcfitdist \
-{comment = MC shuffling of atoms} :
-    mcfitdist.cpp $LigaSources
-
-:program relaxatoms \
-{comment = cluster relaxation program} :
-    relaxatoms.cpp $LigaSources
-
 :program alltests \
 {comment = build unit tests} \
 {add_INCLUDE = $?CPPUnitInclude} \
