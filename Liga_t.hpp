@@ -87,7 +87,6 @@ class Liga_t : public std::vector<Division_t>
 
 	// Private methods
 	int divSize(int level);
-	void makeSeedClusters();
 	void shareSeasonTrials();
 	PMOL updateWorldChamp();
 	void updateBestChamp();

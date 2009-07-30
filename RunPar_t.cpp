@@ -286,37 +286,6 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	}
     }
     base_level = mol->NFixed();
-    // seed_clusters
-    if (args->ispar("seed_clusters"))
-    {
-	vector<int> scs = args->GetParVec<int>("seed_clusters");
-	if (scs.size() % 3)
-	{
-	    string emsg = "seed_clusters must have 3n entries.";
-	    throw ParseArgsError(emsg);
-	}
-	map<int,SeedClusterInfo> lvsc;
-	SeedClusterInfo scid;
-	// make sure seed_clusters are sorted and level-unique
-	for (size_t i = 0; i < scs.size(); i += 3)
-	{
-	    scid.level = scs[i];
-	    scid.number = scs[i+1];
-	    scid.trials = scs[i+2];
-	    if (scid.level <= base_level || scid.level > mol->getMaxAtomCount())
-	    {
-		ostringstream emsg;
-		emsg << "seed_clusters - invalid level " << scid.level << '.';
-		throw ParseArgsError(emsg.str());
-	    }
-	    lvsc[scid.level] = scid;
-	}
-	for (   map<int,SeedClusterInfo>::iterator ii = lvsc.begin();
-		ii != lvsc.end(); ++ii )
-	{
-	    seed_clusters.push_back(ii->second);
-	}
-    }
     // maxcputime
     maxcputime = args->GetPar<double>("maxcputime", 0.0);
     // rngseed
@@ -411,7 +380,6 @@ void RunPar_t::print_help()
 "  tolcost=double        [1E-4] target normalized molecule cost\n"
 "  natoms=int            use for loose distfile or active distreuse/crystal\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
-"  seed_clusters=array   [] triplets of (level, number, trials)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
 "  promotefrac=double    [0.1] fraction of tolcost threshold of tested atoms\n"
@@ -549,20 +517,6 @@ void RunPar_t::print_pars()
 	}
 	cout << '\n';
     }
-    // seed_clusters
-    if (seed_clusters.size() != 0)
-    {
-	cout << "seed_clusters=";
-	for (   vector<SeedClusterInfo>::iterator ii = seed_clusters.begin();
-		ii != seed_clusters.end(); ++ii)
-	{
-	    cout << " \\" << '\n';
-	    cout << "    " << ii->level;
-	    cout << ' ' << ii->number;
-	    cout << ' ' << ii->trials;
-	}
-	cout << '\n';
-    }
     // maxcputime
     if (maxcputime > 0.0)
     {
@@ -624,7 +578,6 @@ const list<string>& RunPar_t::validpars() const
         "tolcost",
         "natoms",
         "fixed_atoms",
-        "seed_clusters",
         "maxcputime",
         "rngseed",
         "promotefrac",

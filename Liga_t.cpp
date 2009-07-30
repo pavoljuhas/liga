@@ -115,7 +115,6 @@ void Liga_t::prepare()
 	    << lower_team->cost() << endl;
         at(lev).push_back(lower_team);
     }
-    makeSeedClusters();
     cout << "Done" << endl;
     updateWorldChamp();
     printWorldChamp();
@@ -302,69 +301,9 @@ int Liga_t::divSize(int level)
     else if (level == rp->base_level)	sz = 1;
     // and also at levels 0 and 1
     else if (level < 2)		        sz = 1;
-    // finally check for special setting in seed_clusters
-    else
-    {
-        vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
-        for (; scii != rp->seed_clusters.end(); ++scii)
-        {
-            if (scii->level == level)   sz = scii->number;
-        }
-    }
     return sz;
 }
 
-void Liga_t::makeSeedClusters()
-{
-    if (rp->seed_clusters.empty())  return;
-    bool keep_promotejump = Molecule::promotejump;
-    Molecule::promotejump = false;
-    const Molecule* mcoresrc = at(base_level).back();
-    auto_ptr<Molecule> mcore(mcoresrc->clone());
-    int keep_maxatomcnt = mcore->getMaxAtomCount();
-    cout << "Generating seed clusters" << endl;
-    for (vector<SeedClusterInfo>::iterator scii = rp->seed_clusters.begin();
-	    scii != rp->seed_clusters.end(); ++scii )
-    {
-	mcore->setMaxAtomCount(scii->level);
-	iterator seeded = begin() + scii->level;
-	for (int nt = 0; nt < scii->trials; ++nt)
-	{
-	    // make sure mcore is at base_level
-	    while (mcore->countAtoms() > base_level)
-	    {
-		mcore->Pop(mcore->countAtoms() - 1);
-	    }
-	    int addcnt = scii->level - base_level;
-	    int ntrials = addcnt ? rp->seasontrials/addcnt + 1 : 0;
-	    for (int k = 0; k < addcnt && !mcore->full(); ++k)
-	    {
-		iterator lo_div = begin() + mcore->countAtoms();
-		lo_div->assignTrials(ntrials);
-		const int* etg = lo_div->estimateTriangulations();
-		mcore->Evolve(etg);
-	    }
-	    if (!mcore->full())  continue;
-	    if (!seeded->full())
-	    {
-		seeded->push_back(mcore->clone());
-		continue;
-	    }
-	    // replace the worst cluster
-	    PMOL replaced = seeded->at(seeded->find_looser());
-	    *replaced = *mcore;
-	}
-	// restore max atom count
-	for (size_t i = 0; i != seeded->size(); ++i)
-	{
-	    seeded->at(i)->setMaxAtomCount(keep_maxatomcnt);
-	}
-	PMOL best_seed = seeded->at(seeded->find_best());
-	cout << season << " S " << best_seed->countAtoms() << ' '
-	    << best_seed->cost() << endl;
-    }
-    Molecule::promotejump = keep_promotejump;
-}
 
 void Liga_t::shareSeasonTrials()
 {

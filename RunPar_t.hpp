@@ -18,13 +18,6 @@
 #include "TraceId_t.hpp"
 #include "Molecule.hpp"
 
-struct SeedClusterInfo
-{
-    int level;
-    int number;
-    int trials;
-};
-
 struct RunPar_t
 {
     RunPar_t(int argc, char* argv[]);
@@ -53,7 +46,6 @@ struct RunPar_t
     double tolcost;
     int natoms;
     std::vector<int> fixed_atoms;
-    std::vector<SeedClusterInfo> seed_clusters;
     double maxcputime;
     int rngseed;
     double promotefrac;
