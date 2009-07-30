@@ -44,29 +44,32 @@ public:
 
     void test_line()
     {
-	Molecule line(dst_line);
-	line.AddAt(-0.5, 0.0, 0.0);
-	line.AddAt(+0.5, 0.0, 0.0);
+	Molecule line;
+        line.setDistanceTable(dst_line);
+	line.AddAt("C", -0.5, 0.0, 0.0);
+	line.AddAt("C", +0.5, 0.0, 0.0);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, line.cost(), double_eps);
     }
 
     void test_square()
     {
-	Molecule square(dst_square);
-	square.AddAt(-0.5, -0.5, 0.0);
-	square.AddAt(+0.5, -0.5, 0.0);
-	square.AddAt(+0.5, +0.5, 0.0);
-	square.AddAt(-0.5, +0.5, 0.0);
+	Molecule square;
+        square.setDistanceTable(dst_square);
+	square.AddAt("C", -0.5, -0.5, 0.0);
+	square.AddAt("C", +0.5, -0.5, 0.0);
+	square.AddAt("C", +0.5, +0.5, 0.0);
+	square.AddAt("C", -0.5, +0.5, 0.0);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, square.cost(), double_eps);
     }
 
     void test_bad_square()
     {
-	Molecule bad_square(dst_square);
-	bad_square.AddAt(-0.5, -0.5, 0.0);
-	bad_square.AddAt(+0.5, -0.5, 0.0);
-	bad_square.AddAt(+0.5, +0.5, 0.0);
-	bad_square.AddAt(+0.0, +0.0, 0.0);
+	Molecule bad_square;
+        bad_square.setDistanceTable(dst_square);
+	bad_square.AddAt("C", -0.5, -0.5, 0.0);
+	bad_square.AddAt("C", +0.5, -0.5, 0.0);
+	bad_square.AddAt("C", +0.5, +0.5, 0.0);
+	bad_square.AddAt("C", +0.0, +0.0, 0.0);
 	double expectcost[4] = {
 	    pow(1.0 - sqrt(0.5), 2)/2,
 	    pow(1.0 - sqrt(0.5), 2)/2,

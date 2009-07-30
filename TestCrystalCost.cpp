@@ -50,7 +50,9 @@ public:
 	gradient_eps = 1e-6;
         crst.Clear();
         crst.setRmax(3.05);
-        crst.setMaxAtomCount(4);
+        ChemicalFormula::value_type elcnt("C", 4);
+        ChemicalFormula formula(1, elcnt);
+        crst.setChemicalFormula(formula);
         // do the rest only once
         if (!cubic.get())   cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
         if (!rhombohedral.get())    rhombohedral.reset(
@@ -80,9 +82,9 @@ public:
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_cube);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.0, 0.0, 0.0);
+        crst.AddAt("C", 0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.1, 0.2, 0.3);
+        crst.AddAt("C", 0.1, 0.2, 0.3);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
@@ -93,12 +95,12 @@ public:
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_bcc);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.0, 0.0, 0.0);
+        crst.AddAt("C", 0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.1, 0.2, 0.3);
+        crst.AddAt("C", 0.1, 0.2, 0.3);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
-        crst.AddAt(0.5, 0.5, 0.5);
+        crst.AddAt("C", 0.5, 0.5, 0.5);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
     }
 
@@ -107,16 +109,16 @@ public:
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_fcc);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.0, 0.0, 0.0);
+        crst.AddAt("C", 0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.5, 0.5, 0.5);
+        crst.AddAt("C", 0.5, 0.5, 0.5);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
-        crst.AddAt(0.5, 0.5, 0.0);
+        crst.AddAt("C", 0.5, 0.5, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.5, 0.0, 0.5);
+        crst.AddAt("C", 0.5, 0.0, 0.5);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.0, 0.5, 0.5);
+        crst.AddAt("C", 0.0, 0.5, 0.5);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
         crst.setLattice(*rhombohedral);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
@@ -130,9 +132,9 @@ public:
         crst.setDistanceTable(dst_fcc);
         crst.setRmax(3.05);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.0, 0.0, 0.0);
+        crst.AddAt("C", 0.0, 0.0, 0.0);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
-        crst.AddAt(0.1, 0.2, 0.3);
+        crst.AddAt("C", 0.1, 0.2, 0.3);
         CPPUNIT_ASSERT(crst.cost() > 0.0);
         crst.Pop(1);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, crst.cost(), double_eps);
@@ -166,8 +168,8 @@ public:
     {
         crst.setLattice(*cubic);
         crst.setDistanceTable(dst_bcc);
-        crst.AddAt(0.0, 0.0, 0.0);
-        Atom_t a1(0.5, 0.5, 0.5);
+        crst.AddAt("C", 0.0, 0.0, 0.0);
+        Atom_t a1("C", 0.5, 0.5, 0.5);
         R3::Vector ga = analytical_gradient(a1);
         R3::Vector gn = numerical_gradient(a1);
         double gdiff = R3::distance(gn, ga);
@@ -186,7 +188,7 @@ public:
         R3::Vector ga = analytical_gradient(a1);
         double ganorm = R3::norm(ga);
         CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, ganorm, gradient_eps);
-        Atom_t a2(0.5, 0.5, 0.5);
+        Atom_t a2("C", 0.5, 0.5, 0.5);
         R3::Vector gn;
         ga = analytical_gradient(a2);
         gn = numerical_gradient(a2);

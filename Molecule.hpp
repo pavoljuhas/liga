@@ -24,6 +24,7 @@
 #include "Random.hpp"
 #include "TraceId_t.hpp"
 #include "EmbedPython.hpp"
+#include "ChemicalFormula.hpp"
 
 class AtomFilter_t;
 class AtomCost;
@@ -96,7 +97,8 @@ class Molecule
 	int countAtoms() const;
 	virtual int countPairs() const;
 	int getMaxAtomCount() const;
-	void setMaxAtomCount(int cnt);
+	void setChemicalFormula(const ChemicalFormula& formula);
+	ChemicalFormula getChemicalFormula() const;
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
 	virtual AtomCost* getAtomCostCalculator() const;
@@ -112,6 +114,8 @@ class Molecule
 	virtual void Clear();		// remove all atoms
 	void AddAt(Atom_t* pa, double rx0, double ry0, double rz0);
 	void AddAt(Atom_t* pa, const R3::Vector& rc);
+	void AddAt(const std::string& smbl, double rx0, double ry0, double rz0);
+	void AddAt(const std::string& smbl, const R3::Vector& rc);
 	virtual void Add(Atom_t* pa);   // add single atom
 	void Fix(const int cidx);	// mark atom as fixed
 	int NFixed() const;		// count fixed atoms
@@ -143,7 +147,6 @@ class Molecule
 
         // data
         boost::shared_ptr<DistanceTable> _distance_table;
-	mutable int _max_atom_count;
         std::vector<Atom_t*> atoms;	    // atoms in the Molecule
         std::vector<Atom_t*> atoms_bucket;  // available free atoms
         std::list<Atom_t> atoms_storage;    // all atom instances
@@ -173,6 +176,7 @@ class Molecule
         std::valarray<int> good_neighbors_count(const AtomArray& vta);
 	void filter_good_atoms(AtomArray& vta,
 		double evolve_range, double hi_abad);
+	void filter_bucket_atoms(AtomArray& vta);
 	bool check_atom_filters(Atom_t*);
         virtual void resizePairMatrices(int sz);
 	void WriteStream(std::ostream&) const;

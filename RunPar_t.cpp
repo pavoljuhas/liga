@@ -102,7 +102,6 @@ void RunPar_t::processArguments(int argc, char* argv[])
     if (this->crystal)
     {
         Crystal crst;
-        crst.setMaxAtomCount(0);
         this->mol.reset(new Crystal(crst));
     }
     else
@@ -116,7 +115,6 @@ void RunPar_t::processArguments(int argc, char* argv[])
     {
 	this->inistru = args->pars["inistru"];
 	this->mol->ReadFile(inistru);
-        this->natoms = this->crystal ? this->mol->countAtoms() : 0;
     }
     // latpar
     // must be processed after reading inistru, which may define lattice
@@ -257,13 +255,14 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // tolcost
     tolcost = args->GetPar<double>("tolcost", 1.0e-4);
     Molecule::tol_nbad = tolcost;
-    // natoms must be set after distreuse
-    if (args->ispar("natoms"))
+    // formula must be set after distreuse
+    if (args->ispar("formula"))
     {
-	this->natoms = args->GetPar<int>("natoms");
-	this->mol->setMaxAtomCount(natoms);
+	this->formula = chemicalFormulaFromString(
+                args->GetPar<string>("formula"));
+	this->mol->setChemicalFormula(this->formula);
     }
-    natoms = mol->getMaxAtomCount();
+    formula = mol->getChemicalFormula();
     // fixed_atoms must be set after inistru
     if (args->ispar("fixed_atoms"))
     {
@@ -378,7 +377,7 @@ void RunPar_t::print_help()
 "  rmax=double           [dmax] distance cutoff when crystal=true\n"
 "  distreuse=bool        [false] keep used distances in distance table\n"
 "  tolcost=double        [1E-4] target normalized molecule cost\n"
-"  natoms=int            use for loose distfile or active distreuse/crystal\n"
+"  formula=string        chemical formula, use inistru when not specified\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
@@ -497,8 +496,8 @@ void RunPar_t::print_pars()
     cout << "distreuse=" << distreuse << '\n';
     // tolcost
     cout << "tolcost=" << tolcost << '\n';
-    // natoms
-    cout << "natoms=" << natoms << '\n';
+    // formula
+    cout << "formula=" << chemicalFormulaAsString(this->formula) << '\n';
     // fixed_atoms
     if (args->ispar("fixed_atoms") && !fixed_atoms.empty())
     {
@@ -576,7 +575,7 @@ const list<string>& RunPar_t::validpars() const
         "rmax",
         "distreuse",
         "tolcost",
-        "natoms",
+        "formula",
         "fixed_atoms",
         "maxcputime",
         "rngseed",

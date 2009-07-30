@@ -93,7 +93,7 @@ void Liga_t::prepare()
     this->base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
     Division_t::ndim = rp->ndim;
-    for (int lev = 0; lev <= rp->natoms; ++lev)
+    for (int lev = 0; lev <= rp->mol->getMaxAtomCount(); ++lev)
     {
         int divsize = divSize(lev);
         push_back(Division_t(divsize, lev));

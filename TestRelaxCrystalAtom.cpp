@@ -60,13 +60,16 @@ public:
         ptbl = this->newFromFile<DistanceTable>("crystals/triclinic.dst");
         this->dtgt_triclinic.reset(ptbl);
         // bcc
-        this->crbcc.reset(new Crystal(*this->dtgt_bcc));
+        this->crbcc.reset(new Crystal);
+        this->crbcc->setDistanceTable(*this->dtgt_bcc);
         this->crbcc->ReadFile("crystals/bcc.stru");
         // fcc
-        this->crfcc.reset(new Crystal(*this->dtgt_fcc));
+        this->crfcc.reset(new Crystal);
+        this->crfcc->setDistanceTable(*this->dtgt_fcc);
         this->crfcc->ReadFile("crystals/fcc.stru");
         // triclinic
-        this->crtriclinic.reset(new Crystal(*this->dtgt_triclinic));
+        this->crtriclinic.reset(new Crystal);
+        this->crtriclinic->setDistanceTable(*this->dtgt_triclinic);
         this->crtriclinic->ReadFile("crystals/triclinic.stru");
     }
 
@@ -80,7 +83,7 @@ public:
         Atom_t arx = a1;
         R3::Vector offset(0.013, -0.07, -0.03);
         arx.r += offset;
-        this->crbcc->RelaxExternalAtom(arx);
+        this->crbcc->RelaxExternalAtom(&arx);
         double drx = R3::distance(a1.r, arx.r);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, drx, eps_distance);
     }
@@ -92,7 +95,7 @@ public:
         Atom_t arx = a1;
         R3::Vector offset(0.013, -0.07, -0.03);
         arx.r += offset;
-        this->crfcc->RelaxExternalAtom(arx);
+        this->crfcc->RelaxExternalAtom(&arx);
         double drx = R3::distance(a1.r, arx.r);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, drx, eps_distance);
     }
@@ -104,7 +107,7 @@ public:
         Atom_t arx = a1;
         R3::Vector offset(0.0013, -0.007, -0.003);
         arx.r += offset;
-        this->crtriclinic->RelaxExternalAtom(arx);
+        this->crtriclinic->RelaxExternalAtom(&arx);
         double drx = R3::distance(a1.r, arx.r);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, drx, eps_distance);
     }

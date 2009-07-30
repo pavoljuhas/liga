@@ -11,6 +11,8 @@
 #include <sstream>
 #include <cassert>
 #include <gsl/gsl_multimin.h>
+#include <boost/foreach.hpp>
+
 #include "Molecule.hpp"
 #include "LigaUtils.hpp"
 #include "AtomFilter_t.hpp"
@@ -104,7 +106,6 @@ Molecule& Molecule::operator=(const Molecule& M)
     pmx_partial_costs = M.pmx_partial_costs;
     free_pmx_slots = M.free_pmx_slots;
     // finished duplication
-    this->_max_atom_count = M._max_atom_count;
     this->_badness = M._badness;
     this->_distreuse = M._distreuse;
     // IO helpers
@@ -126,7 +127,6 @@ void Molecule::init()
         empty_distance_table(new DistanceTable());
     this->_distance_table = empty_distance_table;
     this->_badness = 0;
-    this->_max_atom_count = -1;
     this->_distreuse = false;
 }
 
@@ -137,6 +137,11 @@ Molecule::~Molecule()
 void Molecule::setDistanceTable(const DistanceTable& dtbl)
 {
     this->_distance_table.reset(new DistanceTable(dtbl));
+    if (atoms_storage.empty() && !dtbl.empty())
+    {
+        ChemicalFormula::value_type elcnt("C", dtbl.estNumAtoms());
+        this->setChemicalFormula(ChemicalFormula(1, elcnt));
+    }
 }
 
 void Molecule::setDistanceTable(const vector<double>& dvec)
@@ -342,38 +347,45 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
 
-void Molecule::setMaxAtomCount(int cnt)
+void Molecule::setChemicalFormula(const ChemicalFormula& formula)
 {
-    if (cnt > getDistanceTable().estNumAtoms() && !getDistReuse())
+    this->Clear();
+    atoms_storage.clear();
+    ChemicalFormula::const_iterator ec;
+    for (ec = formula.begin(); ec != formula.end(); ++ec)
     {
-	ostringstream emsg;
-	emsg << "E: not enough distances for max atom count = " <<
-            cnt << '.' << "  Forgot to set distreuse?";
-	throw InvalidMolecule(emsg.str());
+        if (ec->second <= 0)    continue;
+        Atom_t ae(ec->first, 0.0, 0.0, 0.0);
+        atoms_storage.insert(atoms_storage.end(), ec->second, ae);
     }
-    else if (cnt < 0)
+    atoms_bucket.clear();
+    atoms_bucket.reserve(atoms_storage.size());
+    BOOST_FOREACH (Atom_t& a, atoms_storage)
     {
-	ostringstream emsg;
-	emsg << "E: invalid value of max atom count = " << cnt;
-	throw InvalidMolecule(emsg.str());
+        atoms_bucket.push_back(&a);
     }
-    else if (cnt < countAtoms())
-    {
-	ostringstream emsg;
-	emsg << "E: molecule too large in setMaxAtomCount()";
-	throw InvalidMolecule(emsg.str());
-    }
-    _max_atom_count = cnt;
 }
+
+
+ChemicalFormula Molecule::getChemicalFormula() const
+{
+    ChemicalFormula rv;
+    BOOST_FOREACH (const Atom_t& a, atoms_storage)
+    {
+        if (rv.empty() || rv.back().first != a.element)
+        {
+            ChemicalFormula::value_type elcnt(a.element, 0);
+            rv.push_back(elcnt);
+        }
+        rv.back().second += 1;
+    }
+    return rv;
+}
+
 
 int Molecule::getMaxAtomCount() const
 {
-    if (this->_max_atom_count < 0)
-    {
-        this->_max_atom_count = this->getDistReuse() ?
-            0 : this->getDistanceTable().estNumAtoms();
-    }
-    return this->_max_atom_count;
+    return atoms_storage.size();
 }
 
 void Molecule::Shift(const R3::Vector& drc)
@@ -448,6 +460,24 @@ void Molecule::AddAt(Atom_t* pa, const R3::Vector& rc)
 }
 
 
+void Molecule::AddAt(const string& smbl, double rx0, double ry0, double rz0)
+{
+    vector<Atom_t*>::iterator ai;
+    for (ai = atoms_bucket.begin(); ai != atoms_bucket.end(); ++ai)
+    {
+        if ((*ai)->element == smbl)  break;
+    }
+    assert(ai != atoms_bucket.end());
+    this->AddAt(*ai, rx0, ry0, rz0);
+}
+
+
+void Molecule::AddAt(const string& smbl, const R3::Vector& rc)
+{
+    this->AddAt(smbl, rc[0], rc[1], rc[2]);
+}
+
+
 void Molecule::Add(Atom_t* pa)
 {
     vector<Atom_t*>::iterator ai;
@@ -482,12 +512,12 @@ int Molecule::NFixed() const
     return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
 }
 
-valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
+valarray<int> Molecule::good_neighbors_count(const AtomArray& vta)
 {
     valarray<int> cnt(0, vta.size());
     // high limit for badness of a pair with good neighbor
     double hi_pbad = tol_nbad / 10.0;
-    typedef vector<Atom_t>::const_iterator VAcit;
+    typedef AtomArray::const_iterator VAcit;
     VAcit a1i, a2i;
     int* pcnt1; int* pcnt2;
     for (  a1i = vta.begin(), pcnt1 = &(cnt[0]);
@@ -508,7 +538,7 @@ valarray<int> Molecule::good_neighbors_count(const vector<Atom_t>& vta)
     return cnt;
 }
 
-void Molecule::filter_good_atoms(vector<Atom_t>& vta,
+void Molecule::filter_good_atoms(AtomArray& vta,
 	double evolve_range, double hi_abad)
 {
     if (countAtoms() == getMaxAtomCount())
@@ -517,7 +547,7 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
 	emsg << "E: Molecule too large in filter_good_atoms()";
 	throw InvalidMolecule(emsg.str());
     }
-    typedef vector<Atom_t>::iterator VAit;
+    typedef AtomArray::iterator VAit;
     VAit gai;
     // first check if atoms pass through atom_filters
     gai = vta.begin();
@@ -551,6 +581,25 @@ void Molecule::filter_good_atoms(vector<Atom_t>& vta,
     }
     vta.erase(gai, vta.end());
 }
+
+
+void Molecule::filter_bucket_atoms(AtomArray& vta)
+{
+    set<Atom_t*> bucket(atoms_bucket.begin(), atoms_bucket.end());
+    assert(bucket.size() == atoms_bucket.size());
+    AtomArray::iterator asrc = vta.begin();
+    AtomArray::iterator adst = vta.begin();
+    for (; asrc != vta.end(); ++asrc)
+    {
+        if (bucket.count(asrc->mstorage_ptr))
+        {
+            *adst = *asrc;
+            ++adst;
+        }
+    }
+    vta.erase(adst, vta.end());
+}
+
 
 bool Molecule::check_atom_filters(Atom_t* pa)
 {
@@ -1109,7 +1158,7 @@ Molecule::getPyramidAnchor(const RandomWeighedGenerator& rwg)
 }
 
 
-int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
+int Molecule::push_second_atoms(AtomArray& vta, int ntrials)
 {
     if (countAtoms() != 1)
     {
@@ -1158,7 +1207,7 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
     return push_count;
 }
 
-int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
+int Molecule::push_third_atoms(AtomArray& vta, int ntrials)
 {
     using NS_LIGA::eps_distance;
     if (countAtoms() != 2)
@@ -1262,7 +1311,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     fill(tot, tot + NTGTYPES, 0);
     assert(!atoms_bucket.empty());
     // containter for test atoms
-    vector<Atom_t> vta;
+    AtomArray vta;
     bool lookout = lookout_prob && 0 < countAtoms() && countAtoms() <= 2 &&
 	randomFloat() < lookout_prob;
     const int lookout_trials = 1500;
@@ -1304,7 +1353,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
 	    push_good_triangles(vta, rwg, nplanar);
 	    push_good_pyramids(vta, rwg, nspatial);
     }
-    typedef vector<Atom_t>::iterator VAit;
+    typedef AtomArray::iterator VAit;
     // count total triangulation attempts
     for (VAit ai = vta.begin(); ai != vta.end(); ++ai)
     {
@@ -1317,6 +1366,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     while (true)
     {
 	filter_good_atoms(vta, evolve_range, hi_abad);
+	filter_bucket_atoms(vta);
         // finished when no test atoms left
 	if (vta.empty())   break;
 	// calculate fitness of test atoms
@@ -1527,12 +1577,11 @@ void Molecule::WriteStream(ostream& fid) const
     try {
         initializePython();
         string element;
-        element = (Molecule::output_format == "rawxyz") ? "" : "C";
         python::object stru = this->newDiffPyStructure();
         for (AtomSequence seq(this); !seq.finished(); seq.next())
         {
             const Atom_t& ai = seq.ref();
-            stru.attr("addNewAtom")(element);
+            stru.attr("addNewAtom")(ai.element);
             python::object alast = stru.attr("getLastAtom")();
             python::object xyz_cartn;
             xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);

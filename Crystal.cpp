@@ -414,7 +414,6 @@ void Crystal::setFromDiffPyStructure(boost::python::object stru)
     gamma = python::extract<double>(lattice.attr("gamma"));
     Lattice L(a, b, c, alpha, beta, gamma);
     this->setLattice(L);
-    this->setMaxAtomCount(python::len(stru));
     this->Molecule::setFromDiffPyStructure(stru);
 }
 

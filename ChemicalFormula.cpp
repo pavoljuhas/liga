@@ -40,14 +40,14 @@ ChemicalFormula chemicalFormulaFromString(const std::string& sfml)
         string& smblcnt = rv.back().first;
         smblcnt += c;
     }
-    BOOST_FOREACH (ChemicalFormula::value_type& fmitem, rv)
+    BOOST_FOREACH (ChemicalFormula::value_type& elcnt, rv)
     {
-        string& smblcnt = fmitem.first;
+        string& smblcnt = elcnt.first;
         string::size_type pcnt;
         pcnt = smblcnt.find_last_not_of("0123456789") + 1;
         string scnt = smblcnt.substr(pcnt);
         smblcnt.erase(pcnt);
-        fmitem.second = scnt.empty() ? 1 : atoi(scnt.c_str());
+        elcnt.second = scnt.empty() ? 1 : atoi(scnt.c_str());
     }
     return rv;
 }
@@ -56,10 +56,10 @@ ChemicalFormula chemicalFormulaFromString(const std::string& sfml)
 string chemicalFormulaAsString(const ChemicalFormula& formula)
 {
     ostringstream rv;
-    BOOST_FOREACH (const ChemicalFormula::value_type& fmitem, formula)
+    BOOST_FOREACH (const ChemicalFormula::value_type& elcnt, formula)
     {
-        rv << fmitem.first;
-        if (fmitem.second != 1)   rv << fmitem.second;
+        rv << elcnt.first;
+        if (elcnt.second != 1)   rv << elcnt.second;
     }
     return rv.str();
 }

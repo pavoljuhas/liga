@@ -34,7 +34,7 @@ TrialDistributor* TrialDistributor::create(RunPar_t* rp)
     }
     TrialDistributor* td = create(distributorsRegistry()[tstp]);
     // copy data from rp
-    td->resize(rp->natoms + 1);
+    td->resize(rp->mol->getMaxAtomCount() + 1);
     td->tolcost = rp->tolcost;
     td->base_level = rp->base_level;
     return td;

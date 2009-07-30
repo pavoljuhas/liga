@@ -39,10 +39,10 @@ public:
 	dtgt = dst_tetrahedron;
 	mol_tetrahedron = new Molecule;
 	mol_tetrahedron->setDistanceTable(dtgt);
-	mol_tetrahedron->AddAt(-0.5, -sqrt(0.75)*1.0/3, 0.0);
-	mol_tetrahedron->AddAt(+0.5, -sqrt(0.75)*1.0/3, 0.0);
-	mol_tetrahedron->AddAt(+0.0, +sqrt(0.75)*2.0/3, 0.0);
-	vtx_tetrahedron = new Atom_t(0.0, 0.0, sqrt(2.0/3));
+	mol_tetrahedron->AddAt("C", -0.5, -sqrt(0.75)*1.0/3, 0.0);
+	mol_tetrahedron->AddAt("C", +0.5, -sqrt(0.75)*1.0/3, 0.0);
+	mol_tetrahedron->AddAt("C", +0.0, +sqrt(0.75)*2.0/3, 0.0);
+	vtx_tetrahedron = new Atom_t("C", 0.0, 0.0, sqrt(2.0/3));
     }
 
     void tearDown() 
@@ -53,8 +53,8 @@ public:
 
     void test_RelaxTetrahedron()
     {
-	Atom_t vtx(1.0, 2.0, 3.0);
-	mol_tetrahedron->RelaxExternalAtom(vtx);
+	Atom_t vtx("C", 1.0, 2.0, 3.0);
+	mol_tetrahedron->RelaxExternalAtom(&vtx);
 	double dvtx = R3::distance(vtx.r, vtx_tetrahedron->r);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, dvtx, double_eps);
     }
