@@ -33,11 +33,6 @@ Crystal::Crystal() : Molecule()
     init();
 }
 
-Crystal::Crystal(const DistanceTable& dtab) : Molecule(dtab)
-{
-    init();
-}
-
 Crystal::Crystal(const Crystal& crs) : Molecule()
 {
     init();
@@ -253,10 +248,9 @@ void Crystal::Clear()
 }
 
 
-void Crystal::Add(const Atom_t& a)
+void Crystal::Add(Atom_t* pa)
 {
-    Molecule::Add(a);
-    Atom_t* pa = this->atoms.back();
+    Molecule::Add(pa);
     // shift to unit cell and take care of zero round-off
     pa->r = this->ucvCartesianAdjusted(pa->r);
 }

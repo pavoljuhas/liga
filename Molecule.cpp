@@ -56,32 +56,6 @@ Molecule::Molecule() : id(Molecule::getUniqueId())
     setDistanceTable(nodistances);
 }
 
-Molecule::Molecule(const DistanceTable& dtab) : id(Molecule::getUniqueId())
-{
-    init();
-    setDistanceTable(dtab);
-}
-
-Molecule::Molecule(const DistanceTable& dtab,
-	const vector<double>& vx, const vector<double>& vy,
-	const vector<double>& vz
-	) : id(Molecule::getUniqueId())
-{
-    init();
-    setDistanceTable(dtab);
-    if (vx.size() != vy.size() || vx.size() != vz.size())
-    {
-        ostringstream emsg;
-	emsg << "E: invalid coordinate vectors";
-	throw InvalidMolecule(emsg.str());
-    }
-    for (size_t i = 0; i != vx.size(); ++i)
-    {
-        R3::Vector rc(vx[i], vy[i], vz[i]);
-	AddAt(rc);
-    }
-}
-
 Molecule::Molecule(const Molecule& M) : id(Molecule::getUniqueId())
 {
     init();
@@ -103,10 +77,28 @@ Molecule& Molecule::operator=(const Molecule& M)
         this->setDistanceTable(*M._distance_table);
     }
     // duplicate source atoms
-    atoms.resize(M.atoms.size(), NULL);
-    for (AtomSequenceIndex seq(&M); !seq.finished(); seq.next())
+    atoms_storage = M.atoms_storage;
+    // build dictionary to find equivalent Atom_t pointers
+    map<const Atom_t*,Atom_t*> mapatomptr;
+    list<Atom_t>::const_iterator asrc = M.atoms_storage.begin();
+    list<Atom_t>::iterator adst = atoms_storage.begin();
+    for (; adst != atoms_storage.end(); ++asrc, ++adst)
     {
-	atoms[seq.idx()] = new Atom_t(seq.ref());
+        mapatomptr[&(*asrc)] = &(*adst);
+    }
+    // translate pointers to the atoms present in the molecule
+    atoms.resize(M.atoms.size());
+    for (size_t i = 0; i != M.atoms.size(); ++i)
+    {
+	atoms[i] = mapatomptr[M.atoms[i]];
+        assert(atoms[i] != NULL);
+    }
+    // translate pointers to the unassigned atoms in the bucket
+    atoms_bucket.resize(M.atoms_bucket.size());
+    for (size_t i = 0; i != M.atoms_bucket.size(); ++i)
+    {
+	atoms_bucket[i] = mapatomptr[M.atoms_bucket[i]];
+        assert(atoms_bucket[i] != NULL);
     }
     pmx_used_distances = M.pmx_used_distances;
     pmx_partial_costs = M.pmx_partial_costs;
@@ -140,8 +132,6 @@ void Molecule::init()
 
 Molecule::~Molecule()
 {
-    // we must call Clear() to delete Atom_t objects
-    Clear();
 }
 
 void Molecule::setDistanceTable(const DistanceTable& dtbl)
@@ -420,8 +410,8 @@ void Molecule::Pop(const int aidx)
     assert(!pa->fixed);
     removeAtomPairs(pa);
     free_pmx_slots.insert(pa->pmxidx);
-    delete pa;
     atoms.erase(atoms.begin() + aidx);
+    atoms_bucket.push_back(pa);
 }
 
 void Molecule::Pop(const list<int>& cidx)
@@ -435,55 +425,41 @@ void Molecule::Pop(const list<int>& cidx)
 void Molecule::Clear()
 {
     returnUsedDistances();
-    // remove all atoms
-    for (AtomSequence seq(this); !seq.finished(); seq.next())
-    {
-	delete seq.ptr();
-    }
+    // move all atoms to the bucket
+    atoms_bucket.insert(atoms_bucket.end(), atoms.begin(), atoms.end());
+    assert(atoms_bucket.size() == atoms_storage.size());
     atoms.clear();
     free_pmx_slots.clear();
     ResetBadness();
 }
 
-void Molecule::Add(const Molecule& M)
+
+void Molecule::AddAt(Atom_t* pa, double rx0, double ry0, double rz0)
 {
-    for (AtomSequence seq(&M); !seq.finished(); seq.next())
-    {
-	Add(seq.ref());
-    }
+    pa->r = rx0, ry0, rz0;
+    Add(pa);
 }
 
 
-void Molecule::AddAt(double rx0, double ry0, double rz0)
+void Molecule::AddAt(Atom_t* pa, const R3::Vector& rc)
 {
-    Atom_t a(rx0, ry0, rz0);
-    Add(a);
+    pa->r = rc;
+    Add(pa);
 }
 
 
-void Molecule::AddAt(const R3::Vector& rc)
+void Molecule::Add(Atom_t* pa)
 {
-    Atom_t a(rc);
-    Add(a);
-}
-
-
-void Molecule::Add(const Atom_t& atom)
-{
-    if (countAtoms() == getMaxAtomCount())
-    {
-        ostringstream emsg;
-	emsg << "E: molecule too large in Add()";
-	throw InvalidMolecule(emsg.str());
-    }
-    // create new atom
-    Atom_t* pnew_atom;
-    pnew_atom = new Atom_t(atom);
-    pnew_atom->ResetBadness();
-    pnew_atom->pmxidx = getPairMatrixIndex();
+    vector<Atom_t*>::iterator ai;
+    ai = find(atoms_bucket.begin(), atoms_bucket.end(), pa);
+    assert(ai != atoms_bucket.end());
+    // reset cost related attributes
+    pa->ResetBadness();
+    pa->pmxidx = getPairMatrixIndex();
     // create new pairs while summing up the costs
-    addNewAtomPairs(pnew_atom);
-    atoms.push_back(pnew_atom);
+    addNewAtomPairs(pa);
+    atoms_bucket.erase(ai);
+    atoms.push_back(pa);
     if (full())     reassignPairs();
 }
 
@@ -611,7 +587,8 @@ AtomCost* rxa_atomcost = NULL;
 
 double rxa_f(const gsl_vector* x, void* params)
 {
-    static Atom_t ta(0.0, 0.0, 0.0);
+    Atom_t* pa = static_cast<Atom_t*>(params);
+    Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
     double rv = rxa_atomcost->eval(ta);
     return rv;
@@ -619,7 +596,8 @@ double rxa_f(const gsl_vector* x, void* params)
 
 void rxa_df(const gsl_vector* x, void* params, gsl_vector* g)
 {
-    static Atom_t ta(0.0, 0.0, 0.0);
+    Atom_t* pa = static_cast<Atom_t*>(params);
+    Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
     rxa_atomcost->eval(ta, AtomCost::GRADIENT);
     copyGSLvector(rxa_atomcost->gradient(), g);
@@ -627,7 +605,8 @@ void rxa_df(const gsl_vector* x, void* params, gsl_vector* g)
 
 void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
 {
-    static Atom_t ta(0.0, 0.0, 0.0);
+    Atom_t* pa = static_cast<Atom_t*>(params);
+    Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
     *f = rxa_atomcost->eval(ta, AtomCost::GRADIENT);
     copyGSLvector(rxa_atomcost->gradient(), g);
@@ -645,14 +624,14 @@ void Molecule::RelaxAtom(const int cidx)
 	throw range_error(emsg.str());
     }
     // RelaxAtom should never get called on a fixed atom
-    assert(!atoms[cidx]->fixed);
-    Atom_t ta = getAtom(cidx);
+    Atom_t* pa = atoms[cidx];
+    assert(!pa->fixed);
     Pop(cidx);
-    RelaxExternalAtom(ta);
-    Add(ta);
+    RelaxExternalAtom(pa);
+    Add(pa);
 }
 
-void Molecule::RelaxExternalAtom(Atom_t& ta)
+void Molecule::RelaxExternalAtom(Atom_t* pa)
 {
     // Configuration of the GSL multidimensional minimizer
     // For details, see info pages
@@ -669,7 +648,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
     // pj: this seems to be crashing when countAtoms() < 3
 //    if (countAtoms() < 3)   return;
     // do relaxation on a copy of ta
-    Atom_t rta(ta);
+    Atom_t rta(*pa);
     // loop while badness is improved
     double lo_abad = DOUBLE_MAX;
     AtomCost* atomcost = getAtomCostCalculator();
@@ -679,7 +658,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	// get out if tbad did not improve
 	if (!eps_lt(tbad, lo_abad))	break;
 	lo_abad = tbad;
-	ta = rta;
+	*pa = rta;
 	// get out if lo_abad is very low
 	if (lo_abad < NS_LIGA::eps_cost)    break;
 	// carry out relaxation otherwise
@@ -691,7 +670,7 @@ void Molecule::RelaxExternalAtom(Atom_t& ta)
 	fdfmin.fdf = &rxa_fdf;
         // FIXME handling of ndim
 	fdfmin.n = 3;
-	fdfmin.params = NULL;
+	fdfmin.params = &rta;
 	// copy rta coordinates to vector x
         gsl_vector* x = gsl_vector_alloc(3);
         gsl_vector_set(x, 0, rta.r[0]);
@@ -801,6 +780,15 @@ void Molecule::removeAtomPairs(Atom_t* pa)
     if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
 }
 
+
+Atom_t* Molecule::pickAtomFromBucket() const
+{
+    assert(!atoms_bucket.empty());
+    int idx = randomInt(atoms_bucket.size());
+    return atoms_bucket[idx];
+}
+
+
 int Molecule::push_good_distances(
         AtomArray& vta,
         const RandomWeighedGenerator& rwg,
@@ -848,7 +836,7 @@ int Molecule::push_good_distances(
 	// add front atom
         R3::Vector nr;
         nr = anch.B0 + direction*radius;
-	Atom_t ad1front(nr);
+	Atom_t ad1front(pickAtomFromBucket(), nr);
 	ad1front.ttp = LINEAR;
 	vta.push_back(ad1front);
 	++push_count;
@@ -858,7 +846,7 @@ int Molecule::push_good_distances(
 	{
 	    ++nt;
             nr = anch.B0 - direction*radius;
-	    Atom_t ad1back(nr);
+	    Atom_t ad1back(pickAtomFromBucket(), nr);
 	    ad1back.ttp = LINEAR;
 	    vta.push_back(ad1back);
 	    ++push_count;
@@ -946,7 +934,7 @@ int Molecule::push_good_triangles(
 	    {
 		++nt;
 		P = anch.B0 + (*pxl)*longdir + (*pxp)*perpdir;
-		Atom_t ad2(P);
+		Atom_t ad2(pickAtomFromBucket(), P);
 		ad2.ttp = PLANAR;
 		vta.push_back(ad2);
 		++push_count;
@@ -1028,7 +1016,7 @@ int Molecule::push_good_pyramids(
 		// is vertex on B0B1
 		if (fabs(R3::norm(P3) - r03) > eps_distance)   continue;
 		P4 = vT;
-		Atom_t ad3(P4);
+		Atom_t ad3(pickAtomFromBucket(), P4);
 		ad3.ttp = SPATIAL;
 		vta.push_back(ad3);
 		++push_count;
@@ -1044,7 +1032,7 @@ int Molecule::push_good_pyramids(
 	    if (fabs(z2P4) < eps_distance)
 	    {
 		P4 = yP4*uvj + vT;
-		Atom_t ad3(P4);
+		Atom_t ad3(pickAtomFromBucket(), P4);
 		ad3.ttp = SPATIAL;
 		vta.push_back(ad3);
 		++push_count;
@@ -1058,14 +1046,14 @@ int Molecule::push_good_pyramids(
 	    double zP4 = sqrt(z2P4);
 	    // top one
 	    P4 = yP4*uvj + zP4*uvk + vT;
-	    Atom_t ad3top(P4);
+	    Atom_t ad3top(pickAtomFromBucket(), P4);
 	    ad3top.ttp = SPATIAL;
 	    vta.push_back(ad3top);
 	    ++push_count;
 	    // and bottom one, which makes an extra trial
 	    ++nt;
 	    P4 = yP4*uvj - zP4*uvk + vT;
-	    Atom_t ad3bottom(P4);
+	    Atom_t ad3bottom(pickAtomFromBucket(), P4);
 	    ad3bottom.ttp = SPATIAL;
 	    vta.push_back(ad3bottom);
 	    push_count++;
@@ -1144,11 +1132,11 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 	{
 	    // top atom
 	    nr[2] = a0.r[2] + *dui;
-	    Atom_t adtop(nr); adtop.ttp = LINEAR;
+	    Atom_t adtop(pickAtomFromBucket(), nr); adtop.ttp = LINEAR;
 	    vta.push_back(adtop);
 	    // bottom atom
 	    nr[2] = a0.r[2] - *dui;
-	    Atom_t adbot(nr); adbot.ttp = LINEAR;
+	    Atom_t adbot(pickAtomFromBucket(), nr); adbot.ttp = LINEAR;
 	    vta.push_back(adbot);
 	    push_count += 2;
 	}
@@ -1163,7 +1151,7 @@ int Molecule::push_second_atoms(vector<Atom_t>& vta, int ntrials)
 	    // randomize direction
             dz *= plusminus();
 	    nr[2] = a0.r[2] + dz;
-	    Atom_t ad(nr); ad.ttp = LINEAR;
+	    Atom_t ad(pickAtomFromBucket(), nr); ad.ttp = LINEAR;
 	    vta.push_back(ad);
 	}
     }
@@ -1252,7 +1240,7 @@ int Molecule::push_third_atoms(vector<Atom_t>& vta, int ntrials)
 	// add atom
         R3::Vector Pn;
 	Pn = Pa0 + xlong*longdir + xperp*perpdir;
-	Atom_t ad(Pn); ad.ttp = PLANAR;
+	Atom_t ad(pickAtomFromBucket(), Pn); ad.ttp = PLANAR;
 	vta.push_back(ad);
 	++push_count;
     }
@@ -1272,12 +1260,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     // reset result arrays
     fill(acc, acc + NTGTYPES, 0);
     fill(tot, tot + NTGTYPES, 0);
-    if (countAtoms() == getMaxAtomCount())
-    {
-        ostringstream emsg;
-	emsg << "E: full-sized molecule cannot Evolve()";
-	throw InvalidMolecule(emsg.str());
-    }
+    assert(!atoms_bucket.empty());
     // containter for test atoms
     vector<Atom_t> vta;
     bool lookout = lookout_prob && 0 < countAtoms() && countAtoms() <= 2 &&
@@ -1287,7 +1270,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     switch (countAtoms())
     {
 	case 0:
-	    AddAt(0.0, 0.0, 0.0);
+	    AddAt(pickAtomFromBucket(), 0.0, 0.0, 0.0);
             acc[LINEAR] = 1;
             tot[LINEAR] = 1;
 	    return acc_tot;
@@ -1366,7 +1349,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
 	}
 	// vtafit is ready here
 	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
-	Add(vta[idx]);
+	AddAt(vta[idx].mstorage_ptr, vta[idx].r);
         acc[vta[idx].ttp]++;
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
@@ -1586,11 +1569,13 @@ boost::python::object Molecule::newDiffPyStructure() const
     return stru;
 }
 
+
 void Molecule::setFromDiffPyStructure(boost::python::object stru)
 {
     namespace python = boost::python;
     int num_atoms = python::len(stru);
     this->Clear();
+    atoms_storage.clear();
     for (int i = 0; i != num_atoms; ++i)
     {
         python::object ai;
@@ -1601,9 +1586,19 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
         x = python::extract<double>(xyz_cartn[0]);
         y = python::extract<double>(xyz_cartn[1]);
         z = python::extract<double>(xyz_cartn[2]);
-        this->AddAt(x, y, z);
+        string smbl = python::extract<string>(ai.attr("element"));
+        atoms_storage.push_back(Atom_t(smbl, x, y, z));
+        Atom_t* pa = &(atoms_storage.back());
+        atoms_bucket.push_back(pa);
+    }
+    list<Atom_t>::iterator ai = atoms_storage.begin();
+    for (; ai != atoms_storage.end(); ++ai)
+    {
+        Atom_t* pa = &(*ai);
+        this->Add(pa);
     }
 }
+
 
 void Molecule::PrintBadness() const
 {

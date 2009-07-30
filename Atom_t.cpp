@@ -19,8 +19,8 @@ using namespace std;
 
 // constructors
 
-Atom_t::Atom_t(const string& elsmbl,
-        double rx, double ry, double rz) : element(elsmbl)
+Atom_t::Atom_t(const string& elsmbl, double rx, double ry, double rz) :
+    element(elsmbl), mstorage_ptr(NULL)
 {
     this->init(rx, ry, rz);
 }

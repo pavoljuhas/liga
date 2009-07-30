@@ -32,9 +32,10 @@ class Atom_t
         // constructors
 	Atom_t(const std::string& elsmbl, double rx, double ry, double rz);
         template <class V> Atom_t(const std::string& elsmbl, const V& rxyz);
+        template <class V> Atom_t(Atom_t* asrc, const V& rxyz);
 
         // data
-        const std::string element;
+        std::string element;
         R3::Vector r;
 	bool fixed;
 	triangulation_type ttp;
@@ -52,6 +53,7 @@ class Atom_t
         // data
 	double _badness;
 	mutable int pmxidx;     // pair matrix index
+        Atom_t* mstorage_ptr;
 
         // methods
         void init(double rx, double ry, double rz);
@@ -68,10 +70,21 @@ bool operator==(const Atom_t& a1, const Atom_t& a2);
 // template constructor
 
 template <class V>
-Atom_t::Atom_t(const std::string& elsmbl, const V& rxyz) : element(elsmbl)
+Atom_t::Atom_t(const std::string& elsmbl, const V& rxyz) :
+    element(elsmbl), mstorage_ptr(NULL)
 {
     this->init(double(rxyz[0]), double(rxyz[1]), double(rxyz[2]));
 }
+
+
+template <class V>
+Atom_t::Atom_t(Atom_t* asrc, const V& rxyz) :
+    element(asrc->element), mstorage_ptr(asrc)
+{
+    this->init(double(rxyz[0]), double(rxyz[1]), double(rxyz[2]));
+}
+
+
 
 
 #endif	// ATOM_T_HPP_INCLUDED

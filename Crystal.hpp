@@ -28,7 +28,6 @@ class Crystal : public Molecule
 
 	// constructors
 	Crystal();
-	Crystal(const DistanceTable&);
 	Crystal(const Crystal&);
 
         // destructor
@@ -62,7 +61,7 @@ class Crystal : public Molecule
 	virtual void Shift(const R3::Vector& drc);
 
 	virtual void Clear();
-	virtual void Add(const Atom_t& a);  // add single atom
+	virtual void Add(Atom_t* pa);  // add single atom
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
 	virtual void Degenerate(int Npop=1);
 

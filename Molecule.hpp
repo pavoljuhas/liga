@@ -64,12 +64,7 @@ class Molecule
 
 	// constructors
 	Molecule();
-	Molecule(const DistanceTable&);
-	Molecule(const DistanceTable&,
-                const std::vector<double>& vx,
-		const std::vector<double>& vy,
-                const std::vector<double>& vz);
-	Molecule(const Molecule& M);		// copy constructor
+	Molecule(const Molecule& M);
 
 	// destructor
 	virtual ~Molecule();
@@ -111,18 +106,17 @@ class Molecule
 	void Center();	  // center w/r to the center of mass
 
 	// atom operations
-	inline const Atom_t& getAtom(const int cidx) { return *(atoms[cidx]); }
+	const Atom_t& getAtom(const int cidx) { return *(atoms[cidx]); }
 	void Pop(const int cidx);
 	void Pop(const std::list<int>& cidx);
 	virtual void Clear();		// remove all atoms
-	void AddAt(double rx0, double ry0, double rz0);
-	void AddAt(const R3::Vector& rc);
-	void Add(const Molecule& M);	// add specified molecule
-	virtual void Add(const Atom_t& a);  // add single atom
+	void AddAt(Atom_t* pa, double rx0, double ry0, double rz0);
+	void AddAt(Atom_t* pa, const R3::Vector& rc);
+	virtual void Add(Atom_t* pa);   // add single atom
 	void Fix(const int cidx);	// mark atom as fixed
 	int NFixed() const;		// count fixed atoms
 	void RelaxAtom(const int cidx);	// relax internal atom
-	void RelaxExternalAtom(Atom_t& a);
+	void RelaxExternalAtom(Atom_t* pa);
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
 	virtual void Degenerate(int Npop=1);
 
@@ -150,7 +144,9 @@ class Molecule
         // data
         boost::shared_ptr<DistanceTable> _distance_table;
 	mutable int _max_atom_count;
-        std::vector<Atom_t*> atoms;	// vector of pointers to atoms
+        std::vector<Atom_t*> atoms;	    // atoms in the Molecule
+        std::vector<Atom_t*> atoms_bucket;  // available free atoms
+        std::list<Atom_t> atoms_storage;    // all atom instances
 	mutable SymmetricMatrix<double> pmx_partial_costs;
 	mutable SymmetricMatrix<double> pmx_used_distances;
         mutable std::set<int> free_pmx_slots;
@@ -159,6 +155,7 @@ class Molecule
 	// methods
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
+        Atom_t* pickAtomFromBucket() const;
 	int push_good_distances(AtomArray& vta,
                 const RandomWeighedGenerator& rwg, int ntrials);
 	int push_good_triangles(AtomArray& vta,
