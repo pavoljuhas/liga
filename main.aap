@@ -14,11 +14,10 @@
 
 LigaSources +=
         AtomCost.cpp AtomCostCrystal.cpp AtomFilter_t.cpp 
-        AtomSequence.cpp Atom_t.cpp Counter.cpp Crystal.cpp 
-        DistanceTable.cpp Division_t.cpp EmbedPython.cpp Lattice.cpp
-        LigaUtils.cpp Liga_t.cpp Molecule.cpp ParseArgs.cpp
-        PointsInSphere.cpp R3linalg.cpp Random.cpp
-        TrialDistributor.cpp
+        AtomSequence.cpp Atom_t.cpp Counter.cpp ChemicalFormula.cpp
+        Crystal.cpp DistanceTable.cpp Division_t.cpp EmbedPython.cpp
+        Lattice.cpp LigaUtils.cpp Liga_t.cpp Molecule.cpp ParseArgs.cpp
+        PointsInSphere.cpp R3linalg.cpp Random.cpp TrialDistributor.cpp
 
 TestedSources +=
         $LigaSources
@@ -29,7 +28,7 @@ prefix ?= `os.environ['HOME']`
 PREFIX = $prefix
 Bdir ?= AAPDIR
 BDIR = $Bdir/$BDIR
-CLEANFILES += *.o core.[0-9]* gizaliga-fast alltests-fast
+CLEANFILES += *.o core.[0-9]* mpbcliga-fast alltests-fast
 
 :python
     def defaultTool():
@@ -90,13 +89,13 @@ DEFAULTCHECK = time
 ########################################################################
 
 all \
-{comment = build gizaliga, the standard target} : \
-    gizaliga
+{comment = build mpbcliga, the standard target} : \
+    mpbcliga
 
-:program gizaliga \
+:program mpbcliga \
 {comment = program for structure solution from pair distances} \
 {var_LD = $CXX} :
-    gizaliga.cpp RunPar_t.cpp Version.cpp $LigaSources
+    mpbcliga.cpp RunPar_t.cpp Version.cpp $LigaSources
 
 :program alltests \
 {comment = build unit tests} \
@@ -158,26 +157,26 @@ test { comment = exectute all run tests and unit tests } : \
         :print  All tests passed!
         :print  -----------------
 
-runtest { virtual } { comment = test gizaliga on shapes and solids } : \
-    gizaliga runtest-solids runtest-shapes runtest-bangle_range
+runtest { virtual } { comment = test mpbcliga on shapes and solids } : \
+    mpbcliga runtest-solids runtest-shapes runtest-bangle_range
 
-GL = ./gizaliga$EXESUF
-GLTestOptions = maxcputime=1 seasontrials=500
+ML = ./mpbcliga$EXESUF
+MLTestOptions = maxcputime=1 seasontrials=500
 
 runtest-solids :
     @for f in ("tetrahedron.dst", "octahedron.dst", "cube.dst", \
             "icosahedron.dst", "dodecahedron.dst"):
-        :sys {log} $GL $GLTestOptions solids/$f
+        :sys {log} $ML $MLTestOptions solids/$f
 
 runtest-shapes :
     @for f in ("square.dst", "pentagon.dst", \
             "hexagon.dst", "heptagon.dst", "octagon.dst"):
-        :sys {log} $GL $GLTestOptions ndim=2 shapes/$f
+        :sys {log} $ML $MLTestOptions ndim=2 shapes/$f
 
 runtest-bangle_range :
-    :sys {log} $GL $GLTestOptions shapes/square.dst bangle_range=1.5,80
+    :sys {log} $ML $MLTestOptions shapes/square.dst bangle_range=1.5,80
     @pass
-    :sys {log} $GL $GLTestOptions shapes/hexagon.dst bangle_range=1.5,110
+    :sys {log} $ML $MLTestOptions shapes/hexagon.dst bangle_range=1.5,110
 
 unittest { comment = execute Liga unit tests} : alltests
         :sys ./alltests${EXESUF}
