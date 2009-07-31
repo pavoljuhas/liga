@@ -38,7 +38,6 @@ bool Molecule::promotejump = true;
 bool Molecule::promoterelax = false;
 bool Molecule::demoterelax = false;
 vector<AtomFilter_t*> Molecule::atom_filters;
-double Molecule::lookout_prob = 0.0;
 string Molecule::output_format = "rawxyz";
 
 // class methods
@@ -510,32 +509,6 @@ inline bool pAtom_is_fixed(const Atom_t* pa) { return pa->fixed; }
 int Molecule::NFixed() const
 {
     return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
-}
-
-valarray<int> Molecule::good_neighbors_count(const AtomArray& vta)
-{
-    valarray<int> cnt(0, vta.size());
-    // high limit for badness of a pair with good neighbor
-    double hi_pbad = tol_nbad / 10.0;
-    typedef AtomArray::const_iterator VAcit;
-    VAcit a1i, a2i;
-    int* pcnt1; int* pcnt2;
-    for (  a1i = vta.begin(), pcnt1 = &(cnt[0]);
-	    a1i != vta.end(); ++a1i, ++pcnt1 )
-    {
-	for (   a2i = a1i+1, pcnt2 = pcnt1+1; a2i != vta.end();
-		++a2i, ++pcnt2 )
-	{
-	    double d = R3::distance(a1i->r, a2i->r);
-	    double dd = *(this->_distance_table->find_nearest(d)) - d;
-	    if (penalty(dd) < hi_pbad)
-	    {
-		++(*pcnt1);
-		++(*pcnt2);
-	    }
-	}
-    }
-    return cnt;
 }
 
 void Molecule::filter_good_atoms(AtomArray& vta,
@@ -1158,144 +1131,6 @@ Molecule::getPyramidAnchor(const RandomWeighedGenerator& rwg)
 }
 
 
-int Molecule::push_second_atoms(AtomArray& vta, int ntrials)
-{
-    if (countAtoms() != 1)
-    {
-        ostringstream emsg;
-	emsg << "E: push_second_atoms() must be called with 1-atom molecule";
-	throw InvalidMolecule(emsg.str());
-    }
-    // second atoms will be pushed along z-direction from a0
-    Atom_t& a0 = *atoms[0];
-    const DistanceTable& dtbl = *this->_distance_table;
-    // new position
-    R3::Vector nr = a0.r;
-    int push_count = 0;
-    if (ntrials > 2*dtbl.countUnique())
-    {
-	// we can push all the unique distances in both directions
-	typedef vector<double>::iterator VDit;
-	vector<double> dtu = dtbl.unique();
-	for (VDit dui = dtu.begin(); dui != dtu.end(); ++dui)
-	{
-	    // top atom
-	    nr[2] = a0.r[2] + *dui;
-	    Atom_t adtop(pickAtomFromBucket(), nr); adtop.ttp = LINEAR;
-	    vta.push_back(adtop);
-	    // bottom atom
-	    nr[2] = a0.r[2] - *dui;
-	    Atom_t adbot(pickAtomFromBucket(), nr); adbot.ttp = LINEAR;
-	    vta.push_back(adbot);
-	    push_count += 2;
-	}
-    }
-    else
-    {
-	// distances will be picked randomly
-	for (push_count = 0; push_count < ntrials; ++push_count)
-	{
-	    int didx = randomInt(dtbl.size());
-	    double dz = dtbl[didx];
-	    // randomize direction
-            dz *= plusminus();
-	    nr[2] = a0.r[2] + dz;
-	    Atom_t ad(pickAtomFromBucket(), nr); ad.ttp = LINEAR;
-	    vta.push_back(ad);
-	}
-    }
-    return push_count;
-}
-
-int Molecule::push_third_atoms(AtomArray& vta, int ntrials)
-{
-    using NS_LIGA::eps_distance;
-    if (countAtoms() != 2)
-    {
-        ostringstream emsg;
-	emsg << "E: push_third_atoms() must be called with 2-atom molecule";
-	throw InvalidMolecule(emsg.str());
-    }
-    const DistanceTable& dtbl = *this->_distance_table;
-    // build list of distances from the base atoms
-    list<double> d0, d1;
-    if (ntrials > 2 * dtbl.countUnique() * dtbl.countUnique())
-    {
-	// we can push all the unique triangles
-	typedef vector<double>::iterator VDit;
-	vector<double> dtu = dtbl.unique();
-	for (VDit ui0 = dtu.begin(); ui0 != dtu.end(); ++ui0)
-	{
-	    for (VDit ui1 = dtu.begin(); ui1 != dtu.end(); ++ui1)
-	    {
-		d0.push_back(*ui0);
-		d1.push_back(*ui1);
-	    }
-	}
-    }
-    else
-    {
-	// distances will be picked randomly
-	for (int i = 0; i < ntrials; ++i)
-	{
-            const PickType& didx = getDistReuse() ?
-                randomPickWithRepeat(2, dtbl.size()) :
-                randomPickFew(2, dtbl.size());
-	    d0.push_back( dtbl[didx[0]] );
-	    d1.push_back( dtbl[didx[1]] );
-	}
-    }
-    // define some constants and base atoms
-    int push_count = 0;
-    Atom_t a0 = *atoms[0];
-    Atom_t a1 = *atoms[1];
-    double r01 = R3::distance(a0.r, a1.r);
-    // longitudinal direction along triangle base
-    R3::Vector longdir;
-    longdir = (a1.r - a0.r)/r01;
-    // perpendicular direction to longdir is a cross product of x with longdir
-    R3::Vector ux(0.0, 0.0, 0.0);
-    ux[0] = 1.0;
-    R3::Vector perpdir = R3::cross(ux, longdir);
-    double nm_perpdir = R3::norm(perpdir);
-    if (nm_perpdir == 0.0)
-    {
-	// longdir is ux, let us set perpdir = uy
-	perpdir = 0.0;
-	perpdir[1] = 1.0;
-    }
-    else
-    {
-	perpdir /= nm_perpdir;
-    }
-    R3::Vector Pa0 = a0.r;
-    // now loop over list of distances
-    typedef list<double>::iterator LDit;
-    for (   LDit d0i = d0.begin(), d1i = d1.begin();
-	    d0i != d0.end() && d1i != d1.end(); ++d0i, ++d1i )
-    {
-	double& r02 = *d0i;
-	double& r12 = *d1i;
-	// is triangle base reasonably large?
-	if (r01 < eps_distance)     continue;
-	// calculate xlong
-	double xlong = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
-	// calculate xperp
-	double xp2 = r02*r02 - xlong*xlong;
-	double xperp = sqrt(fabs(xp2));
-	if (xperp < eps_distance)   xperp = 0.0;
-	else if (xp2 < 0.0)         continue;
-	else if (randomInt(2) == 0) xperp = -xperp;
-	// add atom
-        R3::Vector Pn;
-	Pn = Pa0 + xlong*longdir + xperp*perpdir;
-	Atom_t ad(pickAtomFromBucket(), Pn); ad.ttp = PLANAR;
-	vta.push_back(ad);
-	++push_count;
-    }
-    return push_count;
-}
-
 const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
 {
     // aliases for input arguments
@@ -1312,9 +1147,6 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     assert(!atoms_bucket.empty());
     // containter for test atoms
     AtomArray vta;
-    bool lookout = lookout_prob && 0 < countAtoms() && countAtoms() <= 2 &&
-	randomFloat() < lookout_prob;
-    const int lookout_trials = 1500;
     // evolution is trivial for empty or 1-atom molecule
     switch (countAtoms())
     {
@@ -1323,18 +1155,6 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
             acc[LINEAR] = 1;
             tot[LINEAR] = 1;
 	    return acc_tot;
-	case 1:
-	    if (lookout)
-	    {
-		push_second_atoms(vta, lookout_trials);
-		break;
-	    }
-	case 2:
-	    if (lookout)
-	    {
-		push_third_atoms(vta, lookout_trials);
-		break;
-	    }
 	default:
             // create random generator weighed with atom fitnesses
             // calculate array of atom fitnesses
@@ -1371,32 +1191,17 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
 	if (vta.empty())   break;
 	// calculate fitness of test atoms
 	valarray<double> vtafit(vta.size());
-	if (lookout)
-	{
-	    // calculate fitness as the number of good neighbors
-	    valarray<int> cnt = good_neighbors_count(vta);
-	    int max_cnt = cnt.max();
-	    double* pfit = &vtafit[0];
-	    int* pcnt = &cnt[0];
-	    for ( ; pfit != &vtafit[vtafit.size()]; ++pfit, ++pcnt)
-	    {
-		*pfit = (*pcnt < max_cnt/2) ? 0.0 : *pcnt;
-	    }
-	}
-	else
-	{
-	    // calculate fitness as reciprocal value of badness
-	    // fill the vtafit array with badness
-	    double* pfit = &vtafit[0];
-	    for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pfit)
-	    {
-		*pfit = ai->Badness();
-	    }
-	    // then get the reciprocal value
-            double* ftnfirst = &(vtafit[0]);
-            double* ftnlast = &(vtafit[vtafit.size()]);
-	    transform(ftnfirst, ftnlast, ftnfirst, convertCostToFitness);
-	}
+        // calculate fitness as reciprocal value of badness
+        // fill the vtafit array with badness
+        double* pfit = &vtafit[0];
+        for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pfit)
+        {
+            *pfit = ai->Badness();
+        }
+        // then get the reciprocal value
+        double* ftnfirst = &(vtafit[0]);
+        double* ftnlast = &(vtafit[vtafit.size()]);
+        transform(ftnfirst, ftnlast, ftnfirst, convertCostToFitness);
 	// vtafit is ready here
 	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
 	AddAt(vta[idx].mstorage_ptr, vta[idx].r);

@@ -53,7 +53,6 @@ class Molecule
 	static bool demoterelax;
 	static double promotefrac;
 	static std::vector<AtomFilter_t*> atom_filters;
-	static double lookout_prob;
 
 	// class methods
         static void setOutputFormat(const std::string& format);
@@ -171,9 +170,6 @@ class Molecule
             getPlaneAnchor(const RandomWeighedGenerator& rwg);
         virtual const TriangulationAnchor&
             getPyramidAnchor(const RandomWeighedGenerator& rwg);
-	int push_second_atoms(AtomArray& vta, int ntrials);
-	int push_third_atoms(AtomArray& vta, int ntrials);
-        std::valarray<int> good_neighbors_count(const AtomArray& vta);
 	void filter_good_atoms(AtomArray& vta,
 		double evolve_range, double hi_abad);
 	void filter_bucket_atoms(AtomArray& vta);

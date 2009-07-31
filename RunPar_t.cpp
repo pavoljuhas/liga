@@ -317,9 +317,6 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	emsg << join(", ", TrialDistributor::getTypes()) << ").";
 	throw ParseArgsError(emsg.str());
     }
-    // lookout_prob
-    lookout_prob = args->GetPar("lookout_prob", 0.0);
-    Molecule::lookout_prob = lookout_prob;
     // bangle_range
     if (args->ispar("bangle_range"))
     {
@@ -389,7 +386,6 @@ void RunPar_t::print_help()
 "  seasontrials=int      [16384] number of atom placements in one season\n"
 "  trialsharing=string   [success] sharing method from (" <<
 	join(",", TrialDistributor::getTypes()) << ")\n" <<
-"  lookout_prob=double   [0.0] lookout probability for 2nd and 3rd atoms\n"
 "Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
 "  max_dist=double       distance limit for rejecting lone atoms\n"
@@ -530,12 +526,11 @@ void RunPar_t::print_pars()
     cout << "promotefrac=" << promotefrac << '\n';
     cout << "promoterelax=" << promoterelax << '\n';
     cout << "demoterelax=" << demoterelax << '\n';
-    // ligasize, stopgame, seasontrials, trialsharing, lookout_prob
+    // ligasize, stopgame, seasontrials, trialsharing
     cout << "ligasize=" << ligasize << '\n';
     cout << "stopgame=" << stopgame << '\n';
     cout << "seasontrials=" << seasontrials << '\n';
     cout << "trialsharing=" << trialsharing << '\n';
-    cout << "lookout_prob=" << lookout_prob << '\n';
     // constraints
     // bangle_range
     if (args->ispar("bangle_range"))
@@ -587,7 +582,6 @@ const list<string>& RunPar_t::validpars() const
         "seasontrials",
 	"trace",
         "trialsharing",
-        "lookout_prob",
         "bangle_range",
         "max_dist",
     };

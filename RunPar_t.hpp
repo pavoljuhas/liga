@@ -55,7 +55,6 @@ struct RunPar_t
     double stopgame;
     int seasontrials;
     std::string trialsharing;
-    double lookout_prob;
     // generated data
     std::auto_ptr<Molecule> mol;
     int base_level;
