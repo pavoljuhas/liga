@@ -200,7 +200,7 @@ void Molecule::recalculate() const
 	{
 	    int i0 = seq0.ptr()->pmxidx;
 	    int i1 = seq1.ptr()->pmxidx;
-	    double& paircost = pmx_partial_costs(i0,i1);
+	    const double& paircost = pmx_partial_costs(i0,i1);
             this->IncBadness(paircost);
             double paircosthalf = paircost / 2.0;
  	    seq0.ptr()->IncBadness(paircosthalf);
@@ -355,8 +355,8 @@ void Molecule::setChemicalFormula(const ChemicalFormula& formula)
     for (ec = formula.begin(); ec != formula.end(); ++ec)
     {
         if (ec->second <= 0)    continue;
-        Atom_t ae(ec->first, 0.0, 0.0, 0.0);
-        atoms_storage.insert(atoms_storage.end(), ec->second, ae);
+        Atom_t a(ec->first, 0.0, 0.0, 0.0);
+        atoms_storage.insert(atoms_storage.end(), ec->second, a);
     }
     atoms_bucket.clear();
     atoms_bucket.reserve(atoms_storage.size());

@@ -56,7 +56,9 @@ class AtomCost
 	const std::vector<double>& targetDistances() const;
 	const std::vector<int>& usedTargetDistanceIndices() const;
 	const std::vector<int>& usedTargetAtomIndices() const;
-
+        void setScale(double);
+        const double& getScale() const;
+        
     protected:
 
 	// data - arguments
@@ -88,6 +90,11 @@ class AtomCost
 	void resetGradient();
 	size_t nearDistanceIndex(const double& d) const;
         double nearDistance(const double& d) const;
+
+    private:
+
+        // data - penalty configuration
+        double mscale;
 
 };  // class AtomCost
 

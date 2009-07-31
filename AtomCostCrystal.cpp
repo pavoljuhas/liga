@@ -123,13 +123,13 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
         if (d > this->_rmax)    continue;
         if (skipzero && d < NS_LIGA::eps_distance)  continue;
         double dd = this->nearDistance(d) - d;
-        paircost += penalty(dd);
+        paircost += penalty(dd) * this->getScale();
         paircount += 1;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
         {
             static R3::Vector g_dd_xyz;
             g_dd_xyz = (-1.0/d) * rc_dd;
-            double g_pcost_dd = penalty_gradient(dd);
+            double g_pcost_dd = penalty_gradient(dd) * this->getScale();
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }

@@ -43,6 +43,7 @@ double penalty_gradient(double dd)
 
 AtomCost::AtomCost(const Molecule* m) : arg_atom(NULL)
 {
+    this->setScale(1.0);
     resetFor(m);
 }
 
@@ -89,7 +90,7 @@ double AtomCost::eval(const Atom_t* pa, int flags)
 	const double& dnear = dtgt[nearidx];
 	*(tgdii++) = dnear;
 	double dd = dnear - d;
-	double pcost = penalty(dd);
+	double pcost = penalty(dd) * this->getScale();
 	*(ptcii++) = pcost;
 	total_cost += pcost;
 	if (use_distances)
@@ -105,7 +106,7 @@ double AtomCost::eval(const Atom_t* pa, int flags)
         {
             static R3::Vector g_dd_xyz;
             g_dd_xyz = (-1.0/d) * (arg_atom->r - seq.ptr()->r);
-            double g_pcost_dd = penalty_gradient(dd);
+            double g_pcost_dd = penalty_gradient(dd) * this->getScale();
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
@@ -117,6 +118,14 @@ double AtomCost::eval(const Atom_t* pa, int flags)
     this->_gradient_cached = this->_gradient_flag;
     return total_cost;
 }
+
+
+const R3::Vector& AtomCost::gradient()
+{
+    assert(this->_gradient_cached);
+    return this->_gradient;
+}
+
 
 double AtomCost::lowest() const
 {
@@ -180,11 +189,18 @@ const vector<int>& AtomCost::usedTargetAtomIndices() const
     return useatom_indices;
 }
 
-const R3::Vector& AtomCost::gradient()
+
+void AtomCost::setScale(double sc)
 {
-    assert(this->_gradient_cached);
-    return this->_gradient;
+    mscale = sc;
 }
+
+
+const double& AtomCost::getScale() const
+{
+    return mscale;
+}
+
 
 // protected methods
 
