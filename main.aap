@@ -14,7 +14,7 @@
 
 LigaSources +=
         AtomCost.cpp AtomOverlapCost.cpp
-        AtomCostCrystal.cpp
+        AtomCostCrystal.cpp AtomOverlapCostCrystal.cpp
         AtomFilter_t.cpp AtomSequence.cpp Atom_t.cpp Counter.cpp
         ChemicalFormula.cpp Crystal.cpp DistanceTable.cpp Division_t.cpp
         EmbedPython.cpp Lattice.cpp LigaUtils.cpp Liga_t.cpp Molecule.cpp

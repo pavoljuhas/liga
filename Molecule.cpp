@@ -167,10 +167,24 @@ void Molecule::setDistReuse(bool flag)
     this->_distreuse = flag;
 }
 
+
 bool Molecule::getDistReuse() const
 {
     return this->_distreuse;
 }
+
+
+double Molecule::getMaxAtomRadius() const
+{
+    double maxradius = 0.0;
+    list<Atom_t>::const_iterator ai;
+    for (ai = atoms_storage.begin(); ai != atoms_storage.end(); ++ai)
+    {
+        if (ai->radius > maxradius)  maxradius = ai->radius;
+    }
+    return maxradius;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 //// Molecule badness/fitness evaluation

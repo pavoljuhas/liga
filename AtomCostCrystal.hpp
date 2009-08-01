@@ -33,12 +33,13 @@ class AtomCostCrystal : public AtomCost
 
 	// public methods - overloaded
         virtual void resetFor(const Molecule* clust);
+        double eval(const Atom_t& a, int flags=NONE);
 	virtual double eval(const Atom_t* pa, int flags=NONE);
 	int totalPairCount() const;
 	const std::vector<int>& pairCounts() const;
 
         // public methods - specific
-        std::pair<double,int>
+        virtual std::pair<double,int>
             pairCostCount(const R3::Vector& cv, bool skipzero=false);
 
     protected:
@@ -47,19 +48,19 @@ class AtomCostCrystal : public AtomCost
         int total_pair_count;
         std::vector<int> pair_counts;
 
-	// protected methods
-
-    private:
-
 	// data - arguments
         const Crystal* arg_cluster;
         R3::Vector arg_rcuc;    // cartesian positions offset to unit cell
+        const Atom_t* crst_atom;
 
         // data - for intermediate cost evaluation
         // maximum r for PDF range
         double _rmax;
         // lattice points sequencer
         std::auto_ptr<PointsInSphere> _sph;
+
+    private:
+
         mutable int _count_evaluated_pairs;
 
 	// private methods

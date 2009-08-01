@@ -45,6 +45,13 @@ void AtomCostCrystal::resetFor(const Molecule* clust)
                 arg_cluster->getLattice()) );
 }
 
+
+double AtomCostCrystal::eval(const Atom_t& a, int flags)
+{
+    return eval(&a, flags);
+}
+
+
 double AtomCostCrystal::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
@@ -66,7 +73,8 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
 	assert(ptcii < this->partial_costs.end());
 	assert(pcntii < this->pair_counts.end());
         // calculation
-        rcv = arg_atom->r - seq.ptr()->r;
+        crst_atom = seq.ptr();
+        rcv = arg_atom->r - crst_atom->r;
         const pair<double,int> costcount = pairCostCount(rcv);
         *(ptcii++) = costcount.first;
         *(pcntii++) = costcount.second;

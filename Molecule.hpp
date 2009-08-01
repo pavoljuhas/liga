@@ -86,6 +86,8 @@ class Molecule
         virtual void setDistReuse(bool);
         bool getDistReuse() const;
 
+        double getMaxAtomRadius() const;
+
 	// methods - fitness/badness evaluation
 	virtual double cost() const;    // normalized badness
 	const double& Badness() const;	// total badness
