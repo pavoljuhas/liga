@@ -55,6 +55,41 @@ void Atom_t::ResetBadness(double b)
     this->_badness = b;
 }
 
+const double& Atom_t::Overlap() const
+{
+    return this->_overlap;
+}
+
+double Atom_t::FreeOverlap() const
+{
+    double rv = this->fixed ? 0.0 : this->Overlap();
+    return rv;
+}
+
+void Atom_t::IncOverlap(const double& doverlap)
+{
+    this->_overlap += doverlap;
+}
+
+void Atom_t::DecOverlap(const double& doverlap)
+{
+    this->_overlap -= doverlap;
+    // take care of round-off errors
+    if (this->_overlap < NS_LIGA::eps_cost)     this->ResetOverlap(0.0);
+}
+
+void Atom_t::ResetOverlap(double overlap)
+{
+    this->_overlap = overlap;
+}
+
+
+double Atom_t::costShare(double pairsperatom)
+{
+    double c = pairsperatom * this->Overlap() + this->Badness();
+    return c;
+}
+
 // private methods
 
 void Atom_t::init(double rx, double ry, double rz)
@@ -63,6 +98,7 @@ void Atom_t::init(double rx, double ry, double rz)
     this->fixed = false;
     this->ttp = LINEAR;
     this->ResetBadness(0.0);
+    this->ResetOverlap(0.0);
 }
 
 // non-member operators and functions

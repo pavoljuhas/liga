@@ -18,6 +18,7 @@
 #include "AtomFilter_t.hpp"
 #include "AtomSequence.hpp"
 #include "AtomCost.hpp"
+#include "AtomOverlapCost.hpp"
 #include "Counter.hpp"
 #include "Random.hpp"
 #include "R3linalg.hpp"
@@ -106,6 +107,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     free_pmx_slots = M.free_pmx_slots;
     // finished duplication
     this->_badness = M._badness;
+    this->_overlap = M._overlap;
     this->_distreuse = M._distreuse;
     // IO helpers
     trace = M.trace;
@@ -220,6 +222,7 @@ void Molecule::recalculate() const
  	    seq1.ptr()->IncBadness(paircosthalf);
 	}
     }
+    this->recalculateOverlap();
 }
 
 
@@ -228,6 +231,14 @@ AtomCost* Molecule::getAtomCostCalculator() const
     static AtomCost the_acc(this);
     the_acc.resetFor(this);
     return &the_acc;
+}
+
+
+AtomOverlapCost* Molecule::getAtomOverlapCalculator() const
+{
+    static AtomOverlapCost the_overlap_calculator(this);
+    the_overlap_calculator.resetFor(this);
+    return &the_overlap_calculator;
 }
 
 
@@ -294,10 +305,26 @@ void Molecule::reassignPairs()
 
 double Molecule::cost() const
 {
-    double rv;
-    rv = countPairs() > 0 ? Badness()/countPairs() : 0.0;
+    double rv = this->costDistance() + this->costOverlap();
     return rv;
 }
+
+
+double Molecule::costDistance() const
+{
+    double rv;
+    rv = countPairs() > 0 ? this->Badness() / this->countPairs() : 0.0;
+    return rv;
+}
+
+
+double Molecule::costOverlap() const
+{
+    double rv;
+    rv = countAtoms() > 0 ? this->Overlap() / this->countAtoms() : 0.0;
+    return rv;
+}
+
 
 const double& Molecule::Badness() const
 {
@@ -319,6 +346,26 @@ void Molecule::ResetBadness(double b) const
     this->_badness = b;
 }
 
+const double& Molecule::Overlap() const
+{
+    return this->_overlap;
+}
+
+void Molecule::IncOverlap(const double& doverlap) const
+{
+    this->_overlap += doverlap;
+}
+
+void Molecule::DecOverlap(const double& doverlap) const
+{
+    this->_overlap -= doverlap;
+}
+
+void Molecule::ResetOverlap(double overlap) const
+{
+    this->_overlap = overlap;
+}
+
 bool Molecule::full() const
 {
     bool rv = countAtoms() >= getMaxAtomCount();
@@ -336,6 +383,22 @@ int Molecule::countPairs() const
     int N = countAtoms();
     int rv = N * (N - 1) / 2;
     return rv;
+}
+
+
+double Molecule::pairsPerAtom() const
+{
+    double ppa = countAtoms() ? 1.0 * countPairs() / countAtoms() : 0.0;
+    return ppa;
+}
+
+
+double Molecule::pairsPerAtomInc() const
+{
+    int N = countAtoms();
+    double m = (countPairs() - N * (N - 1) / 2) / (1.0 * N * N) + 1.0;
+    double ppa = countAtoms() ?  (N / 2.0 + (N + 1) * (m - 1)) : 0.0;
+    return ppa;
 }
 
 
@@ -363,6 +426,8 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 void Molecule::setChemicalFormula(const ChemicalFormula& formula)
 {
     this->Clear();
+    // store existing atom radii
+    AtomRadiiTable radiitable = this->getAtomRadiiTable();
     atoms_storage.clear();
     ChemicalFormula::const_iterator ec;
     for (ec = formula.begin(); ec != formula.end(); ++ec)
@@ -377,6 +442,7 @@ void Molecule::setChemicalFormula(const ChemicalFormula& formula)
     {
         atoms_bucket.push_back(&a);
     }
+    this->fetchAtomRadii(radiitable);
 }
 
 
@@ -393,6 +459,27 @@ ChemicalFormula Molecule::getChemicalFormula() const
         rv.back().second += 1;
     }
     return rv;
+}
+
+
+void Molecule::fetchAtomRadii(const AtomRadiiTable& radiitable)
+{
+    BOOST_FOREACH (Atom_t& a, atoms_storage)
+    {
+        a.radius = radiitable.empty() ? 0.0 : radiitable.lookup(a.element);
+    }
+    this->recalculateOverlap();
+}
+
+
+AtomRadiiTable Molecule::getAtomRadiiTable() const
+{
+    AtomRadiiTable radiitable;
+    BOOST_FOREACH (const Atom_t& a, atoms_storage)
+    {
+        radiitable[a.element] = a.radius;
+    }
+    return radiitable;
 }
 
 
@@ -619,14 +706,18 @@ template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
     }
 }
 
+Molecule* rxa_molecule = NULL;
 AtomCost* rxa_atomcost = NULL;
+AtomOverlapCost* rxa_atomoverlap = NULL;
 
 double rxa_f(const gsl_vector* x, void* params)
 {
     Atom_t* pa = static_cast<Atom_t*>(params);
     Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
-    double rv = rxa_atomcost->eval(ta);
+    ta.ResetBadness(rxa_atomcost->eval(ta));
+    ta.ResetOverlap(rxa_atomoverlap->eval(ta));
+    double rv = ta.costShare(rxa_molecule->pairsPerAtomInc());
     return rv;
 }
 
@@ -636,7 +727,11 @@ void rxa_df(const gsl_vector* x, void* params, gsl_vector* g)
     Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
     rxa_atomcost->eval(ta, AtomCost::GRADIENT);
-    copyGSLvector(rxa_atomcost->gradient(), g);
+    rxa_atomoverlap->eval(ta, AtomCost::GRADIENT);
+    static R3::Vector gvec;
+    gvec = rxa_atomcost->gradient();
+    gvec += rxa_molecule->pairsPerAtomInc() * rxa_atomoverlap->gradient();
+    copyGSLvector(gvec, g);
 }
 
 void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
@@ -644,8 +739,13 @@ void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
     Atom_t* pa = static_cast<Atom_t*>(params);
     Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
-    *f = rxa_atomcost->eval(ta, AtomCost::GRADIENT);
-    copyGSLvector(rxa_atomcost->gradient(), g);
+    ta.ResetBadness(rxa_atomcost->eval(ta, AtomCost::GRADIENT));
+    ta.ResetOverlap(rxa_atomoverlap->eval(ta, AtomCost::GRADIENT));
+    *f = ta.costShare(rxa_molecule->pairsPerAtomInc());
+    static R3::Vector gvec;
+    gvec = rxa_atomcost->gradient();
+    gvec += rxa_molecule->pairsPerAtomInc() * rxa_atomoverlap->gradient();
+    copyGSLvector(gvec, g);
 }
 
 }   // namespace
@@ -688,6 +788,7 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
     // loop while badness is improved
     double lo_abad = DOUBLE_MAX;
     AtomCost* atomcost = getAtomCostCalculator();
+    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
 	double tbad = atomcost->eval(rta);
@@ -700,7 +801,9 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
 	// carry out relaxation otherwise
 	// define function to be minimized
 	gsl_multimin_function_fdf fdfmin;
+        rxa_molecule = this;
         rxa_atomcost = atomcost;
+        rxa_atomoverlap = atomoverlap;
   	fdfmin.f = &rxa_f;
 	fdfmin.df = &rxa_df;
 	fdfmin.fdf = &rxa_fdf;
@@ -735,7 +838,9 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
         }
         gsl_multimin_fdfminimizer_free(minimizer);
         gsl_vector_free(x);
+        rxa_molecule = NULL;
         rxa_atomcost = NULL;
+        rxa_atomoverlap = NULL;
     }
 }
 
@@ -814,6 +919,17 @@ void Molecule::removeAtomPairs(Atom_t* pa)
         }
     }
     if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
+    // remove overlap contributions
+    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
+    atomoverlap->eval(pa);
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
+    {
+        double aohalf = atomoverlap->partialCosts()[seq.idx()] / 2.0;
+        seq.ptr()->DecOverlap(aohalf);
+        pa->DecOverlap(aohalf);
+    }
+    this->DecOverlap(atomoverlap->totalCost());
+    if (this->Overlap() < NS_LIGA::eps_cost)    this->ResetOverlap();
 }
 
 
@@ -1199,8 +1315,8 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     // try to add as many atoms as possible
     while (true)
     {
-	filter_good_atoms(vta, evolve_range, hi_abad);
 	filter_bucket_atoms(vta);
+	filter_good_atoms(vta, evolve_range, hi_abad);
         // finished when no test atoms left
 	if (vta.empty())   break;
 	// calculate fitness of test atoms
@@ -1208,9 +1324,10 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
         // calculate fitness as reciprocal value of badness
         // fill the vtafit array with badness
         double* pfit = &vtafit[0];
+        double ppa = this->pairsPerAtomInc();
         for (VAit ai = vta.begin(); ai != vta.end(); ++ai, ++pfit)
         {
-            *pfit = ai->Badness();
+            *pfit = ai->costShare(ppa);
         }
         // then get the reciprocal value
         double* ftnfirst = &(vtafit[0]);
@@ -1249,11 +1366,12 @@ void Molecule::Degenerate(int Npop)
     double freebad[countAtoms()];
     int freeidx[countAtoms()];
     int Nfree = 0;
+    double ppa = this->pairsPerAtom();
     for (int i = 0; i != countAtoms(); ++i)
     {
 	Atom_t* pai = atoms[i];
 	if ( pai->fixed )  continue;
-	freebad[Nfree] = pai->Badness();
+	freebad[Nfree] = pai->costShare(ppa);
 	freeidx[Nfree] = i;
 	Nfree++;
     }
@@ -1468,6 +1586,19 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
 }
 
 
+void Molecule::recalculateOverlap() const
+{
+    this->ResetOverlap();
+    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
+    for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
+    {
+        double aohalf = atomoverlap->eval(seq0.ptr()) / 2.0;
+        seq0.ptr()->ResetOverlap(aohalf);
+        this->IncOverlap(aohalf);
+    }
+}
+
+
 void Molecule::PrintBadness() const
 {
     if (!countAtoms())  return;
@@ -1514,6 +1645,7 @@ void Molecule::PrintFitness()
     }
     cout << endl;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // non-member operators

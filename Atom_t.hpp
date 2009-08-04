@@ -47,11 +47,19 @@ class Atom_t
 	void IncBadness(const double& db);
 	void DecBadness(const double& db);
 	void ResetBadness(double b=0.0);
+	const double& Overlap() const;
+	double FreeOverlap() const;
+	void IncOverlap(const double& doverlap);
+	void DecOverlap(const double& doverlap);
+	void ResetOverlap(double overlap=0.0);
+        double costShare(double pairsperatom);
+
 
     private:
 
         // data
 	double _badness;
+	double _overlap;
 	mutable int pmxidx;     // pair matrix index
         Atom_t* mstorage_ptr;
 

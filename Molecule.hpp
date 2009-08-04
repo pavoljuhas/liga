@@ -25,9 +25,11 @@
 #include "TraceId_t.hpp"
 #include "EmbedPython.hpp"
 #include "ChemicalFormula.hpp"
+#include "AtomRadiiTable.hpp"
 
 class AtomFilter_t;
 class AtomCost;
+class AtomOverlapCost;
 using NS_LIGA::RandomWeighedGenerator;
 
 enum StructureType { MOLECULE, CRYSTAL };
@@ -89,20 +91,31 @@ class Molecule
         double getMaxAtomRadius() const;
 
 	// methods - fitness/badness evaluation
-	virtual double cost() const;    // normalized badness
+	virtual double cost() const;    // total normalized cost
+	double costDistance() const;    // normalized distance cost
+	double costOverlap() const;     // normalized atom overlap
 	const double& Badness() const;	// total badness
         void IncBadness(const double& db) const;
         void DecBadness(const double& db) const;
         void ResetBadness(double b=0.0) const;
+	const double& Overlap() const;	// total badness
+        void IncOverlap(const double& doverlap) const;
+        void DecOverlap(const double& doverlap) const;
+        void ResetOverlap(double overlap=0.0) const;
 	bool full() const;
 	int countAtoms() const;
 	virtual int countPairs() const;
+        double pairsPerAtom() const;
+        double pairsPerAtomInc() const;
 	int getMaxAtomCount() const;
 	void setChemicalFormula(const ChemicalFormula& formula);
 	ChemicalFormula getChemicalFormula() const;
+	void fetchAtomRadii(const AtomRadiiTable& radiitable);
+	AtomRadiiTable getAtomRadiiTable() const;
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
 	virtual AtomCost* getAtomCostCalculator() const;
+	virtual AtomOverlapCost* getAtomOverlapCalculator() const;
 
 	// methods - molecule operations
 	virtual void Shift(const R3::Vector& drc);  // cartesian shift
@@ -155,6 +168,7 @@ class Molecule
 	mutable SymmetricMatrix<double> pmx_used_distances;
         mutable std::set<int> free_pmx_slots;
 	mutable double _badness;	// molecular badness
+	mutable double _overlap;	// total atom overlap
 
 	// methods
 	virtual void addNewAtomPairs(Atom_t* pa);
@@ -180,6 +194,7 @@ class Molecule
 	void WriteStream(std::ostream&) const;
         virtual boost::python::object newDiffPyStructure() const;
         virtual void setFromDiffPyStructure(boost::python::object);
+	void recalculateOverlap() const;
 
     private:
 

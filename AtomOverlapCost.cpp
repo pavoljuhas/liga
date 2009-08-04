@@ -59,17 +59,16 @@ double AtomOverlapCost::eval(const Atom_t* pa, int flags)
     resetUseFlags();
     resetGradient();
     total_cost = 0.0;
-    vector<double>::iterator ptcii = partial_costs.begin();
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
-	// assertion checks
-	assert(ptcii < partial_costs.end());
+        // do not calculate own overlap
+        if (seq.ptr() == arg_atom)  continue;
 	// calculation
 	double d = R3::distance(arg_atom->r, seq.ptr()->r);
         double r0r1 = arg_atom->radius + seq.ptr()->radius;
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
 	double pcost = penalty(dd) * this->getScale();
-	*(ptcii++) = pcost;
+        partial_costs[seq.idx()] = pcost;
 	total_cost += pcost;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
         {

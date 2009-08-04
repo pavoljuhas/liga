@@ -219,6 +219,7 @@ void Crystal::recalculate() const
         }
     }
     this->_cost_data_cached = true;
+    this->recalculateOverlap();
 }
 
 
