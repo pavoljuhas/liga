@@ -120,6 +120,7 @@ void Liga_t::prepare()
     printWorldChamp();
     updateBestChamp();
     printBestChamp();
+    saveOutStru();
     cout << '\n' << "Starting the game ... now." << endl;
 }
 
