@@ -116,7 +116,7 @@ class Molecule
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
 	virtual AtomCost* getAtomCostCalculator() const;
-	virtual AtomOverlapCost* getAtomOverlapCalculator() const;
+	virtual AtomCost* getAtomOverlapCalculator() const;
 
 	// methods - molecule operations
 	virtual void Shift(const R3::Vector& drc);  // cartesian shift

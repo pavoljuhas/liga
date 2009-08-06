@@ -1,4 +1,3 @@
-#include "/home/juhas/arch/i686/include/dbprint.h"
 /***********************************************************************
 * Short Title: unit tests of least squares atom relaxation
 *
@@ -116,7 +115,6 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
         void test_RelaxOverlapBCC()
         {
             this->crbcc->getAtomCostCalculator()->setScale(0.0);
-            DBPRINT(crbcc->pairsPerAtom());
             this->crbcc->recalculate();
             TS_ASSERT_DELTA(0.0, this->crbcc->cost(), eps_distance);
             AtomRadiiTable radii;
@@ -124,14 +122,7 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
             this->crbcc->fetchAtomRadii(radii);
             TS_ASSERT(this->crbcc->cost() > eps_distance);
             Atom_t a1 = this->crbcc->getAtom(1);
-            DBPRINT(crbcc->countPairs());
-            DBPRINT(crbcc->countAtoms());
-            DBPRINT(crbcc->pairsPerAtom());
             this->crbcc->Pop(1);
-            DBPRINT(crbcc->pairsPerAtomInc());
-            DBPRINT(crbcc->countPairs());
-            DBPRINT(crbcc->countAtoms());
-            DBPRINT(crbcc->pairsPerAtom());
             Atom_t arx = a1;
             R3::Vector offset(0.013, -0.07, -0.03);
             arx.r += offset;

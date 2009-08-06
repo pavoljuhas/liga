@@ -57,6 +57,7 @@ class Crystal : public Molecule
 	virtual int countPairs() const;
         virtual void recalculate() const;
         virtual AtomCost* getAtomCostCalculator() const;
+        virtual AtomCost* getAtomOverlapCalculator() const;
 
 	virtual void Shift(const R3::Vector& drc);
 

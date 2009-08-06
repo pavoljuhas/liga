@@ -1,4 +1,3 @@
-#include "/home/juhas/arch/i686/include/dbprint.h"
 /***********************************************************************
  * Short Title: AtomCostCrystal - atom cost calculation with PBC
  *
@@ -142,7 +141,6 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
-DBPRINT(paircount);
     pair<double,int> rv(paircost, paircount);
     return rv;
 }

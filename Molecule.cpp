@@ -1,4 +1,3 @@
-#include "/home/juhas/arch/i686/include/dbprint.h"
 /***********************************************************************
 * Short Title: class Molecule - definitions
 *
@@ -239,7 +238,7 @@ AtomCost* Molecule::getAtomCostCalculator() const
 }
 
 
-AtomOverlapCost* Molecule::getAtomOverlapCalculator() const
+AtomCost* Molecule::getAtomOverlapCalculator() const
 {
     static AtomOverlapCost the_overlap_calculator(this);
     the_overlap_calculator.resetFor(this);
@@ -402,7 +401,6 @@ double Molecule::pairsPerAtomInc() const
 {
     int n = countAtoms();
     double m = n ? (countPairs() / (1.0 * n * n) + 0.5 + 0.5 / n) : 1.0;
-DBPRINT(m);
     double ppa = (n + 1) * (m - 0.5) - 0.5;
     return ppa;
 }
@@ -743,7 +741,7 @@ template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
 
 Molecule* rxa_molecule = NULL;
 AtomCost* rxa_atomcost = NULL;
-AtomOverlapCost* rxa_atomoverlap = NULL;
+AtomCost* rxa_atomoverlap = NULL;
 
 double rxa_f(const gsl_vector* x, void* params)
 {
@@ -823,7 +821,7 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
     // loop while badness is improved
     double lo_cost = DOUBLE_MAX;
     AtomCost* atomcost = getAtomCostCalculator();
-    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
+    AtomCost* atomoverlap = getAtomOverlapCalculator();
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
         // get out if lo_cost is very low
@@ -1622,7 +1620,7 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
 void Molecule::recalculateOverlap() const
 {
     this->ResetOverlap();
-    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
+    AtomCost* atomoverlap = getAtomOverlapCalculator();
     for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
     {
         double aohalf = atomoverlap->eval(seq0.ptr()) / 2.0;
@@ -1635,7 +1633,7 @@ void Molecule::recalculateOverlap() const
 void Molecule::atomOverlapContributions(Atom_t* pa, AddRemove sign)
 {
     // add overlap contributions
-    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
+    AtomCost* atomoverlap = getAtomOverlapCalculator();
     atomoverlap->eval(pa);
     for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
     {
