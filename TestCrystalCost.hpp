@@ -36,11 +36,9 @@ class TestCrystalCost : public CxxTest::TestSuite
         {
             double_eps = DOUBLE_EPS;
             gradient_eps = 1e-6;
-            crst.Clear();
+            crst = Crystal();
+            crst.setChemicalFormula("C4");
             crst.setRmax(3.05);
-            ChemicalFormula formula;
-            formula.push_back(ChemicalFormula::value_type("C", 4));
-            crst.setChemicalFormula(formula);
             // do the rest only once
             if (!cubic.get())   cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));
             if (!rhombohedral.get())    rhombohedral.reset(
@@ -84,6 +82,7 @@ class TestCrystalCost : public CxxTest::TestSuite
         {
             crst.setLattice(*cubic);
             crst.setDistanceTable(dst_bcc);
+            crst.setChemicalFormula("C2");
             TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
             crst.AddAt("C", 0.0, 0.0, 0.0);
             TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
@@ -133,19 +132,17 @@ class TestCrystalCost : public CxxTest::TestSuite
         }
 
 
-        R3::Vector analytical_gradient(const Atom_t& a0)
+        R3::Vector analytical_gradient(const Atom_t& a0, AtomCost* atomcost)
         {
-            AtomCost* atomcost = crst.getAtomCostCalculator();
             atomcost->eval(a0, AtomCost::GRADIENT);
             R3::Vector grad = atomcost->gradient();
             return grad;
         }
 
 
-        R3::Vector numerical_gradient(const Atom_t& a0)
+        R3::Vector numerical_gradient(const Atom_t& a0, AtomCost* atomcost)
         {
             const double delta = 1e-8;
-            AtomCost* atomcost = crst.getAtomCostCalculator();
             double ac0 = atomcost->eval(a0);
             R3::Vector numgrad;
             for (int i = 0; i < 3; ++i)
@@ -163,11 +160,26 @@ class TestCrystalCost : public CxxTest::TestSuite
         {
             crst.setLattice(*cubic);
             crst.setDistanceTable(dst_bcc);
+            crst.setChemicalFormula("C2");
             crst.AddAt("C", 0.0, 0.0, 0.0);
-            Atom_t a1("C", 0.5, 0.5, 0.5);
-            R3::Vector ga = analytical_gradient(a1);
-            R3::Vector gn = numerical_gradient(a1);
+            // cost gradient
+            Atom_t a1("C", 0.51, 0.52, 0.53);
+            AtomCost* atomcost = crst.getAtomCostCalculator();
+            R3::Vector ga, gn;
+            ga = analytical_gradient(a1, atomcost);
+            gn = numerical_gradient(a1, atomcost);
             double gdiff = R3::distance(gn, ga);
+            TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
+            // overlap gradient
+            AtomCost* atomoverlap = crst.getAtomOverlapCalculator();
+            TS_ASSERT_EQUALS(0.0, atomoverlap->eval(a1));
+            AtomRadiiTable radii;
+            radii["C"] = a1.radius = 0.5;
+            crst.fetchAtomRadii(radii);
+            TS_ASSERT(atomoverlap->eval(a1) > 0.0)
+            ga = analytical_gradient(a1, atomoverlap); 
+            gn = numerical_gradient(a1, atomoverlap);  
+            gdiff = R3::distance(gn, ga);
             TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
         }
 
@@ -181,14 +193,27 @@ class TestCrystalCost : public CxxTest::TestSuite
             crst.ReadFile("crystals/triclinic.stru");
             Atom_t a1 = crst.getAtom(1);
             crst.Pop(1);
-            R3::Vector ga = analytical_gradient(a1);
+            // cost gradient
+            AtomCost* atomcost = crst.getAtomCostCalculator();
+            R3::Vector ga = analytical_gradient(a1, atomcost);
             double ganorm = R3::norm(ga);
             TS_ASSERT_DELTA(0.0, ganorm, gradient_eps);
             Atom_t a2("C", 0.5, 0.5, 0.5);
             R3::Vector gn;
-            ga = analytical_gradient(a2);
-            gn = numerical_gradient(a2);
+            ga = analytical_gradient(a2, atomcost);
+            gn = numerical_gradient(a2, atomcost);
             double gdiff = R3::distance(gn, ga);
+            TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
+            // overlap gradient
+            AtomCost* atomoverlap = crst.getAtomOverlapCalculator();
+            TS_ASSERT_EQUALS(0.0, atomoverlap->eval(a2));
+            AtomRadiiTable radii;
+            a2.radius = radii["C"] = 0.4;
+            crst.fetchAtomRadii(radii);
+            TS_ASSERT(atomoverlap->eval(a2) > 0.0);
+            ga = analytical_gradient(a2, atomoverlap); 
+            gn = numerical_gradient(a2, atomoverlap);  
+            gdiff = R3::distance(gn, ga);
             TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
         }
 
