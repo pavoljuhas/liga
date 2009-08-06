@@ -21,45 +21,85 @@
 #include <cstdlib>
 #include <cctype>
 #include <sstream>
-#include <boost/foreach.hpp>
+#include <cassert>
+
 #include "ChemicalFormula.hpp"
 
 using namespace std;
 
+// Constructors --------------------------------------------------------------
 
-ChemicalFormula chemicalFormulaFromString(const std::string& sfml)
+ChemicalFormula::ChemicalFormula()
 {
-    ChemicalFormula rv;
-    BOOST_FOREACH (string::value_type c, sfml)
+}
+
+
+ChemicalFormula::ChemicalFormula(const string& formula)
+{
+    this->fromString(formula);
+}
+
+// Public Methods ------------------------------------------------------------
+
+int ChemicalFormula::countElements() const
+{
+    int cnt = 0;
+    for (const_iterator sc = this->begin(); sc != this->end(); ++sc)
     {
-        if (isblank(c))  continue;
-        if (rv.empty() || isupper(c))
-        {
-            rv.push_back(ChemicalFormula::value_type("", 0));
-        }
-        string& smblcnt = rv.back().first;
-        smblcnt += c;
+        cnt += max(0, sc->second);
     }
-    BOOST_FOREACH (ChemicalFormula::value_type& elcnt, rv)
+    return cnt;
+}
+
+
+vector<string> ChemicalFormula::expand() const
+{
+    vector<string> rv;
+    for (const_iterator sc = this->begin(); sc != this->end(); ++sc)
     {
-        string& smblcnt = elcnt.first;
-        string::size_type pcnt;
-        pcnt = smblcnt.find_last_not_of("0123456789") + 1;
-        string scnt = smblcnt.substr(pcnt);
-        smblcnt.erase(pcnt);
-        elcnt.second = scnt.empty() ? 1 : atoi(scnt.c_str());
+        int c = max(0, sc->second);
+        rv.insert(rv.end(), c, sc->first);
     }
+    assert(int(rv.size()) == this->countElements());
     return rv;
 }
 
 
-string chemicalFormulaAsString(const ChemicalFormula& formula)
+void ChemicalFormula::fromString(const std::string& s)
+{
+    ChemicalFormula chfm;
+    for (string::const_iterator c = s.begin(); c != s.end(); ++c)
+    {
+        if (isblank(*c))  continue;
+        if (chfm.empty() || isupper(*c))
+        {
+            chfm.push_back(ChemicalFormula::value_type("", 0));
+        }
+        string& smblcnt = chfm.back().first;
+        smblcnt += *c;
+    }
+    for (iterator sc = chfm.begin(); sc != chfm.end(); ++sc)
+    {
+        string& smblcnt = sc->first;
+        string::size_type pcnt;
+        pcnt = smblcnt.find_last_not_of("0123456789") + 1;
+        string scnt = smblcnt.substr(pcnt);
+        smblcnt.erase(pcnt);
+        sc->second = scnt.empty() ? 1 : atoi(scnt.c_str());
+    }
+    // assign when everything went 
+    this->swap(chfm);
+}
+
+
+string ChemicalFormula::toString(string separator) const
 {
     ostringstream rv;
-    BOOST_FOREACH (const ChemicalFormula::value_type& elcnt, formula)
+    for (const_iterator sc = this->begin(); sc != this->end(); ++sc)
     {
-        rv << elcnt.first;
-        if (elcnt.second != 1)   rv << elcnt.second;
+        if (sc != this->begin())  rv << separator;
+        if (sc->second > 0)  rv << sc->first;
+        if (sc->second > 1)  rv << sc->second;
     }
     return rv.str();
 }

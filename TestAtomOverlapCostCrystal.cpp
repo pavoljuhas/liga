@@ -61,9 +61,7 @@ public:
 	dst = DistanceTable(dst_data, 1);
         crnotouch.setDistanceTable(dst);
         crnotouch.setLattice(cubic);
-        ChemicalFormula::value_type elcnt("C", 2);
-        ChemicalFormula formula(1, elcnt);
-        crnotouch.setChemicalFormula(formula);
+        crnotouch.setChemicalFormula("C2");
         crnotouch.Clear();
         crnotouch.AddAt("C", 0.0, 0.0, 0.0);
         crnotouch.AddAt("C", 0.5, 0.5, 0.5);

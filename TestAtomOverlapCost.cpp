@@ -53,6 +53,7 @@ public:
 	double dst_data[1] = { 1.0 };
 	dst = DistanceTable(dst_data, 1);
         mnotouch.setDistanceTable(dst);
+        mnotouch.setChemicalFormula("C2");
         mnotouch.Clear();
         mnotouch.AddAt("C", -0.5, 0.0, 0.0);
         mnotouch.AddAt("C", +0.5, 0.0, 0.0);

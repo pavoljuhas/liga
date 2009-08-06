@@ -1,3 +1,4 @@
+#include "/home/juhas/arch/i686/include/dbprint.h"
 /***********************************************************************
 * Short Title: unit tests of least squares atom relaxation
 *
@@ -12,6 +13,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "AtomCost.hpp"
+#include "AtomOverlapCost.hpp"
 #include "LigaUtils.hpp"
 #include "Crystal.hpp"
 
@@ -24,6 +26,7 @@ class TestRelaxCrystalAtom : public CppUnit::TestFixture
     CPPUNIT_TEST(test_RelaxBCC);
     CPPUNIT_TEST(test_RelaxFCC);
     CPPUNIT_TEST(test_RelaxTriclinic);
+    CPPUNIT_TEST(test_RelaxOverlapBCC);
     CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -73,7 +76,10 @@ public:
     }
 
     void tearDown() 
-    { }
+    { 
+        this->crbcc->getAtomCostCalculator()->setScale(1.0);
+        this->crbcc->getAtomOverlapCalculator()->setScale(1.0);
+    }
 
     void test_RelaxBCC()
     {
@@ -111,6 +117,32 @@ public:
 	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, drx, eps_distance);
     }
 
+    void test_RelaxOverlapBCC()
+    {
+        this->crbcc->getAtomCostCalculator()->setScale(0.0);
+DBPRINT(crbcc->pairsPerAtom());
+        this->crbcc->recalculate();
+        CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, this->crbcc->cost(), eps_distance);
+        AtomRadiiTable radii;
+        radii["C"] = 0.5;
+        this->crbcc->fetchAtomRadii(radii);
+        CPPUNIT_ASSERT(this->crbcc->cost() > eps_distance);
+        Atom_t a1 = this->crbcc->getAtom(1);
+DBPRINT(crbcc->countPairs());
+DBPRINT(crbcc->countAtoms());
+DBPRINT(crbcc->pairsPerAtom());
+        this->crbcc->Pop(1);
+DBPRINT(crbcc->pairsPerAtomInc());
+DBPRINT(crbcc->countPairs());
+DBPRINT(crbcc->countAtoms());
+DBPRINT(crbcc->pairsPerAtom());
+        Atom_t arx = a1;
+        R3::Vector offset(0.013, -0.07, -0.03);
+        arx.r += offset;
+        this->crbcc->RelaxExternalAtom(&arx);
+        double drx = R3::distance(a1.r, arx.r);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, drx, eps_distance);
+    }
 
 };
 

@@ -86,6 +86,7 @@ void Crystal::setDistanceTable(const DistanceTable& dtbl)
     this->_full_distance_table.reset(new DistanceTable(dtbl_unique));
     this->cropDistanceTable();
     this->uncacheCostData();
+    this->CheckIntegrity();
 }
 
 void Crystal::setDistReuse(bool flag)
@@ -183,8 +184,8 @@ void Crystal::recalculate() const
     atomcost = static_cast<AtomCostCrystal*>(getAtomCostCalculator());
     // fill in diagonal elements
     R3::Vector zeros(0.0, 0.0, 0.0);
-    pair<double,int> costcount;
-    costcount = atomcost->pairCostCount(zeros, true);
+    pair<double,int> costcount = (this->countAtoms()) ?
+        atomcost->pairCostCount(zeros, true) : make_pair(0.0, 0);
     double diagpaircost = costcount.first;
     int diagpaircount = costcount.second;
     for (AtomSequence seq(this); !seq.finished(); seq.next())
@@ -201,7 +202,7 @@ void Crystal::recalculate() const
     for (AtomSequence seq0(this); !seq0.finished(); seq0.next())
     {
         AtomSequence seq1 = seq0;
-        if (!seq1.finished())   seq1.next();
+        seq1.next();
         for (; !seq1.finished(); seq1.next())
         {
             int idx0 = seq0.ptr()->pmxidx;
@@ -210,12 +211,13 @@ void Crystal::recalculate() const
             costcount = atomcost->pairCostCount(rc_dd);
             // pmx is SymmetricMatrix, it is sufficient to make one assignment
             this->pmx_partial_costs(idx0, idx1) = costcount.first;
-            this->IncBadness(costcount.first);
-            double paircosthalf = costcount.first / 2.0;
-            seq0.ptr()->IncBadness(paircosthalf);
-            seq1.ptr()->IncBadness(paircosthalf);
+            // off diagonal contributions need to be counted twice
+            this->IncBadness(2 * costcount.first);
+            seq0.ptr()->IncBadness(costcount.first);
+            seq1.ptr()->IncBadness(costcount.first);
             this->pmx_pair_counts(idx0, idx1) = costcount.second;
-            this->_count_pairs += costcount.second;
+            // off diagonal contributions need to be counted twice
+            this->_count_pairs += 2 * costcount.second;
         }
     }
     this->_cost_data_cached = true;
@@ -290,15 +292,19 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
 	double paircost = ptcs[seq.idx()];
 	int idx0 = pa->pmxidx;
 	int idx1 = seq.ptr()->pmxidx;
+        assert(idx0 != idx1);
 	this->pmx_partial_costs(idx0, idx1) = paircost;
-	double paircosthalf = paircost / 2.0;
-	seq.ptr()->IncBadness(paircosthalf);
-	pa->IncBadness(paircosthalf);
+        // paircost contributes to the total distance cost twice
+        // first for pairs of pa to the outside atoms in the sphere
+        // second for pairs of unit cell atoms to pa translations
+	seq.ptr()->IncBadness(paircost);
+	pa->IncBadness(paircost);
         int paircount = pcnt[seq.idx()];
         this->pmx_pair_counts(idx0, idx1) = paircount;
     }
-    this->IncBadness(atomcost->totalCost());
-    this->_count_pairs += atomcost->totalPairCount();
+    // again, the off-diagonal cost needs to be counted twice
+    this->IncBadness(2 * atomcost->totalCost());
+    this->_count_pairs += 2 * atomcost->totalPairCount();
     // add self contribution:
     // calculates self cost and self pair count
     double diagpaircost;
@@ -325,6 +331,8 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
     this->_count_pairs += diagpaircount;
     // take care of small round offs
     if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
+    // add overlap contributions
+    this->atomOverlapContributions(pa, ADD);
 }
 
 
@@ -337,15 +345,18 @@ void Crystal::removeAtomPairs(Atom_t* pa)
 	int idx1 = seq.ptr()->pmxidx;
 	// remove pair costs
 	double paircost = pmx_partial_costs(idx0, idx1);
-	double paircosthalf = paircost/2.0;
-	pa->DecBadness(paircosthalf);
-	seq.ptr()->DecBadness(paircosthalf);
-	this->DecBadness(paircost);
+        // paircost needs to be removed twice for off-diagonal elements
+	pa->DecBadness(paircost);
+        if (pa != seq.ptr())  seq.ptr()->DecBadness(paircost);
+        int loopscale = (idx0 != idx1) ? 2 : 1;
+	this->DecBadness(loopscale * paircost);
         // remove pair counts
-        this->_count_pairs -= this->pmx_pair_counts(idx0, idx1);
+        this->_count_pairs -= loopscale * this->pmx_pair_counts(idx0, idx1);
     }
     if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
     assert(this->_count_pairs >= 0);
+    // remove overlap contributions
+    this->atomOverlapContributions(pa, REMOVE);
 }
 
 

@@ -22,14 +22,28 @@
 #define CHEMICALFORMULA_HPP_INCLUDED
 
 #include <utility>
-#include <list>
+#include <vector>
 #include <string>
 
-#include <boost/foreach.hpp>
+class ChemicalFormula : public std::vector< std::pair<std::string,int> >
+{
+    public:
 
-typedef std::list< std::pair<std::string,int> > ChemicalFormula;
+        // Constructors
+        ChemicalFormula();
+        ChemicalFormula(const std::string&);
 
-ChemicalFormula chemicalFormulaFromString(const std::string&);
-std::string chemicalFormulaAsString(const ChemicalFormula&);
+        // Methods
+
+        /// total count of elements
+        int countElements() const;
+        /// expand to a vector of elements
+        std::vector<std::string> expand() const;
+        /// initialize from a string
+        void fromString(const std::string&);
+        /// convert to a string
+        std::string toString(std::string separator="") const;
+
+};
 
 #endif  // CHEMICALFORMULA_HPP_INCLUDED

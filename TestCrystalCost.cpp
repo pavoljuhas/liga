@@ -49,8 +49,8 @@ public:
 	gradient_eps = 1e-6;
         crst.Clear();
         crst.setRmax(3.05);
-        ChemicalFormula::value_type elcnt("C", 4);
-        ChemicalFormula formula(1, elcnt);
+        ChemicalFormula formula;
+        formula.push_back(ChemicalFormula::value_type("C", 4));
         crst.setChemicalFormula(formula);
         // do the rest only once
         if (!cubic.get())   cubic.reset(new Lattice(1, 1, 1, 90, 90, 90));

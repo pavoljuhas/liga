@@ -33,6 +33,7 @@ using namespace NS_LIGA;
 RunPar_t::RunPar_t(int argc, char* argv[])
 {
     processArguments(argc, argv);
+    this->mol->CheckIntegrity();
 }
 
 void RunPar_t::processArguments(int argc, char* argv[])
@@ -258,11 +259,16 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // formula must be set after distreuse
     if (args->ispar("formula"))
     {
-	this->formula = chemicalFormulaFromString(
-                args->GetPar<string>("formula"));
+	this->formula.fromString(args->GetPar<string>("formula"));
 	this->mol->setChemicalFormula(this->formula);
     }
     formula = mol->getChemicalFormula();
+    // radii
+    if (args->ispar("radii"))
+    {
+        this->radii.fromString(args->GetPar<string>("radii"));
+        this->mol->fetchAtomRadii(this->radii);
+    }
     // fixed_atoms must be set after inistru
     if (args->ispar("fixed_atoms"))
     {
@@ -375,6 +381,7 @@ void RunPar_t::print_help()
 "  distreuse=bool        [false] keep used distances in distance table\n"
 "  tolcost=double        [1E-4] target normalized molecule cost\n"
 "  formula=string        chemical formula, use inistru when not specified\n"
+"  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
@@ -493,7 +500,12 @@ void RunPar_t::print_pars()
     // tolcost
     cout << "tolcost=" << tolcost << '\n';
     // formula
-    cout << "formula=" << chemicalFormulaAsString(this->formula) << '\n';
+    cout << "formula=" << this->formula.toString() << '\n';
+    // radii
+    if (!this->radii.empty())
+    {
+        cout << "radii=" << this->radii.toString() << '\n';
+    }
     // fixed_atoms
     if (args->ispar("fixed_atoms") && !fixed_atoms.empty())
     {
@@ -571,6 +583,7 @@ const list<string>& RunPar_t::validpars() const
         "distreuse",
         "tolcost",
         "formula",
+        "radii",
         "fixed_atoms",
         "maxcputime",
         "rngseed",

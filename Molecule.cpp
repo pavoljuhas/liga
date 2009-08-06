@@ -1,3 +1,4 @@
+#include "/home/juhas/arch/i686/include/dbprint.h"
 /***********************************************************************
 * Short Title: class Molecule - definitions
 *
@@ -56,6 +57,7 @@ Molecule::Molecule() : id(Molecule::getUniqueId())
     init();
     const static DistanceTable nodistances;
     setDistanceTable(nodistances);
+    this->CheckIntegrity();
 }
 
 Molecule::Molecule(const Molecule& M) : id(Molecule::getUniqueId())
@@ -99,6 +101,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     atoms_bucket.resize(M.atoms_bucket.size());
     for (size_t i = 0; i != M.atoms_bucket.size(); ++i)
     {
+        assert(mapatomptr.count(M.atoms_bucket[i]));
 	atoms_bucket[i] = mapatomptr[M.atoms_bucket[i]];
         assert(atoms_bucket[i] != NULL);
     }
@@ -140,8 +143,10 @@ void Molecule::setDistanceTable(const DistanceTable& dtbl)
     this->_distance_table.reset(new DistanceTable(dtbl));
     if (atoms_storage.empty() && !dtbl.empty())
     {
-        ChemicalFormula::value_type elcnt("C", dtbl.estNumAtoms());
-        this->setChemicalFormula(ChemicalFormula(1, elcnt));
+        ChemicalFormula chfm;
+        ChemicalFormula::value_type sc("", dtbl.estNumAtoms());
+        chfm.push_back(sc);
+        this->setChemicalFormula(chfm);
     }
 }
 
@@ -395,9 +400,10 @@ double Molecule::pairsPerAtom() const
 
 double Molecule::pairsPerAtomInc() const
 {
-    int N = countAtoms();
-    double m = (countPairs() - N * (N - 1) / 2) / (1.0 * N * N) + 1.0;
-    double ppa = countAtoms() ?  (N / 2.0 + (N + 1) * (m - 1)) : 0.0;
+    int n = countAtoms();
+    double m = n ? (countPairs() / (1.0 * n * n) + 0.5 + 0.5 / n) : 1.0;
+DBPRINT(m);
+    double ppa = (n + 1) * (m - 0.5) - 0.5;
     return ppa;
 }
 
@@ -423,26 +429,49 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
 
+void Molecule::setChemicalFormula(const string& s)
+{
+    ChemicalFormula formula(s);
+    this->setChemicalFormula(formula);
+}
+
+
 void Molecule::setChemicalFormula(const ChemicalFormula& formula)
 {
-    this->Clear();
     // store existing atom radii
     AtomRadiiTable radiitable = this->getAtomRadiiTable();
-    atoms_storage.clear();
     ChemicalFormula::const_iterator ec;
-    for (ec = formula.begin(); ec != formula.end(); ++ec)
-    {
-        if (ec->second <= 0)    continue;
-        Atom_t a(ec->first, 0.0, 0.0, 0.0);
-        atoms_storage.insert(atoms_storage.end(), ec->second, a);
-    }
-    atoms_bucket.clear();
-    atoms_bucket.reserve(atoms_storage.size());
+    vector<string> expanded_formula = formula.expand();
+    atoms_storage.resize(formula.countElements(), Atom_t("", 0.0, 0.0, 0.0));
+    int aidx = 0;
+    set<const Atom_t*> set_storage;
+    set<const Atom_t*> set_oldies;
+    set_oldies.insert(atoms_bucket.begin(), atoms_bucket.end());
+    set_oldies.insert(atoms.begin(), atoms.end());
     BOOST_FOREACH (Atom_t& a, atoms_storage)
     {
-        atoms_bucket.push_back(&a);
+        set_storage.insert(&a);
+        // add any new atoms to the bucket
+        if (!set_oldies.count(&a))  atoms_bucket.push_back(&a);
+        // replace formula
+        a.element = expanded_formula[aidx];
+        aidx += 1;
     }
+    // remove any atom pointers that are not it the storage
+    vector<Atom_t*>::iterator ai, ag;
+    for (ai = ag = atoms_bucket.begin(); ai != atoms_bucket.end(); ++ai)
+    {
+        if (set_storage.count(*ai))   (*ag++) = *ai;
+    }
+    atoms_bucket.erase(ag, atoms_bucket.end());
+    for (ai = ag = atoms.begin(); ai != atoms.end(); ++ai)
+    {
+        if (set_storage.count(*ai))   (*ag++) = *ai;
+    }
+    atoms.erase(ag, atoms.end());
     this->fetchAtomRadii(radiitable);
+    this->recalculate();
+    this->CheckIntegrity();
 }
 
 
@@ -475,10 +504,13 @@ void Molecule::fetchAtomRadii(const AtomRadiiTable& radiitable)
 AtomRadiiTable Molecule::getAtomRadiiTable() const
 {
     AtomRadiiTable radiitable;
+    bool allradiizero = true;
     BOOST_FOREACH (const Atom_t& a, atoms_storage)
     {
         radiitable[a.element] = a.radius;
+        if (a.radius != 0.0)   allradiizero = false;
     }
+    if (allradiizero)   radiitable.clear();
     return radiitable;
 }
 
@@ -543,6 +575,8 @@ void Molecule::Clear()
     atoms.clear();
     free_pmx_slots.clear();
     ResetBadness();
+    ResetOverlap();
+    CheckIntegrity();
 }
 
 
@@ -585,6 +619,7 @@ void Molecule::Add(Atom_t* pa)
     assert(ai != atoms_bucket.end());
     // reset cost related attributes
     pa->ResetBadness();
+    pa->ResetOverlap();
     pa->pmxidx = getPairMatrixIndex();
     // create new pairs while summing up the costs
     addNewAtomPairs(pa);
@@ -786,46 +821,39 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
     // do relaxation on a copy of ta
     Atom_t rta(*pa);
     // loop while badness is improved
-    double lo_abad = DOUBLE_MAX;
+    double lo_cost = DOUBLE_MAX;
     AtomCost* atomcost = getAtomCostCalculator();
     AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
     for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
     {
-	double tbad = atomcost->eval(rta);
-	// get out if tbad did not improve
-	if (!eps_lt(tbad, lo_abad))	break;
-	lo_abad = tbad;
-	*pa = rta;
-	// get out if lo_abad is very low
-	if (lo_abad < NS_LIGA::eps_cost)    break;
-	// carry out relaxation otherwise
-	// define function to be minimized
-	gsl_multimin_function_fdf fdfmin;
+        // get out if lo_cost is very low
+        if (lo_cost < NS_LIGA::eps_cost)    break;
+        gsl_multimin_function_fdf fdfmin;
         rxa_molecule = this;
         rxa_atomcost = atomcost;
         rxa_atomoverlap = atomoverlap;
-  	fdfmin.f = &rxa_f;
-	fdfmin.df = &rxa_df;
-	fdfmin.fdf = &rxa_fdf;
+        fdfmin.f = &rxa_f;
+        fdfmin.df = &rxa_df;
+        fdfmin.fdf = &rxa_fdf;
         // FIXME handling of ndim
-	fdfmin.n = 3;
-	fdfmin.params = &rta;
-	// copy rta coordinates to vector x
+        fdfmin.n = 3;
+        fdfmin.params = &rta;
+        // copy rta coordinates to vector x
         gsl_vector* x = gsl_vector_alloc(3);
         gsl_vector_set(x, 0, rta.r[0]);
         gsl_vector_set(x, 1, rta.r[1]);
         gsl_vector_set(x, 2, rta.r[2]);
-	// allocate minimizer
-	gsl_multimin_fdfminimizer* minimizer;
+        // allocate minimizer
+        gsl_multimin_fdfminimizer* minimizer;
         minimizer = gsl_multimin_fdfminimizer_alloc(minimizer_type, fdfmin.n);
         gsl_multimin_fdfminimizer_set(minimizer,
                 &fdfmin, x, minimizer_step, minimizer_tol);
-	// iterate
+        // iterate
         int iter, status;
         for (iter = 0; iter < maximum_iterations; ++iter)
         {
-	    status = gsl_multimin_fdfminimizer_iterate(minimizer);
-	    if (status != GSL_SUCCESS)  break;
+            status = gsl_multimin_fdfminimizer_iterate(minimizer);
+            if (status != GSL_SUCCESS)  break;
             status = gsl_multimin_test_gradient(minimizer->gradient,
                     minimizer_stop_gradient);
             if (status == GSL_SUCCESS)  break;
@@ -836,11 +864,18 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
         {
             rta.r[i] = gsl_vector_get(minimizer->x, i);
         }
+        double test_cost = minimizer->f;
         gsl_multimin_fdfminimizer_free(minimizer);
         gsl_vector_free(x);
         rxa_molecule = NULL;
         rxa_atomcost = NULL;
         rxa_atomoverlap = NULL;
+        // get out if test_cost did not improve
+        if (!eps_lt(test_cost, lo_cost))  break;
+        lo_cost = test_cost;
+        *pa = rta;
+        // carry out relaxation otherwise
+        // define function to be minimized
     }
 }
 
@@ -887,7 +922,10 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
             this->_distance_table->erase(pos);
         }
     }
+    // add overlap contributions
+    this->atomOverlapContributions(pa, ADD);
 }
+
 
 void Molecule::removeAtomPairs(Atom_t* pa)
 {
@@ -920,16 +958,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
     }
     if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
     // remove overlap contributions
-    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
-    atomoverlap->eval(pa);
-    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
-    {
-        double aohalf = atomoverlap->partialCosts()[seq.idx()] / 2.0;
-        seq.ptr()->DecOverlap(aohalf);
-        pa->DecOverlap(aohalf);
-    }
-    this->DecOverlap(atomoverlap->totalCost());
-    if (this->Overlap() < NS_LIGA::eps_cost)    this->ResetOverlap();
+    this->atomOverlapContributions(pa, REMOVE);
 }
 
 
@@ -1465,6 +1494,7 @@ void Molecule::returnUsedDistances()
 void Molecule::ReadFile(const string& filename)
 {
     namespace python = boost::python;
+    AtomRadiiTable radiitable = this->getAtomRadiiTable();
     try {
         initializePython();
         python::object stru = this->newDiffPyStructure();
@@ -1476,6 +1506,8 @@ void Molecule::ReadFile(const string& filename)
         const char* emsg = "Cannot read structure.";
         throw IOError(emsg);
     }
+    this->fetchAtomRadii(radiitable);
+    this->CheckIntegrity();
 }
 
 
@@ -1562,6 +1594,7 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
     int num_atoms = python::len(stru);
     this->Clear();
     atoms_storage.clear();
+    atoms_bucket.clear();
     for (int i = 0; i != num_atoms; ++i)
     {
         python::object ai;
@@ -1595,6 +1628,25 @@ void Molecule::recalculateOverlap() const
         double aohalf = atomoverlap->eval(seq0.ptr()) / 2.0;
         seq0.ptr()->ResetOverlap(aohalf);
         this->IncOverlap(aohalf);
+    }
+}
+
+
+void Molecule::atomOverlapContributions(Atom_t* pa, AddRemove sign)
+{
+    // add overlap contributions
+    AtomOverlapCost* atomoverlap = getAtomOverlapCalculator();
+    atomoverlap->eval(pa);
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
+    {
+        double aohalf = sign * atomoverlap->partialCosts()[seq.idx()] / 2.0;
+        seq.ptr()->IncOverlap(aohalf);
+        pa->IncOverlap(aohalf);
+    }
+    this->IncOverlap(sign * atomoverlap->totalCost());
+    if (sign == REMOVE && this->Overlap() < NS_LIGA::eps_cost)
+    {
+        this->ResetOverlap();
     }
 }
 
@@ -1644,6 +1696,30 @@ void Molecule::PrintFitness()
 	cout << *pd;
     }
     cout << endl;
+}
+
+
+void Molecule::CheckIntegrity() const
+{
+#ifndef NDEBUG
+    set<const Atom_t*> set_atoms(atoms.begin(), atoms.end());
+    set<const Atom_t*> set_bucket(atoms_bucket.begin(), atoms_bucket.end());
+    assert(set_atoms.size() + set_bucket.size() == atoms_storage.size());
+    set<const Atom_t*> set_storage;
+    BOOST_FOREACH (const Atom_t& a, atoms_storage)
+    {
+        set_storage.insert(&a);
+    }
+    assert(set_storage.size() == atoms_storage.size());
+    BOOST_FOREACH (const Atom_t* pa, set_atoms)
+    {
+        assert(set_storage.count(pa));
+    }
+    BOOST_FOREACH (const Atom_t* pa, set_bucket)
+    {
+        assert(set_storage.count(pa));
+    }
+#endif  // NDEBUG
 }
 
 

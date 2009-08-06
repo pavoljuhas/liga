@@ -45,6 +45,7 @@ struct RunPar_t
     bool distreuse;
     double tolcost;
     ChemicalFormula formula;
+    AtomRadiiTable radii;
     std::vector<int> fixed_atoms;
     double maxcputime;
     int rngseed;

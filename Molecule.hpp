@@ -108,6 +108,7 @@ class Molecule
         double pairsPerAtom() const;
         double pairsPerAtomInc() const;
 	int getMaxAtomCount() const;
+	void setChemicalFormula(const std::string&);
 	void setChemicalFormula(const ChemicalFormula& formula);
 	ChemicalFormula getChemicalFormula() const;
 	void fetchAtomRadii(const AtomRadiiTable& radiitable);
@@ -143,6 +144,7 @@ class Molecule
 	void WriteFile(const std::string&); // write to file
 	void PrintBadness() const;	// total and per-atomic badness
 	void PrintFitness();		// total and per-atomic fitness
+        void CheckIntegrity() const;
 
     protected:
 
@@ -195,6 +197,8 @@ class Molecule
         virtual boost::python::object newDiffPyStructure() const;
         virtual void setFromDiffPyStructure(boost::python::object);
 	void recalculateOverlap() const;
+        enum AddRemove { ADD = 1, REMOVE = -1 };
+        void atomOverlapContributions(Atom_t* pa, AddRemove sign);
 
     private:
 

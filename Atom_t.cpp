@@ -97,6 +97,7 @@ void Atom_t::init(double rx, double ry, double rz)
     this->r = rx, ry, rz;
     this->fixed = false;
     this->ttp = LINEAR;
+    this->radius = 0.0;
     this->ResetBadness(0.0);
     this->ResetOverlap(0.0);
 }
