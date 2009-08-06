@@ -10,7 +10,7 @@
 *
 ************************************************************************
 *
-* class AtomOverlapCost
+* class AtomOverlap
 *
 * Comments: OverlapCost calculation for a Molecule
 *
@@ -20,7 +20,7 @@
 
 #include <vector>
 
-#include "AtomOverlapCost.hpp"
+#include "AtomOverlap.hpp"
 #include "AtomSequence.hpp"
 #include "Molecule.hpp"
 #include "LigaUtils.hpp"
@@ -30,12 +30,12 @@ using namespace std;
 
 // Constructor ---------------------------------------------------------------
 
-AtomOverlapCost::AtomOverlapCost(const Molecule* m) : AtomCost(m)
+AtomOverlap::AtomOverlap(const Molecule* m) : AtomCost(m)
 { }
 
 // Public Methods ------------------------------------------------------------
 
-void AtomOverlapCost::resetFor(const Molecule* m)
+void AtomOverlap::resetFor(const Molecule* m)
 {
     arg_cluster = m;
     noCutoff();
@@ -43,13 +43,13 @@ void AtomOverlapCost::resetFor(const Molecule* m)
 }
 
 
-double AtomOverlapCost::eval(const Atom_t& a, int flags)
+double AtomOverlap::eval(const Atom_t& a, int flags)
 {
     return this->eval(&a, flags);
 }
 
 
-double AtomOverlapCost::eval(const Atom_t* pa, int flags)
+double AtomOverlap::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
     this->arg_atom = pa;

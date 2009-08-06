@@ -10,7 +10,7 @@
 *
 ************************************************************************
 *
-* class AtomOverlapCost
+* class AtomOverlap
 *
 * Comments: OverlapCost calculation for a Molecule
 *
@@ -18,23 +18,23 @@
 *
 ***********************************************************************/
 
-#ifndef ATOMOVERLAPCOST_HPP_INCLUDED
-#define ATOMOVERLAPCOST_HPP_INCLUDED
+#ifndef ATOMOVERLAPCRYSTAL_HPP_INCLUDED
+#define ATOMOVERLAPCRYSTAL_HPP_INCLUDED
 
-#include "AtomCost.hpp"
+#include "AtomCostCrystal.hpp"
 
-class AtomOverlapCost : public AtomCost
+class AtomOverlapCrystal : public AtomCostCrystal
 {
     public:
 
 	// constructor
-	AtomOverlapCost(const Molecule* m);
+	AtomOverlapCrystal(const Crystal* crst);
 
 	// public methods - overloaded
-        virtual void resetFor(const Molecule* clust);
-	double eval(const Atom_t& a, int flags=NONE);
-	virtual double eval(const Atom_t* pa, int flags=NONE);
+        virtual void resetFor(const Molecule* crst);
+        virtual std::pair<double,int>
+            pairCostCount(const R3::Vector& cv, bool skipzero=false);
 
-};  // class AtomOverlapCost
+};  // class AtomOverlap
 
-#endif  // ATOMOVERLAPCOST_HPP_INCLUDED
+#endif  // ATOMOVERLAPCRYSTAL_HPP_INCLUDED

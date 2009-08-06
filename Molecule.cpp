@@ -18,7 +18,7 @@
 #include "AtomFilter_t.hpp"
 #include "AtomSequence.hpp"
 #include "AtomCost.hpp"
-#include "AtomOverlapCost.hpp"
+#include "AtomOverlap.hpp"
 #include "Counter.hpp"
 #include "Random.hpp"
 #include "R3linalg.hpp"
@@ -240,7 +240,7 @@ AtomCost* Molecule::getAtomCostCalculator() const
 
 AtomCost* Molecule::getAtomOverlapCalculator() const
 {
-    static AtomOverlapCost the_overlap_calculator(this);
+    static AtomOverlap the_overlap_calculator(this);
     the_overlap_calculator.resetFor(this);
     return &the_overlap_calculator;
 }

@@ -29,7 +29,7 @@
 
 class AtomFilter_t;
 class AtomCost;
-class AtomOverlapCost;
+class AtomOverlap;
 using NS_LIGA::RandomWeighedGenerator;
 
 enum StructureType { MOLECULE, CRYSTAL };

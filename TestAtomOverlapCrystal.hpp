@@ -10,9 +10,9 @@
 *
 ************************************************************************
 *
-* class TestAtomOverlapCostCrystal
+* class TestAtomOverlapCrystal
 *
-* Comments: unit tests for AtomOverlapCostCrystal class
+* Comments: unit tests for AtomOverlapCrystal class
 *
 * $Id$
 *
@@ -20,7 +20,7 @@
 
 #include <cxxtest/TestSuite.h>
 
-#include "AtomOverlapCostCrystal.hpp"
+#include "AtomOverlapCrystal.hpp"
 #include "DistanceTable.hpp"
 #include "Lattice.hpp"
 #include "Crystal.hpp"
@@ -28,7 +28,7 @@
 
 using namespace std;
 
-class TestAtomOverlapCostCrystal : public CxxTest::TestSuite
+class TestAtomOverlapCrystal : public CxxTest::TestSuite
 {
     private:
 
@@ -37,11 +37,11 @@ class TestAtomOverlapCostCrystal : public CxxTest::TestSuite
         Lattice cubic;
         Crystal crnotouch;
         Crystal croverlap;
-        AtomOverlapCostCrystal aoc;
+        AtomOverlapCrystal aoc;
 
     public:
 
-        TestAtomOverlapCostCrystal() : CxxTest::TestSuite(),
+        TestAtomOverlapCrystal() : CxxTest::TestSuite(),
             cubic(1.0, 1.0, 1.0, 90.0, 90.0, 90.0),
             aoc(&crnotouch)
         { }
@@ -117,6 +117,6 @@ class TestAtomOverlapCostCrystal : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(0.0, g[2]);
         }
 
-};  // class TestAtomOverlapCostCrystal
+};  // class TestAtomOverlapCrystal
 
 // End of file

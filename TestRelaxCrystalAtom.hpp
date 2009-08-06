@@ -11,7 +11,7 @@
 #include <cxxtest/TestSuite.h>
 
 #include "AtomCost.hpp"
-#include "AtomOverlapCost.hpp"
+#include "AtomOverlap.hpp"
 #include "LigaUtils.hpp"
 #include "Crystal.hpp"
 

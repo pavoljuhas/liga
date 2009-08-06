@@ -10,7 +10,7 @@
 *
 ************************************************************************
 *
-* class AtomOverlapCostCrystal
+* class AtomOverlapCrystal
 *
 * Comments: OverlapCost calculation for a Molecule
 *
@@ -20,7 +20,7 @@
 
 #include <vector>
 
-#include "AtomOverlapCostCrystal.hpp"
+#include "AtomOverlapCrystal.hpp"
 #include "AtomSequence.hpp"
 #include "Crystal.hpp"
 #include "Lattice.hpp"
@@ -31,13 +31,13 @@ using namespace std;
 
 // Constructor ---------------------------------------------------------------
 
-AtomOverlapCostCrystal::AtomOverlapCostCrystal(const Crystal* crst) :
+AtomOverlapCrystal::AtomOverlapCrystal(const Crystal* crst) :
     AtomCostCrystal(crst)
 { }
 
 // Public Methods ------------------------------------------------------------
 
-void AtomOverlapCostCrystal::resetFor(const Molecule* clust)
+void AtomOverlapCrystal::resetFor(const Molecule* clust)
 {
     this->AtomCost::resetFor(clust);
     this->arg_cluster = static_cast<const Crystal*>(clust);
@@ -51,7 +51,7 @@ void AtomOverlapCostCrystal::resetFor(const Molecule* clust)
 
 
 pair<double,int>
-AtomOverlapCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
+AtomOverlapCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
 {
     const Lattice& lat = arg_cluster->getLattice();
     static R3::Vector ucv;

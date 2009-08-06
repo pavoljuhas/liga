@@ -15,7 +15,7 @@
 #include "Lattice.hpp"
 #include "Atom_t.hpp"
 #include "AtomCostCrystal.hpp"
-#include "AtomOverlapCostCrystal.hpp"
+#include "AtomOverlapCrystal.hpp"
 #include "LigaUtils.hpp"
 #include "AtomSequence.hpp"
 
@@ -236,7 +236,7 @@ AtomCost* Crystal::getAtomCostCalculator() const
 
 AtomCost* Crystal::getAtomOverlapCalculator() const
 {
-    static AtomOverlapCostCrystal the_overlap_calculator(this);
+    static AtomOverlapCrystal the_overlap_calculator(this);
     the_overlap_calculator.resetFor(this);
     return &the_overlap_calculator;
 }

@@ -10,9 +10,9 @@
 *
 ************************************************************************
 *
-* class TestAtomOverlapCost
+* class TestAtomOverlap
 *
-* Comments: unit tests for AtomOverlapCost class
+* Comments: unit tests for AtomOverlap class
 *
 * $Id$
 *
@@ -20,13 +20,13 @@
 
 #include <cxxtest/TestSuite.h>
 
-#include "AtomOverlapCost.hpp"
+#include "AtomOverlap.hpp"
 #include "DistanceTable.hpp"
 #include "Molecule.hpp"
 
 using namespace std;
 
-class TestAtomOverlapCost : public CxxTest::TestSuite
+class TestAtomOverlap : public CxxTest::TestSuite
 {
     private:
 
@@ -34,11 +34,11 @@ class TestAtomOverlapCost : public CxxTest::TestSuite
         DistanceTable dst;
         Molecule mnotouch;
         Molecule moverlap;
-        AtomOverlapCost aoc;
+        AtomOverlap aoc;
 
     public:
 
-        TestAtomOverlapCost() : CxxTest::TestSuite(), aoc(&mnotouch)
+        TestAtomOverlap() : CxxTest::TestSuite(), aoc(&mnotouch)
         { }
 
 
@@ -98,6 +98,6 @@ class TestAtomOverlapCost : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(0.0, g[2]);
         }
 
-};  // class TestAtomOverlapCost
+};  // class TestAtomOverlap
 
 // End of file
