@@ -16,7 +16,8 @@ if env_test.get('tests') is None:
 else:
     test_sources = Split(env_test['tests']) 
 
-alltests = env_test.CxxTest('alltests', test_sources + env['lib_objects'])
+alltests = env_test.CxxTest('alltests' + env['exesuffix'],
+        test_sources + env['lib_objects'])
 
 # unittest
 

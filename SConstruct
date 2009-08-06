@@ -38,6 +38,7 @@ elif env['build'] == 'fast':
     env.AppendUnique(CCFLAGS=['-O3', '-ffast-math'])
     env.AppendUnique(CPPDEFINES='NDEBUG')
     exesuffix = '-fast'
+env['exesuffix'] = exesuffix
 
 if env['profile']:
     env.AppendUnique(CCFLAGS='-pg')
