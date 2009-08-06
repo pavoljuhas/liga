@@ -1,0 +1,67 @@
+import os
+
+Import('env')
+
+# Environment for building unit test driver
+env_test = env.Clone(tools=['default', 'cxxtest'], CXXTEST_SUFFIX='.hpp')
+
+# Targets --------------------------------------------------------------------
+
+# alltests -- the unit test driver
+test_sources = []
+
+# add all unit test modules when variable tests was not set.
+if env_test.get('tests') is None:
+    test_sources += Glob('Test*.hpp')
+else:
+    test_sources = Split(env_test['tests']) 
+
+alltests = env_test.CxxTest('alltests', test_sources + env['lib_objects'])
+
+# unittest
+
+unittest = env_test.Alias('unittest', alltests, alltests[0].abspath)
+AlwaysBuild(unittest)
+
+# runtests
+
+mpbcliga = env['mpbcliga']
+mpbcliga_exe = mpbcliga[0].abspath
+runtest_options = 'maxcputime=1 seasontrials=500'
+
+# solids
+
+dst_solids = ["tetrahedron.dst", "octahedron.dst", "cube.dst",
+        "icosahedron.dst", "dodecahedron.dst"]
+for ft in dst_solids:
+    ff = os.path.join('solids', ft)
+    rt_solids = env_test.Alias('runtest-solids', mpbcliga,
+            ' '.join([mpbcliga_exe, runtest_options, ff]))
+AlwaysBuild(rt_solids)
+
+# shapes
+
+dst_shapes = ["square.dst", "pentagon.dst", "hexagon.dst",
+        "heptagon.dst", "octagon.dst"]
+for ft in dst_shapes:
+    ff = os.path.join('shapes', ft)
+    rt_shapes = env_test.Alias('runtest-shapes', mpbcliga,
+            ' '.join([mpbcliga_exe, runtest_options, 'ndim=2', ff]))
+AlwaysBuild(rt_shapes)
+
+# bangle_range
+
+env_test.Alias('runtest-bangle_range', mpbcliga, ' '.join([mpbcliga_exe,
+    runtest_options, 'bangle_range=1.5,80', 'shapes/square.dst']))
+env_test.Alias('runtest-bangle_range', mpbcliga, ' '.join([mpbcliga_exe,
+    runtest_options, 'bangle_range=1.5,80', 'shapes/hexagon.dst']))
+AlwaysBuild(env_test.Alias('runtest-bangle_range'))
+
+# merge to common targets 
+
+runtest = env_test.Alias('runtest',
+        ['runtest-solids', 'runtest-shapes', 'runtest-bangle_range'])
+
+test = env_test.Alias('test', ['unittest', 'runtest'])
+
+# vim: ft=python

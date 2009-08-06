@@ -1,0 +1,40 @@
+import os
+
+Import('env')
+
+version_sources = ['Version.tpl']
+if os.path.isfile('.svn/entries'):
+    env['version_svnrev'] = os.popen('svnversion -c .').read()
+
+
+def build_VersionCode(target, source, env):
+    import re
+    flds = {
+        'LastChangedAuthor' : 'unknown',
+        'LastChangedRev' : '0',
+        'LastChangedDate' : '2007-12-12 00:00:00Z',
+    }
+    svnrev = env.get('svnrev')
+    if svnrev:
+        flds['LastChangedRev'] = svnrev.rstrip('S')
+        cmd = 'TZ=0 svn info -r %s .' % svnrev.rstrip('MS')
+        svninfo = os.popen(cmd).read()
+        mx = re.search('^Last Changed Author: (.*)', svninfo, re.M)
+        if mx:  flds['LastChangedAuthor'] = mx.group(1)
+        mx = re.search('^Last Changed Date: (\S+ \S+)', svninfo, re.M)
+        if mx:  flds['LastChangedDate'] = mx.group(1) + "Z"
+    versiontemplate = open(str(source[0])).read()
+    versioncode = versiontemplate % flds
+    open(str(target[0]), 'w').write(versioncode)
+    return None
+
+env.Append(BUILDERS={'BuildVersionCode' :
+        Builder(action=build_VersionCode, suffix='.cpp', src_suffix='.tpl')})
+
+# Targets --------------------------------------------------------------------
+
+ver = env.BuildVersionCode(['Version.cpp'], version_sources)
+if os.path.isfile('.svn/entries'):  env.Depends(ver, '.svn/entries')
+env['lib_sources'] += [ver]
+
+# vim: ft=python
