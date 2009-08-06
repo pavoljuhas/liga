@@ -30,14 +30,18 @@ mpbcliga = env['mpbcliga']
 mpbcliga_exe = mpbcliga[0].abspath
 runtest_options = 'maxcputime=1 seasontrials=500'
 
+def rtcmd(*args):
+    cmdwords = (mpbcliga_exe, runtest_options) + args + ('>/dev/null',)
+    cmd = ' '.join(cmdwords)
+    return cmd
+
 # solids
 
 dst_solids = ["tetrahedron.dst", "octahedron.dst", "cube.dst",
         "icosahedron.dst", "dodecahedron.dst"]
 for ft in dst_solids:
     ff = os.path.join('solids', ft)
-    rt_solids = env_test.Alias('runtest-solids', mpbcliga,
-            ' '.join([mpbcliga_exe, runtest_options, ff]))
+    rt_solids = env_test.Alias('runtest-solids', mpbcliga, rtcmd(ff))
 AlwaysBuild(rt_solids)
 
 # shapes
@@ -47,15 +51,15 @@ dst_shapes = ["square.dst", "pentagon.dst", "hexagon.dst",
 for ft in dst_shapes:
     ff = os.path.join('shapes', ft)
     rt_shapes = env_test.Alias('runtest-shapes', mpbcliga,
-            ' '.join([mpbcliga_exe, runtest_options, 'ndim=2', ff]))
+            rtcmd('ndim=2', ff))
 AlwaysBuild(rt_shapes)
 
 # bangle_range
 
-env_test.Alias('runtest-bangle_range', mpbcliga, ' '.join([mpbcliga_exe,
-    runtest_options, 'bangle_range=1.5,80', 'shapes/square.dst']))
-env_test.Alias('runtest-bangle_range', mpbcliga, ' '.join([mpbcliga_exe,
-    runtest_options, 'bangle_range=1.5,80', 'shapes/hexagon.dst']))
+env_test.Alias('runtest-bangle_range', mpbcliga,
+    rtcmd('bangle_range=1.5,80', 'shapes/square.dst'))
+env_test.Alias('runtest-bangle_range', mpbcliga,
+    rtcmd('bangle_range=1.5,80', 'shapes/hexagon.dst'))
 AlwaysBuild(env_test.Alias('runtest-bangle_range'))
 
 # merge to common targets 

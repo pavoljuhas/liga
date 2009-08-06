@@ -13,8 +13,6 @@ vars.Add(BoolVariable('profile',
     'build with profiling information', False))
 vars.Add(PathVariable('prefix',
     'installation prefix directory', '/usr/local'))
-vars.Add(PathVariable('libdir',
-    'object code library directory [prefix/lib]', None))
 vars.Add(PathVariable('bindir',
     'installation directory for executable [prefix/bin]', None))
 
