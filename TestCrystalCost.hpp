@@ -173,9 +173,8 @@ class TestCrystalCost : public CxxTest::TestSuite
             // overlap gradient
             AtomCost* atomoverlap = crst.getAtomOverlapCalculator();
             TS_ASSERT_EQUALS(0.0, atomoverlap->eval(a1));
-            AtomRadiiTable radii;
-            radii["C"] = a1.radius = 0.5;
-            crst.fetchAtomRadii(radii);
+            a1.radius = 0.5;
+            crst.setAtomRadiiTable("C:0.5");
             TS_ASSERT(atomoverlap->eval(a1) > 0.0)
             ga = analytical_gradient(a1, atomoverlap); 
             gn = numerical_gradient(a1, atomoverlap);  
@@ -209,7 +208,7 @@ class TestCrystalCost : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(0.0, atomoverlap->eval(a2));
             AtomRadiiTable radii;
             a2.radius = radii["C"] = 0.4;
-            crst.fetchAtomRadii(radii);
+            crst.setAtomRadiiTable(radii);
             TS_ASSERT(atomoverlap->eval(a2) > 0.0);
             ga = analytical_gradient(a2, atomoverlap); 
             gn = numerical_gradient(a2, atomoverlap);  

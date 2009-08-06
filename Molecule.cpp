@@ -79,6 +79,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     {
         this->setDistanceTable(*M._distance_table);
     }
+    this->_atom_radii_table = M._atom_radii_table;
     // duplicate source atoms
     atoms_storage = M.atoms_storage;
     // build dictionary to find equivalent Atom_t pointers
@@ -436,8 +437,6 @@ void Molecule::setChemicalFormula(const string& s)
 
 void Molecule::setChemicalFormula(const ChemicalFormula& formula)
 {
-    // store existing atom radii
-    AtomRadiiTable radiitable = this->getAtomRadiiTable();
     ChemicalFormula::const_iterator ec;
     vector<string> expanded_formula = formula.expand();
     atoms_storage.resize(formula.countElements(), Atom_t("", 0.0, 0.0, 0.0));
@@ -467,7 +466,7 @@ void Molecule::setChemicalFormula(const ChemicalFormula& formula)
         if (set_storage.count(*ai))   (*ag++) = *ai;
     }
     atoms.erase(ag, atoms.end());
-    this->fetchAtomRadii(radiitable);
+    this->fetchAtomRadii();
     this->recalculate();
     this->CheckIntegrity();
 }
@@ -489,12 +488,18 @@ ChemicalFormula Molecule::getChemicalFormula() const
 }
 
 
-void Molecule::fetchAtomRadii(const AtomRadiiTable& radiitable)
+void Molecule::setAtomRadiiTable(const string& s)
 {
-    BOOST_FOREACH (Atom_t& a, atoms_storage)
-    {
-        a.radius = radiitable.empty() ? 0.0 : radiitable.lookup(a.element);
-    }
+    AtomRadiiTable table;
+    table.fromString(s);
+    this->setAtomRadiiTable(table);
+}
+
+
+void Molecule::setAtomRadiiTable(const AtomRadiiTable& radiitable)
+{
+    this->_atom_radii_table.reset(new AtomRadiiTable(radiitable));
+    this->fetchAtomRadii();
     this->recalculateOverlap();
 }
 
@@ -502,13 +507,7 @@ void Molecule::fetchAtomRadii(const AtomRadiiTable& radiitable)
 AtomRadiiTable Molecule::getAtomRadiiTable() const
 {
     AtomRadiiTable radiitable;
-    bool allradiizero = true;
-    BOOST_FOREACH (const Atom_t& a, atoms_storage)
-    {
-        radiitable[a.element] = a.radius;
-        if (a.radius != 0.0)   allradiizero = false;
-    }
-    if (allradiizero)   radiitable.clear();
+    if (_atom_radii_table.get())  radiitable = *_atom_radii_table;
     return radiitable;
 }
 
@@ -1492,7 +1491,6 @@ void Molecule::returnUsedDistances()
 void Molecule::ReadFile(const string& filename)
 {
     namespace python = boost::python;
-    AtomRadiiTable radiitable = this->getAtomRadiiTable();
     try {
         initializePython();
         python::object stru = this->newDiffPyStructure();
@@ -1504,7 +1502,6 @@ void Molecule::ReadFile(const string& filename)
         const char* emsg = "Cannot read structure.";
         throw IOError(emsg);
     }
-    this->fetchAtomRadii(radiitable);
     this->CheckIntegrity();
 }
 
@@ -1608,6 +1605,7 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
         Atom_t* pa = &(atoms_storage.back());
         atoms_bucket.push_back(pa);
     }
+    this->fetchAtomRadii();
     list<Atom_t>::iterator ai = atoms_storage.begin();
     for (; ai != atoms_storage.end(); ++ai)
     {
@@ -1645,6 +1643,16 @@ void Molecule::atomOverlapContributions(Atom_t* pa, AddRemove sign)
     if (sign == REMOVE && this->Overlap() < NS_LIGA::eps_cost)
     {
         this->ResetOverlap();
+    }
+}
+
+
+void Molecule::fetchAtomRadii()
+{
+    AtomRadiiTable radiitable = this->getAtomRadiiTable();
+    BOOST_FOREACH (Atom_t& a, atoms_storage)
+    {
+        a.radius = radiitable.empty() ? 0.0 : radiitable.lookup(a.element);
     }
 }
 

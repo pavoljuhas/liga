@@ -117,9 +117,7 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
             this->crbcc->getAtomCostCalculator()->setScale(0.0);
             this->crbcc->recalculate();
             TS_ASSERT_DELTA(0.0, this->crbcc->cost(), eps_distance);
-            AtomRadiiTable radii;
-            radii["C"] = 0.5;
-            this->crbcc->fetchAtomRadii(radii);
+            this->crbcc->setAtomRadiiTable("C:0.5");
             TS_ASSERT(this->crbcc->cost() > eps_distance);
             Atom_t a1 = this->crbcc->getAtom(1);
             this->crbcc->Pop(1);

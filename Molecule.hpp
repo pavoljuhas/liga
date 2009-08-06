@@ -111,7 +111,8 @@ class Molecule
 	void setChemicalFormula(const std::string&);
 	void setChemicalFormula(const ChemicalFormula& formula);
 	ChemicalFormula getChemicalFormula() const;
-	void fetchAtomRadii(const AtomRadiiTable& radiitable);
+	void setAtomRadiiTable(const std::string&);
+	void setAtomRadiiTable(const AtomRadiiTable& radiitable);
 	AtomRadiiTable getAtomRadiiTable() const;
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
@@ -163,6 +164,7 @@ class Molecule
 
         // data
         boost::shared_ptr<DistanceTable> _distance_table;
+        boost::shared_ptr<AtomRadiiTable> _atom_radii_table;
         std::vector<Atom_t*> atoms;	    // atoms in the Molecule
         std::vector<Atom_t*> atoms_bucket;  // available free atoms
         std::list<Atom_t> atoms_storage;    // all atom instances
@@ -199,6 +201,7 @@ class Molecule
 	void recalculateOverlap() const;
         enum AddRemove { ADD = 1, REMOVE = -1 };
         void atomOverlapContributions(Atom_t* pa, AddRemove sign);
+        void fetchAtomRadii();
 
     private:
 
