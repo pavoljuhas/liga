@@ -3,9 +3,8 @@ import os
 Import('env')
 
 version_sources = ['Version.tpl']
-if os.path.isfile('.svn/entries'):
-    env['version_svnrev'] = os.popen('svnversion -c .').read()
-
+svnrev = (os.path.isfile('.svn/entries') and
+        os.popen('svnversion -c .').read().strip().split(':')[-1])
 
 def build_VersionCode(target, source, env):
     import re
@@ -14,7 +13,6 @@ def build_VersionCode(target, source, env):
         'LastChangedRev' : '0',
         'LastChangedDate' : '2007-12-12 00:00:00Z',
     }
-    svnrev = env.get('svnrev')
     if svnrev:
         flds['LastChangedRev'] = svnrev.rstrip('S')
         cmd = 'TZ=0 svn info -r %s .' % svnrev.rstrip('MS')
