@@ -34,8 +34,8 @@ class TestCrystalCost : public CxxTest::TestSuite
 
         void setUp()
         {
-            double_eps = DOUBLE_EPS;
-            gradient_eps = 1e-6;
+            double_eps = 100*DOUBLE_EPS;
+            gradient_eps = 2e-6;
             crst = Crystal();
             crst.setChemicalFormula("C4");
             crst.setRmax(3.05);
@@ -214,6 +214,56 @@ class TestCrystalCost : public CxxTest::TestSuite
             gn = numerical_gradient(a2, atomoverlap);  
             gdiff = R3::distance(gn, ga);
             TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
+        }
+
+
+        void test_cube_overlap()
+        {
+            crst.setChemicalFormula("C1");
+            crst.setAtomRadiiTable("C:0.5");
+            crst.setLattice(*cubic);
+            crst.setDistanceTable(dst_cube);
+            crst.AddAt("C", 0.0, 0.0, 0.0);
+            TS_ASSERT_EQUALS(1, crst.countAtoms());
+            TS_ASSERT_EQUALS(0.0, crst.Overlap());
+            crst.setChemicalFormula("C1");
+            crst.setAtomRadiiTable("C:0.6");
+            crst.Clear();
+            TS_ASSERT_EQUALS(0, crst.countAtoms());
+            TS_ASSERT_EQUALS(0.0, crst.Overlap());
+            crst.AddAt("C", 0.0, 0.0, 0.0);
+            TS_ASSERT_EQUALS(1, crst.countAtoms());
+            TS_ASSERT_EQUALS(0.6, crst.getAtom(0).radius);
+            double c = 6 * 0.2 * 0.2;
+            TS_ASSERT_DELTA(c, crst.Overlap(), double_eps);
+            crst.recalculate();
+            TS_ASSERT_DELTA(c, crst.Overlap(), double_eps);
+        }
+
+
+        void test_bcc_overlap()
+        {
+            crst.setLattice(*cubic);
+            crst.setDistanceTable(dst_bcc);
+            crst.setChemicalFormula("AB");
+            crst.setAtomRadiiTable("A:0.3, B:0.6");
+            TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
+            crst.AddAt("A", 0.0, 0.0, 0.0);
+            TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
+            crst.AddAt("B", 0.5, 0.5, 0.5);
+            double c0 = (16 * pow(0.9 - sqrt(0.75), 2) + 6 * 0.2 * 0.2) / 2;
+            TS_ASSERT_DELTA(c0, crst.cost(), double_eps);
+            crst.recalculate();
+            TS_ASSERT_DELTA(c0, crst.cost(), double_eps);
+            crst.Pop(0);
+            double c1 = 6 * 0.2 * 0.2;
+            TS_ASSERT_DELTA(c1, crst.cost(), double_eps);
+            crst.recalculate();
+            TS_ASSERT_DELTA(c1, crst.cost(), double_eps);
+            crst.AddAt("A", 0.0, 0.0, 0.0);
+            TS_ASSERT_DELTA(c0, crst.cost(), double_eps);
+            crst.setAtomRadiiTable("A:0.1, B:0.2");
+            TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
         }
 
 };  // class TestCrystalCost

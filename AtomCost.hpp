@@ -32,7 +32,7 @@ class AtomCost
 {
     public:
 
-	enum EvalFlag { NONE, GRADIENT=1 };
+	enum EvalFlag { NONE, GRADIENT=1, SELFCOST=2 };
 
 	// constructor
 	AtomCost(const Molecule* m);
@@ -79,6 +79,7 @@ class AtomCost
 	std::vector<int> useatom_indices;
 
         // optimizer specific data
+        bool _selfcost_flag;
         bool _gradient_flag;
         bool _gradient_cached;
         R3::Vector _gradient;

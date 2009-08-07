@@ -53,12 +53,14 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
     this->arg_atom = pa;
+    this->_selfcost_flag = flags & SELFCOST;
     this->_gradient_flag = flags & GRADIENT;
     // begin calculation
     resizeArrays();
     resetUseFlags();
     resetGradient();
     total_cost = 0.0;
+    if (this->_selfcost_flag)  return this->totalCost();
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
         // do not calculate own overlap

@@ -124,7 +124,7 @@ class Molecule
 	void Center();	  // center w/r to the center of mass
 
 	// atom operations
-	const Atom_t& getAtom(const int cidx) { return *(atoms[cidx]); }
+	const Atom_t& getAtom(const int cidx) const  { return *atoms[cidx]; }
 	void Pop(const int cidx);
 	void Pop(const std::list<int>& cidx);
 	virtual void Clear();		// remove all atoms
@@ -146,6 +146,9 @@ class Molecule
 	void PrintBadness() const;	// total and per-atomic badness
 	void PrintFitness();		// total and per-atomic fitness
         void CheckIntegrity() const;
+        R3::Vector rxaCheckGradient(const Atom_t* pa) const;
+        double rxaCheckCost(const Atom_t* pa) const;
+
 
     protected:
 
@@ -200,7 +203,7 @@ class Molecule
         virtual void setFromDiffPyStructure(boost::python::object);
 	void recalculateOverlap() const;
         enum AddRemove { ADD = 1, REMOVE = -1 };
-        void atomOverlapContributions(Atom_t* pa, AddRemove sign);
+        void applyOverlapContributions(Atom_t* pa, AddRemove sign);
         void fetchAtomRadii();
 
     private:
@@ -216,6 +219,7 @@ class Molecule
 	void init();
 	int getPairMatrixIndex();
         void returnUsedDistances();
+        void rxaCheckEval(const Atom_t*, double*, R3::Vector*) const;
 };
 
 // non-member operators

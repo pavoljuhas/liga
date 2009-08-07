@@ -32,8 +32,7 @@ class AtomOverlapCrystal : public AtomCostCrystal
 
 	// public methods - overloaded
         virtual void resetFor(const Molecule* crst);
-        virtual std::pair<double,int>
-            pairCostCount(const R3::Vector& cv, bool skipzero=false);
+        virtual std::pair<double,int> pairCostCount(const R3::Vector& cv);
 
 };  // class AtomOverlap
 

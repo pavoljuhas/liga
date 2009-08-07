@@ -51,7 +51,7 @@ void AtomOverlapCrystal::resetFor(const Molecule* clust)
 
 
 pair<double,int>
-AtomOverlapCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
+AtomOverlapCrystal::pairCostCount(const R3::Vector& cv)
 {
     const Lattice& lat = arg_cluster->getLattice();
     static R3::Vector ucv;
@@ -61,10 +61,12 @@ AtomOverlapCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
     int paircount = 0;
     for (_sph->rewind(); !_sph->finished(); _sph->next())
     {
+        assert(arg_atom);
+        assert(crst_atom);
         rc_dd = ucv + lat.cartesian(_sph->mno());
         double d = R3::norm(rc_dd);
         if (d > this->_rmax)    continue;
-        if (skipzero && d < NS_LIGA::eps_distance)  continue;
+        if (this->_selfcost_flag && d == 0.0)  continue;
         double r0r1 = arg_atom->radius + crst_atom->radius;
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
         paircost += penalty(dd) * this->getScale();
@@ -77,8 +79,11 @@ AtomOverlapCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
-    pair<double,int> rv(paircost, paircount);
-    return rv;
+    int loopscale = this->_selfcost_flag ? 1 : 2;
+    paircost *= loopscale;
+    paircount *= loopscale;
+    this->_gradient *= loopscale;
+    return make_pair(paircost, paircount);
 }
 
 

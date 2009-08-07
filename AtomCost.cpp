@@ -70,12 +70,15 @@ double AtomCost::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
     this->arg_atom = pa;
+    this->_selfcost_flag = flags & SELFCOST;
     this->_gradient_flag = flags & GRADIENT;
     // begin calculation
     resizeArrays();
     resetUseFlags();
     resetGradient();
     total_cost = 0.0;
+    // selfcost is always zero in non-periodic materials
+    if (this->_selfcost_flag)  return this->totalCost();
     vector<double>::iterator tgdii = target_distances.begin();
     vector<double>::iterator ptcii = partial_costs.begin();
     const DistanceTable& dtgt = arg_cluster->getDistanceTable();
@@ -233,7 +236,8 @@ void AtomCost::resetUseFlags()
 void AtomCost::resetGradient()
 {
     this->_gradient = 0.0;
-    this->_gradient_cached = false;
+    // gradient is always zero when calculating self cost
+    this->_gradient_cached = this->_selfcost_flag;
 }
 
 size_t AtomCost::nearDistanceIndex(const double& d) const

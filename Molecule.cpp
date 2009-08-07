@@ -130,7 +130,8 @@ void Molecule::init()
     static boost::shared_ptr<DistanceTable> 
         empty_distance_table(new DistanceTable());
     this->_distance_table = empty_distance_table;
-    this->_badness = 0;
+    this->_badness = 0.0;
+    this->_overlap = 0.0;
     this->_distreuse = false;
 }
 
@@ -598,7 +599,12 @@ void Molecule::AddAt(const string& smbl, double rx0, double ry0, double rz0)
     {
         if ((*ai)->element == smbl)  break;
     }
-    assert(ai != atoms_bucket.end());
+    if (ai == atoms_bucket.end())
+    {
+        ostringstream emsg;
+        emsg << "Cannot add '" << smbl << "', element not available.";
+        throw invalid_argument(emsg.str());
+    }
     this->AddAt(*ai, rx0, ry0, rz0);
 }
 
@@ -738,7 +744,7 @@ template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
     }
 }
 
-Molecule* rxa_molecule = NULL;
+const Molecule* rxa_molecule = NULL;
 AtomCost* rxa_atomcost = NULL;
 AtomCost* rxa_atomoverlap = NULL;
 
@@ -920,7 +926,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
         }
     }
     // add overlap contributions
-    this->atomOverlapContributions(pa, ADD);
+    this->applyOverlapContributions(pa, ADD);
 }
 
 
@@ -955,7 +961,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
     }
     if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
     // remove overlap contributions
-    this->atomOverlapContributions(pa, REMOVE);
+    this->applyOverlapContributions(pa, REMOVE);
 }
 
 
@@ -1621,17 +1627,24 @@ void Molecule::recalculateOverlap() const
     AtomCost* atomoverlap = getAtomOverlapCalculator();
     for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
     {
-        double aohalf = atomoverlap->eval(seq0.ptr()) / 2.0;
-        seq0.ptr()->ResetOverlap(aohalf);
-        this->IncOverlap(aohalf);
+        Atom_t* pa = seq0.ptr();
+        double aoself = atomoverlap->eval(pa, AtomCost::SELFCOST);
+        double aohalf = atomoverlap->eval(pa) / 2.0;
+        pa->ResetOverlap(aoself + aohalf);
+        this->IncOverlap(aoself + aohalf);
     }
 }
 
 
-void Molecule::atomOverlapContributions(Atom_t* pa, AddRemove sign)
+void Molecule::applyOverlapContributions(Atom_t* pa, AddRemove sign)
 {
     // add overlap contributions
     AtomCost* atomoverlap = getAtomOverlapCalculator();
+    // self contribution
+    double aoself = atomoverlap->eval(pa, AtomCost::SELFCOST);
+    pa->IncOverlap(sign * aoself);
+    this->IncOverlap(sign * aoself);
+    // cross contributions
     atomoverlap->eval(pa);
     for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
     {
@@ -1726,6 +1739,51 @@ void Molecule::CheckIntegrity() const
         assert(set_storage.count(pa));
     }
 #endif  // NDEBUG
+}
+
+R3::Vector Molecule::rxaCheckGradient(const Atom_t* pa) const
+{
+    double c;
+    R3::Vector rv;
+    this->rxaCheckEval(pa, &c, &rv);
+    return rv;
+}
+
+
+double Molecule::rxaCheckCost(const Atom_t* pa) const
+{
+    double c;
+    R3::Vector rv;
+    this->rxaCheckEval(pa, &c, &rv);
+    return c;
+}
+
+
+void Molecule::rxaCheckEval(const Atom_t* pa,
+        double* pcost, R3::Vector* pg) const
+{
+    rxa_molecule = this;
+    rxa_atomcost = getAtomCostCalculator();    
+    rxa_atomoverlap = getAtomOverlapCalculator(); 
+    Atom_t rta = *pa;
+    void* params = &rta;
+    // copy rta coordinates to vector x
+    gsl_vector* x = gsl_vector_alloc(3);
+    gsl_vector_set(x, 0, rta.r[0]);
+    gsl_vector_set(x, 1, rta.r[1]);
+    gsl_vector_set(x, 2, rta.r[2]);
+    gsl_vector* g = gsl_vector_alloc(3);
+    // calculate both cost and gradient
+    rxa_fdf(x, params, pcost, g);
+    copyGSLvector(g, *pg);
+    double c0 = *pcost;
+    R3::Vector g0 = *pg;
+    // check if other variants give the same result
+    *pcost = rxa_f(x, params);
+    assert(*pcost == c0);
+    rxa_df(x, params, g);
+    copyGSLvector(g, *pg);
+    assert(0.0 == R3::norm(*pg - g0));
 }
 
 

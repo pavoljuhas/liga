@@ -39,8 +39,7 @@ class AtomCostCrystal : public AtomCost
 	const std::vector<int>& pairCounts() const;
 
         // public methods - specific
-        virtual std::pair<double,int>
-            pairCostCount(const R3::Vector& cv, bool skipzero=false);
+        virtual std::pair<double,int> pairCostCount(const R3::Vector& cv);
 
     protected:
 

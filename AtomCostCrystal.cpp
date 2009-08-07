@@ -56,6 +56,8 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
 {
     // assign arguments
     this->arg_atom = pa;
+    this->crst_atom = this->arg_atom;
+    this->_selfcost_flag = flags & SELFCOST;
     this->_gradient_flag = flags & GRADIENT;
     // begin calculation
     resizeArrays();
@@ -65,6 +67,17 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
     // reset result data
     this->total_cost = 0.0;
     this->total_pair_count = 0;
+    pair<double,int> costcount(0.0, 0);
+    // short circuit for selfcost
+    if (this->_selfcost_flag)
+    {
+        R3::Vector zeros(0.0, 0.0, 0.0);
+        costcount = this->pairCostCount(zeros);
+        assert(0.0 == R3::norm(this->gradient()));
+        this->total_cost = costcount.first;
+        this->total_pair_count = costcount.second;
+        return this->totalCost();
+    }
     // Cartesian separation vector mapped to unit cell
     R3::Vector rcv;
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
@@ -73,22 +86,23 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
 	assert(ptcii < this->partial_costs.end());
 	assert(pcntii < this->pair_counts.end());
         // calculation
-        crst_atom = seq.ptr();
-        rcv = arg_atom->r - crst_atom->r;
-        const pair<double,int> costcount = pairCostCount(rcv);
+        this->crst_atom = seq.ptr();
+        rcv = this->arg_atom->r - this->crst_atom->r;
+        costcount = (this->arg_atom != crst_atom) ?
+            this->pairCostCount(rcv) : make_pair(0.0, 0);
         *(ptcii++) = costcount.first;
         *(pcntii++) = costcount.second;
         this->total_cost += costcount.first;
         this->total_pair_count += costcount.second;
         bool cutitoff = !this->_gradient_flag && this->apply_cutoff &&
-            this->total_cost + arg_atom->Badness() > this->cutoff_cost;
+            this->total_cost + this->arg_atom->Badness() > this->cutoff_cost;
         if (cutitoff)   break;
     }
     bool islowestcost = this->apply_cutoff &&
-        arg_atom->Badness() + this->total_cost < this->lowest_cost;
+        this->arg_atom->Badness() + this->total_cost < this->lowest_cost;
     if (islowestcost)
     {
-	this->lowest_cost = arg_atom->Badness() + this->total_cost;
+	this->lowest_cost = this->arg_atom->Badness() + this->total_cost;
         this->cutoff_cost =
             min(this->cutoff_cost, this->lowest_cost + this->cutoff_range);
     }
@@ -116,7 +130,7 @@ const vector<int>& AtomCostCrystal::pairCounts() const
 // This method also sets
 
 pair<double,int>
-AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
+AtomCostCrystal::pairCostCount(const R3::Vector& cv)
 {
     const Lattice& lat = arg_cluster->getLattice();
     static R3::Vector ucv;
@@ -129,7 +143,7 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
         rc_dd = ucv + lat.cartesian(_sph->mno());
         double d = R3::norm(rc_dd);
         if (d > this->_rmax)    continue;
-        if (skipzero && d < NS_LIGA::eps_distance)  continue;
+        if (this->_selfcost_flag && d == 0.0)  continue;
         double dd = this->nearDistance(d) - d;
         paircost += penalty(dd) * this->getScale();
         paircount += 1;
@@ -141,8 +155,11 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv, bool skipzero)
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
-    pair<double,int> rv(paircost, paircount);
-    return rv;
+    int loopscale = this->_selfcost_flag ? 1 : 2;
+    paircost *= loopscale;
+    paircount *= loopscale;
+    this->_gradient *= loopscale;
+    return make_pair(paircost, paircount);
 }
 
 // protected methods

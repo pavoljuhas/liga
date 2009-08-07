@@ -61,10 +61,7 @@ class TestAtomOverlapCrystal : public CxxTest::TestSuite
             crnotouch.AddAt("C", 0.5, 0.5, 0.5);
             croverlap = crnotouch;
             // nasty hack while there is no way to set atom radii
-            Atom_t& a0 = const_cast<Atom_t&>(croverlap.getAtom(0));
-            a0.radius = 0.5;
-            Atom_t& a1 = const_cast<Atom_t&>(croverlap.getAtom(1));
-            a1.radius = 0.5;
+            croverlap.setAtomRadiiTable("C:0.5");
         }
 
 
@@ -91,7 +88,7 @@ class TestAtomOverlapCrystal : public CxxTest::TestSuite
             aoc.resetFor(&croverlap);
             aoc.eval(a1);
             double c;
-            c = 8 * (1.75 - sqrt(3.0));
+            c = 16 * (1.75 - sqrt(3.0));
             TS_ASSERT_DELTA(c, aoc.totalCost(), eps);
             // gradient is zero due to bcc symmetry
             aoc.eval(a1, AtomCost::GRADIENT);
@@ -101,10 +98,10 @@ class TestAtomOverlapCrystal : public CxxTest::TestSuite
             // move it so it only touches one ball
             a1.r = -0.25, 0.0, 0.0;
             aoc.eval(a1, AtomCost::GRADIENT);
-            c = 0.25 * 0.25 + 0.75 * 0.75;
+            c = 2 * (0.25 * 0.25 + 0.75 * 0.75);
             TS_ASSERT_EQUALS(c, aoc.totalCost());
             g = aoc.gradient();
-            TS_ASSERT_EQUALS(1.0, g[0]);
+            TS_ASSERT_EQUALS(2.0, g[0]);
             TS_ASSERT_EQUALS(0.0, g[1]);
             TS_ASSERT_EQUALS(0.0, g[2]);
             // check sign switching
@@ -112,10 +109,11 @@ class TestAtomOverlapCrystal : public CxxTest::TestSuite
             aoc.eval(a1, AtomCost::GRADIENT);
             TS_ASSERT_EQUALS(c, aoc.totalCost());
             g = aoc.gradient();
-            TS_ASSERT_EQUALS(-1.0, g[0]);
+            TS_ASSERT_EQUALS(-2.0, g[0]);
             TS_ASSERT_EQUALS(0.0, g[1]);
             TS_ASSERT_EQUALS(0.0, g[2]);
         }
+
 
 };  // class TestAtomOverlapCrystal
 
