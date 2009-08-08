@@ -44,6 +44,7 @@ struct RunPar_t
     double rmax;
     bool distreuse;
     double tolcost;
+    int natoms;
     ChemicalFormula formula;
     AtomRadiiTable radii;
     std::vector<int> fixed_atoms;

@@ -256,13 +256,22 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // tolcost
     tolcost = args->GetPar<double>("tolcost", 1.0e-4);
     Molecule::tol_nbad = tolcost;
+    // natoms - apply only when formula is not set
+    if (args->ispar("natoms") && !args->ispar("formula"))
+    {
+        this->natoms = args->GetPar<int>("natoms");
+        this->formula.clear();
+        this->formula.push_back(
+                ChemicalFormula::value_type("C", this->natoms));
+        this->mol->setChemicalFormula(this->formula);
+    }
     // formula must be set after distreuse
     if (args->ispar("formula"))
     {
 	this->formula.fromString(args->GetPar<string>("formula"));
 	this->mol->setChemicalFormula(this->formula);
     }
-    formula = mol->getChemicalFormula();
+    this->formula = mol->getChemicalFormula();
     // radii
     if (args->ispar("radii"))
     {
@@ -380,6 +389,7 @@ void RunPar_t::print_help()
 "  rmax=double           [dmax] distance cutoff when crystal=true\n"
 "  distreuse=bool        [false] keep used distances in distance table\n"
 "  tolcost=double        [1E-4] target normalized molecule cost\n"
+"  natoms=int            obsolete, equivalent to formula=Cn\n"
 "  formula=string        chemical formula, use inistru when not specified\n"
 "  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
@@ -582,6 +592,7 @@ const list<string>& RunPar_t::validpars() const
         "rmax",
         "distreuse",
         "tolcost",
+        "natoms",
         "formula",
         "radii",
         "fixed_atoms",
@@ -597,6 +608,9 @@ const list<string>& RunPar_t::validpars() const
         "trialsharing",
         "bangle_range",
         "max_dist",
+        // obsolete ignored parameters
+        "seed_clusters",
+        "lookout_prob",
     };
     size_t parlen = sizeof(parnames)/sizeof(char*);
     static list<string> parlist(parnames, parnames + parlen);
