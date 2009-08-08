@@ -35,7 +35,7 @@ class TestCrystalCost : public CxxTest::TestSuite
         void setUp()
         {
             double_eps = 100*DOUBLE_EPS;
-            gradient_eps = 2e-6;
+            gradient_eps = 5e-6;
             crst = Crystal();
             crst.setChemicalFormula("C4");
             crst.setRmax(3.05);
@@ -179,6 +179,29 @@ class TestCrystalCost : public CxxTest::TestSuite
             ga = analytical_gradient(a1, atomoverlap); 
             gn = numerical_gradient(a1, atomoverlap);  
             gdiff = R3::distance(gn, ga);
+            TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
+        }
+
+
+        void test_gradient_fcc()
+        {
+            crst.setLattice(*cubic);
+            crst.setDistanceTable(dst_fcc);
+            crst.AddAt("C", 0.0, 0.0, 0.0);
+            crst.AddAt("C", 0.5, 0.5, 0.0);
+            crst.AddAt("C", 0.5, 0.0, 0.5);
+            crst.AddAt("C", 0.0, 0.5, 0.5);
+            TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
+            Atom_t a1 = crst.getAtom(1);
+            crst.Pop(1);
+            Atom_t arx = a1;
+            R3::Vector offset(0.013, -0.07, -0.03);
+            arx.r += offset;
+            AtomCost* atomcost = crst.getAtomCostCalculator();
+            R3::Vector ga, gn;
+            ga = analytical_gradient(arx, atomcost);
+            gn = numerical_gradient(arx, atomcost);
+            double gdiff = R3::distance(gn, ga);
             TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
         }
 

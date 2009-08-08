@@ -88,8 +88,8 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
         // calculation
         this->crst_atom = seq.ptr();
         rcv = this->arg_atom->r - this->crst_atom->r;
-        costcount = (this->arg_atom != crst_atom) ?
-            this->pairCostCount(rcv) : make_pair(0.0, 0);
+        costcount = (this->arg_atom == this->crst_atom) ? make_pair(0.0, 0) :
+                this->pairCostCount(rcv);
         *(ptcii++) = costcount.first;
         *(pcntii++) = costcount.second;
         this->total_cost += costcount.first;
@@ -138,31 +138,36 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv)
     R3::Vector rc_dd;
     double paircost = 0.0;
     int paircount = 0;
+    int loopscale = this->_selfcost_flag ? 1 : 2;
+    double penaltyscale = loopscale * this->getScale();
     for (_sph->rewind(); !_sph->finished(); _sph->next())
     {
         rc_dd = ucv + lat.cartesian(_sph->mno());
         double d = R3::norm(rc_dd);
         if (d > this->_rmax)    continue;
         if (this->_selfcost_flag && d == 0.0)  continue;
-        double dd = this->nearDistance(d) - d;
-        paircost += penalty(dd) * this->getScale();
-        paircount += 1;
+        double dd = this->pairDistanceDifference(d);
+        paircost += penalty(dd) * penaltyscale;
+        paircount += loopscale;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
         {
             static R3::Vector g_dd_xyz;
             g_dd_xyz = (-1.0/d) * rc_dd;
-            double g_pcost_dd = penalty_gradient(dd) * this->getScale();
+            double g_pcost_dd = penalty_gradient(dd) * penaltyscale;
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
-    int loopscale = this->_selfcost_flag ? 1 : 2;
-    paircost *= loopscale;
-    paircount *= loopscale;
-    this->_gradient *= loopscale;
     return make_pair(paircost, paircount);
 }
 
 // protected methods
+
+double AtomCostCrystal::pairDistanceDifference(const double& d) const
+{
+    double dd = this->nearDistance(d) - d;
+    return dd;
+}
+
 
 void AtomCostCrystal::resizeArrays()
 {

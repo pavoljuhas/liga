@@ -62,7 +62,6 @@ class Crystal : public Molecule
 	virtual void Shift(const R3::Vector& drc);
 
 	virtual void Clear();
-	virtual void Add(Atom_t* pa);  // add single atom
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
 	virtual void Degenerate(int Npop=1);
 
@@ -73,6 +72,7 @@ class Crystal : public Molecule
         mutable SymmetricMatrix<int> pmx_pair_counts;
 
         // methods
+	virtual void AddInternal(Atom_t* pa);  // add atom from the storage
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
         virtual const TriangulationAnchor&

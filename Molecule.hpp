@@ -128,11 +128,9 @@ class Molecule
 	void Pop(const int cidx);
 	void Pop(const std::list<int>& cidx);
 	virtual void Clear();		// remove all atoms
-	void AddAt(Atom_t* pa, double rx0, double ry0, double rz0);
-	void AddAt(Atom_t* pa, const R3::Vector& rc);
 	void AddAt(const std::string& smbl, double rx0, double ry0, double rz0);
 	void AddAt(const std::string& smbl, const R3::Vector& rc);
-	virtual void Add(Atom_t* pa);   // add single atom
+	void Add(const Atom_t& a);      // add single external atom
 	void Fix(const int cidx);	// mark atom as fixed
 	int NFixed() const;		// count fixed atoms
 	void RelaxAtom(const int cidx);	// relax internal atom
@@ -178,6 +176,9 @@ class Molecule
 	mutable double _overlap;	// total atom overlap
 
 	// methods
+	void AddInternalAt(Atom_t* pa, double rx0, double ry0, double rz0);
+	void AddInternalAt(Atom_t* pa, const R3::Vector& rc);
+	virtual void AddInternal(Atom_t* pa);   // add atom from the storage
 	virtual void addNewAtomPairs(Atom_t* pa);
 	virtual void removeAtomPairs(Atom_t* pa);
         Atom_t* pickAtomFromBucket() const;

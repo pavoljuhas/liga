@@ -122,8 +122,8 @@ void Crystal::setRmax(double rmax)
 
 double Crystal::getRmax() const
 {
-    double rv = (this->_rmax > 0) ?
-        this->_rmax : this->_full_distance_table->maxDistance();
+    double rv = (this->_rmax > 0) ? this->_rmax :
+        (this->_full_distance_table->maxDistance() + eps_distance);
     return rv;
 }
 
@@ -264,14 +264,6 @@ void Crystal::Clear()
 }
 
 
-void Crystal::Add(Atom_t* pa)
-{
-    Molecule::Add(pa);
-    // shift to unit cell and take care of zero round-off
-    pa->r = this->ucvCartesianAdjusted(pa->r);
-}
-
-
 const pair<int*,int*>& Crystal::Evolve(const int* est_triang)
 {
     const pair<int*,int*>& acc_tot = this->Molecule::Evolve(est_triang);
@@ -286,8 +278,15 @@ void Crystal::Degenerate(int Npop)
     this->shiftToOrigin();
 }
 
-
 // protected methods
+
+void Crystal::AddInternal(Atom_t* pa)
+{
+    Molecule::AddInternal(pa);
+    // shift to unit cell and take care of zero round-off
+    pa->r = this->ucvCartesianAdjusted(pa->r);
+}
+
 
 void Crystal::addNewAtomPairs(Atom_t* pa)
 {

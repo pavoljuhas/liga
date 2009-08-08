@@ -578,20 +578,6 @@ void Molecule::Clear()
 }
 
 
-void Molecule::AddAt(Atom_t* pa, double rx0, double ry0, double rz0)
-{
-    pa->r = rx0, ry0, rz0;
-    Add(pa);
-}
-
-
-void Molecule::AddAt(Atom_t* pa, const R3::Vector& rc)
-{
-    pa->r = rc;
-    Add(pa);
-}
-
-
 void Molecule::AddAt(const string& smbl, double rx0, double ry0, double rz0)
 {
     vector<Atom_t*>::iterator ai;
@@ -605,7 +591,7 @@ void Molecule::AddAt(const string& smbl, double rx0, double ry0, double rz0)
         emsg << "Cannot add '" << smbl << "', element not available.";
         throw invalid_argument(emsg.str());
     }
-    this->AddAt(*ai, rx0, ry0, rz0);
+    this->AddInternalAt(*ai, rx0, ry0, rz0);
 }
 
 
@@ -615,20 +601,9 @@ void Molecule::AddAt(const string& smbl, const R3::Vector& rc)
 }
 
 
-void Molecule::Add(Atom_t* pa)
+void Molecule::Add(const Atom_t& a)
 {
-    vector<Atom_t*>::iterator ai;
-    ai = find(atoms_bucket.begin(), atoms_bucket.end(), pa);
-    assert(ai != atoms_bucket.end());
-    // reset cost related attributes
-    pa->ResetBadness();
-    pa->ResetOverlap();
-    pa->pmxidx = getPairMatrixIndex();
-    // create new pairs while summing up the costs
-    addNewAtomPairs(pa);
-    atoms_bucket.erase(ai);
-    atoms.push_back(pa);
-    if (full())     reassignPairs();
+    this->AddAt(a.element, a.r);
 }
 
 
@@ -802,7 +777,7 @@ void Molecule::RelaxAtom(const int cidx)
     assert(!pa->fixed);
     Pop(cidx);
     RelaxExternalAtom(pa);
-    Add(pa);
+    AddInternal(pa);
 }
 
 void Molecule::RelaxExternalAtom(Atom_t* pa)
@@ -881,6 +856,38 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
         // define function to be minimized
     }
 }
+
+
+void Molecule::AddInternalAt(Atom_t* pa, double rx0, double ry0, double rz0)
+{
+    pa->r = rx0, ry0, rz0;
+    AddInternal(pa);
+}
+
+
+void Molecule::AddInternalAt(Atom_t* pa, const R3::Vector& rc)
+{
+    pa->r = rc;
+    AddInternal(pa);
+}
+
+
+void Molecule::AddInternal(Atom_t* pa)
+{
+    vector<Atom_t*>::iterator ai;
+    ai = find(atoms_bucket.begin(), atoms_bucket.end(), pa);
+    assert(ai != atoms_bucket.end());
+    // reset cost related attributes
+    pa->ResetBadness();
+    pa->ResetOverlap();
+    pa->pmxidx = getPairMatrixIndex();
+    // create new pairs while summing up the costs
+    addNewAtomPairs(pa);
+    atoms_bucket.erase(ai);
+    atoms.push_back(pa);
+    if (full())     reassignPairs();
+}
+
 
 void Molecule::addNewAtomPairs(Atom_t* pa)
 {
@@ -1313,7 +1320,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     switch (countAtoms())
     {
 	case 0:
-	    AddAt(pickAtomFromBucket(), 0.0, 0.0, 0.0);
+	    AddInternalAt(pickAtomFromBucket(), 0.0, 0.0, 0.0);
             acc[LINEAR] = 1;
             tot[LINEAR] = 1;
 	    return acc_tot;
@@ -1367,7 +1374,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
         transform(ftnfirst, ftnlast, ftnfirst, convertCostToFitness);
 	// vtafit is ready here
 	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
-	AddAt(vta[idx].mstorage_ptr, vta[idx].r);
+	AddInternalAt(vta[idx].mstorage_ptr, vta[idx].r);
         acc[vta[idx].ttp]++;
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
@@ -1616,7 +1623,7 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
     for (; ai != atoms_storage.end(); ++ai)
     {
         Atom_t* pa = &(*ai);
-        this->Add(pa);
+        this->AddInternal(pa);
     }
 }
 

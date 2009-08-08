@@ -39,7 +39,7 @@ class AtomCostCrystal : public AtomCost
 	const std::vector<int>& pairCounts() const;
 
         // public methods - specific
-        virtual std::pair<double,int> pairCostCount(const R3::Vector& cv);
+        std::pair<double,int> pairCostCount(const R3::Vector& cv);
 
     protected:
 
@@ -58,12 +58,13 @@ class AtomCostCrystal : public AtomCost
         // lattice points sequencer
         std::auto_ptr<PointsInSphere> _sph;
 
+        // methods
+        virtual double pairDistanceDifference(const double& d) const;
+	void resizeArrays();
+
     private:
 
         mutable int _count_evaluated_pairs;
-
-	// private methods
-	void resizeArrays();
 
 };  // class AtomCostCrystal
 
