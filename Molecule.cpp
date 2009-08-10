@@ -720,32 +720,65 @@ template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
     }
 }
 
+struct rxa_fg
+{
+    double f;
+    R3::Vector g;
+};
+
+struct rxa_compare_R3Vector
+{
+    bool operator()(const R3::Vector& v0, const R3::Vector& v1) const
+    {
+        return lexicographical_compare(
+                v0.data(), v0.data() + R3::Ndim,
+                v1.data(), v1.data() + R3::Ndim);
+    }
+};
+
 const Molecule* rxa_molecule = NULL;
 AtomCost* rxa_atomcost = NULL;
 AtomCost* rxa_atomoverlap = NULL;
 
+class rxa_CacheType : public map<R3::Vector,rxa_fg,rxa_compare_R3Vector>
+{
+    public:
+
+        const mapped_type* lookup(const R3::Vector& x)
+        {
+            const mapped_type* rv = NULL;
+            if (this->empty())  return rv;
+            const_iterator kv = this->lower_bound(x);
+            if (kv != this->end() &&
+                R3::norm(x - kv->first) < eps_distance)
+            {
+                rv = &(kv->second);
+            }
+            else if (kv != this->begin() &&
+                     R3::norm(x - (--kv)->first) < eps_distance)
+            {
+                rv = &(kv->second);
+            }
+            return rv;
+        }
+};
+
+rxa_CacheType rxa_cache;
+
+void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g);
+
 double rxa_f(const gsl_vector* x, void* params)
 {
-    Atom_t* pa = static_cast<Atom_t*>(params);
-    Atom_t& ta = *pa;
-    copyGSLvector(x, ta.r);
-    ta.ResetBadness(rxa_atomcost->eval(ta));
-    ta.ResetOverlap(rxa_atomoverlap->eval(ta));
-    double rv = ta.costShare(rxa_molecule->pairsPerAtomInc());
+    double rv;
+    gsl_vector* g = NULL;
+    rxa_fdf(x, params, &rv, g);
     return rv;
 }
 
 void rxa_df(const gsl_vector* x, void* params, gsl_vector* g)
 {
-    Atom_t* pa = static_cast<Atom_t*>(params);
-    Atom_t& ta = *pa;
-    copyGSLvector(x, ta.r);
-    rxa_atomcost->eval(ta, AtomCost::GRADIENT);
-    rxa_atomoverlap->eval(ta, AtomCost::GRADIENT);
-    static R3::Vector gvec;
-    gvec = rxa_atomcost->gradient();
-    gvec += rxa_molecule->pairsPerAtomInc() * rxa_atomoverlap->gradient();
-    copyGSLvector(gvec, g);
+    double f;
+    rxa_fdf(x, params, &f, g);
 }
 
 void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
@@ -753,13 +786,35 @@ void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
     Atom_t* pa = static_cast<Atom_t*>(params);
     Atom_t& ta = *pa;
     copyGSLvector(x, ta.r);
-    ta.ResetBadness(rxa_atomcost->eval(ta, AtomCost::GRADIENT));
-    ta.ResetOverlap(rxa_atomoverlap->eval(ta, AtomCost::GRADIENT));
-    *f = ta.costShare(rxa_molecule->pairsPerAtomInc());
-    static R3::Vector gvec;
-    gvec = rxa_atomcost->gradient();
-    gvec += rxa_molecule->pairsPerAtomInc() * rxa_atomoverlap->gradient();
-    copyGSLvector(gvec, g);
+    // try to get the result from the cache
+    const rxa_fg* pfg = rxa_cache.lookup(ta.r);
+    if (!pfg)
+    {
+        // calculate and store in the cache
+        ta.ResetBadness(rxa_atomcost->eval(ta, AtomCost::GRADIENT));
+        ta.ResetOverlap(rxa_atomoverlap->eval(ta, AtomCost::GRADIENT));
+        rxa_fg fg;
+        fg.f = ta.costShare(rxa_molecule->pairsPerAtomInc());
+        fg.g = 0.0, 0.0, 0.0;
+        fg.g += rxa_atomcost->gradient();
+        fg.g += rxa_molecule->pairsPerAtomInc() * rxa_atomoverlap->gradient();
+        rxa_cache[ta.r] = fg;
+        pfg = rxa_cache.lookup(ta.r);
+        assert(R3::norm(fg.g - pfg->g) == 0.0);
+        assert(fg.f == pfg->f);
+    }
+    // here pfg should be non NULL
+    assert(pfg);
+    *f = pfg->f;
+    if (g)  copyGSLvector(pfg->g, g);
+}
+
+void rxa_useMolecule(const Molecule* mol)
+{
+    rxa_molecule = mol;
+    rxa_atomcost = mol ? mol->getAtomCostCalculator() : NULL;
+    rxa_atomoverlap = mol ? mol->getAtomOverlapCalculator() : NULL;
+    rxa_cache.clear();
 }
 
 }   // namespace
@@ -796,9 +851,7 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
     Atom_t rta(*pa);
     // loop while badness is improved
     gsl_multimin_function_fdf fdfmin;
-    rxa_molecule = this;
-    rxa_atomcost = this->getAtomCostCalculator();
-    rxa_atomoverlap = this->getAtomOverlapCalculator();
+    rxa_useMolecule(this);
     fdfmin.f = &rxa_f;
     fdfmin.df = &rxa_df;
     fdfmin.fdf = &rxa_fdf;
@@ -842,9 +895,7 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
     // release minimizer objects
     gsl_multimin_fdfminimizer_free(minimizer);
     gsl_vector_free(x);
-    rxa_molecule = NULL;
-    rxa_atomcost = NULL;
-    rxa_atomoverlap = NULL;
+    rxa_useMolecule(NULL);
 }
 
 
@@ -1759,9 +1810,7 @@ double Molecule::rxaCheckCost(const Atom_t* pa) const
 void Molecule::rxaCheckEval(const Atom_t* pa,
         double* pcost, R3::Vector* pg) const
 {
-    rxa_molecule = this;
-    rxa_atomcost = getAtomCostCalculator();    
-    rxa_atomoverlap = getAtomOverlapCalculator(); 
+    rxa_useMolecule(this);
     Atom_t rta = *pa;
     void* params = &rta;
     // copy rta coordinates to vector x
@@ -1781,6 +1830,9 @@ void Molecule::rxaCheckEval(const Atom_t* pa,
     rxa_df(x, params, g);
     copyGSLvector(g, *pg);
     assert(0.0 == R3::norm(*pg - g0));
+    gsl_vector_free(g);
+    gsl_vector_free(x);
+    rxa_useMolecule(NULL);
 }
 
 
