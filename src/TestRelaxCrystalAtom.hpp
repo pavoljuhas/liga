@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -14,6 +14,7 @@
 #include "AtomOverlap.hpp"
 #include "LigaUtils.hpp"
 #include "Crystal.hpp"
+#include "tests_dir.hpp"
 
 using namespace std;
 
@@ -30,9 +31,10 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
         template <class T> T* newFromFile(const string& filename)
         {
             T instance;
-            ifstream fid(filename.c_str());
+            string fullfile = prepend_tests_dir(filename);
+            ifstream fid(fullfile.c_str());
             fid >> instance;
-            T* rv = new T(instance); 
+            T* rv = new T(instance);
             return rv;
         }
 
@@ -51,16 +53,17 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
                 dtbl.reset(newFromFile<DistanceTable>("crystals/bcc.dst"));
                 // bcc
                 cached_crbcc.setDistanceTable(*dtbl);
-                cached_crbcc.ReadFile("crystals/bcc.stru");
+                cached_crbcc.ReadFile(prepend_tests_dir("crystals/bcc.stru"));
                 // fcc
                 dtbl.reset(newFromFile<DistanceTable>("crystals/fcc.dst"));
                 cached_crfcc.setDistanceTable(*dtbl);
-                cached_crfcc.ReadFile("crystals/fcc.stru");
+                cached_crfcc.ReadFile(prepend_tests_dir("crystals/fcc.stru"));
                 // triclinic
                 dtbl.reset(
                         newFromFile<DistanceTable>("crystals/triclinic.dst"));
                 cached_crtriclinic.setDistanceTable(*dtbl);
-                cached_crtriclinic.ReadFile("crystals/triclinic.stru");
+                cached_crtriclinic.ReadFile(
+                        prepend_tests_dir("crystals/triclinic.stru"));
                 dataloaded = true;
             }
             this->crbcc = cached_crbcc;
@@ -69,8 +72,8 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
         }
 
 
-        void tearDown() 
-        { 
+        void tearDown()
+        {
             this->crbcc.getAtomCostCalculator()->setScale(1.0);
             this->crbcc.getAtomOverlapCalculator()->setScale(1.0);
         }
@@ -158,7 +161,7 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
             ga = crfcc.rxaCheckGradient(&a3);
         }
 
-    private: 
+    private:
 
         R3::Vector numgrad_internal(Molecule& mol, int idx)
         {

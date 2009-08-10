@@ -1,0 +1,73 @@
+Environment().EnsureSConsVersion(0, 98)
+
+import os
+
+Import('env')
+
+env.ParseConfig("python-config --includes")
+env.ParseConfig("python-config --ldflags")
+env.ParseConfig("gsl-config --cflags --libs")
+
+env.AppendUnique(LIBS='libboost_python')
+env.AppendUnique(CPPPATH='.')
+
+if env['build'] == 'debug':
+    env.Append(CCFLAGS='-g')
+    exesuffix = ''
+elif env['build'] == 'fast':
+    env.AppendUnique(CCFLAGS=['-O3', '-ffast-math'])
+    env.AppendUnique(CPPDEFINES='NDEBUG')
+    exesuffix = '-fast'
+env['exesuffix'] = exesuffix
+
+if env['profile']:
+    env.AppendUnique(CCFLAGS='-pg')
+    env.AppendUnique(LINKFLAGS='-pg')
+
+env.Append(CCFLAGS='-Wall')
+
+# make env available to subsidiary SConscripts
+Export('env')
+
+# Define lists for storing library source and include files.
+def isLibSource(f):
+    ft = os.path.basename(str(f))
+    rv = ft[:1].isupper() and not ft.startswith('Test') and ft != 'Version.cpp'
+    return rv
+
+env['binaries'] = []
+env['lib_sources'] = filter(isLibSource, env.Glob('*.cpp'))
+# This SConscript updates Version.cpp and adds it to lib_sources
+SConscript('SConscript.version')
+env['lib_objects'] = map(env.Object, env['lib_sources'])
+
+# Top Level Targets ----------------------------------------------------------
+
+# mpbcliga -- application
+mpbcliga = env.Program('mpbcliga' + exesuffix,
+        ['mpbcliga.cpp'] + env['lib_objects'])
+Alias('mpbcliga', mpbcliga)
+env['binaries'] += mpbcliga
+env['mpbcliga'] = mpbcliga
+
+# This SConscript defines all test targets
+SConscript('SConscript.tests')
+
+# Installation targets.
+
+# install-bin
+def get_target_path(f):
+    bindir = env.get('bindir', os.path.join(env['prefix'], 'bin'))
+    ft = os.path.basename(str(f))
+    if env['svnrev']:
+        ft = ft.replace('mpbcliga', 'mpbcliga-' + env['svnrev'])
+    tgt = os.path.join(bindir, ft)
+    return tgt
+bin_targets = map(get_target_path, env['binaries'])
+
+Alias('install-bin', InstallAs(bin_targets, env['binaries']))
+
+# install
+Alias('install', ['install-bin'])
+
+# vim: ft=python

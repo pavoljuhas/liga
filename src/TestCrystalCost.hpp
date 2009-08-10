@@ -14,6 +14,7 @@
 #include "Crystal.hpp"
 #include "LigaUtils.hpp"
 #include "AtomCost.hpp"
+#include "tests_dir.hpp"
 
 using namespace std;
 
@@ -176,8 +177,8 @@ class TestCrystalCost : public CxxTest::TestSuite
             a1.radius = 0.5;
             crst.setAtomRadiiTable("C:0.5");
             TS_ASSERT(atomoverlap->eval(a1) > 0.0)
-            ga = analytical_gradient(a1, atomoverlap); 
-            gn = numerical_gradient(a1, atomoverlap);  
+            ga = analytical_gradient(a1, atomoverlap);
+            gn = numerical_gradient(a1, atomoverlap);
             gdiff = R3::distance(gn, ga);
             TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
         }
@@ -209,10 +210,10 @@ class TestCrystalCost : public CxxTest::TestSuite
         void test_gradient_triclinic()
         {
             DistanceTable dst;
-            ifstream fid("crystals/triclinic.dst");
+            ifstream fid(prepend_tests_dir("crystals/triclinic.dst").c_str());
             fid >> dst;
             crst.setDistanceTable(dst);
-            crst.ReadFile("crystals/triclinic.stru");
+            crst.ReadFile(prepend_tests_dir("crystals/triclinic.stru"));
             Atom_t a1 = crst.getAtom(1);
             crst.Pop(1);
             // cost gradient
@@ -233,8 +234,8 @@ class TestCrystalCost : public CxxTest::TestSuite
             a2.radius = radii["C"] = 0.4;
             crst.setAtomRadiiTable(radii);
             TS_ASSERT(atomoverlap->eval(a2) > 0.0);
-            ga = analytical_gradient(a2, atomoverlap); 
-            gn = numerical_gradient(a2, atomoverlap);  
+            ga = analytical_gradient(a2, atomoverlap);
+            gn = numerical_gradient(a2, atomoverlap);
             gdiff = R3::distance(gn, ga);
             TS_ASSERT_DELTA(0.0, gdiff, gradient_eps);
         }
