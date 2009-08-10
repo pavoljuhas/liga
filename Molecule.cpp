@@ -11,6 +11,7 @@
 #include <sstream>
 #include <cassert>
 #include <gsl/gsl_multimin.h>
+#include <gsl/gsl_multifit_nlin.h>
 #include <boost/foreach.hpp>
 
 #include "Molecule.hpp"
@@ -786,75 +787,64 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
     // For details, see info pages
     //     '(gsl-ref)Multidimensional Minimization'
     //     '(gsl-ref)Initializing the Multidimensional Minimizer'
-    const int maximum_relaxations = 20;
     const int maximum_iterations = 500;
     const gsl_multimin_fdfminimizer_type* minimizer_type;
     minimizer_type = gsl_multimin_fdfminimizer_vector_bfgs2;
     const double minimizer_step = 1.0e-4;
     const double minimizer_tol = 0.1;
-    const double minimizer_stop_gradient = eps_cost;
-    // FIXME: fix handling of ndim and remove this check.
-    // pj: this seems to be crashing when countAtoms() < 3
-//    if (countAtoms() < 3)   return;
-    // do relaxation on a copy of ta
+    // do relaxation on a copy of pa
     Atom_t rta(*pa);
     // loop while badness is improved
-    double lo_cost = DOUBLE_MAX;
-    AtomCost* atomcost = getAtomCostCalculator();
-    AtomCost* atomoverlap = getAtomOverlapCalculator();
-    for (int nrelax = 0; nrelax < maximum_relaxations; ++nrelax)
+    gsl_multimin_function_fdf fdfmin;
+    rxa_molecule = this;
+    rxa_atomcost = this->getAtomCostCalculator();
+    rxa_atomoverlap = this->getAtomOverlapCalculator();
+    fdfmin.f = &rxa_f;
+    fdfmin.df = &rxa_df;
+    fdfmin.fdf = &rxa_fdf;
+    // FIXME handling of ndim
+    fdfmin.n = 3;
+    fdfmin.params = &rta;
+    // copy rta coordinates to vector x
+    gsl_vector* x = gsl_vector_alloc(3);
+    copyGSLvector(rta.r, x);
+    // determine initial_cost before relaxation
+    double initial_cost = rxa_f(x, fdfmin.params);
+    // allocate minimizer
+    gsl_multimin_fdfminimizer* minimizer;
+    minimizer = gsl_multimin_fdfminimizer_alloc(minimizer_type, fdfmin.n);
+    gsl_multimin_fdfminimizer_set(minimizer,
+            &fdfmin, x, minimizer_step, minimizer_tol);
+    // iterate unless initial_cost is close to zero
+    int iter, status;
+    bool skipiter = (initial_cost < NS_LIGA::eps_cost);
+    for (iter = 0; iter < maximum_iterations && !skipiter; ++iter)
     {
-        // get out if lo_cost is very low
-        if (lo_cost < NS_LIGA::eps_cost)    break;
-        gsl_multimin_function_fdf fdfmin;
-        rxa_molecule = this;
-        rxa_atomcost = atomcost;
-        rxa_atomoverlap = atomoverlap;
-        fdfmin.f = &rxa_f;
-        fdfmin.df = &rxa_df;
-        fdfmin.fdf = &rxa_fdf;
-        // FIXME handling of ndim
-        fdfmin.n = 3;
-        fdfmin.params = &rta;
-        // copy rta coordinates to vector x
-        gsl_vector* x = gsl_vector_alloc(3);
-        gsl_vector_set(x, 0, rta.r[0]);
-        gsl_vector_set(x, 1, rta.r[1]);
-        gsl_vector_set(x, 2, rta.r[2]);
-        // allocate minimizer
-        gsl_multimin_fdfminimizer* minimizer;
-        minimizer = gsl_multimin_fdfminimizer_alloc(minimizer_type, fdfmin.n);
-        gsl_multimin_fdfminimizer_set(minimizer,
-                &fdfmin, x, minimizer_step, minimizer_tol);
-        // iterate
-        int iter, status;
-        for (iter = 0; iter < maximum_iterations; ++iter)
+        status = gsl_multimin_fdfminimizer_iterate(minimizer);
+        if (status != GSL_SUCCESS)  break;
+        status = gsl_multifit_test_delta(minimizer->dx,
+                minimizer->x, eps_distance, eps_distance);
+        if (status == GSL_SUCCESS)  
         {
-            status = gsl_multimin_fdfminimizer_iterate(minimizer);
-            if (status != GSL_SUCCESS)  break;
-            status = gsl_multimin_test_gradient(minimizer->gradient,
-                    minimizer_stop_gradient);
-            if (status == GSL_SUCCESS)  break;
-            if (status != GSL_CONTINUE) break;
+            // one last iteration to improve the precision
+            gsl_multimin_fdfminimizer_iterate(minimizer);
+            break;
         }
-        // copy new coordinates to rta
-        for (int i = 0; i < 3; ++i)
-        {
-            rta.r[i] = gsl_vector_get(minimizer->x, i);
-        }
-        double test_cost = minimizer->f;
-        gsl_multimin_fdfminimizer_free(minimizer);
-        gsl_vector_free(x);
-        rxa_molecule = NULL;
-        rxa_atomcost = NULL;
-        rxa_atomoverlap = NULL;
-        // get out if test_cost did not improve
-        if (!eps_lt(test_cost, lo_cost))  break;
-        lo_cost = test_cost;
-        *pa = rta;
-        // carry out relaxation otherwise
-        // define function to be minimized
+        if (status != GSL_CONTINUE) break;
     }
+    // copy new coordinates to rta
+    // update relaxed atom if cost improved
+    double relaxed_cost = minimizer->f;
+    if (eps_lt(relaxed_cost, initial_cost))
+    {
+        copyGSLvector(minimizer->x, pa->r);
+    }
+    // release minimizer objects
+    gsl_multimin_fdfminimizer_free(minimizer);
+    gsl_vector_free(x);
+    rxa_molecule = NULL;
+    rxa_atomcost = NULL;
+    rxa_atomoverlap = NULL;
 }
 
 
