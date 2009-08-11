@@ -342,6 +342,7 @@ void Liga_t::updateBestChamp()
         eps_lt(this->world_champ->cost(), this->best_champ->cost());
     if (hasnewchamp)
     {
+        this->injectOverlapMinimization();
         this->best_champ.reset(this->world_champ->clone());
         this->printed_best_champ = false;
     }
@@ -498,6 +499,21 @@ void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
 	oss << rp->frames << "." << tid.season << '.' << tno;
 	string fname = oss.str();
 	traced->WriteFile(fname.c_str());
+    }
+}
+
+void Liga_t::injectOverlapMinimization()
+{
+    world_champ->DownhillOverlapMinimization();
+    auto_ptr<Molecule> injector(world_champ->clone());
+    while (injector->countAtoms() > base_level + 1)
+    {
+        injector->Degenerate(1);
+        int level = injector->countAtoms();
+        assert(!at(level).empty());
+        int tgt_idx = at(level).find_looser();
+	PMOL tgt_mol = at(level).at(tgt_idx);
+        *tgt_mol = *injector;
     }
 }
 
