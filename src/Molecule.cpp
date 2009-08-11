@@ -1899,14 +1899,6 @@ void Molecule::rxaCheckEval(const Atom_t* pa,
     // calculate both cost and gradient
     rxa_fdf(x, params, pcost, g);
     copyGSLvector(g, *pg);
-    double c0 = *pcost;
-    R3::Vector g0 = *pg;
-    // check if other variants give the same result
-    *pcost = rxa_f(x, params);
-    assert(*pcost == c0);
-    rxa_df(x, params, g);
-    copyGSLvector(g, *pg);
-    assert(0.0 == R3::norm(*pg - g0));
     gsl_vector_free(g);
     gsl_vector_free(x);
     rxa_useMolecule(NULL);
