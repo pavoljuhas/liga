@@ -128,7 +128,7 @@ Molecule* Molecule::clone() const
 
 void Molecule::init()
 {
-    static boost::shared_ptr<DistanceTable> 
+    static boost::shared_ptr<DistanceTable>
         empty_distance_table(new DistanceTable());
     this->_distance_table = empty_distance_table;
     this->_badness = 0.0;
@@ -380,7 +380,7 @@ bool Molecule::full() const
 }
 
 
-int Molecule::countAtoms() const   
+int Molecule::countAtoms() const
 {
     return this->atoms.size();
 }
@@ -885,7 +885,7 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
         if (status != GSL_SUCCESS)  break;
         status = gsl_multifit_test_delta(minimizer->dx,
                 minimizer->x, eps_distance, eps_distance);
-        if (status == GSL_SUCCESS)  
+        if (status == GSL_SUCCESS)
         {
             // one last iteration to improve the precision
             gsl_multimin_fdfminimizer_iterate(minimizer);

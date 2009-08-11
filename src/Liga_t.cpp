@@ -359,7 +359,7 @@ void Liga_t::printBestChamp()
 {
     bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
     if (dontprint)	return;
-    cout << this->season << " BC " << 
+    cout << this->season << " BC " <<
         this->best_champ->countAtoms() << ' '
 	<< this->best_champ->cost() << endl;
     this->printed_best_champ = true;
