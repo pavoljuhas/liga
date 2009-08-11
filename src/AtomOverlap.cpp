@@ -68,6 +68,8 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
 	// calculation
 	double d = R3::distance(arg_atom->r, seq.ptr()->r);
         double r0r1 = arg_atom->radius + seq.ptr()->radius;
+        // no overlap, when disabled for either of atoms
+        if (min(arg_atom->radius, seq.ptr()->radius) < 0)  r0r1 = 0.0;
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
 	double pcost = penalty(dd) * this->getScale();
         partial_costs[seq.idx()] = pcost;

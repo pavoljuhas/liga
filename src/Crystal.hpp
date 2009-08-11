@@ -51,7 +51,7 @@ class Crystal : public Molecule
 
         void setRmax(double rmax);
         double getRmax() const;
-        std::pair<double,double> getRExtent() const;
+        std::pair<double,double> getRExtent(double rlo, double rhi) const;
 
         virtual double cost() const;
 	virtual int countPairs() const;
@@ -94,8 +94,7 @@ class Crystal : public Molecule
         mutable double _cost;
         mutable int _count_pairs;
         mutable bool _cost_data_cached;
-        mutable std::pair<double,double> _rextent;
-        mutable bool _rextent_cached;
+        double _lattice_max_ucd;
 
         // class methods
         boost::shared_ptr<Lattice> getDefaultLattice();
@@ -103,8 +102,6 @@ class Crystal : public Molecule
         // methods
         void init();
         void uncacheCostData() const;
-        void uncacheRExtent() const;
-        void updateRExtent() const;
         void cropDistanceTable();
         const R3::Vector&
             anyOffsetAtomSite(const RandomWeighedGenerator& rwg) const;

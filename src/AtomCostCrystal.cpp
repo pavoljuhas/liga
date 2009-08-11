@@ -40,7 +40,8 @@ void AtomCostCrystal::resetFor(const Molecule* clust)
     assert(this->arg_cluster == this->AtomCost::arg_cluster);
     assert(!this->use_distances);
     this->_rmax = arg_cluster->getRmax();
-    pair<double,double> rext = arg_cluster->getRExtent();
+    pair<double,double> rext =
+        arg_cluster->getRExtent(0.0, this->arg_cluster->getRmax());
     _sph.reset(new PointsInSphere(rext.first, rext.second,
                 arg_cluster->getLattice()) );
 }

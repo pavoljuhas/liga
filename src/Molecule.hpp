@@ -137,6 +137,8 @@ class Molecule
 	void RelaxExternalAtom(Atom_t* pa);
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
 	virtual void Degenerate(int Npop=1);
+        void FlipSites(int idx0, int idx1);
+        void DownhillOverlapMinimization();
 
 	// IO functions
 	void ReadFile(const std::string&);  // read from existing file
@@ -206,6 +208,7 @@ class Molecule
         enum AddRemove { ADD = 1, REMOVE = -1 };
         void applyOverlapContributions(Atom_t* pa, AddRemove sign);
         void fetchAtomRadii();
+        void checkAtomIndex(int idx);
 
     private:
 

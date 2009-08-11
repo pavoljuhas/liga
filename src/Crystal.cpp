@@ -61,6 +61,7 @@ Crystal& Crystal::operator=(const Crystal& crs)
     Molecule::operator=(crs);
     // copy Crystal specific data
     this->_lattice = crs._lattice;
+    this->_lattice_max_ucd = crs._lattice_max_ucd;
     this->_rmin = crs._rmin;
     this->_rmax = crs._rmax;
     this->_cost = crs._cost;
@@ -68,8 +69,6 @@ Crystal& Crystal::operator=(const Crystal& crs)
     this->pmx_pair_counts = crs.pmx_pair_counts;
     this->_count_pairs = crs._count_pairs;
     this->_cost_data_cached = crs._cost_data_cached;
-    this->_rextent = crs._rextent;
-    this->_rextent_cached = crs._rextent_cached;
     return *this;
 }
 
@@ -102,9 +101,9 @@ void Crystal::setDistReuse(bool flag)
 
 void Crystal::setLattice(const Lattice& lat)
 {
-    _lattice.reset(new Lattice(lat));
+    this->_lattice.reset(new Lattice(lat));
+    this->_lattice_max_ucd = this->_lattice->ucMaxDiagonalLength();
     this->uncacheCostData();
-    this->uncacheRExtent();
 }
 
 const Lattice& Crystal::getLattice() const
@@ -117,7 +116,6 @@ void Crystal::setRmax(double rmax)
     this->_rmax = rmax;
     this->cropDistanceTable();
     this->uncacheCostData();
-    this->uncacheRExtent();
 }
 
 double Crystal::getRmax() const
@@ -129,30 +127,13 @@ double Crystal::getRmax() const
 
 
 // r-range extended by circum diameter of the primitive cell
-pair<double,double> Crystal::getRExtent() const
-{
-    if (!this->_rextent_cached)     this->updateRExtent();
-    return this->_rextent;
-}
-
-
 // The equivalent unit cell vectors are mapped to fractional coordinates
 // from 0 <= xi < 1.  Due to round-off errors, some vectors can end very close
 // to 1.  Therefore the r-extent has to equal the largest diagonal in the cell.
 
-void Crystal::updateRExtent() const
+pair<double,double> Crystal::getRExtent(double rmin, double rmax) const
 {
-    const Lattice& lat = this->getLattice();
-    double max_ucd = lat.ucMaxDiagonalLength();
-    max_ucd = max_ucd*(1.0 + eps_distance) + eps_distance;
-    // rmin is not defined
-    double rmin = 0.0;
-    double rextlo = rmin - max_ucd;
-    double rexthi = this->getRmax() + max_ucd;
-    if (this->getRmax() < DOUBLE_EPS)  rexthi = DOUBLE_EPS;
-    // cache the results
-    this->_rextent = make_pair(rextlo, rexthi);
-    this->_rextent_cached = true;
+    return make_pair(rmin - _lattice_max_ucd, rmax + _lattice_max_ucd);
 }
 
 
@@ -185,7 +166,7 @@ void Crystal::recalculate() const
     AtomCostCrystal* atomcost;
     atomcost = static_cast<AtomCostCrystal*>(getAtomCostCalculator());
     // fill in self contributions
-    if (this->countAtoms()) 
+    if (this->countAtoms())
     {
         atomcost->eval(this->getAtom(0), AtomCost::SELFCOST);
     }
@@ -460,11 +441,11 @@ void Crystal::init()
     this->_rmin = 0.0;
     this->_rmax = 0.0;
     this->_lattice = Crystal::getDefaultLattice();
+    this->_lattice_max_ucd = this->_lattice->ucMaxDiagonalLength();
     this->_full_distance_table = this->Molecule::_distance_table;
     // the default _distance_table should exist and be blank
     assert(this->_full_distance_table.get());
     this->uncacheCostData();
-    this->uncacheRExtent();
     this->setDistReuse(true);
 }
 
@@ -479,12 +460,6 @@ void Crystal::uncacheCostData() const
         this->pmx_pair_counts.fill(0);
         this->_cost_data_cached = true;
     }
-}
-
-
-void Crystal::uncacheRExtent() const
-{
-    this->_rextent_cached = false;
 }
 
 
@@ -528,7 +503,7 @@ R3::Vector Crystal::ucvCartesianAdjusted(const R3::Vector& cv) const
         ucs0 = ucs1 = ucl;
         ucs0[i] = 0.0;
         ucs1[i] = 1.0;
-        bool nearzero = 
+        bool nearzero =
             lat.distance(ucl, ucs0) < NS_LIGA::eps_distance ||
             lat.distance(ucl, ucs1) < NS_LIGA::eps_distance;
         if (nearzero)   ucl[i] = 0.0;

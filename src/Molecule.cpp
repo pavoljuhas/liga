@@ -1486,6 +1486,64 @@ void Molecule::Degenerate(int Npop)
     }
 }
 
+
+void Molecule::FlipSites(int idx0, int idx1)
+{
+    this->checkAtomIndex(idx0);
+    this->checkAtomIndex(idx1);
+    Atom_t* pa0 = this->atoms[idx0];
+    Atom_t* pa1 = this->atoms[idx1];
+    swap(pa0->element, pa1->element);
+    // short circuit when overlap cost does not change
+    if (pa0->radius == pa1->radius)  return;
+    double radius0 = pa0->radius;
+    double radius1 = pa1->radius;
+    this->applyOverlapContributions(pa0, REMOVE);
+    pa0->radius = -DOUBLE_MAX;
+    this->applyOverlapContributions(pa1, REMOVE);
+    pa1->radius = radius0;
+    this->applyOverlapContributions(pa1, ADD);
+    pa0->radius = radius1;
+    this->applyOverlapContributions(pa0, ADD);
+}
+
+
+void Molecule::DownhillOverlapMinimization()
+{
+    bool keepgoing = (this->getMaxAtomRadius() > 0.0);
+    auto_ptr<Molecule> m1(this->clone());
+    while (keepgoing)
+    {
+        struct { double overlap; int i, j; } best = {this->Overlap(), 0, 0};
+        for (int i = 0; i < this->countAtoms(); ++i)
+        {
+            for (int j = i + 1; j < this->countAtoms(); ++j)
+            {
+                m1->FlipSites(i, j);
+                if (m1->Overlap() < best.overlap)
+                {
+                    best.overlap = m1->Overlap();
+                    best.i = i;
+                    best.j = j;
+                }
+                m1->FlipSites(i, j);
+                assert(eps_eq(this->Overlap(), m1->Overlap()));
+            }
+        }
+        // get out if overlap did not improve
+        if (!eps_lt(best.overlap, this->Overlap()))    break;
+        assert(best.i != best.j);
+        // perform this flip
+        this->FlipSites(best.i, best.j);
+        m1->FlipSites(best.i, best.j);
+#ifndef NDEBUG
+        this->recalculateOverlap();
+        assert(eps_eq(this->Overlap(), m1->Overlap()));
+#endif
+    }
+}
+
+
 int Molecule::getPairMatrixIndex()
 {
     int idx;
@@ -1722,6 +1780,17 @@ void Molecule::fetchAtomRadii()
     BOOST_FOREACH (Atom_t& a, atoms_storage)
     {
         a.radius = radiitable.empty() ? 0.0 : radiitable.lookup(a.element);
+    }
+}
+
+
+void Molecule::checkAtomIndex(int idx)
+{
+    if (idx < 0 || idx >= this->countAtoms())
+    {
+	ostringstream emsg;
+	emsg << "Invalid atom index " << idx << ".";
+	throw range_error(emsg.str());
     }
 }
 

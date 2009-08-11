@@ -44,7 +44,7 @@ void AtomOverlapCrystal::resetFor(const Molecule* clust)
     assert(this->arg_cluster == this->AtomCost::arg_cluster);
     assert(!this->use_distances);
     this->_rmax = 2 * arg_cluster->getMaxAtomRadius();
-    pair<double,double> rext = arg_cluster->getRExtent();
+    pair<double,double> rext = arg_cluster->getRExtent(0.0, this->_rmax);
     _sph.reset(new PointsInSphere(rext.first, rext.second,
                 arg_cluster->getLattice()) );
 }
@@ -53,6 +53,7 @@ void AtomOverlapCrystal::resetFor(const Molecule* clust)
 double AtomOverlapCrystal::pairDistanceDifference(const double& d) const
 {
     double r0r1 = this->arg_atom->radius + this->crst_atom->radius;
+    if (min(arg_atom->radius, crst_atom->radius) < 0)  r0r1 = 0.0;
     double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
     return dd;
 }
