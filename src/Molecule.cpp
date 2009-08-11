@@ -440,21 +440,29 @@ void Molecule::setChemicalFormula(const string& s)
 void Molecule::setChemicalFormula(const ChemicalFormula& formula)
 {
     ChemicalFormula::const_iterator ec;
-    vector<string> expanded_formula = formula.expand();
+    vector<string> fm = formula.expand();
+    multiset<string> mset_elements(fm.begin(), fm.end());
     atoms_storage.resize(formula.countElements(), Atom_t("", 0.0, 0.0, 0.0));
-    int aidx = 0;
     set<const Atom_t*> set_storage;
-    set<const Atom_t*> set_oldies;
-    set_oldies.insert(atoms_bucket.begin(), atoms_bucket.end());
-    set_oldies.insert(atoms.begin(), atoms.end());
+    set<const Atom_t*> set_existing;
+    set_existing.insert(atoms_bucket.begin(), atoms_bucket.end());
+    set_existing.insert(atoms.begin(), atoms.end());
+    set<Atom_t*> set_replaced;
     BOOST_FOREACH (Atom_t& a, atoms_storage)
     {
         set_storage.insert(&a);
         // add any new atoms to the bucket
-        if (!set_oldies.count(&a))  atoms_bucket.push_back(&a);
-        // replace formula
-        a.element = expanded_formula[aidx];
-        aidx += 1;
+        if (!set_existing.count(&a))  atoms_bucket.push_back(&a);
+        // apply formula, store pointers to atoms that need to be updated
+        multiset<string>::iterator ei = mset_elements.find(a.element);
+        if (ei == mset_elements.end())  set_replaced.insert(&a);
+        else  mset_elements.erase(ei);
+    }
+    assert(mset_elements.size() == set_replaced.size());
+    BOOST_FOREACH (Atom_t* pa, set_replaced)
+    {
+        pa->element = *(mset_elements.begin());
+        mset_elements.erase(mset_elements.begin());
     }
     // remove any atom pointers that are not it the storage
     vector<Atom_t*>::iterator ai, ag;
