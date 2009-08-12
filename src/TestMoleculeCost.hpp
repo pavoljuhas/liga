@@ -80,8 +80,10 @@ class TestMoleculeCost : public CxxTest::TestSuite
             TS_ASSERT_DELTA(expectcost[3],
                     bad_square.getAtom(3).Badness(), double_eps);
             double totalcost = accumulate(expectcost, expectcost + 4, 0.0);
-            TS_ASSERT_DELTA(totalcost,
-                    bad_square.Badness(), double_eps);
+            TS_ASSERT_DELTA(totalcost, bad_square.Badness(), double_eps);
+            // make sure recalculate returns the same non-zero cost
+            bad_square.recalculate();
+            TS_ASSERT_DELTA(totalcost, bad_square.Badness(), double_eps);
         }
 
 };  // class TestMoleculeCost

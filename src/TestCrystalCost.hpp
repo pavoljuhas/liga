@@ -89,6 +89,12 @@ class TestCrystalCost : public CxxTest::TestSuite
             TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
             crst.AddAt("C", 0.1, 0.2, 0.3);
             TS_ASSERT(crst.cost() > 0.0);
+            // make sure recalculate returns the same non-zero cost
+            double cost0 = crst.cost();
+            int pcnt0 = crst.countPairs();
+            crst.recalculate();
+            TS_ASSERT_DELTA(cost0, crst.cost(), double_eps);
+            TS_ASSERT_EQUALS(pcnt0, crst.countPairs());
             crst.Pop(1);
             crst.AddAt("C", 0.5, 0.5, 0.5);
             TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
