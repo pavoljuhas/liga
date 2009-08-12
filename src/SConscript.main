@@ -2,6 +2,11 @@ import os
 
 Import('env')
 
+# Use Intel C++ compiler when it is available
+icpc = env.WhereIs('icpc')
+if icpc:
+    env.Tool('intelc', topdir=icpc[:icpc.rfind('/bin')])
+
 env.ParseConfig("python-config --includes")
 env.ParseConfig("python-config --ldflags")
 env.ParseConfig("gsl-config --cflags --libs")
@@ -10,8 +15,8 @@ env.AppendUnique(LIBS='boost_python')
 env.AppendUnique(CPPPATH='.')
 
 # special configuration for specific compilers
-if env['CXX'] == "icpc":
-    # Intel C compiler on hpc dev-intel07
+if icpc:
+    # options for Intel C++ compiler on hpc dev-intel07
     env.AppendUnique(CCFLAGS=['-w1', '-fp-model', 'precise'])
     env.PrependUnique(LIBS=['imf'])
     fast_optimflags = ['-fast', '-axTW']
