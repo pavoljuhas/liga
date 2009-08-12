@@ -182,29 +182,35 @@ void Crystal::recalculate() const
         this->_count_pairs += diagpaircount;
     }
     // fill off-diagonal elements
-    R3::Vector rc_dd;
-    pair<double,int> costcount;
-    for (AtomSequence seq0(this); !seq0.finished(); seq0.next())
+    for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
     {
-        AtomSequence seq1 = seq0;
-        seq1.next();
-        for (; !seq1.finished(); seq1.next())
+        double paircost = atomcost->eval(seq0.ptr());
+        const vector<double>& ptcs = atomcost->partialCosts();
+        const vector<int>& pcnt = atomcost->pairCounts();
+        for (AtomSequenceIndex seq1(this); !seq1.finished(); seq1.next())
         {
+            if (seq1.ptr() == seq0.ptr())  continue;
             int idx0 = seq0.ptr()->pmxidx;
             int idx1 = seq1.ptr()->pmxidx;
             assert(idx0 != idx1);
-            rc_dd = seq1.ptr()->r - seq0.ptr()->r;
-            costcount = atomcost->pairCostCount(rc_dd);
-            // pmx is SymmetricMatrix, it is sufficient to make one assignment
-            this->pmx_partial_costs(idx0, idx1) = costcount.first;
-            double halfcost = costcount.first / 2;
-            this->IncBadness(costcount.first);
-            seq0.ptr()->IncBadness(halfcost);
-            seq1.ptr()->IncBadness(halfcost);
-            // pmx is SymmetricMatrix, it is sufficient to make one assignment
-            this->pmx_pair_counts(idx0, idx1) = costcount.second;
-            this->_count_pairs += costcount.second;
+            // check pair count elements that were already filled
+            const int& pcnt01 = pcnt[seq1.idx()];
+            assert(seq0.idx() < seq1.idx() ||
+                    this->pmx_pair_counts(idx0, idx1) == pcnt01);
+            this->pmx_pair_counts(idx0, idx1) = pcnt01;
+            // check partial cost elements that were already filled
+            const double& ptcs01 = ptcs[seq1.idx()];
+            assert(seq0.idx() < seq1.idx() ||
+                    eps_eq(this->pmx_partial_costs(idx0, idx1), ptcs01));
+            this->pmx_partial_costs(idx0, idx1) = ptcs01;
         }
+        seq0.ptr()->IncBadness(paircost);
+        // off diagonal cost values are doubled, but we sum here
+        // over whole pair matrix.
+        this->IncBadness(paircost / 2.0);
+        // the same stands for pair counts
+        assert(atomcost->totalPairCount() % 2 == 0);
+        this->_count_pairs += atomcost->totalPairCount() / 2;
     }
     this->_cost_data_cached = true;
     this->recalculateOverlap();
@@ -263,9 +269,9 @@ void Crystal::Degenerate(int Npop)
 
 void Crystal::AddInternal(Atom_t* pa)
 {
-    Molecule::AddInternal(pa);
     // shift to unit cell and take care of zero round-off
     pa->r = this->ucvCartesianAdjusted(pa->r);
+    this->Molecule::AddInternal(pa);
 }
 
 
