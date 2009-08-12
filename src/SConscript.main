@@ -1,5 +1,3 @@
-Environment().EnsureSConsVersion(0, 98)
-
 import os
 
 Import('env')
@@ -25,9 +23,6 @@ if env['profile']:
     env.AppendUnique(LINKFLAGS='-pg')
 
 env.Append(CCFLAGS='-Wall')
-
-# make env available to subsidiary SConscripts
-Export('env')
 
 # Define lists for storing library source and include files.
 def isLibSource(f):
@@ -57,11 +52,10 @@ SConscript('SConscript.tests')
 
 # install-bin
 def get_target_path(f):
-    bindir = env.get('bindir', os.path.join(env['prefix'], 'bin'))
     ft = os.path.basename(str(f))
     if env['svnrev']:
         ft = ft.replace('mpbcliga', 'mpbcliga-' + env['svnrev'])
-    tgt = os.path.join(bindir, ft)
+    tgt = os.path.join(env['bindir'], ft)
     return tgt
 bin_targets = map(get_target_path, env['binaries'])
 

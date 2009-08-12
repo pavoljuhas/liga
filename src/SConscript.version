@@ -3,7 +3,7 @@ import os
 Import('env')
 
 version_sources = ['Version.tpl']
-svnentries = File('.svn/entries').srcnode()
+svnentries = env.File('.svn/entries').srcnode()
 srcdir = os.path.dirname(os.path.dirname(str(svnentries)))
 env['svnrev'] = (os.path.isfile(str(svnentries)) and
         os.popen('svnversion -c %s' % srcdir).read().strip().split(':')[-1])
