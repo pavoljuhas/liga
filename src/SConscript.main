@@ -6,23 +6,31 @@ env.ParseConfig("python-config --includes")
 env.ParseConfig("python-config --ldflags")
 env.ParseConfig("gsl-config --cflags --libs")
 
-env.AppendUnique(LIBS='libboost_python')
+env.AppendUnique(LIBS='boost_python')
 env.AppendUnique(CPPPATH='.')
 
+# special configuration for specific compilers
+if env['CXX'] == "icpc":
+    # Intel C compiler on hpc dev-intel07
+    env.AppendUnique(CCFLAGS=['-w1', '-fp-model', 'precise'])
+    env.PrependUnique(LIBS=['imf'])
+    fast_optimflags = ['-fast', '-axTW']
+else:
+    # g++ options
+    env.AppendUnique(CCFLAGS=['-Wall'])
+    fast_optimflags = ['-ffast-math']
+
+# configure build variants
 if env['build'] == 'debug':
     env.Append(CCFLAGS='-g')
-    exesuffix = ''
 elif env['build'] == 'fast':
-    env.AppendUnique(CCFLAGS=['-O3', '-ffast-math'])
+    env.AppendUnique(CCFLAGS=['-O3'] + fast_optimflags)
     env.AppendUnique(CPPDEFINES='NDEBUG')
-    exesuffix = '-fast'
-env['exesuffix'] = exesuffix
 
 if env['profile']:
     env.AppendUnique(CCFLAGS='-pg')
     env.AppendUnique(LINKFLAGS='-pg')
 
-env.Append(CCFLAGS='-Wall')
 
 # Define lists for storing library source and include files.
 def isLibSource(f):
@@ -39,7 +47,7 @@ env['lib_objects'] = map(env.Object, env['lib_sources'])
 # Top Level Targets ----------------------------------------------------------
 
 # mpbcliga -- application
-mpbcliga = env.Program('mpbcliga' + exesuffix,
+mpbcliga = env.Program('mpbcliga',
         ['mpbcliga.cpp'] + env['lib_objects'])
 Alias('mpbcliga', mpbcliga)
 env['binaries'] += mpbcliga
@@ -52,10 +60,12 @@ SConscript('SConscript.tests')
 
 # install-bin
 def get_target_path(f):
-    ft = os.path.basename(str(f))
+    fb, fe = os.path.splitext(os.path.basename(str(f)))
     if env['svnrev']:
-        ft = ft.replace('mpbcliga', 'mpbcliga-' + env['svnrev'])
-    tgt = os.path.join(env['bindir'], ft)
+        fb = fb.replace('mpbcliga', 'mpbcliga-' + env['svnrev'])
+    if env['build'] == 'fast':
+        fb += '-fast'
+    tgt = os.path.join(env['bindir'], fb + fe)
     return tgt
 bin_targets = map(get_target_path, env['binaries'])
 

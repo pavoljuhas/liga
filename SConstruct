@@ -12,6 +12,7 @@ DefaultEnvironment(ENV={
 
 # Create construction environment
 env = DefaultEnvironment().Clone()
+env.Tool('intelc', topdir='/opt/intel/Compiler/11.0/083')
 
 # Variables syntax was changed in 0.98
 env.EnsureSConsVersion(0, 98)

@@ -3,7 +3,9 @@ import os
 Import('env')
 
 # Environment for building unit test driver
-env_test = env.Clone(tools=['default', 'cxxtest'], CXXTEST_SUFFIX='.hpp')
+env_test = env.Clone()
+env_test.Tool('cxxtest')
+env_test['CXXTEST_SUFFIX'] = '.hpp'
 
 # Targets --------------------------------------------------------------------
 
@@ -29,7 +31,7 @@ env_test.Append(BUILDERS={'BuildHeader_hpp' :
 tdcpp = env_test.BuildHeader_hpp(['tests_dir.cpp'],
         env_test.File('tests_dir.tpl').srcnode())
 
-alltests = env_test.CxxTest('alltests' + env_test['exesuffix'],
+alltests = env_test.CxxTest('alltests',
         test_sources + env_test['lib_objects'] + tdcpp)
 
 # unittest
