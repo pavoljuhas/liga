@@ -357,4 +357,15 @@ void ParseArgs::arg_or_par(const char *s)
     }
 }
 
+
+void ParseArgs::force_valid_par(const string& par) const
+{
+    if (!this->pars.count(par))
+    {
+	ostringstream emsg;
+	emsg << "parameter '" << par << "' is not defined";
+	throw ParseArgsError(emsg.str());
+    }
+}
+
 // End of file

@@ -63,6 +63,7 @@ private:
     void do_getopt();
     void do_getopt_long();
     void arg_or_par(const char *s);
+    void force_valid_par(const std::string&p) const;
     std::set<std::string> cmdl_par;
     std::map<std::string,std::string> par_alias;
     std::list<std::string> used_par_aliases;
@@ -70,18 +71,14 @@ private:
 
 template<typename T> T ParseArgs::GetPar(std::string par)
 {
-    if (!pars.count(par))
-    {
-	std::ostringstream oss;
-	oss << "parameter '" << par << "' is not defined";
-	throw ParseArgsError(oss.str());
-    }
+    using namespace std;
+    this->force_valid_par(par);
     T val;
-    std::istringstream iss(pars[par]);
-    iss >> val || (iss.clear(), iss >> std::boolalpha >> val);
+    istringstream iss(pars[par]);
+    iss >> val || (iss.clear(), iss >> boolalpha >> val);
     if (!iss)
     {
-	std::ostringstream oss;
+	ostringstream oss;
 	oss << "invalid value for parameter '" << par << "'";
 	throw ParseArgsError(oss.str());
     }
@@ -95,21 +92,16 @@ template<typename T> T ParseArgs::GetPar(std::string par, T defval)
 
 template<typename T> std::vector<T> ParseArgs::GetParVec(std::string par)
 {
-    if (!pars.count(par))
-    {
-	std::ostringstream oss;
-	oss << "parameter '" << par << "' is not defined";
-	throw ParseArgsError(oss.str());
-    }
+    using namespace std;
     // replace all commas in par with <space>
-    std::string values(pars[par]);
-    for (   std::string::size_type pcomma = values.find(',');
-	    pcomma != std::string::npos; pcomma = values.find(',', pcomma) )
+    string values(pars[par]);
+    for (   string::size_type pcomma = values.find(',');
+	    pcomma != string::npos; pcomma = values.find(',', pcomma) )
     {
 	values[pcomma] = ' ';
     }
-    std::vector<T> v;
-    std::istringstream iss(values);
+    vector<T> v;
+    istringstream iss(values);
     T val;
     while (iss >> val)
 	v.push_back(val);
