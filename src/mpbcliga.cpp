@@ -65,6 +65,10 @@ int main(int argc, char *argv[])
 	cerr << e.what() << endl;
 	return EXIT_INPUT_ERROR;
     }
+    catch (invalid_argument(e)) {
+	cerr << e.what() << endl;
+	return EXIT_INPUT_ERROR;
+    }
     // figure out exit code
     int exit_code;
     if (SIGHUP_received)	    exit_code = SIGHUP + 128;
