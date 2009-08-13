@@ -72,13 +72,16 @@ double Atom_t::FreeOverlap() const
 void Atom_t::IncOverlap(const double& doverlap)
 {
     this->_overlap += doverlap;
+    // Take care of round-offs, but only if they are very small.
+    if (doverlap < 0.0 && fabs(this->Badness()) < NS_LIGA::eps_cost)
+    {
+        this->ResetOverlap(0.0);
+    }
 }
 
 void Atom_t::DecOverlap(const double& doverlap)
 {
-    this->_overlap -= doverlap;
-    // take care of round-off errors
-    if (this->_overlap < NS_LIGA::eps_cost)     this->ResetOverlap(0.0);
+    this->IncOverlap(-doverlap);
 }
 
 void Atom_t::ResetOverlap(double overlap)
