@@ -42,7 +42,7 @@ void Atom_t::IncBadness(const double& db)
 {
     this->_badness += db;
     // Take care of round-offs, but only if they are very small.
-    if (db < 0.0 && fabs(this->Badness()) < NS_LIGA::eps_cost)
+    if (db < 0.0 && fabs(this->_badness) < NS_LIGA::eps_cost)
     {
         this->ResetBadness(0.0);
     }
@@ -73,7 +73,7 @@ void Atom_t::IncOverlap(const double& doverlap)
 {
     this->_overlap += doverlap;
     // Take care of round-offs, but only if they are very small.
-    if (doverlap < 0.0 && fabs(this->Badness()) < NS_LIGA::eps_cost)
+    if (doverlap < 0.0 && fabs(this->_overlap) < NS_LIGA::eps_cost)
     {
         this->ResetOverlap(0.0);
     }
