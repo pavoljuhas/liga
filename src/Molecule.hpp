@@ -118,6 +118,8 @@ class Molecule
 	virtual void recalculate() const;   // recalculate everything
 	virtual AtomCost* getAtomCostCalculator() const;
 	virtual AtomCost* getAtomOverlapCalculator() const;
+        void setAtomCostScale(double sc);
+        void setAtomOverlapScale(double sc);
 
 	// methods - molecule operations
 	virtual void Shift(const R3::Vector& drc);  // cartesian shift

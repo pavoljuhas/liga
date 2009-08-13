@@ -44,6 +44,7 @@ struct RunPar_t
     double rmax;
     bool distreuse;
     double tolcost;
+    std::vector<double> costweights;
     int natoms;
     ChemicalFormula formula;
     AtomRadiiTable radii;

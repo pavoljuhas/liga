@@ -102,12 +102,11 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // create empty molecule
     if (this->crystal)
     {
-        Crystal crst;
-        this->mol.reset(new Crystal(crst));
+        this->mol.reset(new Crystal);
     }
     else
     {
-        mol.reset(new Molecule);
+        this->mol.reset(new Molecule);
     }
     // assign distance table
     mol->setDistanceTable(dtab);
@@ -253,6 +252,20 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // distreuse
     distreuse = args->GetPar<bool>("distreuse", this->crystal);
     mol->setDistReuse(distreuse);
+    // costweights
+    this->costweights.assign(2, 1.0);
+    if (args->ispar("costweights"))
+    {
+        vector<double> cwts = args->GetParVec<double>("costweights");
+        this->costweights = cwts;
+    }
+    if (this->costweights.size() != 2)
+    {
+        const char* emsg = "costweights must have 2 elements.";
+        throw ParseArgsError(emsg);
+    }
+    mol->setAtomCostScale(this->costweights[0]);
+    mol->setAtomOverlapScale(this->costweights[1]);
     // tolcost
     tolcost = args->GetPar<double>("tolcost", 1.0e-4);
     Molecule::tol_nbad = tolcost;
@@ -388,6 +401,7 @@ void RunPar_t::print_help()
 "  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
 "  rmax=double           [dmax] distance cutoff when crystal=true\n"
 "  distreuse=bool        [false] keep used distances in distance table\n"
+"  costweights=array     [1,1] weights for distance and overlap components\n"
 "  tolcost=double        [1E-4] target normalized molecule cost\n"
 "  natoms=int            obsolete, equivalent to formula=Cn\n"
 "  formula=string        chemical formula, use inistru when not specified\n"
@@ -507,6 +521,13 @@ void RunPar_t::print_pars()
     }
     // distreuse
     cout << "distreuse=" << distreuse << '\n';
+    // costweights
+    cout << "costweights=";
+    for (size_t i = 0; i != this->costweights.size(); ++i)
+    {
+        cout << (i ? "," : "") << costweights[i];
+    }
+    cout << '\n';
     // tolcost
     cout << "tolcost=" << tolcost << '\n';
     // formula
@@ -591,6 +612,7 @@ const list<string>& RunPar_t::validpars() const
         "latpar",
         "rmax",
         "distreuse",
+        "costweights",
         "tolcost",
         "natoms",
         "formula",

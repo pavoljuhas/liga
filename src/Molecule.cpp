@@ -249,6 +249,19 @@ AtomCost* Molecule::getAtomOverlapCalculator() const
 }
 
 
+void Molecule::setAtomCostScale(double sc)
+{
+    this->getAtomCostCalculator()->setScale(sc);
+    this->recalculate();
+}
+
+
+void Molecule::setAtomOverlapScale(double sc)
+{
+    this->getAtomOverlapCalculator()->setScale(sc);
+    this->recalculate();
+}
+
 // Local helpers for Molecule::reassignPairs()
 
 namespace {
