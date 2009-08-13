@@ -1,5 +1,5 @@
 /***********************************************************************
-* Short Title: run parameters for gizaliga application
+* Short Title: run parameters for mpbcliga application
 *
 * Comments:
 *

@@ -1,5 +1,5 @@
 /***********************************************************************
-* Short Title: run parameters for gizaliga application
+* Short Title: run parameters for mpbcliga application
 *
 * Comments:
 *
@@ -363,7 +363,7 @@ void RunPar_t::print_help()
     const string& cmd_t = args->cmd_t;
     cout << 
 "usage: " << cmd_t << " [-p PARFILE] [DISTFILE] [par1=val1 par2=val2...]\n"
-"run gizaliga simulation using distances from DISTFILE.  Parameters can\n"
+"run mpbcliga simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PARFILE or on the command line, which overrides PARFILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
@@ -413,7 +413,7 @@ string RunPar_t::version_string(string quote)
 {
     using namespace std;
     ostringstream oss;
-    oss << quote << "gizaliga " << NS_VERSION::getId() << '\n' <<
+    oss << quote << "mpbcliga " << NS_VERSION::getId() << '\n' <<
 	quote << "compiler version " << __VERSION__;
     return oss.str();
 }
