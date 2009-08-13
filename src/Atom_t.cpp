@@ -41,13 +41,16 @@ double Atom_t::FreeBadness() const
 void Atom_t::IncBadness(const double& db)
 {
     this->_badness += db;
+    // Take care of round-offs, but only if they are very small.
+    if (db < 0.0 && fabs(this->Badness()) < NS_LIGA::eps_cost)
+    {
+        this->ResetBadness(0.0);
+    }
 }
 
 void Atom_t::DecBadness(const double& db)
 {
-    this->_badness -= db;
-    // take care of round-off errors
-    if (this->_badness < NS_LIGA::eps_cost)     this->ResetBadness(0.0);
+    this->IncBadness(-db);
 }
 
 void Atom_t::ResetBadness(double b)
