@@ -61,7 +61,10 @@ env['mpbcliga'] = mpbcliga
 # This SConscript defines all test targets
 SConscript('SConscript.tests')
 
-# Installation targets.
+# Default target - compile mpbcliga only
+env.Default(mpbcliga)
+
+# Installation targets. ------------------------------------------------------
 
 # install-bin
 def get_target_path(f):
