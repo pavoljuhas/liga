@@ -275,7 +275,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
     // radii
     if (args->ispar("radii"))
     {
-        this->radii.fromString(args->GetPar<string>("radii"));
+        this->radii.fromString(args->pars["radii"]);
         this->mol->setAtomRadiiTable(this->radii);
     }
     // fixed_atoms must be set after inistru
