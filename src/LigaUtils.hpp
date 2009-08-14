@@ -72,6 +72,15 @@ inline bool eps_lt(const double& x, const double& y)
     return x < y - NS_LIGA::eps_cost;
 }
 
+
+inline
+bool isNearZeroRoundOff(const double& x,
+        const double& tol=NS_LIGA::eps_cost)
+{
+    bool rv = (x < tol && x > -tol);
+    return rv;
+}
+
 // fitness
 
 inline double convertCostToFitness(const double& cst)

@@ -326,7 +326,7 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
     this->pmx_pair_counts(idx0, idx0) = diagpaircount;
     this->_count_pairs += diagpaircount;
     // take care of small round offs
-    if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
+    if (isNearZeroRoundOff(this->Badness()))  this->ResetBadness();
     // add overlap contributions
     this->applyOverlapContributions(pa, ADD);
 }
@@ -348,7 +348,7 @@ void Crystal::removeAtomPairs(Atom_t* pa)
         // remove pair counts
         this->_count_pairs -= this->pmx_pair_counts(idx0, idx1);
     }
-    if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
+    if (isNearZeroRoundOff(this->Badness()))  this->ResetBadness();
     assert(this->_count_pairs >= 0);
     // remove overlap contributions
     this->applyOverlapContributions(pa, REMOVE);

@@ -354,11 +354,16 @@ const double& Molecule::Badness() const
 void Molecule::IncBadness(const double& db) const
 {
     this->_badness += db;
+    // Take care of round-offs, but only if they are very small.
+    if (db < 0.0 && isNearZeroRoundOff(this->_badness))
+    {
+        this->ResetBadness(0.0);
+    }
 }
 
 void Molecule::DecBadness(const double& db) const
 {
-    this->_badness -= db;
+    this->IncBadness(-db);
 }
 
 void Molecule::ResetBadness(double b) const
@@ -374,11 +379,16 @@ const double& Molecule::Overlap() const
 void Molecule::IncOverlap(const double& doverlap) const
 {
     this->_overlap += doverlap;
+    // Take care of round-offs, but only if they are very small.
+    if (doverlap < 0.0 && isNearZeroRoundOff(this->_overlap))
+    {
+        this->ResetOverlap(0.0);
+    }
 }
 
 void Molecule::DecOverlap(const double& doverlap) const
 {
-    this->_overlap -= doverlap;
+    this->IncOverlap(-doverlap);
 }
 
 void Molecule::ResetOverlap(double overlap) const
@@ -891,7 +901,7 @@ void Molecule::RelaxExternalAtom(Atom_t* pa)
             &fdfmin, x, minimizer_step, minimizer_tol);
     // iterate unless initial_cost is close to zero
     int iter, status;
-    bool skipiter = (initial_cost < NS_LIGA::eps_cost);
+    bool skipiter = isNearZeroRoundOff(initial_cost);
     for (iter = 0; iter < maximum_iterations && !skipiter; ++iter)
     {
         status = gsl_multimin_fdfminimizer_iterate(minimizer);
@@ -970,7 +980,7 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
 	pa->IncBadness(badnesshalf);
     }
     this->IncBadness(atomcost->totalCost());
-    if (this->Badness() < NS_LIGA::eps_cost)     this->ResetBadness();
+    if (isNearZeroRoundOff(this->Badness()))  this->ResetBadness();
     // remember used distances in pmx_used_distances
     if (!getDistReuse())
     {
@@ -1028,7 +1038,7 @@ void Molecule::removeAtomPairs(Atom_t* pa)
             udst = 0.0;
         }
     }
-    if (this->Badness() < NS_LIGA::eps_cost)    this->ResetBadness();
+    if (isNearZeroRoundOff(this->Badness()))  this->ResetBadness();
     // remove overlap contributions
     this->applyOverlapContributions(pa, REMOVE);
 }
@@ -1751,14 +1761,17 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
 void Molecule::recalculateOverlap() const
 {
     this->ResetOverlap();
-    AtomCost* atomoverlap = getAtomOverlapCalculator();
-    for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
+    AtomCost* atomoverlap = this->getAtomOverlapCalculator();
+    BOOST_FOREACH (Atom_t* pa, this->atoms)
     {
-        Atom_t* pa = seq0.ptr();
         double aoself = atomoverlap->eval(pa, AtomCost::SELFCOST);
         double aohalf = atomoverlap->eval(pa) / 2.0;
         pa->ResetOverlap(aoself + aohalf);
         this->IncOverlap(aoself + aohalf);
+    }
+    BOOST_FOREACH (Atom_t* pa, this->atoms_bucket)
+    {
+        pa->ResetOverlap(0.0);
     }
 }
 
@@ -1780,7 +1793,7 @@ void Molecule::applyOverlapContributions(Atom_t* pa, AddRemove sign)
         pa->IncOverlap(aohalf);
     }
     this->IncOverlap(sign * atomoverlap->totalCost());
-    if (sign == REMOVE && this->Overlap() < NS_LIGA::eps_cost)
+    if (sign == REMOVE && isNearZeroRoundOff(this->Overlap()))
     {
         this->ResetOverlap();
     }
