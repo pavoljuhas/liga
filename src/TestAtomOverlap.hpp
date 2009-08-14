@@ -52,11 +52,7 @@ class TestAtomOverlap : public CxxTest::TestSuite
             mnotouch.AddAt("C", -0.5, 0.0, 0.0);
             mnotouch.AddAt("C", +0.5, 0.0, 0.0);
             moverlap = mnotouch;
-            // nasty hack while there is no way to set atom radii
-            Atom_t& a0 = const_cast<Atom_t&>(moverlap.getAtom(0));
-            a0.radius = 2.0;
-            Atom_t& a1 = const_cast<Atom_t&>(moverlap.getAtom(1));
-            a1.radius = 2.0;
+            moverlap.setAtomRadiiTable("C:2.0");
         }
 
 

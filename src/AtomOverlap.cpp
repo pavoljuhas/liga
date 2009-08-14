@@ -60,6 +60,7 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
     resetUseFlags();
     resetGradient();
     total_cost = 0.0;
+    fill(partial_costs.begin(), partial_costs.end(), 0.0);
     if (this->_selfcost_flag)  return this->totalCost();
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
@@ -67,9 +68,10 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
         if (seq.ptr() == arg_atom)  continue;
 	// calculation
 	double d = R3::distance(arg_atom->r, seq.ptr()->r);
-        double r0r1 = arg_atom->radius + seq.ptr()->radius;
-        // no overlap, when disabled for either of atoms
-        if (min(arg_atom->radius, seq.ptr()->radius) < 0)  r0r1 = 0.0;
+        // force zero overlap when disabled by negative atom radius
+        double r0r1 = 
+            (arg_atom->radius < 0 || seq.ptr()->radius < 0) ? 0.0 :
+            (arg_atom->radius + seq.ptr()->radius);
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
 	double pcost = penalty(dd) * this->getScale();
         partial_costs[seq.idx()] = pcost;

@@ -52,8 +52,10 @@ void AtomOverlapCrystal::resetFor(const Molecule* clust)
 
 double AtomOverlapCrystal::pairDistanceDifference(const double& d) const
 {
-    double r0r1 = this->arg_atom->radius + this->crst_atom->radius;
-    if (min(arg_atom->radius, crst_atom->radius) < 0)  r0r1 = 0.0;
+    // force zero overlap when disabled by negative atom radius
+    double r0r1 = 
+        (this->arg_atom->radius < 0 || this->crst_atom->radius < 0) ? 0.0 :
+        (this->arg_atom->radius + this->crst_atom->radius);
     double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
     return dd;
 }
