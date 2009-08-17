@@ -283,7 +283,6 @@ void ParseArgs::do_getopt()
 {
     while (true)
     {
-//	int this_option_optind = optind ? optind : 1;
 	int c = getopt(argc, argv, optstring);
 	if (c == -1)
 	    break;
@@ -302,7 +301,6 @@ void ParseArgs::do_getopt_long()
 {
     while (true)
     {
-//	int this_option_optind = optind ? optind : 1;
 	int option_index = 0;
 	int c = getopt_long(argc, argv, optstring,
 		longopts, &option_index);
@@ -315,6 +313,7 @@ void ParseArgs::do_getopt_long()
 		throw ParseArgsError();
 		break;
 	    case 0:
+	    case '-':
 		o = longopts[option_index].name;
 		opts[o] = (optarg) ? optarg : "";
 		break;

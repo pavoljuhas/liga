@@ -9,7 +9,9 @@
 ***********************************************************************/
 
 #include <cstdlib>
+#include <csignal>
 #include <fstream>
+
 #include "RunPar_t.hpp"
 #include "Random.hpp"
 #include "TrialDistributor.hpp"
@@ -25,6 +27,27 @@
 
 using namespace std;
 using namespace NS_LIGA;
+
+////////////////////////////////////////////////////////////////////////
+// local helper functions
+////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+const char* APPNAME = "mpbcliga";
+
+void SIGABRT_handler(int signum)
+{
+    char hostname[255];
+    gethostname(hostname, 255);
+    cerr << APPNAME << " on " << hostname <<
+        " stopped due to abort signal.  Open in gdb using\n"
+        << "kill -CONT " << getpid() << " && gdb --pid=" << getpid() << endl;
+    raise(SIGSTOP);
+    sleep(1);
+}
+
+}
 
 ////////////////////////////////////////////////////////////////////////
 // class RunPar_t
@@ -44,6 +67,7 @@ void RunPar_t::processArguments(int argc, char* argv[])
 	{"parfile", 1, 0, 'p'},
 	{"help", 0, 0, 'h'},
 	{"version", 0, 0, 'V'},
+	{"db-abortstop", 0, 0, '-'},
 	{0, 0, 0, 0}
     };
     args.reset(new ParseArgs(argc, argv, short_options, long_options));
@@ -63,6 +87,10 @@ void RunPar_t::processArguments(int argc, char* argv[])
     {
 	cout << version_string() << endl;
 	exit(EXIT_SUCCESS);
+    }
+    else if (args->isopt("db-abortstop"))
+    {
+	signal(SIGABRT, SIGABRT_handler);
     }
     if (args->isopt("p"))
     {
@@ -376,12 +404,14 @@ void RunPar_t::print_help()
     const string& cmd_t = args->cmd_t;
     cout << 
 "usage: " << cmd_t << " [-p PARFILE] [DISTFILE] [par1=val1 par2=val2...]\n"
-"run mpbcliga simulation using distances from DISTFILE.  Parameters can\n"
+"run " << APPNAME <<
+    " simulation using distances from DISTFILE.  Parameters can\n"
 "be set in PARFILE or on the command line, which overrides PARFILE.\n"
 "Options:\n"
 "  -p, --parfile=FILE    read parameters from FILE\n"
 "  -h, --help            display this message\n"
 "  -V, --version         show program version\n"
+"  --db-abortstop        stop process on SIGABRT, allows to attach gdb\n"
 "IO parameters:\n"
 "  distfile=FILE         target distance table\n"
 "  inistru=FILE          [empty] initial structure in Cartesian coordinates\n"
@@ -427,7 +457,7 @@ string RunPar_t::version_string(string quote)
 {
     using namespace std;
     ostringstream oss;
-    oss << quote << "mpbcliga " << NS_VERSION::getId() << '\n' <<
+    oss << quote << APPNAME << ' ' << NS_VERSION::getId() << '\n' <<
 	quote << "compiler version " << __VERSION__;
     return oss.str();
 }
