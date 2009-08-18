@@ -74,10 +74,9 @@ inline bool eps_lt(const double& x, const double& y)
 
 
 inline
-bool isNearZeroRoundOff(const double& x,
-        const double& tol=NS_LIGA::eps_cost)
+bool isNearZeroRoundOff(const double& x, double tol=NS_LIGA::eps_cost)
 {
-    bool rv = (x < tol && x > -tol);
+    bool rv = (x < tol);
     return rv;
 }
 

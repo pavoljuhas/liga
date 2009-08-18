@@ -19,7 +19,7 @@ if icpc:
     # options for Intel C++ compiler on hpc dev-intel07
     env.AppendUnique(CCFLAGS=['-w1', '-fp-model', 'precise'])
     env.PrependUnique(LIBS=['imf'])
-    fast_optimflags = ['-fast', '-axTW']
+    fast_optimflags = ['-fast']
 else:
     # g++ options
     env.AppendUnique(CCFLAGS=['-Wall'])

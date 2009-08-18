@@ -1,4 +1,4 @@
-#include <signal.h>
+#include <csignal>
 #include "EmbedPython.hpp"
 
 using namespace std;

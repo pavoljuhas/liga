@@ -10,7 +10,7 @@
 #include <limits>
 #include <memory>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include "ParseArgs.hpp"
 #include "Exceptions.hpp"
 #include "Liga_t.hpp"
