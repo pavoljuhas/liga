@@ -13,7 +13,6 @@
 
 #include <vector>
 #include <memory>
-#include <blitz/array.h>
 #include "AtomCost.hpp"
 #include "R3linalg.hpp"
 #include "PointsInSphere.hpp"
