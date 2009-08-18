@@ -449,6 +449,12 @@ bool comp_pAtom_FreeBadness(const Atom_t* lhs, const Atom_t* rhs)
 }
 
 
+bool comp_pAtom_FreeOverlap(const Atom_t* lhs, const Atom_t* rhs)
+{
+    return lhs->FreeOverlap() < rhs->FreeOverlap();
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // Molecule operators
 //////////////////////////////////////////////////////////////////////////
@@ -1450,6 +1456,12 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
         acc[vta[idx].ttp]++;
 	hi_abad = vta[idx].Badness() + evolve_range;
 	vta.erase(vta.begin()+idx);
+        if (true)
+        {
+            int worst_overlap_idx = max_element(atoms.begin(), atoms.end(),
+                    comp_pAtom_FreeOverlap) - atoms.begin();
+            this->MinimizeSiteOverlap(worst_overlap_idx);
+        }
 	if (promoterelax)
 	{
 	    int worst_idx = max_element(atoms.begin(), atoms.end(),
@@ -1497,6 +1509,12 @@ void Molecule::Degenerate(int Npop)
 	ipop.push_back(freeidx[*ii]);
     }
     Pop(ipop);
+    if (this->countAtoms())
+    {
+        int worst_overlap_idx = max_element(atoms.begin(), atoms.end(),
+                comp_pAtom_FreeOverlap) - atoms.begin();
+        this->MinimizeSiteOverlap(worst_overlap_idx);
+    }
     if (demoterelax && countAtoms() > 1)
     {
         int worst_idx = max_element(atoms.begin(), atoms.end(),
@@ -1533,9 +1551,9 @@ void Molecule::FlipSites(int idx0, int idx1)
 
 void Molecule::DownhillOverlapMinimization()
 {
-    bool keepgoing = (this->getMaxAtomRadius() > 0.0);
+    if (this->getMaxAtomRadius() <= 0.0)  return;
     auto_ptr<Molecule> m1(this->clone());
-    while (keepgoing)
+    while (true)
     {
         struct { double overlap; int i, j; } best = {this->Overlap(), 0, 0};
         for (int i = 0; i < this->countAtoms(); ++i)
@@ -1564,6 +1582,29 @@ void Molecule::DownhillOverlapMinimization()
         assert(eps_eq(this->Overlap(), m1->Overlap()));
 #endif
     }
+}
+
+
+void Molecule::MinimizeSiteOverlap(int idx0)
+{
+    if (this->getMaxAtomRadius() <= 0.0)  return;
+    // no need to check atom index, it will be checked in FlipSites
+    double initial_overlap = this->Overlap();
+    struct { double overlap; int idx1; } best = {this->Overlap(), idx0};
+    for (int idx1 = 0; idx1 < this->countAtoms(); ++idx1)
+    {
+        this->FlipSites(idx0, idx1);
+        if (this->Overlap() < best.overlap)
+        {
+            best.overlap = this->Overlap();
+            best.idx1 = idx1;
+        }
+        this->FlipSites(idx0, idx1);
+    }
+    assert(eps_eq(initial_overlap, this->Overlap()));
+    // perform the best flip
+    this->FlipSites(idx0, best.idx1);
+    assert(this->Overlap() <= initial_overlap);
 }
 
 

@@ -141,6 +141,7 @@ class Molecule
 	virtual void Degenerate(int Npop=1);
         void FlipSites(int idx0, int idx1);
         void DownhillOverlapMinimization();
+        void MinimizeSiteOverlap(int idx);
 
 	// IO functions
 	void ReadFile(const std::string&);  // read from existing file
