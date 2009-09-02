@@ -114,10 +114,10 @@ Division_t::PMOL& Division_t::best()
     return at(find_best());
 }
 
-double Division_t::averageCost()
+double Division_t::averageCost() const
 {
     double total = 0.0;
-    for (iterator ii = begin(); ii != end(); ++ii)
+    for (const_iterator ii = begin(); ii != end(); ++ii)
     {
         total += (*ii)->cost();
     }

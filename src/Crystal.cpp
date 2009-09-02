@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: object definitions for Biosphere Genetic Algorithm
 *
 * Comments:
@@ -6,7 +6,7 @@
 * $Id$
 *
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #include <sstream>
 #include <stdexcept>
@@ -22,12 +22,12 @@
 using namespace std;
 using namespace NS_LIGA;
 
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // class Crystal
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 
-// constructors
+// Constructors --------------------------------------------------------------
 
 Crystal::Crystal() : Molecule()
 {
@@ -40,12 +40,7 @@ Crystal::Crystal(const Crystal& crs) : Molecule()
     *this = crs;
 }
 
-Crystal::~Crystal()
-{ }
-
-
-// public methods
-
+// Public Methods ------------------------------------------------------------
 
 Crystal& Crystal::operator=(const Molecule& mol)
 {
@@ -265,7 +260,7 @@ void Crystal::Degenerate(int Npop)
     this->shiftToOrigin();
 }
 
-// protected methods
+// Protected Methods ---------------------------------------------------------
 
 void Crystal::AddInternal(Atom_t* pa)
 {
@@ -425,7 +420,7 @@ void Crystal::setFromDiffPyStructure(boost::python::object stru)
 }
 
 
-// private class methods
+// Private Class Methods -----------------------------------------------------
 
 
 boost::shared_ptr<Lattice> Crystal::getDefaultLattice()
@@ -439,7 +434,7 @@ boost::shared_ptr<Lattice> Crystal::getDefaultLattice()
 }
 
 
-// private methods
+// Private Methods -----------------------------------------------------------
 
 
 void Crystal::init()

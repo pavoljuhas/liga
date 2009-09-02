@@ -30,9 +30,6 @@ class Crystal : public Molecule
 	Crystal();
 	Crystal(const Crystal&);
 
-        // destructor
-	virtual ~Crystal();
-
         // operators
 	virtual Crystal& operator=(const Molecule&);
 	Crystal& operator=(const Crystal&);

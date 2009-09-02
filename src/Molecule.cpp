@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: class Molecule - definitions
 *
 * Comments:
@@ -6,7 +6,7 @@
 * $Id$
 *
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #include <sstream>
 #include <cassert>
@@ -28,11 +28,12 @@
 using namespace std;
 using namespace NS_LIGA;
 
-////////////////////////////////////////////////////////////////////////
-// Molecule definitions
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+// class Molecule
+//////////////////////////////////////////////////////////////////////////////
 
-// static members
+// Static Data ---------------------------------------------------------------
+
 double Molecule::tol_nbad = 0.05*0.05;
 double Molecule::tol_r = 1.0e-8;
 double Molecule::promotefrac = 0.1;
@@ -42,7 +43,7 @@ bool Molecule::demoterelax = false;
 vector<AtomFilter_t*> Molecule::atom_filters;
 string Molecule::output_format = "rawxyz";
 
-// class methods
+// Class Methods -------------------------------------------------------------
 
 long Molecule::getUniqueId()
 {
@@ -60,11 +61,13 @@ Molecule::Molecule() : id(Molecule::getUniqueId())
     this->CheckIntegrity();
 }
 
+
 Molecule::Molecule(const Molecule& M) : id(Molecule::getUniqueId())
 {
     init();
     *this  = M;
 }
+
 
 Molecule& Molecule::operator=(const Molecule& M)
 {
@@ -136,9 +139,6 @@ void Molecule::init()
     this->_distreuse = false;
 }
 
-Molecule::~Molecule()
-{
-}
 
 void Molecule::setDistanceTable(const DistanceTable& dtbl)
 {
@@ -152,17 +152,20 @@ void Molecule::setDistanceTable(const DistanceTable& dtbl)
     }
 }
 
+
 void Molecule::setDistanceTable(const vector<double>& dvec)
 {
     DistanceTable dtbl(dvec);
     setDistanceTable(dtbl);
 }
 
+
 const DistanceTable& Molecule::getDistanceTable() const
 {
     assert(this->_distance_table.get() != NULL);
     return *(this->_distance_table);
 }
+
 
 DistanceTable Molecule::getDistanceTable()
 {
@@ -195,9 +198,7 @@ double Molecule::getMaxAtomRadius() const
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//// Molecule badness/fitness evaluation
-//////////////////////////////////////////////////////////////////////////
+// Molecule Badness/Fitness Evaluation ---------------------------------------
 
 void Molecule::recalculate() const
 {
@@ -323,6 +324,7 @@ void Molecule::reassignPairs()
     assert(Badness() < orgbadness);
 }
 
+
 double Molecule::cost() const
 {
     double rv = this->costDistance() + this->costOverlap();
@@ -351,6 +353,7 @@ const double& Molecule::Badness() const
     return this->_badness;
 }
 
+
 void Molecule::IncBadness(const double& db) const
 {
     this->_badness += db;
@@ -361,20 +364,24 @@ void Molecule::IncBadness(const double& db) const
     }
 }
 
+
 void Molecule::DecBadness(const double& db) const
 {
     this->IncBadness(-db);
 }
+
 
 void Molecule::ResetBadness(double b) const
 {
     this->_badness = b;
 }
 
+
 const double& Molecule::Overlap() const
 {
     return this->_overlap;
 }
+
 
 void Molecule::IncOverlap(const double& doverlap) const
 {
@@ -386,15 +393,18 @@ void Molecule::IncOverlap(const double& doverlap) const
     }
 }
 
+
 void Molecule::DecOverlap(const double& doverlap) const
 {
     this->IncOverlap(-doverlap);
 }
 
+
 void Molecule::ResetOverlap(double overlap) const
 {
     this->_overlap = overlap;
 }
+
 
 bool Molecule::full() const
 {
@@ -407,6 +417,7 @@ int Molecule::countAtoms() const
 {
     return this->atoms.size();
 }
+
 
 int Molecule::countPairs() const
 {
@@ -437,6 +448,7 @@ bool comp_Atom_Badness(const Atom_t& lhs, const Atom_t& rhs)
     return lhs.Badness() < rhs.Badness();
 }
 
+
 bool comp_pAtom_Badness(const Atom_t* lhs, const Atom_t* rhs)
 {
     return lhs->Badness() < rhs->Badness();
@@ -455,9 +467,7 @@ bool comp_pAtom_FreeOverlap(const Atom_t* lhs, const Atom_t* rhs)
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-// Molecule operators
-//////////////////////////////////////////////////////////////////////////
+// Molecule Operators --------------------------------------------------------
 
 void Molecule::setChemicalFormula(const string& s)
 {
@@ -556,6 +566,7 @@ int Molecule::getMaxAtomCount() const
     return atoms_storage.size();
 }
 
+
 void Molecule::Shift(const R3::Vector& drc)
 {
     for (AtomSequence seq(this); !seq.finished(); seq.next())
@@ -564,6 +575,7 @@ void Molecule::Shift(const R3::Vector& drc)
 	pa->r += drc;
     }
 }
+
 
 void Molecule::Center()
 {
@@ -576,6 +588,7 @@ void Molecule::Center()
     avg_rc /= countAtoms();
     Shift(-avg_rc);
 }
+
 
 void Molecule::Pop(const int aidx)
 {
@@ -594,6 +607,7 @@ void Molecule::Pop(const int aidx)
     atoms_bucket.push_back(pa);
 }
 
+
 void Molecule::Pop(const list<int>& cidx)
 {
     // create a sorted set of indices of atoms to be popped
@@ -601,6 +615,7 @@ void Molecule::Pop(const list<int>& cidx)
     set<int>::reverse_iterator rii;
     for (rii = popped.rbegin(); rii != popped.rend(); ++rii)  Pop(*rii);
 }
+
 
 void Molecule::Clear()
 {
@@ -656,12 +671,20 @@ void Molecule::Fix(const int cidx)
     atoms[cidx]->fixed = true;
 }
 
-inline bool pAtom_is_fixed(const Atom_t* pa) { return pa->fixed; }
+
+namespace {
+bool pAtom_is_fixed(const Atom_t* pa)
+{
+    return pa->fixed;
+}
+}   // namespace
+
 
 int Molecule::NFixed() const
 {
     return count_if(atoms.begin(), atoms.end(), pAtom_is_fixed);
 }
+
 
 void Molecule::filter_good_atoms(AtomArray& vta,
 	double evolve_range, double hi_abad)
@@ -749,6 +772,7 @@ template <class V> void copyGSLvector(const gsl_vector* src, V& dest)
     }
 }
 
+
 template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
 {
     for (size_t i = 0; i < dest->size; i++)
@@ -756,6 +780,7 @@ template <class V> void copyGSLvector(const V& src, gsl_vector* dest)
         gsl_vector_set(dest, i, src[i]);
     }
 }
+
 
 struct rxa_fg
 {
@@ -812,11 +837,13 @@ double rxa_f(const gsl_vector* x, void* params)
     return rv;
 }
 
+
 void rxa_df(const gsl_vector* x, void* params, gsl_vector* g)
 {
     double f;
     rxa_fdf(x, params, &f, g);
 }
+
 
 void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
 {
@@ -846,6 +873,7 @@ void rxa_fdf(const gsl_vector* x, void* params, double* f, gsl_vector* g)
     if (g)  copyGSLvector(pfg->g, g);
 }
 
+
 void rxa_useMolecule(const Molecule* mol)
 {
     rxa_molecule = mol;
@@ -872,6 +900,7 @@ void Molecule::RelaxAtom(const int cidx)
     RelaxExternalAtom(pa);
     AddInternal(pa);
 }
+
 
 void Molecule::RelaxExternalAtom(Atom_t* pa)
 {
@@ -1124,6 +1153,7 @@ int Molecule::push_good_distances(
     return push_count;
 }
 
+
 int Molecule::push_good_triangles(
 	AtomArray& vta,
         const RandomWeighedGenerator& rwg,
@@ -1214,6 +1244,7 @@ int Molecule::push_good_triangles(
     }
     return push_count;
 }
+
 
 int Molecule::push_good_pyramids(
         AtomArray& vta,
@@ -1481,6 +1512,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     return acc_tot;
 }
 
+
 void Molecule::Degenerate(int Npop)
 {
     Npop = min(countAtoms(), Npop);
@@ -1608,6 +1640,13 @@ void Molecule::MinimizeSiteOverlap(int idx0)
 }
 
 
+string Molecule::PickElementFromBucket() const
+{
+    const Atom_t* pa = this->pickAtomFromBucket();
+    return pa->element;
+}
+
+
 int Molecule::getPairMatrixIndex()
 {
     int idx;
@@ -1626,6 +1665,7 @@ int Molecule::getPairMatrixIndex()
     assert(idx < (int) this->pmx_partial_costs.rows());
     return idx;
 }
+
 
 void Molecule::resizePairMatrices(int sz)
 {
@@ -1666,11 +1706,7 @@ void Molecule::returnUsedDistances()
     sort(this->_distance_table->begin(), this->_distance_table->end());
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// Molecule IO functions
-////////////////////////////////////////////////////////////////////////
-
+// Molecule IO Functions -----------------------------------------------------
 
 void Molecule::ReadFile(const string& filename)
 {
@@ -1690,12 +1726,12 @@ void Molecule::ReadFile(const string& filename)
 }
 
 
-void Molecule::WriteFile(const string& filename)
+void Molecule::WriteFile(const string& filename, string title)
 {
     // invalid structure format can throw exception,
     // check if write operator works first
     ostringstream output;
-    output << *this;
+    this->WriteStream(output, title);
     // test if filename is writeable
     ofstream fid(filename.c_str(), ios_base::out|ios_base::ate);
     if (!fid)
@@ -1713,38 +1749,19 @@ void Molecule::WriteFile(const string& filename)
     rename(writefile.c_str(), filename.c_str());
 }
 
+
 void Molecule::setOutputFormat(const std::string& format)
 {
     Molecule::output_format = format;
 }
 
 
-void Molecule::WriteStream(ostream& fid) const
+void Molecule::WriteStream(ostream& fid, string title) const
 {
     namespace python = boost::python;
     try {
-        initializePython();
-        string element;
-        python::object stru = this->newDiffPyStructure();
-        for (AtomSequence seq(this); !seq.finished(); seq.next())
-        {
-            const Atom_t& ai = seq.ref();
-            stru.attr("addNewAtom")(ai.element);
-            python::object alast = stru.attr("getLastAtom")();
-            python::object xyz_cartn;
-            xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
-            alast.attr("xyz_cartn") = xyz_cartn;
-            alast.attr("cost") = ai.Badness();
-        }
-        // xcfg format can save atom cost as an auxiliary property
-        if (Molecule::output_format == "xcfg")
-        {
-            python::list auxiliaries;
-            auxiliaries.append("cost");
-            python::dict xcfg;
-            xcfg["auxiliaries"] = auxiliaries;
-            stru.attr("xcfg") = xcfg;
-        }
+        python::object stru = this->convertToDiffPyStructure();
+        stru.attr("title") = title;
         string s;
         s = python::call_method<string>(stru.ptr(),
                 "writeStr", Molecule::output_format);
@@ -1763,6 +1780,34 @@ boost::python::object Molecule::newDiffPyStructure() const
     namespace python = boost::python;
     python::object mstru = python::import("diffpy.Structure");
     python::object stru = mstru.attr("Structure")();
+    return stru;
+}
+
+
+boost::python::object Molecule::convertToDiffPyStructure() const
+{
+    namespace python = boost::python;
+    initializePython();
+    python::object stru = this->newDiffPyStructure();
+    for (AtomSequence seq(this); !seq.finished(); seq.next())
+    {
+        const Atom_t& ai = seq.ref();
+        stru.attr("addNewAtom")(ai.element);
+        python::object alast = stru.attr("getLastAtom")();
+        python::object xyz_cartn;
+        xyz_cartn = python::make_tuple(ai.r[0], ai.r[1], ai.r[2]);
+        alast.attr("xyz_cartn") = xyz_cartn;
+        alast.attr("cost") = ai.Badness();
+    }
+    // xcfg format can save atom cost as an auxiliary property
+    if (Molecule::output_format == "xcfg")
+    {
+        python::list auxiliaries;
+        auxiliaries.append("cost");
+        python::dict xcfg;
+        xcfg["auxiliaries"] = auxiliaries;
+        stru.attr("xcfg") = xcfg;
+    }
     return stru;
 }
 
@@ -1883,6 +1928,7 @@ void Molecule::PrintBadness() const
     cout << endl;
 }
 
+
 void Molecule::PrintFitness()
 {
     valarray<double> vacost(countAtoms());
@@ -1933,6 +1979,7 @@ void Molecule::CheckIntegrity() const
 #endif  // NDEBUG
 }
 
+
 R3::Vector Molecule::rxaCheckGradient(const Atom_t* pa) const
 {
     double c;
@@ -1971,10 +2018,7 @@ void Molecule::rxaCheckEval(const Atom_t* pa,
     rxa_useMolecule(NULL);
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// non-member operators
-////////////////////////////////////////////////////////////////////////
+// Non-member Operators ------------------------------------------------------
 
 bool operator==(const Molecule& m0, const Molecule& m1)
 {

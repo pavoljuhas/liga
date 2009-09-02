@@ -1,12 +1,12 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: one division of the liga system, declarations
 *
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #ifndef DIVISION_T_HPP_INCLUDED
 #define DIVISION_T_HPP_INCLUDED
@@ -40,12 +40,12 @@ class Division_t : public std::vector<Molecule*>
 	int find_looser();
 	int find_best();
 	PMOL& best();
-	inline bool full();
-	inline size_t fullsize();
-	inline size_t level();
-	inline void assignTrials(double t);
-	inline double trials();
-	double averageCost();
+	bool full() const;
+	size_t fullsize() const;
+	size_t level() const;
+	void assignTrials(double t);
+	double trials();
+	double averageCost() const;
 	const int* estimateTriangulations();
 	void noteTriangulations(const std::pair<int*,int*>& acc_tot);
 
@@ -64,29 +64,31 @@ class Division_t : public std::vector<Molecule*>
 
 };
 
-////////////////////////////////////////////////////////////////////////
-// inline definitions
-////////////////////////////////////////////////////////////////////////
+// Inline Definitions --------------------------------------------------------
 
-inline bool Division_t::full()
+inline bool Division_t::full() const
 {
     return !(size() < _fullsize);
 }
 
-inline size_t Division_t::fullsize()
+
+inline size_t Division_t::fullsize() const
 {
     return _fullsize;
 }
 
-inline size_t Division_t::level()
+
+inline size_t Division_t::level() const
 {
     return _level;
 }
+
 
 inline void Division_t::assignTrials(double t)
 {
     _trials = t;
 }
+
 
 inline double Division_t::trials()
 {

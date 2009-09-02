@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: class Liga_t for competisions organization
 *
 * Comments:
@@ -6,22 +6,50 @@
 * $Id$
 *
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #include <queue>
+
+#include <boost/python.hpp>
+#include <boost/filesystem.hpp>
+
 #include "Liga_t.hpp"
 #include "LigaUtils.hpp"
 #include "TraceId_t.hpp"
 #include "Molecule.hpp"
 #include "RunPar_t.hpp"
-#include "TrialDistributor.hpp"
 
 using namespace std;
 using namespace NS_LIGA_VERBOSE_FLAG;
 
-////////////////////////////////////////////////////////////////////////
+// Local Helpers Functions ---------------------------------------------------
+
+namespace {
+
+boost::python::object importMapFunction()
+{
+    namespace python = boost::python;
+    python::object sysmod = python::import("sys");
+    python::object rv;
+    int hexversion = python::extract<int>(sysmod.attr("hexversion"));
+    if (hexversion >= 0x02060000)
+    {
+        python::object mpmod = python::import("multiprocessing");
+        python::object pool = mpmod.attr("Pool")();
+        rv = pool.attr("map");
+    }
+    else
+    {
+        rv = python::eval("map");
+    }
+    return rv;
+}
+
+}   // namespace
+
+//////////////////////////////////////////////////////////////////////////////
 // class Liga_t
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 // class data
 
@@ -35,8 +63,10 @@ vector<bool> Liga_t::getDefaultVerbose()
     vector<bool> default_verbose(VERBOSE_SIZE, false);
     default_verbose[WC] = true;
     default_verbose[BC] = true;
+    default_verbose[SC] = true;
     return default_verbose;
 }
+
 
 void Liga_t::setVerboseVector(vector<bool>& vb, VerboseFlag flag, bool value)
 {
@@ -50,6 +80,7 @@ void Liga_t::setVerboseVector(vector<bool>& vb, VerboseFlag flag, bool value)
     if (flag == ALL)    vb.assign(VERBOSE_SIZE, value);
     else                vb[flag] = value;
 }
+
 
 void Liga_t::setVerboseVector(vector<bool>& vb, string flag, bool value)
 {
@@ -76,11 +107,7 @@ Liga_t::Liga_t(RunPar_t* runpar) :
     setVerbose(rp->verbose);
 }
 
-Liga_t::~Liga_t()
-{
-}
-
-// Public methods
+// Public Methods ------------------------------------------------------------
 
 void Liga_t::prepare()
 {
@@ -89,6 +116,8 @@ void Liga_t::prepare()
     this->world_champ = NULL;
     this->best_champ.reset(NULL);
     this->printed_best_champ = false;
+    this->printed_scooped_structures = false;
+    this->saved_scooped_structures = false;
     this->tdistributor.reset( TrialDistributor::create(rp) );
     this->base_level = rp->base_level;
     // initialize divisions, primitive divisions have only 1 team
@@ -124,6 +153,7 @@ void Liga_t::prepare()
     cout << '\n' << "Starting the game ... now." << endl;
 }
 
+
 void Liga_t::playSeason()
 {
     if (stopFlag())	return;
@@ -139,10 +169,13 @@ void Liga_t::playSeason()
     printWorldChamp();
     updateBestChamp();
     printBestChamp();
+    updateScoopedStructures();
+    printScoopedStructures();
     cout.flush();
     saveOutStru();
     saveFrames();
 }
+
 
 void Liga_t::playLevel(size_t lo_level)
 {
@@ -225,15 +258,18 @@ void Liga_t::playLevel(size_t lo_level)
     if (advancing->full())  updateWorldChamp();
 }
 
+
 bool Liga_t::stopFlag() const
 {
     return stopflag && *stopflag;
 }
 
+
 void Liga_t::useStopFlag(int* flag)
 {
     stopflag = flag;
 }
+
 
 bool Liga_t::finished() const
 {
@@ -241,16 +277,19 @@ bool Liga_t::finished() const
     return isfinished;
 }
 
+
 bool Liga_t::solutionFound() const
 {
     return world_champ && world_champ->full() &&
         world_champ->cost() < rp->tolcost;
 }
 
+
 bool Liga_t::outOfTime() const
 {
     return rp->maxcputime > 0.0 && Counter::CPUTime() > rp->maxcputime;
 }
+
 
 void Liga_t::printFramesTrace() const
 {
@@ -269,6 +308,7 @@ void Liga_t::printFramesTrace() const
     cout << endl;
 }
 
+
 void Liga_t::printSummary() const
 {
 
@@ -279,11 +319,13 @@ void Liga_t::printSummary() const
     Counter::printRunStats();
 }
 
+
 void Liga_t::setVerbose(const vector<bool>& vb)
 {
     assert(vb.size() == VERBOSE_SIZE);
     verbose = vb;
 }
+
 
 const vector<bool>& Liga_t::getVerbose() const
 {
@@ -326,6 +368,7 @@ void Liga_t::shareSeasonTrials()
     printTrialShares();
 }
 
+
 Molecule* Liga_t::updateWorldChamp()
 {
     reverse_iterator ii;
@@ -333,6 +376,7 @@ Molecule* Liga_t::updateWorldChamp()
     world_champ = (ii != rend()) ? ii->best() : NULL;
     return world_champ;
 }
+
 
 void Liga_t::updateBestChamp()
 {
@@ -348,14 +392,16 @@ void Liga_t::updateBestChamp()
     }
 }
 
-void Liga_t::printWorldChamp()
+
+void Liga_t::printWorldChamp() const
 {
     if (!verbose[WC])   return;
     cout << season << " WC " << world_champ->countAtoms() << ' ' <<
 	world_champ->cost() << '\n';
 }
 
-void Liga_t::printBestChamp()
+
+void Liga_t::printBestChamp() const
 {
     bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
     if (dontprint)	return;
@@ -365,11 +411,12 @@ void Liga_t::printBestChamp()
     this->printed_best_champ = true;
 }
 
-void Liga_t::printLevelAverages()
+
+void Liga_t::printLevelAverages() const
 {
     if (!verbose[AV])   return;
     size_t level = base_level;
-    iterator lii = begin() + base_level;
+    const_iterator lii = begin() + base_level;
     for (; lii != end() && !lii->empty(); ++lii, ++level)
     {
 	cout << season << " AV " << level << ' ' <<
@@ -377,7 +424,8 @@ void Liga_t::printLevelAverages()
     }
 }
 
-void Liga_t::printTrialShares()
+
+void Liga_t::printTrialShares() const
 {
     if (!verbose[TS])    return;
     for (size_t level = base_level; level < size(); ++level)
@@ -386,6 +434,7 @@ void Liga_t::printTrialShares()
 		' ' << tdistributor->tshares[level] << '\n';
     }
 }
+
 
 void Liga_t::saveOutStru()
 {
@@ -425,7 +474,9 @@ void Liga_t::saveOutStru()
 	}
 	level_champ->WriteFile(fname.str().c_str());
     }
+    this->saveScoopedStructures();
 }
+
 
 void Liga_t::saveFrames()
 {
@@ -453,6 +504,7 @@ void Liga_t::saveFrames()
     world_champ->WriteFile(fname.c_str());
 }
 
+
 void Liga_t::recordFramesTrace(set<PMOL>& modified, size_t lo_level)
 {
     if (!rp->trace) return;
@@ -474,6 +526,7 @@ void Liga_t::recordFramesTrace(set<PMOL>& modified, size_t lo_level)
         mp->trace.push_back(tid);
     }
 }
+
 
 void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
 {
@@ -502,10 +555,104 @@ void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
     }
 }
 
+
+void Liga_t::updateScoopedStructures()
+{
+    namespace python = boost::python;
+    bool dontscoop = rp->scoopfunction.empty() ||
+        (this->empty() || this->back().empty()) ||
+        ((rp->scooprate <= 0 || this->season % rp->scooprate != 0) &&
+         !this->finished());
+    if (dontscoop)  return;
+    static python::object mapfnc = importMapFunction();
+    python::list toplevelteams;
+    Division_t& topdivision = this->back();
+    const PMOL protomol = topdivision.front();
+    Division_t::iterator tt;
+    for (tt = topdivision.begin(); tt != topdivision.end(); ++tt)
+    {
+        python::object stru = (*tt)->convertToDiffPyStructure();
+        toplevelteams.append(stru);
+    }
+    python::object scfnc = rp->importScoopFunction();
+    python::object toplevelRws = mapfnc(scfnc, toplevelteams);
+    assert(python::len(toplevelRws) == python::len(toplevelteams));
+    assert(python::len(toplevelRws) == int(topdivision.size()));
+    for (int i = 0; i < int(topdivision.size()); ++i)
+    {
+        double rw = python::extract<double>(toplevelRws[i]);
+        python::object stru = toplevelteams[i];
+        ScoopStorage::value_type cost_stru(rw,
+                ScoopStorage::mapped_type(protomol->clone()));
+        cost_stru.second->setFromDiffPyStructure(stru);
+        scoop_cost_stru.insert(cost_stru);
+    }
+    // restrict the size of scoop_cost_stru to full size of the top division
+    ScoopStorage::iterator scii = this->scoop_cost_stru.begin();
+    advance(scii, min(scoop_cost_stru.size(), topdivision.fullsize()));
+    this->scoop_cost_stru.erase(scii, this->scoop_cost_stru.end());
+    // Inject the best scoop team
+    this->injectBestScoop();
+    this->printed_scooped_structures = false;
+    this->saved_scooped_structures = false;
+}
+
+
+void Liga_t::printScoopedStructures() const
+{
+    bool dontprint = !verbose[SC] ||
+        (this->printed_scooped_structures && !this->finished());
+    if (dontprint)	return;
+    ScoopStorage::const_iterator scii = this->scoop_cost_stru.begin();
+    for (; scii != this->scoop_cost_stru.end(); ++scii)
+    {
+        cout << this->season << " SC " << scii->second->countAtoms() <<
+            ' ' << scii->first << '\n';
+    }
+    this->printed_scooped_structures = true;
+}
+
+
+void Liga_t::saveScoopedStructures() const
+{
+    if (this->saved_scooped_structures)  return;
+    ScoopStorage::const_iterator scii = this->scoop_cost_stru.begin();
+    int scidx = 1;
+    for (; scii != this->scoop_cost_stru.end(); ++scii, ++scidx)
+    {
+        namespace python = boost::python;
+        using namespace boost::filesystem;
+        path fname(rp->outstru);
+        ostringstream tail;
+        tail << "-SC" << setfill('0') << setw(2) << scidx << extension(fname);
+        path fnamesc = change_extension(fname, tail.str());
+        // overload structure saving to append cost value into the title
+        ostringstream title;
+        title << "cost=" << scii->first <<
+            " for scoopfunction " << rp->scoopfunction;
+        scii->second->WriteFile(fnamesc.string(), title.str());
+    }
+}
+
+
+void Liga_t::injectBestScoop()
+{
+    if (this->scoop_cost_stru.empty())  return;
+    const Molecule* bestscoop = scoop_cost_stru.begin()->second.get();
+    this->injectCompetitor(bestscoop);
+}
+
+
 void Liga_t::injectOverlapMinimization()
 {
     world_champ->DownhillOverlapMinimization();
-    auto_ptr<Molecule> injector(world_champ->clone());
+    this->injectCompetitor(world_champ);
+}
+
+
+void Liga_t::injectCompetitor(const Molecule* mol)
+{
+    auto_ptr<Molecule> injector(mol->clone());
     while (injector->countAtoms() > base_level + 1)
     {
         injector->Degenerate(1);
@@ -516,5 +663,6 @@ void Liga_t::injectOverlapMinimization()
         *tgt_mol = *injector;
     }
 }
+
 
 // End of file

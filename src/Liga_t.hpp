@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: class Liga_t for competisions organization
 *
 * Comments:
@@ -6,7 +6,7 @@
 * $Id$
 *
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #ifndef LIGA_T_HPP_INCLUDED
 #define LIGA_T_HPP_INCLUDED
@@ -16,18 +16,20 @@
 #include <vector>
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
 #include "Division_t.hpp"
 #include "RunPar_t.hpp"
 #include "Counter.hpp"
-
-class TrialDistributor;
+#include "LigaUtils.hpp"
+#include "TrialDistributor.hpp"
 
 namespace NS_LIGA_VERBOSE_FLAG {
 
-enum VerboseFlag { AD, WC, BC, AV, TS, ALL, VERBOSE_SIZE };
+enum VerboseFlag { AD, WC, BC, AV, TS, SC, ALL, VERBOSE_SIZE };
 
 const std::string verbose_flags_array[VERBOSE_SIZE] = {
-    "ad", "wc", "bc", "av", "ts", "all" };
+    "ad", "wc", "bc", "av", "ts", "sc", "all" };
 
 }   // namespace NS_LIGA_VERBOSE_FLAG
 
@@ -54,7 +56,6 @@ class Liga_t : public std::vector<Division_t>
 
 	// Constructor and destructor
 	Liga_t(RunPar_t* runpar);
-	~Liga_t();
 
 	// Public methods
 	void prepare();
@@ -74,6 +75,15 @@ class Liga_t : public std::vector<Division_t>
 
 	// Types
 	typedef Molecule* PMOL;
+        struct epsDoubleCompare : public std::binary_function<double,double,bool>
+        {
+            bool operator()(const double& x0, const double& x1) const
+            {
+                return eps_lt(x0, x1);
+            }
+        };
+        typedef std::map<double, boost::shared_ptr<Molecule>, epsDoubleCompare>
+            ScoopStorage;
 
 	// Data members
 	RunPar_t* rp;
@@ -81,24 +91,32 @@ class Liga_t : public std::vector<Division_t>
 	int base_level;
 	PMOL world_champ;
         std::auto_ptr<Molecule> best_champ;
-        bool printed_best_champ;
+        mutable bool printed_best_champ;
+        mutable bool printed_scooped_structures;
+        mutable bool saved_scooped_structures;
 	std::auto_ptr<TrialDistributor> tdistributor;
         std::vector<bool> verbose;
+        ScoopStorage scoop_cost_stru;
 
 	// Private methods
 	int divSize(int level);
 	void shareSeasonTrials();
 	PMOL updateWorldChamp();
 	void updateBestChamp();
-	void printWorldChamp();
-	void printBestChamp();
-	void printLevelAverages();
-	void printTrialShares();
+	void printWorldChamp() const;
+	void printBestChamp() const;
+	void printLevelAverages() const;
+	void printTrialShares() const;
 	void saveOutStru();
 	void saveFrames();
 	void recordFramesTrace(std::set<PMOL>& modified, size_t lo_level);
 	void saveFramesTrace(std::set<PMOL>& modified, size_t lo_level);
+        void updateScoopedStructures();
+        void printScoopedStructures() const;
+        void saveScoopedStructures() const;
+        void injectBestScoop();
         void injectOverlapMinimization();
+        void injectCompetitor(const Molecule*);
 };
 
 #endif	// LIGA_T_HPP_INCLUDED

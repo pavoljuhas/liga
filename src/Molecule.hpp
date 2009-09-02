@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: class Molecule - declaration
 *
 * Comments:
@@ -6,7 +6,7 @@
 * $Id$
 *
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #ifndef MOLECULE_HPP_INCLUDED
 #define MOLECULE_HPP_INCLUDED
@@ -69,7 +69,7 @@ class Molecule
 	Molecule(const Molecule& M);
 
 	// destructor
-	virtual ~Molecule();
+	virtual ~Molecule()  { }
 
         // operators
 	virtual Molecule& operator=(const Molecule&);
@@ -142,10 +142,14 @@ class Molecule
         void FlipSites(int idx0, int idx1);
         void DownhillOverlapMinimization();
         void MinimizeSiteOverlap(int idx);
+        std::string PickElementFromBucket() const;
 
 	// IO functions
+        boost::python::object convertToDiffPyStructure() const;
+        virtual void setFromDiffPyStructure(boost::python::object);
 	void ReadFile(const std::string&);  // read from existing file
-	void WriteFile(const std::string&); // write to file
+	void WriteFile(const std::string&, std::string title="");
+	void WriteStream(std::ostream&, std::string title="") const;
 	void PrintBadness() const;	// total and per-atomic badness
 	void PrintFitness();		// total and per-atomic fitness
         void CheckIntegrity() const;
@@ -204,9 +208,7 @@ class Molecule
 	void filter_bucket_atoms(AtomArray& vta);
 	bool check_atom_filters(Atom_t*);
         virtual void resizePairMatrices(int sz);
-	void WriteStream(std::ostream&) const;
         virtual boost::python::object newDiffPyStructure() const;
-        virtual void setFromDiffPyStructure(boost::python::object);
 	void recalculateOverlap() const;
         enum AddRemove { ADD = 1, REMOVE = -1 };
         void applyOverlapContributions(Atom_t* pa, AddRemove sign);
