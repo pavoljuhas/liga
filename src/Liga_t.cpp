@@ -29,22 +29,39 @@ namespace {
 boost::python::object importMapFunction()
 {
     namespace python = boost::python;
+    static bool did_import = false;
+    static python::object rv;
+    // short circuit when already imported
+    if (did_import)  return rv;
+    // performap import
+    python::object py_main = python::import("__main__");
+    python::object py_globals = py_main.attr("__dict__");
+    python::dict py_locals;
     python::object sysmod = python::import("sys");
-    python::object rv;
+    int ncpu;
     int hexversion = python::extract<int>(sysmod.attr("hexversion"));
     if (hexversion >= 0x02060000)
     {
         python::object mpmod = python::import("multiprocessing");
-        python::object pool = mpmod.attr("Pool")();
+        python::exec(
+            "import os\n"
+            "import multiprocessing\n"
+            "ncpu = os.path.isfile(os.environ.get('PBS_NODEFILE', '')) and"
+            "    len(open(os.environ['PBS_NODEFILE']).readlines()) or"
+            "    multiprocessing.cpu_count()\n",
+            py_globals, py_locals);
+        ncpu = python::extract<int>(py_locals["ncpu"]);
+        python::object pool = mpmod.attr("Pool")(ncpu);
         rv = pool.attr("map");
     }
     else
     {
-        python::object py_main = python::import("__main__");
-        python::object py_globals = py_main.attr("__dict__");
-        python::dict py_locals;
         rv = python::eval("map", py_globals, py_locals);
+        ncpu = 1;
     }
+    cout << "Initialized team scooping with " <<
+        ncpu << " processors." << endl;
+    did_import = true;
     return rv;
 }
 
@@ -114,6 +131,8 @@ Liga_t::Liga_t(RunPar_t* runpar) :
 
 void Liga_t::prepare()
 {
+    // initialize map function used for scooping
+    if (!rp->scoopfunction.empty())  importMapFunction();
     season = 0;
     clear();
     this->world_champ = NULL;
@@ -567,7 +586,7 @@ void Liga_t::updateScoopedStructures()
         ((rp->scooprate <= 0 || this->season % rp->scooprate != 0) &&
          !this->finished());
     if (dontscoop)  return;
-    static python::object mapfnc = importMapFunction();
+    python::object mapfnc = importMapFunction();
     python::list toplevelteams;
     Division_t& topdivision = this->back();
     const PMOL protomol = topdivision.front();
