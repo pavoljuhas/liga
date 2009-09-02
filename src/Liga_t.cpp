@@ -40,7 +40,10 @@ boost::python::object importMapFunction()
     }
     else
     {
-        rv = python::eval("map");
+        python::object py_main = python::import("__main__");
+        python::object py_globals = py_main.attr("__dict__");
+        python::dict py_locals;
+        rv = python::eval("map", py_globals, py_locals);
     }
     return rv;
 }
