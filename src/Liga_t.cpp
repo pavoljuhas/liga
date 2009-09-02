@@ -59,8 +59,7 @@ boost::python::object importMapFunction()
         rv = python::eval("map", py_globals, py_locals);
         ncpu = 1;
     }
-    cout << "Initialized team scooping with " <<
-        ncpu << " processors." << endl;
+    cout << "Team scooping will use " << ncpu << " processors." << endl;
     did_import = true;
     return rv;
 }
