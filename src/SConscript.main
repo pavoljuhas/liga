@@ -11,7 +11,7 @@ env.ParseConfig("python-config --includes")
 env.ParseConfig("python-config --ldflags")
 env.ParseConfig("gsl-config --cflags --libs")
 
-env.AppendUnique(LIBS='boost_python')
+env.AppendUnique(LIBS=['boost_python', 'boost_system'])
 env.AppendUnique(CPPPATH='.')
 
 # special configuration for specific compilers
