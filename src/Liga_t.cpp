@@ -632,7 +632,7 @@ void Liga_t::saveScoopedStructures() const
         // overload structure saving to append cost value into the title
         ostringstream title;
         title << "cost=" << scii->first <<
-            " for scoopfunction " << rp->scoopfunction;
+            " with scoopfunction=" << rp->scoopfunction;
         scii->second->WriteFile(fnamesc.string(), title.str());
     }
 }
