@@ -83,21 +83,25 @@ boost::python::object RunPar_t::importScoopFunction() const
 double RunPar_t::applyScoopFunction(Molecule* mol) const
 {
     namespace python = boost::python;
-    double rw;
+    double rv;
     try {
         python::object scfnc = this->importScoopFunction();
         python::object stru = mol->convertToDiffPyStructure();
-        rw = python::extract<double>(scfnc(stru));
-        mol->setFromDiffPyStructure(stru);
+        python::object coststru = scfnc(stru);
+        // check if the first value can be converted to a double
+        rv = python::extract<double>(coststru[0]);
+        python::object scstru  = coststru[1];
+        mol->setFromDiffPyStructure(scstru);
     }
     catch (python::error_already_set) {
         if (PyErr_Occurred())   PyErr_Print();
         ostringstream emsg;
         emsg << "Error executing scoopfunction '" <<
-            this->scoopfunction << "'";
+            this->scoopfunction << "'\n" <<
+            "scoopfunction must return a (cost, stru) tuple.";
         throw ParseArgsError(emsg.str());
     }
-    return rw;
+    return rv;
 }
 
 
@@ -144,6 +148,7 @@ void RunPar_t::print_help()
 "  framestrace=array     [] triplets of (season, level, id)\n"
 "  trace=bool            [false] keep and show trace of the best structure\n"
 "  scoopfunction=string  (python.module:function) top-level structure scooping\n"
+"                        scoopfunction must return a (cost, stru) tuple.\n"
 "  scooprate=int         [0] rate of top-level structure scooping\n"
 "  verbose=array         [ad,wc,bc,sc] output flags from\n"
 "                        (" << joined_verbose_flags() << ")\n" <<

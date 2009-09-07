@@ -82,8 +82,6 @@ class Liga_t : public std::vector<Division_t>
                 return eps_lt(x0, x1);
             }
         };
-        typedef std::map<double, boost::shared_ptr<Molecule>, epsDoubleCompare>
-            ScoopStorage;
 
 	// Data members
 	RunPar_t* rp;
@@ -96,7 +94,7 @@ class Liga_t : public std::vector<Division_t>
         mutable bool saved_scooped_structures;
 	std::auto_ptr<TrialDistributor> tdistributor;
         std::vector<bool> verbose;
-        ScoopStorage scoop_cost_stru;
+        std::auto_ptr<boost::python::list> mscoop_cost_stru;
 
 	// Private methods
 	int divSize(int level);

@@ -585,33 +585,47 @@ void Liga_t::updateScoopedStructures()
         ((rp->scooprate <= 0 || this->season % rp->scooprate != 0) &&
          !this->finished());
     if (dontscoop)  return;
-    python::object mapfnc = importMapFunction();
+    // instantiate mscoop_cost_stru list when it becomes necessary
+    if (!this->mscoop_cost_stru.get())
+    {
+        this->mscoop_cost_stru.reset(new python::list());
+    }
+    // collect competitors from the top level
     python::list toplevelteams;
-    Division_t& topdivision = this->back();
-    const PMOL protomol = topdivision.front();
-    Division_t::iterator tt;
+    const Division_t& topdivision = this->back();
+    Division_t::const_iterator tt;
     for (tt = topdivision.begin(); tt != topdivision.end(); ++tt)
     {
         python::object stru = (*tt)->convertToDiffPyStructure();
         toplevelteams.append(stru);
     }
+    python::object mapfnc = importMapFunction();
     python::object scfnc = rp->importScoopFunction();
-    python::object toplevelRws = mapfnc(scfnc, toplevelteams);
-    assert(python::len(toplevelRws) == python::len(toplevelteams));
-    assert(python::len(toplevelRws) == int(topdivision.size()));
-    for (int i = 0; i < int(topdivision.size()); ++i)
+    python::object res = mapfnc(scfnc, toplevelteams);
+    mscoop_cost_stru->extend(res);
+    mscoop_cost_stru->sort();
+    // filter duplicate structures that have very close cost difference.
+    int last_idx = 0;
+    double last_cost = -DOUBLE_MAX;
+    for (int idx = 0; idx < python::len(*mscoop_cost_stru); ++idx)
     {
-        double rw = python::extract<double>(toplevelRws[i]);
-        python::object stru = toplevelteams[i];
-        ScoopStorage::value_type cost_stru(rw,
-                ScoopStorage::mapped_type(protomol->clone()));
-        cost_stru.second->setFromDiffPyStructure(stru);
-        scoop_cost_stru.insert(cost_stru);
+        double cur_cost =
+            python::extract<double>((*mscoop_cost_stru)[idx][0]);
+        if (eps_eq(cur_cost, last_cost))  continue;
+        (*mscoop_cost_stru)[last_idx] = (*mscoop_cost_stru)[idx];
+        last_cost = cur_cost;
+        last_idx += 1;
     }
-    // restrict the size of scoop_cost_stru to full size of the top division
-    ScoopStorage::iterator scii = this->scoop_cost_stru.begin();
-    advance(scii, min(scoop_cost_stru.size(), topdivision.fullsize()));
-    this->scoop_cost_stru.erase(scii, this->scoop_cost_stru.end());
+    // remove non-unique cost-structure pairs
+    while (python::len(*mscoop_cost_stru) > last_idx)
+    {
+        mscoop_cost_stru->pop();
+    }
+    // keep mscoop_cost_stru shorter than topdivision size
+    while (python::len(*mscoop_cost_stru) > int(topdivision.fullsize()))
+    {
+        mscoop_cost_stru->pop();
+    }
     // Inject the best scoop team
     this->injectBestScoop();
     this->printed_scooped_structures = false;
@@ -621,14 +635,18 @@ void Liga_t::updateScoopedStructures()
 
 void Liga_t::printScoopedStructures() const
 {
-    bool dontprint = !verbose[SC] ||
+    namespace python = boost::python;
+    bool dontprint = !verbose[SC] || !mscoop_cost_stru.get() ||
         (this->printed_scooped_structures && !this->finished());
     if (dontprint)	return;
-    ScoopStorage::const_iterator scii = this->scoop_cost_stru.begin();
-    for (; scii != this->scoop_cost_stru.end(); ++scii)
+    int scsize = python::len(*mscoop_cost_stru);
+    for (int i = 0; i < scsize; ++i)
     {
-        cout << this->season << " SC " << scii->second->countAtoms() <<
-            ' ' << scii->first << '\n';
+        python::object scstru = (*mscoop_cost_stru)[i][1];
+        int sccountatoms = python::len(scstru);
+        double sccost = python::extract<double>((*mscoop_cost_stru)[i][0]);
+        cout << this->season << " SC " << sccountatoms <<
+            ' ' << sccost << '\n';
     }
     this->printed_scooped_structures = true;
 }
@@ -636,31 +654,37 @@ void Liga_t::printScoopedStructures() const
 
 void Liga_t::saveScoopedStructures() const
 {
+    namespace python = boost::python;
     if (this->saved_scooped_structures)  return;
-    ScoopStorage::const_iterator scii = this->scoop_cost_stru.begin();
-    int scidx = 1;
-    for (; scii != this->scoop_cost_stru.end(); ++scii, ++scidx)
+    int scsize = python::len(*mscoop_cost_stru);
+    for (int i = 0; i < scsize; ++i)
     {
-        namespace python = boost::python;
         using namespace boost::filesystem;
+        int scidx = i + 1;
         path fname(rp->outstru);
         ostringstream tail;
         tail << "-SC" << setfill('0') << setw(2) << scidx << extension(fname);
         path fnamesc = change_extension(fname, tail.str());
-        // overload structure saving to append cost value into the title
+        // write cost value to structure title
+        double sccost = python::extract<double>((*mscoop_cost_stru)[i][0]);
+        python::object scstru = (*mscoop_cost_stru)[i][1];
         ostringstream title;
-        title << "cost=" << scii->first <<
+        title << "cost=" << sccost <<
             " with scoopfunction=" << rp->scoopfunction;
-        scii->second->WriteFile(fnamesc.string(), title.str());
+        scstru.attr("title") = title.str();
+        scstru.attr("write")(fnamesc.string(), rp->outfmt);
     }
 }
 
 
 void Liga_t::injectBestScoop()
 {
-    if (this->scoop_cost_stru.empty())  return;
-    const Molecule* bestscoop = scoop_cost_stru.begin()->second.get();
-    this->injectCompetitor(bestscoop);
+    namespace python = boost::python;
+    if (python::len(*mscoop_cost_stru) == 0)  return;
+    python::object stru = (*mscoop_cost_stru)[0][1];
+    auto_ptr<Molecule> bestscoop(this->back().back()->clone());
+    bestscoop->setFromDiffPyStructure(stru);
+    this->injectCompetitor(bestscoop.get());
 }
 
 
@@ -678,9 +702,10 @@ void Liga_t::injectCompetitor(const Molecule* mol)
     {
         injector->Degenerate(1);
         int level = injector->countAtoms();
-        assert(!at(level).empty());
-        int tgt_idx = at(level).find_looser();
-	PMOL tgt_mol = at(level).at(tgt_idx);
+        Division_t& dv = this->at(level);
+        if (dv.size() < 2)  continue;
+        int tgt_idx = dv.find_looser();
+	PMOL tgt_mol = dv[tgt_idx];
         *tgt_mol = *injector;
     }
 }
