@@ -417,8 +417,10 @@ void Liga_t::updateBestChamp()
 void Liga_t::printWorldChamp() const
 {
     if (!verbose[WC])   return;
-    cout << season << " WC " << world_champ->countAtoms() << ' ' <<
-	world_champ->cost() << '\n';
+    cout << this->season << " WC " <<
+        this->world_champ->countAtoms() << ' ' << this->world_champ->cost() <<
+        " dc " << this->world_champ->costDistance() <<
+        " oc " << this->world_champ->costOverlap() << '\n';
 }
 
 
@@ -427,8 +429,9 @@ void Liga_t::printBestChamp() const
     bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
     if (dontprint)	return;
     cout << this->season << " BC " <<
-        this->best_champ->countAtoms() << ' '
-	<< this->best_champ->cost() << endl;
+        this->best_champ->countAtoms() << ' ' << this->best_champ->cost() <<
+        " dc " << this->best_champ->costDistance() <<
+        " oc " << this->best_champ->costOverlap() << endl;
     this->printed_best_champ = true;
 }
 
