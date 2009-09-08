@@ -138,7 +138,8 @@ class Molecule
 	void RelaxAtom(const int cidx);	// relax internal atom
 	void RelaxExternalAtom(Atom_t* pa);
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
-	virtual void Degenerate(int Npop=1);
+        enum DegenerateFlags { NONE=0, FAST=1 };
+	virtual void Degenerate(int Npop, DegenerateFlags=NONE);
         void FlipSites(int idx0, int idx1);
         void DownhillOverlapMinimization();
         void MinimizeSiteOverlap(int idx);

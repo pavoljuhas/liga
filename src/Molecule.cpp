@@ -1513,7 +1513,7 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
 }
 
 
-void Molecule::Degenerate(int Npop)
+void Molecule::Degenerate(int Npop, DegenerateFlags flags)
 {
     Npop = min(countAtoms(), Npop);
     if (Npop == 0)  return;
@@ -1541,13 +1541,13 @@ void Molecule::Degenerate(int Npop)
 	ipop.push_back(freeidx[*ii]);
     }
     Pop(ipop);
-    if (this->countAtoms())
+    if (this->countAtoms() && flags != FAST)
     {
         int worst_overlap_idx = max_element(atoms.begin(), atoms.end(),
                 comp_pAtom_FreeOverlap) - atoms.begin();
         this->MinimizeSiteOverlap(worst_overlap_idx);
     }
-    if (demoterelax && countAtoms() > 1)
+    if (demoterelax && countAtoms() > 1 && flags != FAST)
     {
         int worst_idx = max_element(atoms.begin(), atoms.end(),
                 comp_pAtom_FreeBadness) - atoms.begin();

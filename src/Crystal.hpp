@@ -60,7 +60,7 @@ class Crystal : public Molecule
 
 	virtual void Clear();
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
-	virtual void Degenerate(int Npop=1);
+	virtual void Degenerate(int Npop, DegenerateFlags flags=NONE);
 
     protected:
 

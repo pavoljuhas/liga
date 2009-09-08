@@ -254,9 +254,9 @@ const pair<int*,int*>& Crystal::Evolve(const int* est_triang)
 }
 
 
-void Crystal::Degenerate(int Npop)
+void Crystal::Degenerate(int Npop, DegenerateFlags flags)
 {
-    this->Molecule::Degenerate(Npop);
+    this->Molecule::Degenerate(Npop, flags);
     this->shiftToOrigin();
 }
 

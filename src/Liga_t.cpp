@@ -160,7 +160,7 @@ void Liga_t::prepare()
     {
         PMOL parent_team = at(lev+1).back();
         PMOL lower_team = parent_team->clone();
-        lower_team->Degenerate(1);
+        lower_team->Degenerate(1, Molecule::FAST);
 	cout << season << " L " << lower_team->countAtoms() << ' '
 	    << lower_team->cost() << endl;
         at(lev).push_back(lower_team);
