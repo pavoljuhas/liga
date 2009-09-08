@@ -1636,7 +1636,7 @@ void Molecule::MinimizeSiteOverlap(int idx0)
     assert(eps_eq(initial_overlap, this->Overlap()));
     // perform the best flip
     this->FlipSites(idx0, best.idx1);
-    assert(this->Overlap() <= initial_overlap);
+    assert(!eps_gt(this->Overlap(), initial_overlap));
 }
 
 
