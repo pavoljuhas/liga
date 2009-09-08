@@ -407,7 +407,7 @@ void Liga_t::updateBestChamp()
         eps_lt(this->world_champ->cost(), this->best_champ->cost());
     if (hasnewchamp)
     {
-        this->injectOverlapMinimization();
+        if (this->season > 0)  this->injectOverlapMinimization();
         this->best_champ.reset(this->world_champ->clone());
         this->printed_best_champ = false;
     }
