@@ -639,10 +639,10 @@ void Liga_t::updateScoopedStructures()
 void Liga_t::printScoopedStructures() const
 {
     namespace python = boost::python;
-    bool dontprint = !verbose[SC] || !mscoop_cost_stru.get() ||
+    bool dontprint = !verbose[SC] ||
         (this->printed_scooped_structures && !this->finished());
     if (dontprint)	return;
-    int scsize = python::len(*mscoop_cost_stru);
+    int scsize = mscoop_cost_stru.get() ? python::len(*mscoop_cost_stru) : 0;
     for (int i = 0; i < scsize; ++i)
     {
         python::object scstru = (*mscoop_cost_stru)[i][1];
@@ -659,7 +659,7 @@ void Liga_t::saveScoopedStructures() const
 {
     namespace python = boost::python;
     if (this->saved_scooped_structures)  return;
-    int scsize = python::len(*mscoop_cost_stru);
+    int scsize = mscoop_cost_stru.get() ? python::len(*mscoop_cost_stru) : 0;
     for (int i = 0; i < scsize; ++i)
     {
         using namespace boost::filesystem;
@@ -677,6 +677,7 @@ void Liga_t::saveScoopedStructures() const
         scstru.attr("title") = title.str();
         scstru.attr("write")(fnamesc.string(), rp->outfmt);
     }
+    this->saved_scooped_structures = true;
 }
 
 
