@@ -22,6 +22,7 @@
 #include <cctype>
 #include <sstream>
 #include <cassert>
+#include <map>
 
 #include "ChemicalFormula.hpp"
 
@@ -87,19 +88,31 @@ void ChemicalFormula::fromString(const std::string& s)
         smblcnt.erase(pcnt);
         sc->second = scnt.empty() ? 1 : atoi(scnt.c_str());
     }
-    // assign when everything went 
+    // assign new formula when everything went well
     this->swap(chfm);
 }
 
 
 string ChemicalFormula::toString(string separator) const
 {
-    ostringstream rv;
+    vector<string> smbl_order;
+    map<string,int> smbl_count;
     for (const_iterator sc = this->begin(); sc != this->end(); ++sc)
     {
-        if (sc != this->begin())  rv << separator;
-        if (sc->second > 0)  rv << sc->first;
-        if (sc->second > 1)  rv << sc->second;
+        if (!smbl_count.count(sc->first) && sc->second > 0)
+        {
+            smbl_order.push_back(sc->first);
+        }
+        smbl_count[sc->first] += sc->second;
+    }
+    ostringstream rv;
+    vector<string>::const_iterator smb;
+    for (smb = smbl_order.begin(); smb != smbl_order.end(); ++smb)
+    {
+        if (smb != smbl_order.begin())  rv << separator;
+        rv << *smb;
+        int cnt = smbl_count[*smb];
+        if (cnt > 1)  rv << cnt;
     }
     return rv.str();
 }
