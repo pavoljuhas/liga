@@ -68,7 +68,7 @@ Crystal& Crystal::operator=(const Crystal& crs)
 }
 
 
-Molecule* Crystal::clone() const
+Molecule* Crystal::copy() const
 {
     Molecule* pclone = new Crystal(*this);
     return pclone;

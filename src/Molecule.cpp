@@ -122,7 +122,7 @@ Molecule& Molecule::operator=(const Molecule& M)
 }
 
 
-Molecule* Molecule::clone() const
+Molecule* Molecule::copy() const
 {
     Molecule* pclone = new Molecule(*this);
     return pclone;
@@ -1584,7 +1584,7 @@ void Molecule::FlipSites(int idx0, int idx1)
 void Molecule::DownhillOverlapMinimization()
 {
     if (this->getMaxAtomRadius() <= 0.0)  return;
-    auto_ptr<Molecule> m1(this->clone());
+    auto_ptr<Molecule> m1(this->copy());
     while (true)
     {
         struct { double overlap; int i, j; } best = {this->Overlap(), 0, 0};

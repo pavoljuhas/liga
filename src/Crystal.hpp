@@ -33,7 +33,7 @@ class Crystal : public Molecule
         // operators
 	virtual Crystal& operator=(const Molecule&);
 	Crystal& operator=(const Crystal&);
-        virtual Molecule* clone() const;        // create a clone
+        virtual Molecule* copy() const;        // create a copy
 
 	// methods - class registration and type info
 	virtual StructureType type() const  { return CRYSTAL; }

@@ -170,7 +170,7 @@ class TestRelaxCrystalAtom : public CxxTest::TestSuite
             R3::Vector numgrad;
             for (int i = 0; i < 3; ++i)
             {
-                auto_ptr<Molecule> molmod(mol.clone());
+                auto_ptr<Molecule> molmod(mol.copy());
                 Atom_t ai = molmod->getAtom(idx);
                 ai.r[i] += delta;
                 molmod->Pop(idx);

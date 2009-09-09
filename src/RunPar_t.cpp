@@ -108,7 +108,7 @@ double RunPar_t::applyScoopFunction(Molecule* mol) const
 void RunPar_t::testScoopFunction(const Molecule& molecule) const
 {
     if (this->scoopfunction.empty())  return;
-    auto_ptr<Molecule> testmol(molecule.clone());
+    auto_ptr<Molecule> testmol(molecule.copy());
     double L = testmol->getDistanceTable().maxDistance();
     while (testmol->countAtoms() < testmol->getMaxAtomCount())
     {

@@ -149,7 +149,7 @@ void Liga_t::prepare()
         push_back(Division_t(divsize, lev));
     }
     // put initial molecule to its division
-    PMOL first_team = rp->mol->clone();
+    PMOL first_team = rp->mol->copy();
     cout << "Initial team" << endl;
     cout << season << " I " << first_team->countAtoms() << ' ' <<
 	first_team->cost() << '\n';
@@ -159,7 +159,7 @@ void Liga_t::prepare()
     for (int lev = first_team->countAtoms()-1; lev >= base_level; --lev)
     {
         PMOL parent_team = at(lev+1).back();
-        PMOL lower_team = parent_team->clone();
+        PMOL lower_team = parent_team->copy();
         lower_team->Degenerate(1, Molecule::FAST);
 	cout << season << " L " << lower_team->countAtoms() << ' '
 	    << lower_team->cost() << endl;
@@ -212,8 +212,8 @@ void Liga_t::playLevel(size_t lo_level)
     double adv_bad0 = advancing->cost();
     if (!lo_div->full())
     {
-	// save clone of advancing winner
-	PMOL winner_clone = advancing->clone();
+	// save copy of advancing winner
+	PMOL winner_clone = advancing->copy();
 	lo_div->push_back(winner_clone);
     }
     // advance as far as possible
@@ -226,7 +226,7 @@ void Liga_t::playLevel(size_t lo_level)
     // fill intermediate empty divisions, loop will stop at non-empty lo_div
     for (iterator empty_div = hi_div; empty_div->empty(); --empty_div)
     {
-	PMOL pioneer = advancing->clone();
+	PMOL pioneer = advancing->copy();
 	pioneer->Degenerate(hi_div - empty_div);
 	empty_div->push_back(pioneer);
 	modified.insert(pioneer);
@@ -237,11 +237,11 @@ void Liga_t::playLevel(size_t lo_level)
     double desc_bad0 = descending->cost();
     if (!hi_div->full())
     {
-	// save clone of descending looser
-	PMOL looser_clone = descending->clone();
+	// save copy of descending looser
+	PMOL looser_clone = descending->copy();
 	hi_div->push_back(looser_clone);
     }
-    // clone winner if he made a good advance
+    // copy winner if he made a good advance
     if (eps_gt(descending->cost(), advancing->cost()))
     {
 	*descending = *advancing;
@@ -408,7 +408,7 @@ void Liga_t::updateBestChamp()
     if (hasnewchamp)
     {
         if (this->season > 0)  this->injectOverlapMinimization();
-        this->best_champ.reset(this->world_champ->clone());
+        this->best_champ.reset(this->world_champ->copy());
         this->printed_best_champ = false;
     }
 }
@@ -686,7 +686,7 @@ void Liga_t::injectBestScoop()
     namespace python = boost::python;
     if (python::len(*mscoop_cost_stru) == 0)  return;
     python::object stru = (*mscoop_cost_stru)[0][1];
-    auto_ptr<Molecule> bestscoop(this->back().back()->clone());
+    auto_ptr<Molecule> bestscoop(this->back().back()->copy());
     bestscoop->setFromDiffPyStructure(stru);
     this->injectCompetitor(bestscoop.get());
 }
@@ -701,7 +701,7 @@ void Liga_t::injectOverlapMinimization()
 
 void Liga_t::injectCompetitor(const Molecule* mol)
 {
-    auto_ptr<Molecule> injector(mol->clone());
+    auto_ptr<Molecule> injector(mol->copy());
     while (injector->countAtoms() > base_level + 1)
     {
         injector->Degenerate(1);
