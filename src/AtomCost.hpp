@@ -58,6 +58,7 @@ class AtomCost
 	const std::vector<int>& usedTargetAtomIndices() const;
         void setScale(double);
         const double& getScale() const;
+        double penaltyScaled(const double& dd) const;
         
     protected:
 

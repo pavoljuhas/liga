@@ -93,7 +93,7 @@ double AtomCost::eval(const Atom_t* pa, int flags)
 	const double& dnear = dtgt[nearidx];
 	*(tgdii++) = dnear;
 	double dd = dnear - d;
-	double pcost = penalty(dd) * this->getScale();
+	double pcost = this->penaltyScaled(dd);
 	*(ptcii++) = pcost;
 	total_cost += pcost;
 	if (use_distances)
@@ -204,6 +204,12 @@ const double& AtomCost::getScale() const
     return mscale;
 }
 
+
+double AtomCost::penaltyScaled(const double& dd) const
+{
+    double rv = penalty(dd) * this->getScale();
+    return rv;
+}
 
 // protected methods
 

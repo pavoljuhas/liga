@@ -73,7 +73,7 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
             (arg_atom->radius < 0 || seq.ptr()->radius < 0) ? 0.0 :
             (arg_atom->radius + seq.ptr()->radius);
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
-	double pcost = penalty(dd) * this->getScale();
+	double pcost = this->penaltyScaled(dd);
         partial_costs[seq.idx()] = pcost;
 	total_cost += pcost;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
