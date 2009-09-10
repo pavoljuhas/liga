@@ -8,6 +8,7 @@
 * <license text>
 ***********************************************************************/
 
+#include <valarray>
 #include <cxxtest/TestSuite.h>
 
 #include "Molecule.hpp"
@@ -64,22 +65,34 @@ class TestMoleculeCost : public CxxTest::TestSuite
             bad_square.AddAt("", +0.5, -0.5, 0.0);
             bad_square.AddAt("", +0.5, +0.5, 0.0);
             bad_square.AddAt("", +0.0, +0.0, 0.0);
-            double expectcost[4] = {
-                pow(1.0 - sqrt(0.5), 2)/2,
-                pow(1.0 - sqrt(0.5), 2)/2,
-                pow(sqrt(2.0) - sqrt(0.5), 2)/2,
-                0.0
+            typedef struct {double dij; int i, j;} DIJ;
+            TS_ASSERT_EQUALS(6, int(dst_square.size()));
+            DIJ sorted_pairs[6] = {
+                {sqrt(0.5), 0, 3},
+                {sqrt(0.5), 1, 3},
+                {sqrt(0.5), 2, 3},
+                {1.0, 0, 1},
+                {1.0, 1, 2},
+                {sqrt(2.0), 0, 2},
             };
-            expectcost[3] = accumulate(expectcost, expectcost + 3, 0.0);
-            TS_ASSERT_DELTA(expectcost[0],
+            valarray<double> acost(0.0, 4);
+            for (size_t didx = 0; didx != 6; ++didx)
+            {
+                DIJ p = sorted_pairs[didx];
+                double dd = dst_square[didx] - p.dij;
+                double pcost = dd * dd;
+                acost[p.i] += pcost / 2.0;
+                acost[p.j] += pcost / 2.0;
+            }
+            TS_ASSERT_DELTA(acost[0],
                     bad_square.getAtom(0).Badness(), double_eps);
-            TS_ASSERT_DELTA(expectcost[1],
+            TS_ASSERT_DELTA(acost[1],
                     bad_square.getAtom(1).Badness(), double_eps);
-            TS_ASSERT_DELTA(expectcost[2],
+            TS_ASSERT_DELTA(acost[2],
                     bad_square.getAtom(2).Badness(), double_eps);
-            TS_ASSERT_DELTA(expectcost[3],
+            TS_ASSERT_DELTA(acost[3],
                     bad_square.getAtom(3).Badness(), double_eps);
-            double totalcost = accumulate(expectcost, expectcost + 4, 0.0);
+            double totalcost = acost.sum();
             TS_ASSERT_DELTA(totalcost, bad_square.Badness(), double_eps);
             // make sure recalculate returns the same non-zero cost
             bad_square.recalculate();
