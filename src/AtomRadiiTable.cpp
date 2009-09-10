@@ -36,7 +36,6 @@ using namespace std;
 
 double AtomRadiiTable::lookup(const string& smbl) const
 {
-    using namespace std;
     const_iterator ti = this->find(smbl);
     if (ti == this->end())
     {
