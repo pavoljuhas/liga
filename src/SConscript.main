@@ -60,11 +60,17 @@ Alias('mpbcliga', mpbcliga)
 env['binaries'] += mpbcliga
 env['mpbcliga'] = mpbcliga
 
+# mpbccost -- application
+mpbccost = env.Program('mpbccost',
+        ['mpbccost.cpp'] + env['lib_objects'])
+Alias('mpbccost', mpbccost)
+env['binaries'] += mpbccost
+
 # This SConscript defines all test targets
 SConscript('SConscript.tests')
 
-# Default target - compile mpbcliga only
-env.Default(mpbcliga)
+# Default target - compile all binaries
+env.Default(env['binaries'])
 
 # Installation targets. ------------------------------------------------------
 
