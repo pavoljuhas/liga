@@ -1622,7 +1622,7 @@ void Molecule::MinimizeSiteOverlap(int idx0)
     if (this->getMaxAtomRadius() <= 0.0)  return;
     // no need to check atom index, it will be checked in FlipSites
     double initial_overlap = this->Overlap();
-    struct { double overlap; int idx1; } best = {this->Overlap(), idx0};
+    struct { double overlap; int idx1; } best = {initial_overlap, idx0};
     for (int idx1 = 0; idx1 < this->countAtoms(); ++idx1)
     {
         this->FlipSites(idx0, idx1);
@@ -2034,7 +2034,7 @@ bool operator==(const Molecule& m0, const Molecule& m1)
 }
 
 
-ostream& operator<<(ostream& fid, Molecule& M)
+ostream& operator<<(ostream& fid, const Molecule& M)
 {
     M.WriteStream(fid);
     return fid;
