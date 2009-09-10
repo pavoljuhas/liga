@@ -33,13 +33,12 @@ using namespace NS_LIGA;
 
 namespace {
 
-const char* APPNAME = "mpbcliga";
 
 void SIGABRT_handler(int signum)
 {
     char hostname[255];
     gethostname(hostname, 255);
-    cerr << APPNAME << " on " << hostname <<
+    cerr << RunPar_t().getAppName() << " on " << hostname <<
         " stopped due to abort signal.  Open in gdb using\n"
         << "kill -CONT " << getpid() << " && gdb --pid=" << getpid() << endl;
     raise(SIGSTOP);
@@ -52,136 +51,9 @@ void SIGABRT_handler(int signum)
 // class RunPar_t
 //////////////////////////////////////////////////////////////////////////////
 
-// Constructor ---------------------------------------------------------------
-
-RunPar_t::RunPar_t(int argc, char* argv[])
-{
-    process_arguments(argc, argv);
-}
-
 // Public Methods ------------------------------------------------------------
 
-boost::python::object RunPar_t::importScoopFunction() const
-{
-    namespace python = boost::python;
-    initializePython();
-    static python::object scfnc;
-    static string lastscoopfunction;
-    if (this->scoopfunction != lastscoopfunction)
-    {
-        string::size_type pcolon = this->scoopfunction.find(':');
-        string scmodname = this->scoopfunction.substr(0, pcolon);
-        string scfncname = this->scoopfunction.substr(pcolon + 1);
-        python::object scmod = python::import(scmodname.c_str());
-        scfnc = scmod.attr(scfncname.c_str());
-        lastscoopfunction = this->scoopfunction;
-    }
-    return scfnc;
-}
-
-
-double RunPar_t::applyScoopFunction(Molecule* mol) const
-{
-    namespace python = boost::python;
-    double rv;
-    try {
-        python::object scfnc = this->importScoopFunction();
-        python::object stru = mol->convertToDiffPyStructure();
-        python::object coststru = scfnc(stru);
-        // check if the first value can be converted to a double
-        rv = python::extract<double>(coststru[0]);
-        python::object scstru  = coststru[1];
-        mol->setFromDiffPyStructure(scstru);
-    }
-    catch (python::error_already_set) {
-        if (PyErr_Occurred())   PyErr_Print();
-        ostringstream emsg;
-        emsg << "Error executing scoopfunction '" <<
-            this->scoopfunction << "'\n" <<
-            "scoopfunction must return a (cost, stru) tuple.";
-        throw ParseArgsError(emsg.str());
-    }
-    return rv;
-}
-
-
-void RunPar_t::testScoopFunction(const Molecule& molecule) const
-{
-    if (this->scoopfunction.empty())  return;
-    auto_ptr<Molecule> testmol(molecule.copy());
-    double L = testmol->getDistanceTable().maxDistance();
-    while (testmol->countAtoms() < testmol->getMaxAtomCount())
-    {
-        string smbl = testmol->PickElementFromBucket();
-        double xc = L * randomFloat();
-        double yc = L * randomFloat();
-        double zc = L * randomFloat();
-        testmol->AddAt(smbl, xc, yc, zc);
-    }
-    this->applyScoopFunction(testmol.get());
-}
-
-// Private Methods -----------------------------------------------------------
-
-void RunPar_t::print_help()
-{
-    const string& cmd_t = args->cmd_t;
-    cout <<
-"usage: " << cmd_t << " [-p PARFILE] [DISTFILE] [par1=val1 par2=val2...]\n"
-"run " << APPNAME <<
-    " simulation using distances from DISTFILE.  Parameters can\n"
-"be set in PARFILE or on the command line, which overrides PARFILE.\n"
-"Options:\n"
-"  -p, --parfile=FILE    read parameters from FILE\n"
-"  -h, --help            display this message\n"
-"  -V, --version         show program version\n"
-"  --db-abortstop        stop process on SIGABRT, allows to attach gdb\n"
-"IO parameters:\n"
-"  distfile=FILE         target distance table\n"
-"  inistru=FILE          [empty] initial structure in Cartesian coordinates\n"
-"  outstru=FILE          where to save the best full molecule\n"
-"  outfmt=string         [rawxyz], cif, discus,... - outstru file format\n"
-"  saverate=int          [0] rate of intermediate saves of outstru\n"
-"  saveall=bool          [false] save best molecules from all levels\n"
-"  frames=FILE           save intermediate structures to FILE.season\n"
-"  framesrate=int        [0] number of iterations between frame saves\n"
-"  framestrace=array     [] triplets of (season, level, id)\n"
-"  trace=bool            [false] keep and show trace of the best structure\n"
-"  scoopfunction=string  (python.module:function) top-level structure scooping\n"
-"                        scoopfunction must return a (cost, stru) tuple.\n"
-"  scooprate=int         [0] rate of top-level structure scooping\n"
-"  verbose=array         [ad,wc,bc,sc] output flags from\n"
-"                        (" << joined_verbose_flags() << ")\n" <<
-"Liga parameters:\n"
-"  ndim={1,2,3}          [3] search in n-dimensional space\n"
-"  crystal=bool          [false] assume periodic crystal structure\n"
-"  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
-"  rmax=double           [dmax] distance cutoff when crystal=true\n"
-"  distreuse=bool        [false] keep used distances in distance table\n"
-"  costweights=array     [1,1] weights for distance and overlap components\n"
-"  tolcost=double        [1E-4] target normalized molecule cost\n"
-"  natoms=int            obsolete, equivalent to formula=Cn\n"
-"  formula=string        chemical formula, use inistru when not specified\n"
-"  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
-"  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
-"  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
-"  rngseed=int           seed of random number generator\n"
-"  promotefrac=double    [0.1] fraction of tolcost threshold of tested atoms\n"
-"  promoterelax=bool     [false] relax the worst atom after addition\n"
-"  demoterelax=bool      [false] relax the worst atom after removal\n"
-"  ligasize=int          [10] number of teams per division\n"
-"  stopgame=double       [0.0025] skip division when winner is worse\n"
-"  seasontrials=int      [16384] number of atom placements in one season\n"
-"  trialsharing=string   [success] sharing method from (" <<
-	join(",", TrialDistributor::getTypes()) << ")\n" <<
-"Constrains (applied only when set):\n"
-"  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
-"  max_dist=double       distance limit for rejecting lone atoms\n"
-;
-}
-
-
-void RunPar_t::process_arguments(int argc, char* argv[])
+void RunPar_t::processArguments(int argc, char* const argv[])
 {
     const char* short_options = "p:hV";
     // parameters and options
@@ -220,17 +92,8 @@ void RunPar_t::process_arguments(int argc, char* argv[])
     }
     args->ValidatePars(validpars());
     // assign run parameters
+    this->process_cmdline_args();
     // distfile
-    if (args->args.size())
-    {
-	args->pars["distfile"] = args->args[0];
-    }
-    if (args->args.size() > 1)
-    {
-	ostringstream emsg;
-	emsg << argv[0] << ": several DISTFILE arguments.";
-	throw ParseArgsError(emsg.str());
-    }
     if (!args->ispar("distfile"))
     {
 	string emsg = "Distance file not defined.";
@@ -533,11 +396,154 @@ void RunPar_t::process_arguments(int argc, char* argv[])
 }
 
 
+const string& RunPar_t::getAppName() const
+{
+    static string appname =  "mpbcliga";
+    return appname;
+}
+
+
+boost::python::object RunPar_t::importScoopFunction() const
+{
+    namespace python = boost::python;
+    initializePython();
+    static python::object scfnc;
+    static string lastscoopfunction;
+    if (this->scoopfunction != lastscoopfunction)
+    {
+        string::size_type pcolon = this->scoopfunction.find(':');
+        string scmodname = this->scoopfunction.substr(0, pcolon);
+        string scfncname = this->scoopfunction.substr(pcolon + 1);
+        python::object scmod = python::import(scmodname.c_str());
+        scfnc = scmod.attr(scfncname.c_str());
+        lastscoopfunction = this->scoopfunction;
+    }
+    return scfnc;
+}
+
+
+double RunPar_t::applyScoopFunction(Molecule* mol) const
+{
+    namespace python = boost::python;
+    double rv;
+    try {
+        python::object scfnc = this->importScoopFunction();
+        python::object stru = mol->convertToDiffPyStructure();
+        python::object coststru = scfnc(stru);
+        // check if the first value can be converted to a double
+        rv = python::extract<double>(coststru[0]);
+        python::object scstru  = coststru[1];
+        mol->setFromDiffPyStructure(scstru);
+    }
+    catch (python::error_already_set) {
+        if (PyErr_Occurred())   PyErr_Print();
+        ostringstream emsg;
+        emsg << "Error executing scoopfunction '" <<
+            this->scoopfunction << "'\n" <<
+            "scoopfunction must return a (cost, stru) tuple.";
+        throw ParseArgsError(emsg.str());
+    }
+    return rv;
+}
+
+
+void RunPar_t::testScoopFunction(const Molecule& molecule) const
+{
+    if (this->scoopfunction.empty())  return;
+    auto_ptr<Molecule> testmol(molecule.copy());
+    double L = testmol->getDistanceTable().maxDistance();
+    while (testmol->countAtoms() < testmol->getMaxAtomCount())
+    {
+        string smbl = testmol->PickElementFromBucket();
+        double xc = L * randomFloat();
+        double yc = L * randomFloat();
+        double zc = L * randomFloat();
+        testmol->AddAt(smbl, xc, yc, zc);
+    }
+    this->applyScoopFunction(testmol.get());
+}
+
+// Private Methods -----------------------------------------------------------
+
+void RunPar_t::print_help()
+{
+    const string& cmd_t = args->cmd_t;
+    cout <<
+"usage: " << cmd_t << " [-p PARFILE] [DISTFILE] [par1=val1 par2=val2...]\n"
+"run " << this->getAppName() <<
+    " simulation using distances from DISTFILE.  Parameters can\n"
+"be set in PARFILE or on the command line, which overrides PARFILE.\n"
+"Options:\n"
+"  -p, --parfile=FILE    read parameters from FILE\n"
+"  -h, --help            display this message\n"
+"  -V, --version         show program version\n"
+"  --db-abortstop        stop process on SIGABRT, allows to attach gdb\n"
+"IO parameters:\n"
+"  distfile=FILE         target distance table\n"
+"  inistru=FILE          [empty] initial structure in Cartesian coordinates\n"
+"  outstru=FILE          where to save the best full molecule\n"
+"  outfmt=string         [rawxyz], cif, discus,... - outstru file format\n"
+"  saverate=int          [0] rate of intermediate saves of outstru\n"
+"  saveall=bool          [false] save best molecules from all levels\n"
+"  frames=FILE           save intermediate structures to FILE.season\n"
+"  framesrate=int        [0] number of iterations between frame saves\n"
+"  framestrace=array     [] triplets of (season, level, id)\n"
+"  trace=bool            [false] keep and show trace of the best structure\n"
+"  scoopfunction=string  (python.module:function) top-level structure scooping\n"
+"                        scoopfunction must return a (cost, stru) tuple.\n"
+"  scooprate=int         [0] rate of top-level structure scooping\n"
+"  verbose=array         [ad,wc,bc,sc] output flags from\n"
+"                        (" << joined_verbose_flags() << ")\n" <<
+"Liga parameters:\n"
+"  ndim={1,2,3}          [3] search in n-dimensional space\n"
+"  crystal=bool          [false] assume periodic crystal structure\n"
+"  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
+"  rmax=double           [dmax] distance cutoff when crystal=true\n"
+"  distreuse=bool        [false] keep used distances in distance table\n"
+"  costweights=array     [1,1] weights for distance and overlap components\n"
+"  tolcost=double        [1E-4] target normalized molecule cost\n"
+"  natoms=int            obsolete, equivalent to formula=Cn\n"
+"  formula=string        chemical formula, use inistru when not specified\n"
+"  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
+"  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
+"  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
+"  rngseed=int           seed of random number generator\n"
+"  promotefrac=double    [0.1] fraction of tolcost threshold of tested atoms\n"
+"  promoterelax=bool     [false] relax the worst atom after addition\n"
+"  demoterelax=bool      [false] relax the worst atom after removal\n"
+"  ligasize=int          [10] number of teams per division\n"
+"  stopgame=double       [0.0025] skip division when winner is worse\n"
+"  seasontrials=int      [16384] number of atom placements in one season\n"
+"  trialsharing=string   [success] sharing method from (" <<
+	join(",", TrialDistributor::getTypes()) << ")\n" <<
+"Constrains (applied only when set):\n"
+"  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
+"  max_dist=double       distance limit for rejecting lone atoms\n"
+;
+}
+
+
+void RunPar_t::process_cmdline_args()
+{
+    if (args->args.size() > 1)
+    {
+	ostringstream emsg;
+	emsg << args->cmd_t << ": several DISTFILE arguments.";
+	throw ParseArgsError(emsg.str());
+    }
+    if (args->args.size() == 1)
+    {
+	args->pars["distfile"] = args->args[0];
+    }
+}
+
+
 string RunPar_t::version_string(string quote)
 {
     using namespace std;
     ostringstream oss;
-    oss << quote << APPNAME << ' ' << NS_VERSION::getId() << '\n' <<
+    oss << quote << this->getAppName() << ' ' <<
+        NS_VERSION::getId() << '\n' <<
 	quote << "compiler version " << __VERSION__;
     return oss.str();
 }

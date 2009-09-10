@@ -1,10 +1,10 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: molecule reconstruction from distance table
 *
 * Comments: self-tuning competition search for molecular configuration
 *
 * $Id$
-***********************************************************************/
+*****************************************************************************/
 
 #include <cstdlib>
 #include <limits>
@@ -19,9 +19,9 @@ using namespace std;
 
 const int EXIT_INPUT_ERROR = 2;
 
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // SIGHUP handling
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 int SIGHUP_received = 0;
 
@@ -32,19 +32,19 @@ void SIGHUP_handler(int signum)
     SIGHUP_received = signum;
 }
 
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // MAIN
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[])
 {
-    auto_ptr<RunPar_t> rp;
+    RunPar_t rp;
     auto_ptr<Liga_t> liga;
     // Catch exceptions
     try	{
 	// process arguments
-	rp.reset(new RunPar_t(argc, argv));
-	liga.reset(new Liga_t(rp.get()));
+	rp.processArguments(argc, argv);
+	liga.reset(new Liga_t(&rp));
 	// watch for HUP
 	signal(SIGHUP, SIGHUP_handler);
 	liga->useStopFlag(&SIGHUP_received);

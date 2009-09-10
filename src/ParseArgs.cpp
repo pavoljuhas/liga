@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: program arguments parser
 *
 * Comments:
@@ -6,7 +6,7 @@
 * $Id$
 * 
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #include <algorithm>
 #include <fstream>
@@ -15,9 +15,9 @@
 
 using namespace std;
 
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // class ParseArgs
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 ParseArgs::ParseArgs(int nargc, char* const nargv[]) :
     argc(nargc), argv(nargv)
@@ -171,14 +171,14 @@ const list<string>& ParseArgs::usedParameterAliases() const
     return used_par_aliases;
 }
 
-void ParseArgs::ReadPars(const char *file)
+void ParseArgs::ReadPars(const string& parfile)
 {
-    // open file for reading
-    ifstream fid(file);
+    // open parfile for reading
+    ifstream fid(parfile.c_str());
     if (!fid)
     {
 	ostringstream emsg_ostream;
-	emsg_ostream << "Unable to read '" << file << "'";
+	emsg_ostream << "Unable to read '" << parfile << "'";
 	throw IOError(emsg_ostream.str());
     }
     try {
@@ -187,7 +187,7 @@ void ParseArgs::ReadPars(const char *file)
     catch (ParseArgsError(e)) {
 	ostringstream emsg;
 	emsg << "invalid syntax in parameter file\n" << 
-	    file << ":" << e.what();
+	    parfile << ":" << e.what();
 	throw ParseArgsError(emsg.str());
     }
     fid.close();

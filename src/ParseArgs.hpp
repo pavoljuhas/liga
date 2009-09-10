@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: program arguments parser
 *
 * Comments:
@@ -6,7 +6,7 @@
 * $Id$
 * 
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #ifndef PARSEARGS_HPP_INCLUDED
 #define PARSEARGS_HPP_INCLUDED
@@ -46,7 +46,7 @@ public:
     std::string cmd_h, cmd_t;
     void Parse();
     void Dump();
-    void ReadPars(const char *file);
+    void ReadPars(const std::string& parfile);
     std::istream& ReadPars(std::istream& fid=std::cin);
     template<typename T> T GetPar(std::string par);
     std::vector<int> ExpandRangePar(std::string par);
