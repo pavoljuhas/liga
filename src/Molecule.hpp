@@ -44,7 +44,6 @@ class Molecule
 	friend bool operator==(const Molecule&, const Molecule&);
 	friend class BondAngleFilter_t;
 	friend class LoneAtomFilter_t;
-	friend std::ostream& operator<<(std::ostream& os, Molecule& M);
 
 	// class data
 	// fit parameters
