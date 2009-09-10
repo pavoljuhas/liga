@@ -73,7 +73,7 @@ class Molecule
 
         // operators
 	virtual Molecule& operator=(const Molecule&);
-        virtual Molecule* copy() const;        // create a copy
+        virtual Molecule* copy() const;     // create a copy
 
 	// methods - class registration and type info
 	virtual StructureType type() const  { return MOLECULE; }
