@@ -29,7 +29,9 @@ def build_header(target, source, env):
 env_test.Append(BUILDERS={'BuildHeader_hpp' :
         Builder(action=build_header)})
 tdcpp = env_test.BuildHeader_hpp(['tests_dir.cpp'],
-        env_test.File('tests_dir.tpl').srcnode())
+        [env_test.File('tests_dir.tpl').srcnode(),
+         env_test.Value(Dir('.').srcnode().abspath)]
+        )
 
 alltests = env_test.CxxTest('alltests',
         test_sources + env_test['lib_objects'] + tdcpp)
