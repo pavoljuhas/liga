@@ -1,12 +1,12 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: class DistanceTable - declaration
 *
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #ifndef DISTANCETABLE_HPP_INCLUDED
 #define DISTANCETABLE_HPP_INCLUDED
@@ -38,12 +38,14 @@ class DistanceTable : public std::vector<double>
         double getResolution() const;
         void setResolution(double res);
         double maxDistance() const;
+        double maxDistanceRepr() const;
 
     private:
 
         // data
-        mutable int count_unique;
-        double resolution;
+        mutable int mcount_unique;
+        mutable double mmaxdistancerepr;
+        double mresolution;
 
         // methods
         void init();

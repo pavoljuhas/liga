@@ -1,4 +1,4 @@
-/***********************************************************************
+/*****************************************************************************
 * Short Title: class DistanceTable - definitions
 *
 * Comments:
@@ -6,10 +6,12 @@
 * $Id$
 *
 * <license text>
-***********************************************************************/
+*****************************************************************************/
 
 #include <sstream>
 #include <cmath>
+#include <cassert>
+
 #include "DistanceTable.hpp"
 #include "Exceptions.hpp"
 #include "LigaUtils.hpp"
@@ -17,17 +19,17 @@
 
 using namespace std;
 
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // class DistanceTable
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
-
-// constructors
+// Constructors --------------------------------------------------------------
 
 DistanceTable::DistanceTable() : vector<double>()
 {
     init();
 }
+
 
 DistanceTable::DistanceTable(const double* v, size_t sz) :
     vector<double>(v, v + sz)
@@ -35,18 +37,19 @@ DistanceTable::DistanceTable(const double* v, size_t sz) :
     init();
 }
 
+
 DistanceTable::DistanceTable(const vector<double>& v) : vector<double>(v)
 {
     init();
 }
+
 
 DistanceTable::DistanceTable(const DistanceTable& d0)
 {
     *this = d0;
 }
 
-
-// operators
+// Operators -----------------------------------------------------------------
 
 DistanceTable& DistanceTable::operator= (const vector<double>& v)
 {
@@ -56,17 +59,17 @@ DistanceTable& DistanceTable::operator= (const vector<double>& v)
     return *this;
 }
 
+
 DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
 {
     if (this == &d0)    return *this;
     assign(d0.begin(), d0.end());
-    count_unique = d0.count_unique;
-    resolution = d0.resolution;
+    mcount_unique = d0.mcount_unique;
+    mresolution = d0.mresolution;
     return *this;
 }
 
-
-// public methods
+// Public Methods ------------------------------------------------------------
 
 DistanceTable::const_iterator
 DistanceTable::find_nearest(const double& dfind) const
@@ -78,11 +81,13 @@ DistanceTable::find_nearest(const double& dfind) const
     return ii;
 }
 
+
 DistanceTable::iterator DistanceTable::return_back(const double& dback)
 {
     iterator ii = lower_bound(begin(), end(), dback);
     return insert(ii, dback);
 }
+
 
 int DistanceTable::estNumAtoms() const
 {
@@ -90,18 +95,20 @@ int DistanceTable::estNumAtoms() const
     return int(xn);
 }
 
+
 int DistanceTable::countUnique() const
 {
-    if (count_unique >= 0)  return count_unique;
-    count_unique = empty() ? 0 : 1;
+    if (mcount_unique >= 0)  return mcount_unique;
+    mcount_unique = empty() ? 0 : 1;
     const_iterator ilo = begin();
     const_iterator ihi = (ilo == end()) ? ilo : ilo + 1;
     for (; ihi != end(); ++ilo, ++ihi)
     {
-	if ( (*ihi - *ilo) > resolution )   ++count_unique;
+	if ( (*ihi - *ilo) > mresolution )   ++mcount_unique;
     }
-    return count_unique;
+    return mcount_unique;
 }
+
 
 vector<double> DistanceTable::unique() const
 {
@@ -109,7 +116,7 @@ vector<double> DistanceTable::unique() const
     dtu.reserve(this->countUnique());
     for (const_iterator di = begin(); di != end(); ++di)
     {
-	if (dtu.empty() || (*di - dtu.back()) > this->resolution)
+	if (dtu.empty() || (*di - dtu.back()) > mresolution)
 	{
             dtu.push_back(*di);
 	}
@@ -117,16 +124,19 @@ vector<double> DistanceTable::unique() const
     return dtu;
 }
 
+
 double DistanceTable::getResolution() const
 {
-    return resolution;
+    return mresolution;
 }
+
 
 void DistanceTable::setResolution(double res)
 {
-    resolution = res;
-    count_unique = -1;
+    mresolution = res;
+    mcount_unique = -1;
 }
+
 
 double DistanceTable::maxDistance() const
 {
@@ -136,12 +146,33 @@ double DistanceTable::maxDistance() const
 }
 
 
-// private methods
+double DistanceTable::maxDistanceRepr() const
+{
+    double dr = mmaxdistancerepr - this->maxDistance();
+    if (dr < 0.0 || dr > 1e-6)
+    {
+        for (int digits = int(1e8); digits >= 1; digits /= 10)
+        {
+            double mxdroundup = ceil(this->maxDistance() * digits) / digits;
+            ostringstream omxd;
+            omxd << mxdroundup;
+            istringstream imxd(omxd.str());
+            imxd >> mmaxdistancerepr;
+            dr = mmaxdistancerepr - this->maxDistance();
+            if (dr >= 0.0)  break;
+        }
+        assert(dr >= 0.0);
+    }
+    return mmaxdistancerepr;
+}
+
+// Private Methods -----------------------------------------------------------
 
 void DistanceTable::init()
 {
-    count_unique = -1;
-    resolution = NS_LIGA::eps_cost;
+    mcount_unique = -1;
+    mresolution = NS_LIGA::eps_cost;
+    mmaxdistancerepr = -1;
     if (empty())    return;
     // check for any negative element
     size_t minidx = min_element(begin(), end()) - begin();
@@ -154,6 +185,7 @@ void DistanceTable::init()
     // sort and count unique distance
     sort(begin(), end());
 }
+
 
 void DistanceTable::readPWAFormat(istream& fid)
 {
@@ -187,6 +219,7 @@ void DistanceTable::readPWAFormat(istream& fid)
     this->init();
 }
 
+
 void DistanceTable::readSimpleFormat(istream& fid)
 {
     vector<double> positions;
@@ -196,8 +229,7 @@ void DistanceTable::readSimpleFormat(istream& fid)
     this->init();
 }
 
-
-// non-member operators
+// Non-member Operators ------------------------------------------------------
 
 istream& operator>>(istream& fid, DistanceTable& dstbl)
 {

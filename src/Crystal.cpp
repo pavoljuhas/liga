@@ -26,13 +26,13 @@ using namespace NS_LIGA;
 // class Crystal
 //////////////////////////////////////////////////////////////////////////////
 
-
 // Constructors --------------------------------------------------------------
 
 Crystal::Crystal() : Molecule()
 {
     init();
 }
+
 
 Crystal::Crystal(const Crystal& crs) : Molecule()
 {
@@ -84,6 +84,7 @@ void Crystal::setDistanceTable(const DistanceTable& dtbl)
     this->CheckIntegrity();
 }
 
+
 void Crystal::setDistReuse(bool flag)
 {
     if (!flag)
@@ -94,6 +95,7 @@ void Crystal::setDistReuse(bool flag)
     this->Molecule::setDistReuse(flag);
 }
 
+
 void Crystal::setLattice(const Lattice& lat)
 {
     this->_lattice.reset(new Lattice(lat));
@@ -101,10 +103,12 @@ void Crystal::setLattice(const Lattice& lat)
     this->uncacheCostData();
 }
 
+
 const Lattice& Crystal::getLattice() const
 {
     return *_lattice;
 }
+
 
 void Crystal::setRmax(double rmax)
 {
@@ -113,10 +117,11 @@ void Crystal::setRmax(double rmax)
     this->uncacheCostData();
 }
 
+
 double Crystal::getRmax() const
 {
     double rv = (this->_rmax > 0) ? this->_rmax :
-        (this->_full_distance_table->maxDistance() + eps_distance);
+        this->_full_distance_table->maxDistanceRepr();
     return rv;
 }
 
@@ -401,6 +406,7 @@ boost::python::object Crystal::newDiffPyStructure() const
             L.a(), L.b(), L.c(), L.alpha(), L.beta(), L.gamma());
     return stru;
 }
+
 
 void Crystal::setFromDiffPyStructure(boost::python::object stru)
 {
