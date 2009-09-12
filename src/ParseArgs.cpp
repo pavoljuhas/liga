@@ -10,6 +10,8 @@
 
 #include <algorithm>
 #include <fstream>
+#include <bitset>
+
 #include "Exceptions.hpp"
 #include "ParseArgs.hpp"
 
@@ -213,13 +215,10 @@ bool check_backslash(string& s)
 istream& ParseArgs::ReadPars(istream& fid)
 {
     const char* blank = " \t\r\n";
-    // Configure a set of lines that terminate data reading.
-    // This allows to read parameters directly from a logfile.
-    static set<string> par_terminators;
-    if (par_terminators.empty())
-    {
-        par_terminators.insert("Initial team");
-    }
+    // Parameters reading will finish after long hash line and
+    // blank line at first non-parameter line.
+    enum TermFlags { HASHLINE, BLANKLINE, NUMCOND };
+    bitset<NUMCOND> term_conditions(0);
     string pline, fline;
     bool line_continues = false;
     for (int nr = 1; !fid.eof() && getline(fid, fline); ++nr)
@@ -227,22 +226,37 @@ istream& ParseArgs::ReadPars(istream& fid)
 	line_continues = check_backslash(fline);
 	pline = line_continues ? (pline + fline) : fline;
 	if (line_continues)    continue;
-        if (par_terminators.count(pline))    break;
 	// here we should have complete pline
 	string::size_type lb, le;
 	lb = pline.find_first_not_of(blank);
 	le = pline.find_last_not_of(blank)+1;
 	pline = (lb == string::npos) ? "" : pline.substr(lb, le-lb);
-	if (pline.length() == 0 || pline[0] == '#')
+        // ship lines that start with hash mark
+        if (pline.length() && pline[0] == '#')
+        {
+            // check for terminating hashline
+            string::size_type hashcount = pline.find_first_not_of('#');
+            term_conditions[HASHLINE] = (hashcount > 64);
+            continue;
+        }
+        // skip blank line
+	if (pline.empty())
+        {
+            term_conditions[BLANKLINE] = term_conditions[HASHLINE];
 	    continue;
+        }
 	string::size_type eq, pe, vb;
 	eq = pline.find('=');
 	if (eq == string::npos)
 	{
+            // get out when term_conditions are all true
+            if (term_conditions.count() == term_conditions.size())  break;
 	    ostringstream emsg_ostream;
 	    emsg_ostream << nr << ": missing equal symbol";
 	    throw ParseArgsError(emsg_ostream.str());
 	}
+        // here we have something that looks like parameter, keep reading
+        term_conditions.reset();
 	pe = pline.find_last_not_of(string(blank) + "=", eq);
 	pe = (pe == string::npos) ? eq : pe+1;
 	string par0 = pline.substr(0, pe);
