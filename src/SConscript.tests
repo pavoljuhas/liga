@@ -45,7 +45,7 @@ env_test.AlwaysBuild(unittest)
 
 mpbcliga = env['mpbcliga']
 mpbcliga_exe = mpbcliga[0].abspath
-runtest_options = 'maxcputime=1 seasontrials=500'
+runtest_options = 'maxcputime=1 seasontrials=500 crystal=false'
 
 def rtcmd(*args):
     cmdwords = (mpbcliga_exe, runtest_options) + args + ('>/dev/null',)

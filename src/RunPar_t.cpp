@@ -111,7 +111,7 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     dstfid >> dtab;
     // figure out if we have Molecule or Crystal
     // crystal
-    crystal = args->GetPar<bool>("crystal", false);
+    crystal = args->GetPar<bool>("crystal", true);
     // create empty molecule
     if (this->crystal)
     {
