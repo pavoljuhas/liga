@@ -477,10 +477,9 @@ void Crystal::cropDistanceTable()
     hi = upper_bound(this->_full_distance_table->begin(),
             this->_full_distance_table->end(), this->getRmax());
     vector<double> vcropped(lo, hi);
-    // Molecule::setDistanceTable must be passed DistanceTable
-    // otherwise there would be infinite loop.
-    DistanceTable dcropped(vcropped);
-    this->Molecule::setDistanceTable(dcropped);
+    // Do not call Molecule::setDistanceTable,
+    // it may change the chemical formula.
+    this->_distance_table.reset(new DistanceTable(vcropped));
 }
 
 

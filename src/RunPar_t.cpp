@@ -496,7 +496,7 @@ void RunPar_t::print_help()
 "                        (" << joined_verbose_flags() << ")\n" <<
 "Liga parameters:\n"
 "  ndim={1,2,3}          [3] search in n-dimensional space\n"
-"  crystal=bool          [false] assume periodic crystal structure\n"
+"  crystal=bool          [true] assume periodic crystal structure\n"
 "  latpar=array          [1,1,1,90,90,90] crystal lattice parameters\n"
 "  rmax=double           [dmax] distance cutoff when crystal=true\n"
 "  distreuse=bool        [false] keep used distances in distance table\n"
