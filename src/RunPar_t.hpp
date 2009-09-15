@@ -30,6 +30,7 @@ class RunPar_t
         // methods
         void processArguments(int argc, char* const argv[]);
         virtual const std::string& getAppName() const;
+        boost::python::object importMapFunction() const;
         boost::python::object importScoopFunction() const;
         double applyScoopFunction(Molecule* mol) const;
         void testScoopFunction(const Molecule&) const;
@@ -49,6 +50,7 @@ class RunPar_t
         std::deque<TraceId_t> framestrace;
         std::string scoopfunction;
         int scooprate;
+        int ncpu;
         std::vector<bool> verbose;
         // Liga parameters
         size_t ndim;
@@ -86,6 +88,11 @@ class RunPar_t
         const std::string& joined_verbose_flags() const;
         virtual void print_help();
         virtual void print_pars();
+
+    private:
+
+        mutable std::auto_ptr<boost::python::object> mmapfunctionobj;
+        mutable std::auto_ptr<boost::python::object> mscoopfunctionobj;
 
 };
 

@@ -22,50 +22,6 @@
 using namespace std;
 using namespace NS_LIGA_VERBOSE_FLAG;
 
-// Local Helpers Functions ---------------------------------------------------
-
-namespace {
-
-boost::python::object importMapFunction()
-{
-    namespace python = boost::python;
-    static bool did_import = false;
-    static python::object rv;
-    // short circuit when already imported
-    if (did_import)  return rv;
-    // performap import
-    python::object py_main = python::import("__main__");
-    python::object py_globals = py_main.attr("__dict__");
-    python::dict py_locals;
-    python::object sysmod = python::import("sys");
-    int ncpu;
-    int hexversion = python::extract<int>(sysmod.attr("hexversion"));
-    if (hexversion >= 0x02060000)
-    {
-        python::object mpmod = python::import("multiprocessing");
-        python::exec(
-            "import os\n"
-            "import multiprocessing\n"
-            "ncpu = os.path.isfile(os.environ.get('PBS_NODEFILE', '')) and"
-            "    len(open(os.environ['PBS_NODEFILE']).readlines()) or"
-            "    multiprocessing.cpu_count()\n",
-            py_globals, py_locals);
-        ncpu = python::extract<int>(py_locals["ncpu"]);
-        python::object pool = mpmod.attr("Pool")(ncpu);
-        rv = pool.attr("map");
-    }
-    else
-    {
-        rv = python::eval("map", py_globals, py_locals);
-        ncpu = 1;
-    }
-    cout << "Team scooping will use " << ncpu << " processors." << endl;
-    did_import = true;
-    return rv;
-}
-
-}   // namespace
-
 //////////////////////////////////////////////////////////////////////////////
 // class Liga_t
 //////////////////////////////////////////////////////////////////////////////
@@ -131,7 +87,7 @@ Liga_t::Liga_t(RunPar_t* runpar) :
 void Liga_t::prepare()
 {
     // initialize map function used for scooping
-    if (!rp->scoopfunction.empty())  importMapFunction();
+    if (!rp->scoopfunction.empty())  rp->importMapFunction();
     season = 0;
     clear();
     this->world_champ = NULL;
@@ -602,7 +558,7 @@ void Liga_t::updateScoopedStructures()
         python::object stru = (*tt)->convertToDiffPyStructure();
         toplevelteams.append(stru);
     }
-    python::object mapfnc = importMapFunction();
+    python::object mapfnc = rp->importMapFunction();
     python::object scfnc = rp->importScoopFunction();
     python::object res = mapfnc(scfnc, toplevelteams);
     mscoop_cost_stru->extend(res);

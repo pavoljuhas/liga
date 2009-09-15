@@ -245,6 +245,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // scooprate
     this->scooprate = args->ispar("scoopfunction") ?
         args->GetPar("scooprate", 0) : 0;
+    // ncpu
+    this->ncpu = args->GetPar("ncpu", 1);
     // verbose
     verbose = Liga_t::getDefaultVerbose();
     if (args->ispar("verbose"))
@@ -403,22 +405,57 @@ const string& RunPar_t::getAppName() const
 }
 
 
+boost::python::object RunPar_t::importMapFunction() const
+{
+    namespace python = boost::python;
+    // short circuit when already imported
+    if (mmapfunctionobj.get())  return *mmapfunctionobj;
+    // performap import
+    initializePython();
+    mmapfunctionobj.reset(new python::object());
+    python::object py_main = python::import("__main__");
+    python::object py_globals = py_main.attr("__dict__");
+    python::dict py_locals;
+    python::object sysmod = python::import("sys");
+    int hexversion = python::extract<int>(sysmod.attr("hexversion"));
+    int actualncpu = this->ncpu;
+    if (hexversion >= 0x02060000 && this->ncpu > 1)
+    {
+        python::object mpmod = python::import("multiprocessing");
+        python::object pool = mpmod.attr("Pool")(this->ncpu);
+        *mmapfunctionobj = pool.attr("map");
+    }
+    else
+    {
+        // print warning on attempt to use several CPUs with Python 2.5
+        if (this->ncpu > 1)
+        {
+            cout << "Warning ncpu=" << this->ncpu <<
+                " ignored, it needs Python 2.6 or later.\n";
+            actualncpu = 1;
+        }
+        *mmapfunctionobj = python::eval("map", py_globals, py_locals);
+    }
+    cout << "Team scooping will use " << actualncpu << " processors." <<
+        '\n' << endl;
+    return *mmapfunctionobj;
+}
+
+
 boost::python::object RunPar_t::importScoopFunction() const
 {
     namespace python = boost::python;
+    // short circuit when already imported
+    if (mscoopfunctionobj.get())  return *mscoopfunctionobj;
     initializePython();
-    static python::object scfnc;
-    static string lastscoopfunction;
-    if (this->scoopfunction != lastscoopfunction)
-    {
-        string::size_type pcolon = this->scoopfunction.find(':');
-        string scmodname = this->scoopfunction.substr(0, pcolon);
-        string scfncname = this->scoopfunction.substr(pcolon + 1);
-        python::object scmod = python::import(scmodname.c_str());
-        scfnc = scmod.attr(scfncname.c_str());
-        lastscoopfunction = this->scoopfunction;
-    }
-    return scfnc;
+    mscoopfunctionobj.reset(new python::object());
+    // retrieve module and functio name from scoopfunction string
+    string::size_type pcolon = this->scoopfunction.find(':');
+    string scmodname = this->scoopfunction.substr(0, pcolon);
+    string scfncname = this->scoopfunction.substr(pcolon + 1);
+    python::object scmod = python::import(scmodname.c_str());
+    *mscoopfunctionobj = scmod.attr(scfncname.c_str());
+    return *mscoopfunctionobj;
 }
 
 
@@ -492,6 +529,7 @@ void RunPar_t::print_help()
 "  scoopfunction=string  (python.module:function) top-level structure scooping\n"
 "                        scoopfunction must return a (cost, stru) tuple.\n"
 "  scooprate=int         [0] rate of top-level structure scooping\n"
+"  ncpu=int              [1] number of CPUs used for structure scooping\n"
 "  verbose=array         [ad,wc,bc,sc] output flags from\n"
 "                        (" << joined_verbose_flags() << ")\n" <<
 "Liga parameters:\n"
@@ -612,11 +650,12 @@ void RunPar_t::print_pars()
     }
     // trace
     cout << "trace=" << trace << '\n';
-    // scoopfunction, scooprate
+    // scoopfunction, scooprate, ncpu
     if (args->ispar("scoopfunction"))
     {
         cout << "scoopfunction=" << this->scoopfunction << '\n';
         cout << "scooprate=" << this->scooprate << '\n';
+        cout << "ncpu=" << this->ncpu << '\n';
     }
     // verbose
     {
@@ -732,6 +771,7 @@ const list<string>& RunPar_t::validpars() const
         "framestrace",
         "scoopfunction",
         "scooprate",
+        "ncpu",
         "verbose",
         "ndim",
         "crystal",
