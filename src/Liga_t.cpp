@@ -86,8 +86,7 @@ Liga_t::Liga_t(RunPar_t* runpar) :
 
 void Liga_t::prepare()
 {
-    // initialize map function used for scooping
-    if (!rp->scoopfunction.empty())  rp->importMapFunction();
+    this->prepareScooping();
     season = 0;
     clear();
     this->world_champ = NULL;
@@ -533,6 +532,16 @@ void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
 	string fname = oss.str();
 	traced->WriteFile(fname.c_str());
     }
+}
+
+
+void Liga_t::prepareScooping()
+{
+    if (rp->scoopfunction.empty())  return;
+    rp->importMapFunction();
+    cout << "Team scooping will use " << rp->ncpu << " processors.\n";
+    cout << "Executing scoopfunction check run.\n\n";
+    rp->checkScoopFunction(*(rp->mol));
 }
 
 

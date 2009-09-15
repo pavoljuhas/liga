@@ -30,10 +30,10 @@ class RunPar_t
         // methods
         void processArguments(int argc, char* const argv[]);
         virtual const std::string& getAppName() const;
-        boost::python::object importMapFunction() const;
+        boost::python::object importMapFunction();
         boost::python::object importScoopFunction() const;
         double applyScoopFunction(Molecule* mol) const;
-        void testScoopFunction(const Molecule&) const;
+        void checkScoopFunction(const Molecule&) const;
         // parsed input arguments
         std::auto_ptr<ParseArgs> args;
         // Output option
@@ -50,7 +50,7 @@ class RunPar_t
         std::deque<TraceId_t> framestrace;
         std::string scoopfunction;
         int scooprate;
-        int ncpu;
+        mutable int ncpu;
         std::vector<bool> verbose;
         // Liga parameters
         size_t ndim;

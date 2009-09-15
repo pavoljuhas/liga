@@ -392,7 +392,6 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     }
     // Final Checks
     this->mol->CheckIntegrity();
-    this->testScoopFunction(*(this->mol));
     // done
     print_pars();
 }
@@ -405,7 +404,7 @@ const string& RunPar_t::getAppName() const
 }
 
 
-boost::python::object RunPar_t::importMapFunction() const
+boost::python::object RunPar_t::importMapFunction()
 {
     namespace python = boost::python;
     // short circuit when already imported
@@ -418,7 +417,6 @@ boost::python::object RunPar_t::importMapFunction() const
     python::dict py_locals;
     python::object sysmod = python::import("sys");
     int hexversion = python::extract<int>(sysmod.attr("hexversion"));
-    int actualncpu = this->ncpu;
     if (hexversion >= 0x02060000 && this->ncpu > 1)
     {
         python::object mpmod = python::import("multiprocessing");
@@ -432,12 +430,10 @@ boost::python::object RunPar_t::importMapFunction() const
         {
             cout << "Warning ncpu=" << this->ncpu <<
                 " ignored, it needs Python 2.6 or later.\n";
-            actualncpu = 1;
+            this->ncpu = 1;
         }
         *mmapfunctionobj = python::eval("map", py_globals, py_locals);
     }
-    cout << "Team scooping will use " << actualncpu << " processors." <<
-        '\n' << endl;
     return *mmapfunctionobj;
 }
 
@@ -484,7 +480,7 @@ double RunPar_t::applyScoopFunction(Molecule* mol) const
 }
 
 
-void RunPar_t::testScoopFunction(const Molecule& molecule) const
+void RunPar_t::checkScoopFunction(const Molecule& molecule) const
 {
     if (this->scoopfunction.empty())  return;
     auto_ptr<Molecule> testmol(molecule.copy());

@@ -109,6 +109,7 @@ class Liga_t : public std::vector<Division_t>
 	void saveFrames();
 	void recordFramesTrace(std::set<PMOL>& modified, size_t lo_level);
 	void saveFramesTrace(std::set<PMOL>& modified, size_t lo_level);
+        void prepareScooping();
         void updateScoopedStructures();
         void printScoopedStructures() const;
         void saveScoopedStructures() const;
