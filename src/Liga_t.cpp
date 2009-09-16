@@ -540,7 +540,7 @@ void Liga_t::prepareScooping()
     if (rp->scoopfunction.empty())  return;
     rp->importMapFunction();
     cout << "Team scooping will use " << rp->ncpu << " processors.\n";
-    cout << "Executing scoopfunction check run.\n\n";
+    cout << "Executing scoopfunction check run.\n" << endl;
     rp->checkScoopFunction(*(rp->mol));
 }
 
