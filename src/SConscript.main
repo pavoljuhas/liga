@@ -2,21 +2,25 @@ import os
 
 Import('env')
 
+# Build environment configuration --------------------------------------------
+
+# The directory of this SConscript should be searched first for any headers.
+env.PrependUnique(CPPPATH=Dir('.'))
+
 # Use Intel C++ compiler when it is available
 icpc = env.WhereIs('icpc')
 if icpc:
     env.Tool('intelc', topdir=icpc[:icpc.rfind('/bin')])
 
+# Declare external libraries.
 env.ParseConfig("python-config --includes")
 env.ParseConfig("python-config --ldflags")
 env.ParseConfig("gsl-config --cflags --libs")
+# configure version specific options.
+if not (GetOption('clean') or env.GetOption('help')):
+    SConscript('SConscript.configure')
 
-env.AppendUnique(CPPPATH='.')
-env.AppendUnique(LIBS='boost_python')
-# configure if it is necessary to link with boost_system
-SConscript('SConscript.configure')
-
-# special configuration for specific compilers
+# Compiler specific options
 if icpc:
     # options for Intel C++ compiler on hpc dev-intel07
     env.AppendUnique(CCFLAGS=['-w1', '-fp-model', 'precise'])
@@ -27,7 +31,7 @@ else:
     env.AppendUnique(CCFLAGS=['-Wall'])
     fast_optimflags = ['-ffast-math']
 
-# configure build variants
+# Configure build variants
 if env['build'] == 'debug':
     env.Append(CCFLAGS='-g')
 elif env['build'] == 'fast':

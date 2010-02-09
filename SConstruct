@@ -38,6 +38,6 @@ builddir = env.Dir('build/%s' % env['build'])
 
 Export('env')
 
-env.SConscript('src/SConscript.main', variant_dir=builddir, duplicate=0)
+env.SConscript('src/SConscript.main', variant_dir=builddir)
 
 # vim: ft=python

@@ -30,7 +30,7 @@ using namespace NS_POINTSINSPHERE;
 
 namespace {
 
-const double eps = 1.0e-12;
+const double eps = 1.0e-8;
 
 struct vidxgroup
 {
