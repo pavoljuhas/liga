@@ -1894,7 +1894,8 @@ void Molecule::fetchAtomRadii()
     AtomRadiiTable radiitable = this->getAtomRadiiTable();
     BOOST_FOREACH (Atom_t& a, atoms_storage)
     {
-        a.radius = radiitable.empty() ? 0.0 : radiitable.lookup(a.element);
+        a.radius = (radiitable.empty() || a.element.empty()) ?
+            0.0 : radiitable.lookup(a.element);
     }
 }
 

@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
         BOOST_FOREACH (string stru, rp.strufiles)
         {
             rp.mol->ReadFile(stru);
+            if (!rp.formula.empty())  rp.mol->setChemicalFormula(rp.formula);
             rp.mol->recalculate();
             const Molecule& m = *(rp.mol);
             cout << stru << ' ' << m.countAtoms() << ' ' << m.cost() <<
