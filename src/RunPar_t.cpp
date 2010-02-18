@@ -24,6 +24,7 @@
 #include "AtomFilter_t.hpp"
 #include "LigaUtils.hpp"
 #include "Exceptions.hpp"
+#include "Counter.hpp"
 #include "Version.hpp"
 
 using namespace std;
@@ -338,6 +339,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     base_level = mol->NFixed();
     // maxcputime
     maxcputime = args->GetPar<double>("maxcputime", 0.0);
+    // maxwalltime
+    maxwalltime = args->GetPar<double>("maxwalltime", 0.0);
     // rngseed
     rngseed = args->GetPar<int>("rngseed", 0);
     if (rngseed)
@@ -401,6 +404,20 @@ const string& RunPar_t::getAppName() const
 {
     static string appname =  "mpbcliga";
     return appname;
+}
+
+
+bool RunPar_t::outOfCPUTime() const
+{
+    bool rv = (maxcputime > 0.0 && Counter::CPUTime() > maxcputime);
+    return rv;
+}
+
+
+bool RunPar_t::outOfWallTime() const
+{
+    bool rv = (maxwalltime > 0.0 && Counter::WallTime() > maxwalltime);
+    return rv;
 }
 
 
@@ -541,6 +558,7 @@ void RunPar_t::print_help()
 "  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
+"  maxwalltime=double    [0] when set, maximum wall time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
 "  promotefrac=double    [0.1] fraction of tolcost threshold of tested atoms\n"
 "  promoterelax=bool     [false] relax the worst atom after addition\n"
@@ -718,6 +736,11 @@ void RunPar_t::print_pars()
     {
 	cout << "maxcputime=" << maxcputime << '\n';
     }
+    // maxwalltime
+    if (maxwalltime > 0.0)
+    {
+	cout << "maxwalltime=" << maxwalltime << '\n';
+    }
     // rngseed
     if (rngseed)
     {
@@ -781,6 +804,7 @@ const list<string>& RunPar_t::validpars() const
         "radii",
         "fixed_atoms",
         "maxcputime",
+        "maxwalltime",
         "rngseed",
         "promotefrac",
         "promoterelax",

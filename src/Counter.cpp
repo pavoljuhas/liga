@@ -16,6 +16,10 @@
 
 using namespace std;
 
+// class constants
+
+const time_t Counter::_start_walltime = time(NULL);
+
 // class methods
 
 Counter* Counter::getCounter(string name)
@@ -32,6 +36,12 @@ double Counter::CPUTime()
     tms tbuf;
     times(&tbuf);
     return 1.0*tbuf.tms_utime/sysconf(_SC_CLK_TCK);
+}
+
+double Counter::WallTime()
+{
+    double rv = time(NULL) - _start_walltime;
+    return rv;
 }
 
 void Counter::printCounters()
@@ -53,6 +63,7 @@ void Counter::printRunStats()
     cout << "Run statistics:\n";
     printCounters();
     cout << "UserCPUtime = " << CPUTime() << "s\n";
+    cout << "walltime = " << WallTime() << "s\n";
     cout << "Host = " << hostname << endl;
 }
 

@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <ctime>
 
 class Counter
 {
@@ -28,6 +29,7 @@ class Counter
         // class methods
         static Counter* getCounter(std::string name);
 	static double CPUTime();
+	static double WallTime();
 	static void printCounters();
 	static void printRunStats();
 
@@ -55,6 +57,7 @@ class Counter
 	// Data Members
         const std::string _name;
         ValueType _value;
+        static const time_t _start_walltime;
 
 };
 

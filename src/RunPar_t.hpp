@@ -30,6 +30,8 @@ class RunPar_t
         // methods
         void processArguments(int argc, char* const argv[]);
         virtual const std::string& getAppName() const;
+        bool outOfCPUTime() const;
+        bool outOfWallTime() const;
         boost::python::object importMapFunction();
         boost::python::object importScoopFunction() const;
         double applyScoopFunction(Molecule* mol) const;
@@ -65,6 +67,7 @@ class RunPar_t
         AtomRadiiTable radii;
         std::vector<int> fixed_atoms;
         double maxcputime;
+        double maxwalltime;
         int rngseed;
         double promotefrac;
         bool promoterelax;

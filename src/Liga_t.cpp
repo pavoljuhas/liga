@@ -263,7 +263,7 @@ bool Liga_t::solutionFound() const
 
 bool Liga_t::outOfTime() const
 {
-    return rp->maxcputime > 0.0 && Counter::CPUTime() > rp->maxcputime;
+    return rp->outOfCPUTime() || rp->outOfWallTime();
 }
 
 
@@ -289,7 +289,8 @@ void Liga_t::printSummary() const
 {
 
     if (solutionFound())    cout << "Solution found!!!\n\n";
-    else if (outOfTime())   cout << "Exceeded maxcputime.\n\n";
+    else if (rp->outOfCPUTime())   cout << "Exceeded maxcputime.\n\n";
+    else if (rp->outOfWallTime())  cout << "Exceeded maxwalltime.\n\n";
     else if (stopFlag())    cout << "Simulation stopped, graceful death.\n\n";
     printFramesTrace();
     Counter::printRunStats();
