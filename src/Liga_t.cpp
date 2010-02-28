@@ -565,7 +565,9 @@ void Liga_t::updateScoopedStructures()
     Division_t::const_iterator tt;
     for (tt = topdivision.begin(); tt != topdivision.end(); ++tt)
     {
-        python::object stru = (*tt)->convertToDiffPyStructure();
+        auto_ptr<Molecule> ttcp((*tt)->copy());
+        ttcp->DownhillOverlapMinimization();
+        python::object stru = ttcp->convertToDiffPyStructure();
         toplevelteams.append(stru);
     }
     python::object mapfnc = rp->importMapFunction();
