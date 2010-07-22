@@ -48,9 +48,7 @@ conf = Configure(env, custom_tests={
 
 # boost_python
 configure_boost_library('boost_python')
-# From Boost 1.35 boost_python needs to link with boost_system
-if conf.CheckBoostVersion('1.35'):
-    configure_boost_library('boost_system')
+configure_boost_library('boost_filesystem')
 
 env = conf.Finish()
 
