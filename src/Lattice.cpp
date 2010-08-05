@@ -40,7 +40,7 @@ double cosd(double x)
     return cos(x/180.0*M_PI);
 }
 
-inline double sind(double x)
+double sind(double x)
 {
     return NS_LATTICE::cosd(90.0 - x);
 }
@@ -237,6 +237,30 @@ const R3::Vector& Lattice::ucvFractional(const R3::Vector& lv) const
     res = lv - floor(lv);
     return res;
 }
+
+
+const R3::Vector& Lattice::nearZeroCartesian(const R3::Vector& cv) const
+{
+    static R3::Vector rv;
+    rv = this->ucvCartesian(cv);
+    R3::Vector cv1 = rv;
+    R3::Vector cv2 = rv;
+    double rvsquare = R3::dot(rv, rv);
+    for (int x0 = -1; x0 < 1; ++x0)
+        for (int y0 = -1; y0 < 1; ++y0)
+            for (int z0 = -1; z0 < 1; ++z0)
+            {
+                cv2 = cv1 + x0 * this->va() + y0 * this->vb() + z0 * this->vc();
+                double cv2square = R3::dot(cv2, cv2);
+                if (cv2square < rvsquare)
+                {
+                    rv = cv2;
+                    rvsquare = cv2square;
+                }
+            }
+    return rv;
+}
+
 
 const R3::Matrix& Lattice::cartesianMatrix(const R3::Matrix& Ml) const
 {

@@ -40,50 +40,50 @@ class Lattice
         template <class V>
             void setLatBase(const V& va0, const V& vb0, const V& vc0);
         // direct lattice
-        inline double a() const         { return _a; }
-        inline double b() const         { return _b; }
-        inline double c() const         { return _c; }
-        inline double alpha() const     { return _alpha; }
-        inline double beta() const      { return _beta; }
-        inline double gamma() const     { return _gamma; }
-        inline double cosalpha() const  { return cosa; }
-        inline double cosbeta() const   { return cosb; }
-        inline double cosgamma() const  { return cosg; }
-        inline double sinalpha() const  { return sina; }
-        inline double sinbeta() const   { return sinb; }
-        inline double singamma() const  { return sing; }
-        inline const R3::Vector& va() const { return _va; }
-        inline const R3::Vector& vb() const { return _vb; }
-        inline const R3::Vector& vc() const { return _vc; }
+        double a() const         { return _a; }
+        double b() const         { return _b; }
+        double c() const         { return _c; }
+        double alpha() const     { return _alpha; }
+        double beta() const      { return _beta; }
+        double gamma() const     { return _gamma; }
+        double cosalpha() const  { return cosa; }
+        double cosbeta() const   { return cosb; }
+        double cosgamma() const  { return cosg; }
+        double sinalpha() const  { return sina; }
+        double sinbeta() const   { return sinb; }
+        double singamma() const  { return sing; }
+        const R3::Vector& va() const { return _va; }
+        const R3::Vector& vb() const { return _vb; }
+        const R3::Vector& vc() const { return _vc; }
         // reciprocal lattice
-        inline double ar() const        { return _ar; }
-        inline double br() const        { return _br; }
-        inline double cr() const        { return _cr; }
-        inline double alphar() const    { return _alphar; }
-        inline double betar() const     { return _betar; }
-        inline double gammar() const    { return _gammar; }
-        inline double cosalphar() const { return cosar; }
-        inline double cosbetar() const  { return cosbr; }
-        inline double cosgammar() const { return cosgr; }
-        inline double sinalphar() const { return sinar; }
-        inline double sinbetar() const  { return sinbr; }
-        inline double singammar() const { return singr; }
-        inline const R3::Vector& var() const    { return _var; }
-        inline const R3::Vector& vbr() const    { return _vbr; }
-        inline const R3::Vector& vcr() const    { return _vcr; }
+        double ar() const        { return _ar; }
+        double br() const        { return _br; }
+        double cr() const        { return _cr; }
+        double alphar() const    { return _alphar; }
+        double betar() const     { return _betar; }
+        double gammar() const    { return _gammar; }
+        double cosalphar() const { return cosar; }
+        double cosbetar() const  { return cosbr; }
+        double cosgammar() const { return cosgr; }
+        double sinalphar() const { return sinar; }
+        double sinbetar() const  { return sinbr; }
+        double singammar() const { return singr; }
+        const R3::Vector& var() const    { return _var; }
+        const R3::Vector& vbr() const    { return _vbr; }
+        const R3::Vector& vcr() const    { return _vcr; }
         // vector operations using lattice coordinates
         template <class V>
-            inline double dot(const V& u, const V& v) const;
+            double dot(const V& u, const V& v) const;
         template <class V>
-            inline double norm(const V& u) const;
+            double norm(const V& u) const;
         template <class V>
-            inline double distance(const V& u, const V& v) const;
+            double distance(const V& u, const V& v) const;
         // angle in degrees
         template <class V>
-            inline double angledeg(const V& u, const V& v) const;
+            double angledeg(const V& u, const V& v) const;
         // angle in radians
         template <class V>
-            inline double anglerad(const V& u, const V& v) const;
+            double anglerad(const V& u, const V& v) const;
         // conversion of coordinates and tensors
         const R3::Vector& cartesian(const R3::Vector& lv) const;
         template <class V>
@@ -97,6 +97,10 @@ class Lattice
         const R3::Vector& ucvFractional(const R3::Vector& lv) const;
         template <class V>
             const R3::Vector& ucvFractional(const V& lv) const;
+        /// Cartesian coordinates of an quivalent point nearest to zero
+        const R3::Vector& nearZeroCartesian(const R3::Vector& cv) const;
+        template <class V>
+            const R3::Vector& nearZeroCartesian(const V& cv) const;
         const R3::Matrix& cartesianMatrix(const R3::Matrix& Ml) const;
         const R3::Matrix& fractionalMatrix(const R3::Matrix& Mc) const;
         // largest cell diagonal in fractional coordinates
@@ -145,7 +149,7 @@ class Lattice
 };
 
 ////////////////////////////////////////////////////////////////////////
-// inline and template definitions
+// template definitions
 ////////////////////////////////////////////////////////////////////////
 
 template <class V>
@@ -164,7 +168,7 @@ void Lattice::setLatBase(const V& va0, const V& vb0, const V& vc0)
 }
 
 template <class V>
-inline double Lattice::dot(const V& u, const V& v) const
+double Lattice::dot(const V& u, const V& v) const
 {
     double dp =
         u[0]*v[0]*_metrics(0,0) +
@@ -177,13 +181,13 @@ inline double Lattice::dot(const V& u, const V& v) const
 }
 
 template <class V>
-inline double Lattice::norm(const V& u) const
+double Lattice::norm(const V& u) const
 {
     return sqrt(dot(u, u));
 }
 
 template <class V>
-inline double Lattice::distance(const V& u, const V& v) const
+double Lattice::distance(const V& u, const V& v) const
 {
     static R3::Vector duv;
     duv[0] = u[0] - v[0];
@@ -193,20 +197,20 @@ inline double Lattice::distance(const V& u, const V& v) const
 }
 
 template <class V>
-inline double Lattice::angledeg(const V& u, const V& v) const
+double Lattice::angledeg(const V& u, const V& v) const
 {
     return 180.0/M_PI * anglerad(u, v);
 }
 
 template <class V>
-inline double Lattice::anglerad(const V& u, const V& v) const
+double Lattice::anglerad(const V& u, const V& v) const
 {
     double ca = dot(u, v)/(norm(u) * norm(v));
     return acos(ca);
 }
 
 template <class V>
-inline const R3::Vector& Lattice::cartesian(const V& lv) const
+const R3::Vector& Lattice::cartesian(const V& lv) const
 {
     static R3::Vector lvcopy;
     lvcopy = double(lv[0]), double(lv[1]), double(lv[2]);
@@ -214,7 +218,7 @@ inline const R3::Vector& Lattice::cartesian(const V& lv) const
 }
 
 template <class V>
-inline const R3::Vector& Lattice::fractional(const V& cv) const
+const R3::Vector& Lattice::fractional(const V& cv) const
 {
     static R3::Vector cvcopy;
     cvcopy = cv[0], cv[1], cv[2];
@@ -222,7 +226,7 @@ inline const R3::Vector& Lattice::fractional(const V& cv) const
 }
 
 template <class V>
-inline const R3::Vector& Lattice::ucvCartesian(const V& cv) const
+const R3::Vector& Lattice::ucvCartesian(const V& cv) const
 {
     static R3::Vector cvcopy;
     cvcopy = cv[0], cv[1], cv[2];
@@ -230,11 +234,20 @@ inline const R3::Vector& Lattice::ucvCartesian(const V& cv) const
 }
 
 template <class V>
-inline const R3::Vector& Lattice::ucvFractional(const V& cv) const
+const R3::Vector& Lattice::ucvFractional(const V& cv) const
 {
     static R3::Vector cvcopy;
     cvcopy = cv[0], cv[1], cv[2];
     return ucvFractional(cvcopy);
+}
+
+
+template <class V>
+const R3::Vector& Lattice::nearZeroCartesian(const V& cv) const
+{
+    static R3::Vector cvcopy;
+    cvcopy = cv[0], cv[1], cv[2];
+    return this->nearZeroCartesian(cvcopy);
 }
 
 #endif  // LATTICE_HPP_INCLUDED

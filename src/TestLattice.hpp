@@ -185,6 +185,21 @@ class TestLattice : public CxxTest::TestSuite
             TS_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
         }
 
+
+        void test_nearZeroCartesian()
+        {
+            R3::Vector ucv, ucv_check;
+            ucv = lattice->nearZeroCartesian(R3::Vector(2.9, -3.2, 2.6));
+            ucv_check = -0.1, -0.2, -0.4;
+            TS_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
+            ucv = lattice->nearZeroCartesian(R3::Vector(0.1, -2.8, 2));
+            ucv_check = 0.1, 0.2, 0.0;
+            TS_ASSERT(VectorsAlmostEqual(ucv_check, ucv, precision));
+            double uca[3] = {0.1, -2.8, 2.0};
+            TS_ASSERT(VectorsAlmostEqual(ucv_check,
+                        lattice->nearZeroCartesian(uca), precision));
+        }
+
 };  // class TestLattice
 
 // End of file
