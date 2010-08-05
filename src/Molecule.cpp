@@ -593,6 +593,24 @@ void Molecule::Center()
 }
 
 
+AtomPtr Molecule::getNearestAtom(const R3::Vector& rc) const
+{
+    R3::Vector rij(0.0, 0.0, 0.0);
+    double mindistance = DOUBLE_MAX;
+    int index = -1;
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
+    {
+        rij = seq.ptr()->r - rc;
+        if (R3::norm(rij) >= mindistance)   continue;
+        mindistance = R3::norm(rij);
+        index = seq.idx();
+    }
+    AtomPtr rv;
+    if (index >= 0)  rv.reset(new Atom_t(this->getAtom(index)));
+    return rv;
+}
+
+
 void Molecule::Pop(const int aidx)
 {
     if (aidx < 0 || aidx >= countAtoms())

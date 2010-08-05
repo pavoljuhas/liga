@@ -126,6 +126,7 @@ class Molecule
 
 	// atom operations
 	const Atom_t& getAtom(const int cidx) const  { return *atoms[cidx]; }
+        virtual AtomPtr getNearestAtom(const R3::Vector& rc) const;
 	void Pop(const int cidx);
 	void Pop(const std::list<int>& cidx);
 	virtual void Clear();		// remove all atoms

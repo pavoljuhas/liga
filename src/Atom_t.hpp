@@ -12,6 +12,7 @@
 #define ATOM_T_HPP_INCLUDED
 
 #include <string>
+#include <boost/shared_ptr.hpp>
 #include "R3linalg.hpp"
 
 // may be later moved to dedicated triangulation class
@@ -66,6 +67,9 @@ class Atom_t
         // methods
         void init(double rx, double ry, double rz);
 };
+
+
+typedef boost::shared_ptr<Atom_t> AtomPtr;
 
 // declarations of non-member operators and functions
 
