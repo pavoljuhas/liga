@@ -18,7 +18,7 @@
 
 using namespace std;
 
-class TestCrystalCost : public CxxTest::TestSuite
+class TestCrystal : public CxxTest::TestSuite
 {
     private:
 
@@ -296,6 +296,6 @@ class TestCrystalCost : public CxxTest::TestSuite
             TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
         }
 
-};  // class TestCrystalCost
+};  // class TestCrystal
 
 // End of file
