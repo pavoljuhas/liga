@@ -99,6 +99,20 @@ class TestMolecule : public CxxTest::TestSuite
             TS_ASSERT_DELTA(totalcost, bad_square.Badness(), double_eps);
         }
 
+
+        void test_getNearestAtom()
+        {
+            Molecule square;
+            AtomPtr ap = square.getNearestAtom(R3::Vector(1.0, 2.0, 3.0));
+            square.setDistanceTable(dst_square);
+            square.AddAt("", -0.5, -0.5, 0.0);
+            square.AddAt("", +0.5, -0.5, 0.0);
+            square.AddAt("", +0.5, +0.5, 0.0);
+            square.AddAt("", -0.5, +0.5, 0.0);
+            ap = square.getNearestAtom(R3::Vector(1.0, 2.0, 3.0));
+            TS_ASSERT_EQUALS(square.getAtom(2), *ap);
+        }
+
 };  // class TestMolecule
 
 // End of file
