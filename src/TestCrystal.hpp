@@ -296,6 +296,29 @@ class TestCrystal : public CxxTest::TestSuite
             TS_ASSERT_DELTA(0.0, crst.cost(), double_eps);
         }
 
+
+        void test_getNearestAtom()
+        {
+            crst.setLattice(*cubic);
+            crst.setDistanceTable(dst_fcc);
+            crst.setChemicalFormula("ABCD");
+            AtomPtr ap = crst.getNearestAtom(R3::Vector(1.0, 2.0, 3.0));
+            TS_ASSERT(!ap.get());
+            crst.AddAt("A", 0.0, 0.0, 0.0);
+            crst.AddAt("B", 0.5, 0.5, 0.5);
+            crst.AddAt("C", 0.5, 0.5, 0.0);
+            crst.AddAt("D", 0.5, 0.0, 0.5);
+            R3::Vector rc(1.0, 2.0, 3.0);
+            ap = crst.getNearestAtom(rc);
+            TS_ASSERT_DELTA(0.0, R3::norm(ap->r - rc), double_eps);
+            rc = -4.39, 5.11, -3.66;
+            ap = crst.getNearestAtom(rc);
+            R3::Vector rcheck(-4.5, 5.0, -3.5);
+            TS_ASSERT_DELTA(0.0, R3::norm(rcheck - ap->r), double_eps);
+            TS_ASSERT_EQUALS(string("D"), ap->element);
+        }
+
+
 };  // class TestCrystal
 
 // End of file

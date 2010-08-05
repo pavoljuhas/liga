@@ -244,6 +244,25 @@ void Crystal::Shift(const R3::Vector& drc)
 }
 
 
+AtomPtr Crystal::getNearestAtom(const R3::Vector& rc) const
+{
+    R3::Vector rij(0.0, 0.0, 0.0);
+    double mindistance = DOUBLE_MAX;
+    const Lattice& L = this->getLattice();
+    AtomPtr rv;
+    for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
+    {
+        rij = seq.ptr()->r - rc;
+        rij = L.nearZeroCartesian(rij);
+        if (R3::norm(rij) >= mindistance)   continue;
+        mindistance = R3::norm(rij);
+        rv.reset(new Atom_t(seq.ref()));
+        rv->r = rc + rij;
+    }
+    return rv;
+}
+
+
 void Crystal::Clear()
 {
     this->Molecule::Clear();

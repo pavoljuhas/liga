@@ -58,6 +58,7 @@ class Crystal : public Molecule
 
 	virtual void Shift(const R3::Vector& drc);
 
+        virtual AtomPtr getNearestAtom(const R3::Vector& rc) const;
 	virtual void Clear();
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
 	virtual void Degenerate(int Npop, DegenerateFlags flags=NONE);

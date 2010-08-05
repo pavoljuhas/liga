@@ -104,6 +104,7 @@ class TestMolecule : public CxxTest::TestSuite
         {
             Molecule square;
             AtomPtr ap = square.getNearestAtom(R3::Vector(1.0, 2.0, 3.0));
+            TS_ASSERT(!ap.get());
             square.setDistanceTable(dst_square);
             square.AddAt("", -0.5, -0.5, 0.0);
             square.AddAt("", +0.5, -0.5, 0.0);
