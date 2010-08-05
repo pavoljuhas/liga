@@ -15,7 +15,7 @@
 
 using namespace std;
 
-class TestMoleculeCost : public CxxTest::TestSuite
+class TestMolecule : public CxxTest::TestSuite
 {
     private:
 
@@ -99,6 +99,6 @@ class TestMoleculeCost : public CxxTest::TestSuite
             TS_ASSERT_DELTA(totalcost, bad_square.Badness(), double_eps);
         }
 
-};  // class TestMoleculeCost
+};  // class TestMolecule
 
 // End of file
