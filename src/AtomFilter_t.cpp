@@ -112,28 +112,25 @@ void BondAngleFilter_t::setBondAngleRange(double lo, double hi)
 
 // constructor
 
-LoneAtomFilter_t::LoneAtomFilter_t(double _max_dist)
+LoneAtomFilter_t::LoneAtomFilter_t(double maxbondlength)
 { 
-    max_dist = _max_dist;
+    mmaxbondlength = maxbondlength;
 }
 
 // methods
 
 bool LoneAtomFilter_t::Check(Atom_t* pta, Molecule* pm)
 {
-    // atom is always good with respect to empty molecule
-    if (pm->countAtoms() == 0)
+    AtomPtr apnear = pm->getNearestAtom(pta->r);
+    // apnear holds no pointer for empty molecule.
+    // the first atom is never alone.
+    bool isnotalone = true;
+    if (apnear.get())
     {
-	return true;
+        double dnear = R3::distance(pta->r, apnear->r);
+        isnotalone = eps_gt(dnear, 0.0) && (dnear < mmaxbondlength);
     }
-    // find whether any atom in the molecule is closer than max_dist
-    bool has_buddy = false;
-    for (AtomSequence seq(pm); !seq.finished() && !has_buddy; seq.next())
-    {
-	double d = R3::distance(pta->r, seq.ptr()->r);
-	has_buddy = (0.0 < d) && (d < max_dist);
-    }
-    return has_buddy;
+    return isnotalone;
 }
 
 // End of file

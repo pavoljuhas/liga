@@ -81,7 +81,7 @@ class RunPar_t
         int base_level;
         // Constrains
         std::vector<double> bangle_range;
-        double max_dist;
+        double maxbondlength;
 
     protected:
 

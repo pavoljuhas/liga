@@ -72,6 +72,7 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     args->defParameterAlias("evolve_relax", "promoterelax");
     args->defParameterAlias("degenerate_relax", "demoterelax");
     args->defParameterAlias("trials_sharing", "trialsharing");
+    args->defParameterAlias("max_dist", "maxbondlength");
     args->Parse();
     if (args->isopt("h") || argc == 1)
     {
@@ -386,11 +387,11 @@ void RunPar_t::processArguments(int argc, char* const argv[])
         pbaf->setBondAngleRange(bangle_range[1], bangle_range[2]);
         Molecule::atom_filters.push_back(pbaf);
     }
-    // max_dist
-    if (args->ispar("max_dist"))
+    // maxbondlength
+    if (args->ispar("maxbondlength"))
     {
-	max_dist = args->GetPar<double>("max_dist");
-	LoneAtomFilter_t* plaf = new LoneAtomFilter_t(max_dist);
+	maxbondlength = args->GetPar<double>("maxbondlength");
+	LoneAtomFilter_t* plaf = new LoneAtomFilter_t(maxbondlength);
         Molecule::atom_filters.push_back(plaf);
     }
     // Final Checks
@@ -570,7 +571,7 @@ void RunPar_t::print_help()
 	join(",", TrialDistributor::getTypes()) << ")\n" <<
 "Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
-"  max_dist=double       distance limit for rejecting lone atoms\n"
+"  maxbondlength=double  distance limit for rejecting lone atoms\n"
 ;
 }
 
@@ -766,10 +767,10 @@ void RunPar_t::print_pars()
 	}
 	cout << '\n';
     }
-    // max_dist
-    if (args->ispar("max_dist"))
+    // maxbondlength
+    if (args->ispar("maxbondlength"))
     {
-	cout << "max_dist=" << max_dist << '\n';
+	cout << "maxbondlength=" << maxbondlength << '\n';
     }
     // finish done
     cout << hashsep << '\n' << endl;
@@ -815,7 +816,7 @@ const list<string>& RunPar_t::validpars() const
 	"trace",
         "trialsharing",
         "bangle_range",
-        "max_dist",
+        "maxbondlength",
         // obsolete ignored parameters
         "seed_clusters",
         "lookout_prob",

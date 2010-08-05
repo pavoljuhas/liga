@@ -36,7 +36,6 @@ class BondAngleFilter_t : public AtomFilter_t
 
         // constructor and destructor
         BondAngleFilter_t(double _max_blen);
-        virtual ~BondAngleFilter_t() { }
 
         // methods
         bool Check(Atom_t*, Molecule* pm);
@@ -55,8 +54,7 @@ class LoneAtomFilter_t : public AtomFilter_t
     public:
 
         // constructor and destructor
-        LoneAtomFilter_t(double _max_dist);
-        virtual ~LoneAtomFilter_t() { }
+        LoneAtomFilter_t(double maxbondlength);
 
         // methods
         bool Check(Atom_t*, Molecule* pm);
@@ -64,7 +62,7 @@ class LoneAtomFilter_t : public AtomFilter_t
     private:
 
         // data
-        double max_dist;
+        double mmaxbondlength;
 };
 
 #endif	// ATOMFILTER_T_HPP_INCLUDED
