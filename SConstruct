@@ -1,4 +1,12 @@
+# Top level targets that are defined in subsidiary SConscripts
+#
+# mpbcliga          -- the Liga structure solver program
+# mpbccost          -- program for calculating cost of a given structure
+# install           -- install mpbcliga and mpbccost under prefix/bin
+# test              -- execute functional and unit tests for mpbcliga
+
 import os
+import platform
 
 # copy system environment variables related to compilation
 DefaultEnvironment(ENV={
@@ -34,7 +42,7 @@ vars.Add(PathVariable('bindir',
 vars.Update(env)
 env.Help(vars.GenerateHelpText(env))
 
-builddir = env.Dir('build/%s' % env['build'])
+builddir = env.Dir('build/%s-%s' % (env['build'], platform.machine()))
 
 Export('env')
 
