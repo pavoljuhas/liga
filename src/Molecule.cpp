@@ -1845,7 +1845,7 @@ void Molecule::setFromDiffPyStructure(boost::python::object stru)
         python::object ai;
         python::object xyz_cartn;
         double x, y, z;
-        ai = python::call_method<python::object>(stru.ptr(), "getAtom", i);
+        ai = stru[i];
         xyz_cartn = ai.attr("xyz_cartn");
         x = python::extract<double>(xyz_cartn[0]);
         y = python::extract<double>(xyz_cartn[1]);
