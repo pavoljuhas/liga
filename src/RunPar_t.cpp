@@ -306,7 +306,7 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // formula must be set after distreuse
     if (args->ispar("formula"))
     {
-	this->formula.fromString(args->GetPar<string>("formula"));
+	this->formula.fromString(args->pars["formula"]);
 	this->mol->setChemicalFormula(this->formula);
     }
     this->formula = mol->getChemicalFormula();
