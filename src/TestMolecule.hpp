@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -42,6 +42,33 @@ class TestMolecule : public CxxTest::TestSuite
             line.AddAt("", -0.5, 0.0, 0.0);
             line.AddAt("", +0.5, 0.0, 0.0);
             TS_ASSERT_DELTA(0.0, line.cost(), double_eps);
+        }
+
+
+        void test_line_esd()
+        {
+            Molecule line;
+            vector<double> esds;
+            esds.push_back(0.5);
+            dst_line.setESDs(esds);
+            line.setDistanceTable(dst_line);
+            line.AddAt("", 0.0, 0.0, 0.0);
+            line.AddAt("", 0.9, 0.0, 0.0);
+            TS_ASSERT_DELTA(0.01 / 0.25, line.cost(), double_eps);
+            Molecule line1 = line;
+            TS_ASSERT_DELTA(0.01 / 0.25, line1.cost(), double_eps);
+            line1.Pop(1);
+            line1.AddAt("", 1.2, 0.0, 0.0);
+            TS_ASSERT_DELTA(0.04 / 0.25, line1.cost(), double_eps);
+            line1.Pop(1);
+            line1.AddAt("", 1.0, 0.0, 0.0);
+            TS_ASSERT_DELTA(0.0, line1.cost(), double_eps);
+            dst_line.clearESDs();
+            Molecule line2;
+            line2.setDistanceTable(dst_line);
+            line2.Add(line.getAtom(0));
+            line2.Add(line.getAtom(1));
+            TS_ASSERT_DELTA(0.01, line2.cost(), double_eps);
         }
 
 

@@ -69,18 +69,18 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
 	// calculation
 	double d = R3::distance(arg_atom->r, seq.ptr()->r);
         // force zero overlap when disabled by negative atom radius
-        double r0r1 = 
+        double r0r1 =
             (arg_atom->radius < 0 || seq.ptr()->radius < 0) ? 0.0 :
             (arg_atom->radius + seq.ptr()->radius);
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
-	double pcost = this->penaltyScaled(dd);
+	double pcost = this->penaltyScaled(dd, 1.0);
         partial_costs[seq.idx()] = pcost;
 	total_cost += pcost;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
         {
             static R3::Vector g_dd_xyz;
             g_dd_xyz = (-1.0/d) * (arg_atom->r - seq.ptr()->r);
-            double g_pcost_dd = penalty_gradient(dd) * this->getScale();
+            double g_pcost_dd = penalty_gradient(dd, 1.0) * this->getScale();
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }

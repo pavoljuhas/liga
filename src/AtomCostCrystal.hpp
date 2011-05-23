@@ -1,10 +1,10 @@
 /***********************************************************************
 * Short Title: AtomCostCrystal - functor for cost calculation with PBC.
 *
-* Comments: 
+* Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -58,7 +58,8 @@ class AtomCostCrystal : public AtomCost
         std::auto_ptr<PointsInSphere> _sph;
 
         // methods
-        virtual double pairDistanceDifference(const double& d) const;
+        virtual const std::pair<double,double>&
+            pairDistanceDifference(const double& d) const;
 	void resizeArrays();
 
     private:

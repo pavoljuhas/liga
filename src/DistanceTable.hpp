@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <iostream>
+#include <boost/unordered_map.hpp>
 
 class DistanceTable : public std::vector<double>
 {
@@ -32,6 +33,9 @@ class DistanceTable : public std::vector<double>
         DistanceTable& operator= (const DistanceTable&);
         const_iterator find_nearest(const double& d) const;
         iterator return_back(const double&);
+        const double& getesd(const double& d) const;
+        void setESDs(const std::vector<double>& esds);
+        void clearESDs();
         int estNumAtoms() const;
         int countUnique() const;
         std::vector<double> unique() const;
@@ -46,9 +50,11 @@ class DistanceTable : public std::vector<double>
         mutable int mcount_unique;
         mutable double mmaxdistancerepr;
         double mresolution;
+        boost::unordered_map<double,double> mesd;
 
         // methods
         void init();
+        void readESDFormat(std::istream&);
         void readPWAFormat(std::istream&);
         void readSimpleFormat(std::istream&);
 };

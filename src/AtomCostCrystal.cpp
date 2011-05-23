@@ -147,14 +147,15 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv)
         double d = R3::norm(rc_dd);
         if (d > this->_rmax)    continue;
         if (this->_selfcost_flag && d == 0.0)  continue;
-        double dd = this->pairDistanceDifference(d);
-        paircost += penalty(dd) * penaltyscale;
+        const pair<double,double>& ddesd = this->pairDistanceDifference(d);
+        paircost += penalty(ddesd.first, ddesd.second) * penaltyscale;
         paircount += loopscale;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
         {
             static R3::Vector g_dd_xyz;
             g_dd_xyz = (-1.0/d) * rc_dd;
-            double g_pcost_dd = penalty_gradient(dd) * penaltyscale;
+            double g_pcost_dd =
+                penalty_gradient(ddesd.first, ddesd.second) * penaltyscale;
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
@@ -163,10 +164,15 @@ AtomCostCrystal::pairCostCount(const R3::Vector& cv)
 
 // protected methods
 
-double AtomCostCrystal::pairDistanceDifference(const double& d) const
+const pair<double,double>&
+AtomCostCrystal::pairDistanceDifference(const double& d) const
 {
-    double dd = this->nearDistance(d) - d;
-    return dd;
+    static pair<double,double> rv;
+    const DistanceTable& dtgt = arg_cluster->getDistanceTable();
+    double dn = this->nearDistance(d);
+    rv.first = dn - d;
+    rv.second = dtgt.getesd(dn);
+    return rv;
 }
 
 

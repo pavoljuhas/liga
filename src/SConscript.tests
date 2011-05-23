@@ -54,9 +54,10 @@ def rtcmd(*args):
 
 # solids
 
-dst_solids = [env_test.File('solids/%s' % f).srcnode() for f in
-        ("tetrahedron.dst", "octahedron.dst", "cube.dst",
-        "icosahedron.dst", "dodecahedron.dst")]
+dst_solids = [env_test.File('solids/%s' % f).srcnode() for f in """
+        tetrahedron.dst  octahedron.dst  octahedron.dse  cube.dst
+        icosahedron.dst  dodecahedron.dst
+        """.split()]
 for ft in dst_solids:
     ff = ft.path
     rt_solids = env_test.Alias('runtest-solids', mpbcliga, rtcmd(ff))

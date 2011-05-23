@@ -66,6 +66,7 @@ DistanceTable& DistanceTable::operator= (const DistanceTable& d0)
     assign(d0.begin(), d0.end());
     mcount_unique = d0.mcount_unique;
     mresolution = d0.mresolution;
+    mesd = d0.mesd;
     return *this;
 }
 
@@ -86,6 +87,35 @@ DistanceTable::iterator DistanceTable::return_back(const double& dback)
 {
     iterator ii = lower_bound(begin(), end(), dback);
     return insert(ii, dback);
+}
+
+
+const double& DistanceTable::getesd(const double& d) const
+{
+    static const double one = 1.0;
+    return mesd.empty() ? one : mesd.at(d);
+}
+
+
+void DistanceTable::setESDs(const std::vector<double>& esds)
+{
+    if (this->size() != esds.size())
+    {
+        const char* emsg = "Incompatible length of the ESD vector.";
+        throw std::invalid_argument(emsg);
+    }
+    this->clearESDs();
+    for (size_t i = 0; i != this->size(); ++i)
+    {
+        mesd[this->at(i)] = esds[i];
+    }
+    return;
+}
+
+
+void DistanceTable::clearESDs()
+{
+    mesd.clear();
 }
 
 
@@ -173,6 +203,7 @@ void DistanceTable::init()
     mcount_unique = -1;
     mresolution = NS_LIGA::eps_cost;
     mmaxdistancerepr = -1;
+    this->clearESDs();
     if (empty())    return;
     // check for any negative element
     size_t minidx = min_element(begin(), end()) - begin();
@@ -184,6 +215,37 @@ void DistanceTable::init()
     }
     // sort and count unique distance
     sort(begin(), end());
+}
+
+
+void DistanceTable::readESDFormat(istream& fid)
+{
+    vector<double> positions;
+    vector<double> esds;
+    string line;
+    vector<string> words;
+    while (!fid.eof() && getline(fid, line))
+    {
+        split(line, words);
+        if (words.empty() || words[0][0] == '#')    continue;
+        istringstream istrs(line);
+        double p, e;
+        if (istrs >> p >> e)
+        {
+            positions.push_back(p);
+            esds.push_back(e);
+        }
+        else
+        {
+            ostringstream emsg;
+            int line_start = int(fid.tellg()) - int(line.size());
+            emsg << "Invalid ESD format at file position " << line_start;
+            throw IOError(emsg.str());
+        }
+    }
+    this->swap(positions);
+    this->init();
+    this->setESDs(esds);
 }
 
 
@@ -236,12 +298,20 @@ istream& operator>>(istream& fid, DistanceTable& dstbl)
     // skip any lines that do not start with number
     istream::pos_type data_start = fid.tellg();
     string line;
+    vector<string> esd_marker;
+    split("#L position esd", esd_marker);
     vector<string> pwa_marker;
     split("#L position fwhm area", pwa_marker);
     vector<string> words;
     for (; !fid.eof() && getline(fid, line); data_start = fid.tellg())
     {
         split(line, words);
+        // check if we found marker of ESD file
+        if (words == esd_marker)
+        {
+            dstbl.readESDFormat(fid);
+            break;
+        }
         // check if we found marker of PWA file
         if (words == pwa_marker)
         {

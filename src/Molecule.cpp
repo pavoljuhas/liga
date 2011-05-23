@@ -315,11 +315,14 @@ void Molecule::reassignPairs()
     vector<double>::iterator udii = used_distances.begin();
     assert(pmx_elements.size() == used_distances.size());
     const AtomCost* atomcost = this->getAtomCostCalculator();
+    const DistanceTable& dtgt = this->getDistanceTable();
     for (; pmii != pmx_elements.end(); ++pmii, ++udii)
     {
         pmx_used_distances(pmii->i0, pmii->i1) = *udii;
         double dd = *udii - pmii->d01;
-        pmx_partial_costs(pmii->i0, pmii->i1) = atomcost->penaltyScaled(dd);
+        double desd = dtgt.getesd(*udii);
+        pmx_partial_costs(pmii->i0, pmii->i1) =
+            atomcost->penaltyScaled(dd, desd);
     }
     recalculate();
     // increase orgbadness to avoid failures from round-off errors

@@ -4,7 +4,7 @@
  * Comments: implementation of class AtomCost
  *
  * $Id$
- * 
+ *
  * <license text>
  ***********************************************************************/
 
@@ -22,16 +22,17 @@ using namespace std;
 // functions
 ////////////////////////////////////////////////////////////////////////
 
-double penalty(double dd)
+double penalty(const double& dd, const double& desd)
 {
     static Counter* penalty_calls = Counter::getCounter("penalty_calls");
     penalty_calls->count();
-    return dd*dd;
+    double ddw = dd / desd;
+    return ddw * ddw;
 }
 
-double penalty_gradient(double dd)
+double penalty_gradient(const double& dd, const double& desd)
 {
-    return 2*dd;
+    return 2 * dd / desd / desd;
 }
 
 
@@ -91,9 +92,10 @@ double AtomCost::eval(const Atom_t* pa, int flags)
 	double d = R3::distance(arg_atom->r, seq.ptr()->r);
 	size_t nearidx = nearDistanceIndex(d);
 	const double& dnear = dtgt[nearidx];
+        const double& desd = dtgt.getesd(dnear);
 	*(tgdii++) = dnear;
 	double dd = dnear - d;
-	double pcost = this->penaltyScaled(dd);
+	double pcost = this->penaltyScaled(dd, desd);
 	*(ptcii++) = pcost;
 	total_cost += pcost;
 	if (use_distances)
@@ -109,7 +111,7 @@ double AtomCost::eval(const Atom_t* pa, int flags)
         {
             static R3::Vector g_dd_xyz;
             g_dd_xyz = (-1.0/d) * (arg_atom->r - seq.ptr()->r);
-            double g_pcost_dd = penalty_gradient(dd) * this->getScale();
+            double g_pcost_dd = penalty_gradient(dd, desd) * this->getScale();
             this->_gradient += g_pcost_dd * g_dd_xyz;
         }
     }
@@ -205,9 +207,9 @@ const double& AtomCost::getScale() const
 }
 
 
-double AtomCost::penaltyScaled(const double& dd) const
+double AtomCost::penaltyScaled(const double& dd, const double& esd) const
 {
-    double rv = penalty(dd) * this->getScale();
+    double rv = penalty(dd, esd) * this->getScale();
     return rv;
 }
 

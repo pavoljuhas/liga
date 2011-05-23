@@ -4,7 +4,7 @@
 * Comments: base class for AtomCostCrystal
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -23,10 +23,10 @@ class Atom_t;
 
 // functions
 
-double penalty(double dd);
-double penalty_gradient(double dd);
+double penalty(const double& dd, const double& desd);
+double penalty_gradient(const double& dd, const double& desd);
 
-// classes 
+// classes
 
 class AtomCost
 {
@@ -58,8 +58,8 @@ class AtomCost
 	const std::vector<int>& usedTargetAtomIndices() const;
         void setScale(double);
         const double& getScale() const;
-        double penaltyScaled(const double& dd) const;
-        
+        double penaltyScaled(const double& dd, const double& desd) const;
+
     protected:
 
 	// data - arguments

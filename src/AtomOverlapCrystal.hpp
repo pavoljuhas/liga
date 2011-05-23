@@ -32,7 +32,8 @@ class AtomOverlapCrystal : public AtomCostCrystal
 
 	// public methods - overloaded
         virtual void resetFor(const Molecule* crst);
-        virtual double pairDistanceDifference(const double& d) const;
+        virtual const std::pair<double,double>&
+            pairDistanceDifference(const double& d) const;
 
 };  // class AtomOverlap
 

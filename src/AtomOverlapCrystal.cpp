@@ -18,6 +18,7 @@
 *
 ***********************************************************************/
 
+#include <cassert>
 #include <vector>
 
 #include "AtomOverlapCrystal.hpp"
@@ -50,14 +51,17 @@ void AtomOverlapCrystal::resetFor(const Molecule* clust)
 }
 
 
-double AtomOverlapCrystal::pairDistanceDifference(const double& d) const
+const pair<double,double>&
+AtomOverlapCrystal::pairDistanceDifference(const double& d) const
 {
+    static pair<double,double> rv(0.0, 1.0);
+    assert(1.0 == rv.second);
     // force zero overlap when disabled by negative atom radius
-    double r0r1 = 
+    double r0r1 =
         (this->arg_atom->radius < 0 || this->crst_atom->radius < 0) ? 0.0 :
         (this->arg_atom->radius + this->crst_atom->radius);
-    double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
-    return dd;
+    rv.first = (d < r0r1) ? (r0r1 - d) : 0.0;
+    return rv;
 }
 
 
