@@ -1615,7 +1615,6 @@ void Molecule::FlipSites(int idx0, int idx1)
     this->checkAtomIndex(idx1);
     Atom_t* pa0 = this->atoms[idx0];
     Atom_t* pa1 = this->atoms[idx1];
-    swap(pa0->element, pa1->element);
     // short circuit when overlap cost does not change
     if (pa0->radius == pa1->radius)  return;
     double radius0 = pa0->radius;
@@ -1623,6 +1622,7 @@ void Molecule::FlipSites(int idx0, int idx1)
     this->applyOverlapContributions(pa0, REMOVE);
     pa0->radius = -DOUBLE_MAX;
     this->applyOverlapContributions(pa1, REMOVE);
+    swap(pa0->element, pa1->element);
     pa1->radius = radius0;
     this->applyOverlapContributions(pa1, ADD);
     pa0->radius = radius1;
