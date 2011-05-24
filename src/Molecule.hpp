@@ -112,7 +112,7 @@ class Molecule
 	ChemicalFormula getChemicalFormula() const;
 	void setAtomRadiiTable(const std::string&);
 	void setAtomRadiiTable(const AtomRadiiTable& radiitable);
-	AtomRadiiTable getAtomRadiiTable() const;
+	const AtomRadiiTable& getAtomRadiiTable() const;
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
 	virtual AtomCost* getAtomCostCalculator() const;

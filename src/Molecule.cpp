@@ -553,17 +553,19 @@ void Molecule::setAtomRadiiTable(const string& s)
 
 void Molecule::setAtomRadiiTable(const AtomRadiiTable& radiitable)
 {
+    if (&(this->getAtomRadiiTable()) == &radiitable)  return;
     this->_atom_radii_table.reset(new AtomRadiiTable(radiitable));
     this->fetchAtomRadii();
     this->recalculateOverlap();
 }
 
 
-AtomRadiiTable Molecule::getAtomRadiiTable() const
+const AtomRadiiTable& Molecule::getAtomRadiiTable() const
 {
-    AtomRadiiTable radiitable;
-    if (_atom_radii_table.get())  radiitable = *_atom_radii_table;
-    return radiitable;
+    static AtomRadiiTable emptytable;
+    const AtomRadiiTable& rv = (_atom_radii_table.get()) ?
+        (*_atom_radii_table) : emptytable;
+    return rv;
 }
 
 
@@ -1912,7 +1914,7 @@ void Molecule::applyOverlapContributions(Atom_t* pa, AddRemove sign)
 
 void Molecule::fetchAtomRadii()
 {
-    AtomRadiiTable radiitable = this->getAtomRadiiTable();
+    const AtomRadiiTable& radiitable = this->getAtomRadiiTable();
     BOOST_FOREACH (Atom_t& a, atoms_storage)
     {
         a.radius = (radiitable.empty() || a.element.empty()) ?
