@@ -113,6 +113,8 @@ class Molecule
 	void setAtomRadiiTable(const std::string&);
 	void setAtomRadiiTable(const AtomRadiiTable& radiitable);
 	const AtomRadiiTable& getAtomRadiiTable() const;
+        void setSamePairRadius(double);
+        const double& getSamePairRadius() const;
         void reassignPairs();	    // improve assignment of distances
 	virtual void recalculate() const;   // recalculate everything
 	virtual AtomCost* getAtomCostCalculator() const;
@@ -140,6 +142,7 @@ class Molecule
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
         enum DegenerateFlags { NONE=0, FAST=1 };
 	virtual void Degenerate(int Npop, DegenerateFlags=NONE);
+        double getContactRadius(const Atom_t& a0, const Atom_t& a1) const;
         void FlipSites(int idx0, int idx1);
         void DownhillOverlapMinimization();
         void MinimizeSiteOverlap(int idx);
@@ -223,6 +226,7 @@ class Molecule
 
 	// data
         bool _distreuse;
+        double _samepairradius;
 
 	// methods
 	// constructor helper

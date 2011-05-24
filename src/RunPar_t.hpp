@@ -65,6 +65,7 @@ class RunPar_t
         int natoms;
         ChemicalFormula formula;
         AtomRadiiTable radii;
+        double samepairradius;
         std::vector<int> fixed_atoms;
         double maxcputime;
         double maxwalltime;

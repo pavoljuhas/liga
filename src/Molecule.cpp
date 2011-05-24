@@ -116,6 +116,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     this->_badness = M._badness;
     this->_overlap = M._overlap;
     this->_distreuse = M._distreuse;
+    this->_samepairradius = M._samepairradius;
     // IO helpers
     trace = M.trace;
     return *this;
@@ -137,6 +138,7 @@ void Molecule::init()
     this->_badness = 0.0;
     this->_overlap = 0.0;
     this->_distreuse = false;
+    this->_samepairradius = -1.0;
 }
 
 
@@ -566,6 +568,18 @@ const AtomRadiiTable& Molecule::getAtomRadiiTable() const
     const AtomRadiiTable& rv = (_atom_radii_table.get()) ?
         (*_atom_radii_table) : emptytable;
     return rv;
+}
+
+
+void Molecule::setSamePairRadius(double samepairradius)
+{
+    this->_samepairradius = samepairradius;
+}
+
+
+const double& Molecule::getSamePairRadius() const
+{
+    return this->_samepairradius;
 }
 
 
@@ -1583,6 +1597,15 @@ void Molecule::Degenerate(int Npop, DegenerateFlags flags)
             RelaxAtom(worst_idx);
         }
     }
+}
+
+
+double Molecule::getContactRadius(const Atom_t& a0, const Atom_t& a1) const
+{
+    double rv = (a0.radius < 0 || a1.radius < 0) ? 0.0 :
+        (this->getSamePairRadius() >= 0 && a0.element == a1.element) ?
+        (2 * this->getSamePairRadius()) : (a0.radius + a1.radius);
+    return rv;
 }
 
 

@@ -69,9 +69,7 @@ double AtomOverlap::eval(const Atom_t* pa, int flags)
 	// calculation
 	double d = R3::distance(arg_atom->r, seq.ptr()->r);
         // force zero overlap when disabled by negative atom radius
-        double r0r1 =
-            (arg_atom->radius < 0 || seq.ptr()->radius < 0) ? 0.0 :
-            (arg_atom->radius + seq.ptr()->radius);
+        double r0r1 = arg_cluster->getContactRadius(*arg_atom, seq.ref());
 	double dd = (d < r0r1) ? (r0r1 - d) : 0.0;
 	double pcost = this->penaltyScaled(dd, 1.0);
         partial_costs[seq.idx()] = pcost;

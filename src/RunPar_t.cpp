@@ -316,6 +316,9 @@ void RunPar_t::processArguments(int argc, char* const argv[])
         this->radii.fromString(args->pars["radii"]);
         this->mol->setAtomRadiiTable(this->radii);
     }
+    // samepairradius
+    this->samepairradius = args->GetPar<double>("samepairradius", -1.0);
+    this->mol->setSamePairRadius(this->samepairradius);
     // fixed_atoms must be set after inistru
     if (args->ispar("fixed_atoms"))
     {
@@ -557,6 +560,7 @@ void RunPar_t::print_help()
 "  natoms=int            obsolete, equivalent to formula=Cn\n"
 "  formula=string        chemical formula, use inistru when not specified\n"
 "  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
+"  samepairradius=double [-1] optional radius for a pair of equal atoms\n"
 "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  maxwalltime=double    [0] when set, maximum wall time in seconds\n"
@@ -714,6 +718,11 @@ void RunPar_t::print_pars()
     {
         cout << "radii=" << this->radii.toString() << '\n';
     }
+    // samepairradius
+    if (samepairradius >= 0.0)
+    {
+	cout << "samepairradius=" << samepairradius << '\n';
+    }
     // fixed_atoms
     if (args->ispar("fixed_atoms") && !fixed_atoms.empty())
     {
@@ -803,6 +812,7 @@ const list<string>& RunPar_t::validpars() const
         "natoms",
         "formula",
         "radii",
+        "samepairradius",
         "fixed_atoms",
         "maxcputime",
         "maxwalltime",
