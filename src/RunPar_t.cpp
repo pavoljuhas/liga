@@ -125,6 +125,9 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     }
     // assign distance table
     mol->setDistanceTable(dtab);
+    // distreuse
+    distreuse = args->GetPar<bool>("distreuse", this->crystal);
+    mol->setDistReuse(distreuse);
     // inistru
     if (args->ispar("inistru"))
     {
@@ -274,9 +277,6 @@ void RunPar_t::processArguments(int argc, char* const argv[])
 	string emsg = "ndim value must be 1, 2 or 3.";
 	throw ParseArgsError(emsg);
     }
-    // distreuse
-    distreuse = args->GetPar<bool>("distreuse", this->crystal);
-    mol->setDistReuse(distreuse);
     // costweights
     this->costweights.assign(2, 1.0);
     if (args->ispar("costweights"))
