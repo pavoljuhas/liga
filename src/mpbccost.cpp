@@ -81,7 +81,7 @@ class RunParCost : public RunPar_t
                 "  formula=string        chemical formula, use inistru when not specified\n"
                 "  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
                 "  samepairradius=double [-1] optional radius for a pair of equal atoms\n"
-                "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
+                "  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 0)\n"
                 "  rngseed=int           seed of random number generator\n"
                 ;
         }

@@ -331,7 +331,7 @@ void RunPar_t::processArguments(int argc, char* const argv[])
 	try {
 	    for (ii = fixed_atoms.begin(); ii != fixed_atoms.end(); ++ii)
 	    {
-		mol->Fix(*ii - 1);
+		mol->Fix(*ii);
 	    }
 	}
 	catch (range_error) {
@@ -561,7 +561,7 @@ void RunPar_t::print_help()
 "  formula=string        chemical formula, use inistru when not specified\n"
 "  radii=string          define atomic radii in (A1:r1, A2:r2,...) format\n"
 "  samepairradius=double [-1] optional radius for a pair of equal atoms\n"
-"  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 1)\n"
+"  fixed_atoms=ranges    [] indices of fixed atoms in inistru (start at 0)\n"
 "  maxcputime=double     [0] when set, maximum CPU time in seconds\n"
 "  maxwalltime=double    [0] when set, maximum wall time in seconds\n"
 "  rngseed=int           seed of random number generator\n"
