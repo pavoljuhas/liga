@@ -9,14 +9,14 @@ env_test['CXXTEST_SUFFIX'] = '.hpp'
 
 # Targets --------------------------------------------------------------------
 
-# alltests -- the unit test driver
-test_sources = []
+def srcincluded(f):
+    fl = str(f).lower()
+    rv = (env_test.get('tests') is None or
+          any(t.lower() in fl for t in Split(env_test['tests'])))
+    return rv
 
-# add all unit test modules when variable tests was not set.
-if env_test.get('tests') is None:
-    test_sources += GlobSources('Test*.hpp')
-else:
-    test_sources = env_test.Split(env_test['tests'])
+# alltests -- the unit test driver source files
+test_sources = filter(srcincluded, Glob('Test*.hpp'))
 
 # special builder for tests_dir.hpp
 def build_header(target, source, env):
