@@ -60,10 +60,6 @@ class AtomCostCrystal : public AtomCost
             pairDistanceDifference(const double& d) const;
         void resizeArrays();
 
-    private:
-
-        mutable int _count_evaluated_pairs;
-
 };  // class AtomCostCrystal
 
 #endif  // ATOMCOSTCRYSTAL_HPP_INCLUDED

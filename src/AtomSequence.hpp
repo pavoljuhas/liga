@@ -32,7 +32,6 @@ class AtomSequence
     private:
 
         // data
-        Molecule* mol;
         std::vector<Atom_t*>::iterator ii, first, last;
 };
 
