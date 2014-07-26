@@ -14,8 +14,6 @@
 *
 * Comments: Data storage for a single trace point of Liga competitor.
 *
-* $Id$
-*
 ***********************************************************************/
 
 #ifndef TRACEID_T_HPP_INCLUDED

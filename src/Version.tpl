@@ -4,8 +4,6 @@
 * Comments: subversion information definitions.
 *     DO NOT edit Version.cpp, change Version.tpl instead.
 *
-* $Id$
-*
 * <license text>
 ***********************************************************************/
 

@@ -14,8 +14,6 @@
 *
 * Comments: Storage of empirical atomic radii
 *
-* $Id$
-*
 *****************************************************************************/
 
 #include <sstream>

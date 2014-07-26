@@ -16,8 +16,6 @@
 *
 * Comments: optimized from original vector of vectors
 *
-* $Id$
-*
 ***********************************************************************/
 
 #ifndef MATRIX_HPP_INCLUDED

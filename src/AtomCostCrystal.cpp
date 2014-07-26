@@ -4,8 +4,6 @@
  * Comments: implementation of class AtomCostCrystal.
  *      AtomCostCrystal inherits from AtomCost.
  *
- * $Id$
- *
  * <license text>
  ***********************************************************************/
 

@@ -3,8 +3,6 @@
 *
 * Comments: subversion information definitions
 *
-* $Id$
-*
 * <license text>
 ***********************************************************************/
 

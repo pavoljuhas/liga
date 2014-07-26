@@ -3,8 +3,6 @@
 *
 * Comments: base class for AtomCostCrystal
 *
-* $Id$
-*
 * <license text>
 ***********************************************************************/
 

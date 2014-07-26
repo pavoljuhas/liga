@@ -14,8 +14,6 @@
 *
 * Comments: unit tests for AtomOverlap class
 *
-* $Id$
-*
 ***********************************************************************/
 
 #include <cxxtest/TestSuite.h>

@@ -4,8 +4,6 @@
 * Comments: declaration of necessary linear algebra functions for
 *     blitz::TinyVector  and  blitz::TinyMatrix
 *
-* $Id$
-*
 * <license text>
 ***********************************************************************/
 

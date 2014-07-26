@@ -3,8 +3,6 @@
  *
  * Comments: implementation of class AtomCost
  *
- * $Id$
- *
  * <license text>
  ***********************************************************************/
 

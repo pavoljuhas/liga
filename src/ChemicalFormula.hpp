@@ -14,8 +14,6 @@
 *
 * Comments: Storage and manipulation of ChemicalFormula.
 *
-* $Id$
-*
 ***********************************************************************/
 
 #ifndef CHEMICALFORMULA_HPP_INCLUDED

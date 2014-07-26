@@ -14,8 +14,6 @@
 *
 * Comments: OverlapCost calculation for a Molecule
 *
-* $Id$
-*
 ***********************************************************************/
 
 #ifndef ATOMOVERLAPCRYSTAL_HPP_INCLUDED

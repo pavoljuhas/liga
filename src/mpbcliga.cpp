@@ -3,7 +3,6 @@
 *
 * Comments: self-tuning competition search for molecular configuration
 *
-* $Id$
 *****************************************************************************/
 
 #include <cstdlib>

@@ -3,8 +3,6 @@
 *
 * Comments: class for keeping algorithm statistics
 *
-* $Id$
-*
 * <license text>
 ***********************************************************************/
 
