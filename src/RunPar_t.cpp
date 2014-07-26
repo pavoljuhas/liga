@@ -59,11 +59,11 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     const char* short_options = "p:hV";
     // parameters and options
     option long_options[] = {
-	{"parfile", 1, 0, 'p'},
-	{"help", 0, 0, 'h'},
-	{"version", 0, 0, 'V'},
-	{"db-abortstop", 0, 0, '-'},
-	{0, 0, 0, 0}
+        {"parfile", 1, 0, 'p'},
+        {"help", 0, 0, 'h'},
+        {"version", 0, 0, 'V'},
+        {"db-abortstop", 0, 0, '-'},
+        {0, 0, 0, 0}
     };
     args.reset(new ParseArgs(argc, argv, short_options, long_options));
     // define aliases for renamed parameters
@@ -76,21 +76,21 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     args->Parse();
     if (args->isopt("h") || argc == 1)
     {
-	print_help();
-	exit(EXIT_SUCCESS);
+        print_help();
+        exit(EXIT_SUCCESS);
     }
     else if (args->isopt("V"))
     {
-	cout << version_string() << endl;
-	exit(EXIT_SUCCESS);
+        cout << version_string() << endl;
+        exit(EXIT_SUCCESS);
     }
     else if (args->isopt("db-abortstop"))
     {
-	signal(SIGABRT, SIGABRT_handler);
+        signal(SIGABRT, SIGABRT_handler);
     }
     if (args->isopt("p"))
     {
-	args->ReadPars(args->opts["p"].c_str());
+        args->ReadPars(args->opts["p"].c_str());
     }
     args->ValidatePars(validpars());
     // assign run parameters
@@ -98,8 +98,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // distfile
     if (!args->ispar("distfile"))
     {
-	string emsg = "Distance file not defined.";
-	throw ParseArgsError(emsg);
+        string emsg = "Distance file not defined.";
+        throw ParseArgsError(emsg);
     }
     distfile = args->pars["distfile"];
     DistanceTable dtab;
@@ -131,8 +131,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // inistru
     if (args->ispar("inistru"))
     {
-	this->inistru = args->pars["inistru"];
-	this->mol->ReadFile(inistru);
+        this->inistru = args->pars["inistru"];
+        this->mol->ReadFile(inistru);
     }
     // latpar
     // must be processed after reading inistru, which may define lattice
@@ -186,7 +186,7 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // outstru
     if (args->ispar("outstru"))
     {
-	outstru = args->pars["outstru"];
+        outstru = args->pars["outstru"];
     }
     // outfmt
     outfmt = args->GetPar<string>("outfmt", "rawxyz");
@@ -194,51 +194,51 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // saverate, saveall
     if (args->ispar("outstru"))
     {
-	// saverate
-	saverate = args->GetPar<int>("saverate", 0);
-	// saveall
-	saveall = args->GetPar<bool>("saveall", false);
+        // saverate
+        saverate = args->GetPar<int>("saverate", 0);
+        // saveall
+        saveall = args->GetPar<bool>("saveall", false);
     }
     // frames, framestrace, framesrate
     if (args->ispar("frames"))
     {
-	// frames
-	frames = args->pars["frames"];
-	// framestrace
-	if (args->ispar("framestrace"))
-	{
-	    framesrate = 0;
-	    vector<long> stp = args->GetParVec<long>("framestrace");
-	    if (stp.size() % 3)
-	    {
-		string emsg = "framestrace must have 3n entries.";
-		throw ParseArgsError(emsg);
-	    }
-	    // check if seasons in stp are ordered
-	    for (size_t i = 3; i < stp.size(); i += 3)
-	    {
-		if (stp[i] < stp[i-3])
-		{
-		    string emsg = "framestrace seasons must be sorted.";
-		    throw ParseArgsError(emsg);
-		}
-	    }
-	    TraceId_t tid;
-	    for (size_t i = 0; i < stp.size(); i += 3)
-	    {
-		tid.season = stp[i];
-		tid.level = stp[i+1];
-		tid.mol_id = stp[i+2];
+        // frames
+        frames = args->pars["frames"];
+        // framestrace
+        if (args->ispar("framestrace"))
+        {
+            framesrate = 0;
+            vector<long> stp = args->GetParVec<long>("framestrace");
+            if (stp.size() % 3)
+            {
+                string emsg = "framestrace must have 3n entries.";
+                throw ParseArgsError(emsg);
+            }
+            // check if seasons in stp are ordered
+            for (size_t i = 3; i < stp.size(); i += 3)
+            {
+                if (stp[i] < stp[i-3])
+                {
+                    string emsg = "framestrace seasons must be sorted.";
+                    throw ParseArgsError(emsg);
+                }
+            }
+            TraceId_t tid;
+            for (size_t i = 0; i < stp.size(); i += 3)
+            {
+                tid.season = stp[i];
+                tid.level = stp[i+1];
+                tid.mol_id = stp[i+2];
                 tid.mol_natoms = 0;
                 tid.mol_norm_badness = 0.0;
-		framestrace.push_back(tid);
-	    }
-	}
-	// framesrate - parse only if framestrace is empty
-	if (framestrace.size() == 0)
-	{
-	    framesrate = args->GetPar<int>("framesrate", 0);
-	}
+                framestrace.push_back(tid);
+            }
+        }
+        // framesrate - parse only if framestrace is empty
+        if (framestrace.size() == 0)
+        {
+            framesrate = args->GetPar<int>("framesrate", 0);
+        }
     }
     // trace
     trace = args->GetPar<bool>("trace", false);
@@ -257,8 +257,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     if (args->ispar("verbose"))
     {
         fill(verbose.begin(), verbose.end(), false);
-	vector<string> flagwords = args->GetParVec<string>("verbose");
-	vector<string>::iterator w;
+        vector<string> flagwords = args->GetParVec<string>("verbose");
+        vector<string>::iterator w;
         try {
             for (w = flagwords.begin(); w != flagwords.end(); ++w)
             {
@@ -274,8 +274,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     ndim = args->GetPar<size_t>("ndim", 3);
     if (ndim < 1 || ndim > 3)
     {
-	string emsg = "ndim value must be 1, 2 or 3.";
-	throw ParseArgsError(emsg);
+        string emsg = "ndim value must be 1, 2 or 3.";
+        throw ParseArgsError(emsg);
     }
     // costweights
     this->costweights.assign(2, 1.0);
@@ -306,8 +306,8 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // formula must be set after distreuse
     if (args->ispar("formula"))
     {
-	this->formula.fromString(args->pars["formula"]);
-	this->mol->setChemicalFormula(this->formula);
+        this->formula.fromString(args->pars["formula"]);
+        this->mol->setChemicalFormula(this->formula);
     }
     this->formula = mol->getChemicalFormula();
     // radii
@@ -322,23 +322,23 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     // fixed_atoms must be set after inistru
     if (args->ispar("fixed_atoms"))
     {
-	fixed_atoms = args->ExpandRangePar("fixed_atoms");
-	sort(fixed_atoms.begin(), fixed_atoms.end());
-	vector<int>::iterator last;
-	last = unique(fixed_atoms.begin(), fixed_atoms.end());
-	fixed_atoms.erase(last, fixed_atoms.end());
-	vector<int>::const_iterator ii;
-	try {
-	    for (ii = fixed_atoms.begin(); ii != fixed_atoms.end(); ++ii)
-	    {
-		mol->Fix(*ii);
-	    }
-	}
-	catch (range_error) {
-	    ostringstream emsg;
-	    emsg << "fixed_atoms - invalid index " << *ii << '.';
-	    throw ParseArgsError(emsg.str());
-	}
+        fixed_atoms = args->ExpandRangePar("fixed_atoms");
+        sort(fixed_atoms.begin(), fixed_atoms.end());
+        vector<int>::iterator last;
+        last = unique(fixed_atoms.begin(), fixed_atoms.end());
+        fixed_atoms.erase(last, fixed_atoms.end());
+        vector<int>::const_iterator ii;
+        try {
+            for (ii = fixed_atoms.begin(); ii != fixed_atoms.end(); ++ii)
+            {
+                mol->Fix(*ii);
+            }
+        }
+        catch (range_error) {
+            ostringstream emsg;
+            emsg << "fixed_atoms - invalid index " << *ii << '.';
+            throw ParseArgsError(emsg.str());
+        }
     }
     base_level = mol->NFixed();
     // maxcputime
@@ -349,7 +349,7 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     rngseed = args->GetPar<int>("rngseed", 0);
     if (rngseed)
     {
-	randomSeed(rngseed);
+        randomSeed(rngseed);
     }
     // promotefrac
     promotefrac = args->GetPar<double>("promotefrac", 0.1);
@@ -370,31 +370,31 @@ void RunPar_t::processArguments(int argc, char* const argv[])
     trialsharing = args->GetPar<string>("trialsharing", "success");
     if (!TrialDistributor::isType(trialsharing))
     {
-	ostringstream emsg;
-	emsg << "trialsharing must be one of (";
-	emsg << join(", ", TrialDistributor::getTypes()) << ").";
-	throw ParseArgsError(emsg.str());
+        ostringstream emsg;
+        emsg << "trialsharing must be one of (";
+        emsg << join(", ", TrialDistributor::getTypes()) << ").";
+        throw ParseArgsError(emsg.str());
     }
     // bangle_range
     if (args->ispar("bangle_range"))
     {
-	bangle_range = args->GetParVec<double>("bangle_range");
-	if (bangle_range.size() != 2 && bangle_range.size() != 3)
-	{
-	    string emsg = "bangle_range must have 2 or 3 arguments.";
-	    throw ParseArgsError(emsg);
-	}
-	double max_blen = bangle_range[0];
+        bangle_range = args->GetParVec<double>("bangle_range");
+        if (bangle_range.size() != 2 && bangle_range.size() != 3)
+        {
+            string emsg = "bangle_range must have 2 or 3 arguments.";
+            throw ParseArgsError(emsg);
+        }
+        double max_blen = bangle_range[0];
         if (bangle_range.size() == 2)   bangle_range.push_back(DOUBLE_MAX);
-	BondAngleFilter_t* pbaf = new BondAngleFilter_t(max_blen);
+        BondAngleFilter_t* pbaf = new BondAngleFilter_t(max_blen);
         pbaf->setBondAngleRange(bangle_range[1], bangle_range[2]);
         Molecule::atom_filters.push_back(pbaf);
     }
     // maxbondlength
     if (args->ispar("maxbondlength"))
     {
-	maxbondlength = args->GetPar<double>("maxbondlength");
-	LoneAtomFilter_t* plaf = new LoneAtomFilter_t(maxbondlength);
+        maxbondlength = args->GetPar<double>("maxbondlength");
+        LoneAtomFilter_t* plaf = new LoneAtomFilter_t(maxbondlength);
         Molecule::atom_filters.push_back(plaf);
     }
     // Final Checks
@@ -572,7 +572,7 @@ void RunPar_t::print_help()
 "  stopgame=double       [0.0025] skip division when winner is worse\n"
 "  seasontrials=int      [16384] number of atom placements in one season\n"
 "  trialsharing=string   [success] sharing method from (" <<
-	join(",", TrialDistributor::getTypes()) << ")\n" <<
+        join(",", TrialDistributor::getTypes()) << ")\n" <<
 "Constrains (applied only when set):\n"
 "  bangle_range=array    (max_blen, low[, high]) bond angle constraint\n"
 "  maxbondlength=double  distance limit for rejecting lone atoms\n"
@@ -584,13 +584,13 @@ void RunPar_t::process_cmdline_args()
 {
     if (args->args.size() > 1)
     {
-	ostringstream emsg;
-	emsg << args->cmd_t << ": several DISTFILE arguments.";
-	throw ParseArgsError(emsg.str());
+        ostringstream emsg;
+        emsg << args->cmd_t << ": several DISTFILE arguments.";
+        throw ParseArgsError(emsg.str());
     }
     if (args->args.size() == 1)
     {
-	args->pars["distfile"] = args->args[0];
+        args->pars["distfile"] = args->args[0];
     }
 }
 
@@ -601,7 +601,7 @@ string RunPar_t::version_string(string quote)
     ostringstream oss;
     oss << quote << this->getAppName() << ' ' <<
         NS_VERSION::getId() << '\n' <<
-	quote << "compiler version " << __VERSION__;
+        quote << "compiler version " << __VERSION__;
     return oss.str();
 }
 
@@ -625,7 +625,7 @@ void RunPar_t::print_pars()
     // inistru
     if (args->ispar("inistru"))
     {
-	cout << "inistru=" << this->inistru << '\n';
+        cout << "inistru=" << this->inistru << '\n';
     }
     // outstru
     if (args->ispar("outstru"))
@@ -635,37 +635,37 @@ void RunPar_t::print_pars()
     // outfmt
     if (args->ispar("outstru") || args->ispar("frames"))
     {
-	cout << "outfmt=" << outfmt << '\n';
+        cout << "outfmt=" << outfmt << '\n';
     }
     // saverate, saveall
     if (args->ispar("outstru"))
     {
         cout << "saverate=" << saverate << '\n';
-	cout << "saveall=" << saveall << '\n';
+        cout << "saveall=" << saveall << '\n';
     }
     // frames, framestrace, framesrate
     if (args->ispar("frames"))
     {
-	cout << "frames=" << frames << '\n';
-	// framestrace
-	if (framestrace.size() != 0)
-	{
-	    cout << "framestrace=";
-	    for (deque<TraceId_t>::iterator ii = framestrace.begin();
-		    ii != framestrace.end(); ++ii)
-	    {
-		cout << " \\" << '\n';
-		cout << "    " << ii->season;
-		cout << ' ' << ii->level;
-		cout << ' ' << ii->mol_id;
-	    }
-	    cout << '\n';
-	}
-	// framesrate - print only if framestrace is empty
-	else
-	{
-	    cout << "framesrate=" << framesrate << '\n';
-	}
+        cout << "frames=" << frames << '\n';
+        // framestrace
+        if (framestrace.size() != 0)
+        {
+            cout << "framestrace=";
+            for (deque<TraceId_t>::iterator ii = framestrace.begin();
+                    ii != framestrace.end(); ++ii)
+            {
+                cout << " \\" << '\n';
+                cout << "    " << ii->season;
+                cout << ' ' << ii->level;
+                cout << ' ' << ii->mol_id;
+            }
+            cout << '\n';
+        }
+        // framesrate - print only if framestrace is empty
+        else
+        {
+            cout << "framesrate=" << framesrate << '\n';
+        }
     }
     // trace
     cout << "trace=" << trace << '\n';
@@ -678,14 +678,14 @@ void RunPar_t::print_pars()
     }
     // verbose
     {
-	vector<string> flagwords;
+        vector<string> flagwords;
         // scan flags only up to ALL
         using namespace NS_LIGA_VERBOSE_FLAG;
-	for (size_t i = 0; i < ALL; ++i)
-	{
-	    if (verbose[i]) flagwords.push_back(Liga_t::verbose_flags[i]);
-	}
-	cout << "verbose=" << join(",", flagwords) << '\n';
+        for (size_t i = 0; i < ALL; ++i)
+        {
+            if (verbose[i]) flagwords.push_back(Liga_t::verbose_flags[i]);
+        }
+        cout << "verbose=" << join(",", flagwords) << '\n';
     }
     // liga parameters
     // ndim
@@ -721,40 +721,40 @@ void RunPar_t::print_pars()
     // samepairradius
     if (samepairradius >= 0.0)
     {
-	cout << "samepairradius=" << samepairradius << '\n';
+        cout << "samepairradius=" << samepairradius << '\n';
     }
     // fixed_atoms
     if (args->ispar("fixed_atoms") && !fixed_atoms.empty())
     {
-	cout << "fixed_atoms=";
-	for (int start = 0; start < int(fixed_atoms.size()); )
-	{
-	    int range = 0;
-	    for ( ; start + range < int(fixed_atoms.size()) &&
-		    fixed_atoms[start]+range == fixed_atoms[start+range];
-		    ++range )
-	    { }
-	    if (start > 0)  cout << ',';
-	    cout << fixed_atoms[start];
-	    if (range > 1)  cout << ".." << fixed_atoms[start+range-1];
-	    start += range;
-	}
-	cout << '\n';
+        cout << "fixed_atoms=";
+        for (int start = 0; start < int(fixed_atoms.size()); )
+        {
+            int range = 0;
+            for ( ; start + range < int(fixed_atoms.size()) &&
+                    fixed_atoms[start]+range == fixed_atoms[start+range];
+                    ++range )
+            { }
+            if (start > 0)  cout << ',';
+            cout << fixed_atoms[start];
+            if (range > 1)  cout << ".." << fixed_atoms[start+range-1];
+            start += range;
+        }
+        cout << '\n';
     }
     // maxcputime
     if (maxcputime > 0.0)
     {
-	cout << "maxcputime=" << maxcputime << '\n';
+        cout << "maxcputime=" << maxcputime << '\n';
     }
     // maxwalltime
     if (maxwalltime > 0.0)
     {
-	cout << "maxwalltime=" << maxwalltime << '\n';
+        cout << "maxwalltime=" << maxwalltime << '\n';
     }
     // rngseed
     if (rngseed)
     {
-	cout << "rngseed=" << rngseed << '\n';
+        cout << "rngseed=" << rngseed << '\n';
     }
     // promotefrac, promoterelax, demoterelax
     cout << "promotefrac=" << promotefrac << '\n';
@@ -769,17 +769,17 @@ void RunPar_t::print_pars()
     // bangle_range
     if (args->ispar("bangle_range"))
     {
-	cout << "bangle_range=" << bangle_range[0];
-	for (size_t i = 1; i < bangle_range.size(); ++i)
-	{
-	    cout << ',' << bangle_range[i];
-	}
-	cout << '\n';
+        cout << "bangle_range=" << bangle_range[0];
+        for (size_t i = 1; i < bangle_range.size(); ++i)
+        {
+            cout << ',' << bangle_range[i];
+        }
+        cout << '\n';
     }
     // maxbondlength
     if (args->ispar("maxbondlength"))
     {
-	cout << "maxbondlength=" << maxbondlength << '\n';
+        cout << "maxbondlength=" << maxbondlength << '\n';
     }
     // finish done
     cout << hashsep << '\n' << endl;
@@ -823,7 +823,7 @@ const list<string>& RunPar_t::validpars() const
         "ligasize",
         "stopgame",
         "seasontrials",
-	"trace",
+        "trace",
         "trialsharing",
         "bangle_range",
         "maxbondlength",

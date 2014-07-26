@@ -25,17 +25,17 @@ double cosd(double x)
     double xp = fmod(fabs(x), 360.0);
     if (remainder(xp, 60.0) == 0.0 || remainder(xp, 90.0) == 0.0)
     {
-	switch(int(round(xp)))
-	{
-	    case 0: return 1.0;
-	    case 60:
-	    case 300: return 0.5;
-	    case 90:
-	    case 270: return 0.0;
-	    case 120:
-	    case 240: return -0.5;
-	    case 180: return -1.0;
-	};
+        switch(int(round(xp)))
+        {
+            case 0: return 1.0;
+            case 60:
+            case 300: return 0.5;
+            case 90:
+            case 270: return 0.0;
+            case 120:
+            case 240: return -0.5;
+            case 180: return -1.0;
+        };
     }
     return cos(x/180.0*M_PI);
 }
@@ -49,14 +49,14 @@ double acosd(double x)
 {
     if (remainder(x, 0.5) == 0.0)
     {
-	switch(int(round(x/0.5)))
-	{
-	    case 0: return 90.0;
-	    case 1: return 60.0;
-	    case -1: return 120.0;
-	    case 2: return 0.0;
-	    case -2: return 180.0;
-	};
+        switch(int(round(x/0.5)))
+        {
+            case 0: return 90.0;
+            case 1: return 60.0;
+            case -1: return 120.0;
+            case 2: return 0.0;
+            case -2: return 180.0;
+        };
     }
     return acos(x)/M_PI*180.0;
 }
@@ -71,21 +71,21 @@ Lattice::Lattice()
 {
     _baserot = 1.0, 0.0, 0.0,
                0.0, 1.0, 0.0,
-	       0.0, 0.0, 1.0;
+               0.0, 0.0, 1.0;
     setLatPar(1.0, 1.0, 1.0, 90.0, 90.0, 90.0);
 }
 
 Lattice::Lattice( double a0, double b0, double c0,
-	    double alpha0, double beta0, double gamma0 )
+            double alpha0, double beta0, double gamma0 )
 {
     _baserot = 1.0, 0.0, 0.0,
                0.0, 1.0, 0.0,
-	       0.0, 0.0, 1.0;
+               0.0, 0.0, 1.0;
     setLatPar(a0, b0, c0, alpha0, beta0, gamma0);
 }
 
 void Lattice::setLatPar( double a0, double b0, double c0,
-	    double alpha0, double beta0, double gamma0 )
+            double alpha0, double beta0, double gamma0 )
 {
     using namespace NS_LATTICE;
     _a = a0; _b = b0; _c = c0;
@@ -111,8 +111,8 @@ void Lattice::setLatPar( double a0, double b0, double c0,
     _gammar = NS_LATTICE::acosd(cosgr);
     // metric tensor
     _metrics = _a*_a,       _a*_b*cosg,   _a*_c*cosb,
-	       _b*_a*cosg,  _b*_b,        _b*_c*cosa,
-	       _c*_a*cosb,  _c*_b*cosa,   _c*_c;
+               _b*_a*cosg,  _b*_b,        _b*_c*cosa,
+               _c*_a*cosb,  _c*_b*cosa,   _c*_c;
 
     // standard cartesian coordinates of lattice vectors
     _stdbase = 1.0/_ar,     -cosgr/singr/_ar,   cosb*_a ,
@@ -138,8 +138,8 @@ void Lattice::setLatPar( double a0, double b0, double c0,
 }
 
 void Lattice::setLatBase(const R3::Vector& va0,
-	const R3::Vector& vb0,
-	const R3::Vector& vc0)
+        const R3::Vector& vb0,
+        const R3::Vector& vc0)
 {
     using namespace NS_LATTICE;
     _base = va0[0], va0[1], va0[2],

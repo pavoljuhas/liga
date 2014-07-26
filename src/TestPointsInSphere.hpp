@@ -37,32 +37,32 @@ struct vidxgroup
     double vijk[4];
     vidxgroup(double v, const int* ijk)
     {
-	vijk[0] = v;
-	for (size_t i = 0; i != 3; ++i) { vijk[i+1] = ijk[i]; }
+        vijk[0] = v;
+        for (size_t i = 0; i != 3; ++i) { vijk[i+1] = ijk[i]; }
     }
     vidxgroup(double v, int i, int j, int k)
     {
-	vijk[0] = v; vijk[1] = i; vijk[2] = j; vijk[3] = k;
+        vijk[0] = v; vijk[1] = i; vijk[2] = j; vijk[3] = k;
     }
 };
 
 bool operator<(const vidxgroup &x, const vidxgroup &y)
 {
     return (x.vijk[0] < y.vijk[0] - eps) ||
-	    lexicographical_compare(x.vijk+1, x.vijk+4, y.vijk+1, y.vijk+4);
+            lexicographical_compare(x.vijk+1, x.vijk+4, y.vijk+1, y.vijk+4);
 }
 
 bool operator==(const vidxgroup &x, const vidxgroup &y)
 {
     bool eq = (fabs(x.vijk[0] - y.vijk[0]) < eps) &&
-	    equal(x.vijk+1, x.vijk+4, y.vijk+1);
+            equal(x.vijk+1, x.vijk+4, y.vijk+1);
     return eq;
 }
 
 ostream& operator<<(ostream &s, const vidxgroup &x)
 {
     return s << "<" << x.vijk[0] << ";" << int(x.vijk[1])
-	<< ',' << int(x.vijk[2]) << ',' << int(x.vijk[3]) << '>';
+        << ',' << int(x.vijk[2]) << ',' << int(x.vijk[3]) << '>';
 }
 
 }   // namespace
@@ -174,27 +174,27 @@ class TestPointsInSphere : public CxxTest::TestSuite
             latpar->update();
             TS_ASSERT_EQUALS(7, count(0.0, 1+eps));
             vidxgroup ep[] = {
-                vidxgroup(0, 0, 0, 0), 
-                vidxgroup(1, -1, -1, 0), 
-                vidxgroup(1, -1, 0, 0), 
-                vidxgroup(1, 0, -1, 0), 
-                vidxgroup(1, 0, 1, 0), 
-                vidxgroup(1, 1, 0, 0), 
-                vidxgroup(1, 1, 1, 0), 
-                vidxgroup(sqrt(3.0), -2, -1, 0), 
-                vidxgroup(sqrt(3.0), -1, -2, 0), 
-                vidxgroup(sqrt(3.0), -1, 1, 0), 
-                vidxgroup(sqrt(3.0), 1, -1, 0), 
-                vidxgroup(sqrt(3.0), 1, 2, 0), 
-                vidxgroup(sqrt(3.0), 2, 1, 0), 
-                vidxgroup(2, -2, -2, 0), 
-                vidxgroup(2, -2, 0, 0), 
-                vidxgroup(2, 0, -2, 0), 
-                vidxgroup(2, 0, 0, -1), 
-                vidxgroup(2, 0, 0, 1), 
-                vidxgroup(2, 0, 2, 0), 
-                vidxgroup(2, 2, 0, 0), 
-                vidxgroup(2, 2, 2, 0), 
+                vidxgroup(0, 0, 0, 0),
+                vidxgroup(1, -1, -1, 0),
+                vidxgroup(1, -1, 0, 0),
+                vidxgroup(1, 0, -1, 0),
+                vidxgroup(1, 0, 1, 0),
+                vidxgroup(1, 1, 0, 0),
+                vidxgroup(1, 1, 1, 0),
+                vidxgroup(sqrt(3.0), -2, -1, 0),
+                vidxgroup(sqrt(3.0), -1, -2, 0),
+                vidxgroup(sqrt(3.0), -1, 1, 0),
+                vidxgroup(sqrt(3.0), 1, -1, 0),
+                vidxgroup(sqrt(3.0), 1, 2, 0),
+                vidxgroup(sqrt(3.0), 2, 1, 0),
+                vidxgroup(2, -2, -2, 0),
+                vidxgroup(2, -2, 0, 0),
+                vidxgroup(2, 0, -2, 0),
+                vidxgroup(2, 0, 0, -1),
+                vidxgroup(2, 0, 0, 1),
+                vidxgroup(2, 0, 2, 0),
+                vidxgroup(2, 2, 0, 0),
+                vidxgroup(2, 2, 2, 0),
             };
             vector<vidxgroup> exp_pts(ep, ep + sizeof(ep)/sizeof(vidxgroup));
             vector<vidxgroup> act_pts = sortedPoints(0.0, 2.0+eps);

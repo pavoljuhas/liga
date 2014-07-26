@@ -4,7 +4,7 @@
 * Comments: class for keeping algorithm statistics
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -20,18 +20,18 @@ class Counter
 {
     public:
 
-	// friends
-	friend std::ostream& operator<<(std::ostream&, const Counter&);
+        // friends
+        friend std::ostream& operator<<(std::ostream&, const Counter&);
 
         // types
         typedef unsigned long long ValueType;
 
         // class methods
         static Counter* getCounter(std::string name);
-	static double CPUTime();
-	static double WallTime();
-	static void printCounters();
-	static void printRunStats();
+        static double CPUTime();
+        static double WallTime();
+        static void printCounters();
+        static void printRunStats();
 
         // public methods
         inline const std::string& name() const  { return _name; }
@@ -41,7 +41,7 @@ class Counter
 
     private:
 
-	// helper class
+        // helper class
         class CounterStorage : public std::map<std::string,Counter*>
         {
             public:
@@ -50,11 +50,11 @@ class Counter
 
         // class methods
         static CounterStorage& storage();
-        
+
         // constructor
         Counter(std::string name);
 
-	// Data Members
+        // Data Members
         const std::string _name;
         ValueType _value;
         static const time_t _start_walltime;
@@ -65,4 +65,4 @@ class Counter
 
 std::ostream& operator<<(std::ostream& os, const Counter& cnt);
 
-#endif	// COUNTERS_HPP_INCLUDED
+#endif  // COUNTERS_HPP_INCLUDED

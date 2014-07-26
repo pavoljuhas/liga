@@ -58,7 +58,7 @@ void AtomCost::resetFor(const Molecule* m)
     use_distances = !arg_cluster->getDistReuse();
     if (use_distances && dtgt.size() > useflag.size())
     {
-	useflag.resize(dtgt.size(), false);
+        useflag.resize(dtgt.size(), false);
     }
 }
 
@@ -85,28 +85,28 @@ double AtomCost::eval(const Atom_t* pa, int flags)
     const DistanceTable& dtgt = arg_cluster->getDistanceTable();
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
-	// assertion checks
-	assert(tgdii < target_distances.end());
-	assert(ptcii < partial_costs.end());
-	// calculation
-	double d = R3::distance(arg_atom->r, seq.ptr()->r);
-	size_t nearidx = nearDistanceIndex(d);
-	const double& dnear = dtgt[nearidx];
+        // assertion checks
+        assert(tgdii < target_distances.end());
+        assert(ptcii < partial_costs.end());
+        // calculation
+        double d = R3::distance(arg_atom->r, seq.ptr()->r);
+        size_t nearidx = nearDistanceIndex(d);
+        const double& dnear = dtgt[nearidx];
         const double& desd = dtgt.getesd(dnear);
-	*(tgdii++) = dnear;
-	double dd = dnear - d;
-	double pcost = this->penaltyScaled(dd, desd);
-	*(ptcii++) = pcost;
-	total_cost += pcost;
-	if (use_distances)
-	{
-	    useflag[nearidx] = true;
-	    useflag_indices.push_back(nearidx);
-	    useatom_indices.push_back(seq.idx());
-	}
+        *(tgdii++) = dnear;
+        double dd = dnear - d;
+        double pcost = this->penaltyScaled(dd, desd);
+        *(ptcii++) = pcost;
+        total_cost += pcost;
+        if (use_distances)
+        {
+            useflag[nearidx] = true;
+            useflag_indices.push_back(nearidx);
+            useatom_indices.push_back(seq.idx());
+        }
         bool cutitoff = !this->_gradient_flag && this->apply_cutoff &&
             this->total_cost + arg_atom->Badness() > this->cutoff_cost;
-	if (cutitoff)   break;
+        if (cutitoff)   break;
         if (this->_gradient_flag && d > NS_LIGA::eps_distance)
         {
             static R3::Vector g_dd_xyz;
@@ -117,8 +117,8 @@ double AtomCost::eval(const Atom_t* pa, int flags)
     }
     if (apply_cutoff && arg_atom->Badness() + total_cost < lowest_cost)
     {
-	lowest_cost = arg_atom->Badness() + total_cost;
-	cutoff_cost = min(cutoff_cost, lowest_cost + cutoff_range);
+        lowest_cost = arg_atom->Badness() + total_cost;
+        cutoff_cost = min(cutoff_cost, lowest_cost + cutoff_range);
     }
     this->_gradient_cached = this->_gradient_flag;
     return total_cost;
@@ -232,10 +232,10 @@ void AtomCost::resetUseFlags()
 {
     if (useflag_indices.empty())    return;
     for (vector<int>::iterator ii = useflag_indices.begin();
-	    ii != useflag_indices.end(); ++ii)
+            ii != useflag_indices.end(); ++ii)
     {
-	assert(*ii < int(useflag.size()));
-	useflag[*ii] = false;
+        assert(*ii < int(useflag.size()));
+        useflag[*ii] = false;
     }
     useflag_indices.clear();
     useatom_indices.clear();

@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 *****************************************************************************/
 
@@ -23,9 +23,9 @@
 class ParseArgsError : public std::runtime_error
 {
     public:
-	ParseArgsError (std::string what_arg="") :
-	    std::runtime_error(what_arg)
-	{ }
+        ParseArgsError (std::string what_arg="") :
+            std::runtime_error(what_arg)
+        { }
 };
 
 class ParseArgs
@@ -35,7 +35,7 @@ public:
     ParseArgs(int nargc, char * const nargv[]);
     ParseArgs(int nargc, char * const nargv[], const char *optstring);
     ParseArgs(int nargc, char * const nargv[], const char *optstring,
-	    const struct option *longopts);
+            const struct option *longopts);
     int argc;
     char * const * argv;
     const char* optstring;
@@ -78,9 +78,9 @@ template<typename T> T ParseArgs::GetPar(std::string par)
     iss >> val || (iss.clear(), iss >> boolalpha >> val);
     if (!iss)
     {
-	ostringstream oss;
-	oss << "invalid value for parameter '" << par << "'";
-	throw ParseArgsError(oss.str());
+        ostringstream oss;
+        oss << "invalid value for parameter '" << par << "'";
+        throw ParseArgsError(oss.str());
     }
     return val;
 }
@@ -96,15 +96,15 @@ template<typename T> std::vector<T> ParseArgs::GetParVec(std::string par)
     // replace all commas in par with <space>
     string values(pars[par]);
     for (   string::size_type pcomma = values.find(',');
-	    pcomma != string::npos; pcomma = values.find(',', pcomma) )
+            pcomma != string::npos; pcomma = values.find(',', pcomma) )
     {
-	values[pcomma] = ' ';
+        values[pcomma] = ' ';
     }
     vector<T> v;
     istringstream iss(values);
     T val;
     while (iss >> val)
-	v.push_back(val);
+        v.push_back(val);
     return v;
 }
 

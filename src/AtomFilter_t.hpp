@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -65,4 +65,4 @@ class LoneAtomFilter_t : public AtomFilter_t
         double mmaxbondlength;
 };
 
-#endif	// ATOMFILTER_T_HPP_INCLUDED
+#endif  // ATOMFILTER_T_HPP_INCLUDED

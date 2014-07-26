@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -41,7 +41,7 @@ class TestRelaxExternalAtom : public CxxTest::TestSuite
         }
 
 
-        void tearDown() 
+        void tearDown()
         {
             delete mol_tetrahedron; mol_tetrahedron = NULL;
             delete vtx_tetrahedron; vtx_tetrahedron = NULL;

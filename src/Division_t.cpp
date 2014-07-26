@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -130,7 +130,7 @@ const int* Division_t::estimateTriangulations()
     valarray<double> pbtg(pdef, NTGTYPES);
     for (size_t i = 0; i != NTGTYPES; ++i)
     {
-        if (!tot_triang[i])	continue;
+        if (!tot_triang[i])     continue;
         // probability of successful triangulation is given
         // by beta distribution
         double a = acc_triang[i] + 1;
@@ -145,7 +145,7 @@ const int* Division_t::estimateTriangulations()
     {
         nd = min(ndim, this->level());
     }
-    switch (nd) 
+    switch (nd)
     {
         case 0:
             pbtg[LINEAR] = 0.0;
@@ -155,7 +155,7 @@ const int* Division_t::estimateTriangulations()
             pbtg[SPATIAL] = 0.0;
         default:
             double ptot = pbtg.sum();
-            if (ptot)	pbtg /= ptot;
+            if (ptot)   pbtg /= ptot;
     }
     for (size_t i = 0; i != NTGTYPES; ++i)
     {

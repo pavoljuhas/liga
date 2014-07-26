@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -20,11 +20,11 @@ std::string join(StrType sep, Sequence words)
     std::string joined;
     typename Sequence::iterator w = words.begin();
     typename Sequence::iterator last = words.end();
-    if (w == last)	return joined;
+    if (w == last)      return joined;
     for (joined = *(w++); w != last; ++w)
     {
-	joined += sep;
-	joined += *w;
+        joined += sep;
+        joined += *w;
     }
     return joined;
 }
@@ -34,11 +34,11 @@ std::string join(StrType sep, Iterator first, Iterator last)
 {
     std::string joined;
     Iterator w = first;
-    if (w == last)	return joined;
+    if (w == last)      return joined;
     for (joined = *(w++); w != last; ++w)
     {
-	joined += sep;
-	joined += *w;
+        joined += sep;
+        joined += *w;
     }
     return joined;
 }
@@ -53,4 +53,4 @@ void split(const std::string& s, Container& words)
 }
 
 
-#endif	// STRINGUTILS_HPP_INCLUDED
+#endif  // STRINGUTILS_HPP_INCLUDED

@@ -100,4 +100,4 @@ class RunPar_t
 
 };
 
-#endif	// RUNPAR_T_HPP_INCLUDED
+#endif  // RUNPAR_T_HPP_INCLUDED

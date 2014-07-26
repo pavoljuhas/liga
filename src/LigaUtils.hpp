@@ -35,7 +35,7 @@ double vdnorm(const std::valarray<double>&);
 double vddot(const std::valarray<double>&,
         const std::valarray<double>&);
 std::valarray<double> vdcross(const std::valarray<double>&,
-			      const std::valarray<double>&);
+                              const std::valarray<double>&);
 // fitness
 double convertCostToFitness(const double& cst);
 double costToFitness(const double& cst);
@@ -120,9 +120,9 @@ bool read_data(std::istream& fid, std::vector<T>& v)
     T x;
     while (fid >> x)
     {
-	v.push_back(x);
+        v.push_back(x);
     }
     return !(fid.rdstate() & std::ios::badbit);
 }
 
-#endif	// LIGAUTILS_HPP_INCLUDED
+#endif  // LIGAUTILS_HPP_INCLUDED

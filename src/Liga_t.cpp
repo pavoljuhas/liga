@@ -107,7 +107,7 @@ void Liga_t::prepare()
     PMOL first_team = rp->mol->copy();
     cout << "Initial team" << endl;
     cout << season << " I " << first_team->countAtoms() << ' ' <<
-	first_team->cost() << '\n';
+        first_team->cost() << '\n';
     at(first_team->countAtoms()).push_back(first_team);
     // fill lower divisions
     cout << "Filling lower divisions\n";
@@ -116,8 +116,8 @@ void Liga_t::prepare()
         PMOL parent_team = at(lev+1).back();
         PMOL lower_team = parent_team->copy();
         lower_team->Degenerate(1, Molecule::FAST);
-	cout << season << " L " << lower_team->countAtoms() << ' '
-	    << lower_team->cost() << endl;
+        cout << season << " L " << lower_team->countAtoms() << ' '
+            << lower_team->cost() << endl;
         at(lev).push_back(lower_team);
     }
     cout << "Done" << endl;
@@ -132,13 +132,13 @@ void Liga_t::prepare()
 
 void Liga_t::playSeason()
 {
-    if (stopFlag())	return;
+    if (stopFlag())     return;
     ++season;
     shareSeasonTrials();
     for (size_t lo_level = base_level; lo_level < size() - 1; ++lo_level)
     {
-	playLevel(lo_level);
-	if (stopFlag())	    break;
+        playLevel(lo_level);
+        if (stopFlag())     break;
     }
     printLevelAverages();
     updateWorldChamp();
@@ -167,9 +167,9 @@ void Liga_t::playLevel(size_t lo_level)
     double adv_bad0 = advancing->cost();
     if (!lo_div->full())
     {
-	// save copy of advancing winner
-	PMOL winner_clone = advancing->copy();
-	lo_div->push_back(winner_clone);
+        // save copy of advancing winner
+        PMOL winner_clone = advancing->copy();
+        lo_div->push_back(winner_clone);
     }
     // advance as far as possible
     const int* etg = lo_div->estimateTriangulations();
@@ -181,10 +181,10 @@ void Liga_t::playLevel(size_t lo_level)
     // fill intermediate empty divisions, loop will stop at non-empty lo_div
     for (iterator empty_div = hi_div; empty_div->empty(); --empty_div)
     {
-	PMOL pioneer = advancing->copy();
-	pioneer->Degenerate(hi_div - empty_div);
-	empty_div->push_back(pioneer);
-	modified.insert(pioneer);
+        PMOL pioneer = advancing->copy();
+        pioneer->Degenerate(hi_div - empty_div);
+        empty_div->push_back(pioneer);
+        modified.insert(pioneer);
     }
     // find looser
     int looser_idx = hi_div->find_looser();
@@ -192,14 +192,14 @@ void Liga_t::playLevel(size_t lo_level)
     double desc_bad0 = descending->cost();
     if (!hi_div->full())
     {
-	// save copy of descending looser
-	PMOL looser_clone = descending->copy();
-	hi_div->push_back(looser_clone);
+        // save copy of descending looser
+        PMOL looser_clone = descending->copy();
+        hi_div->push_back(looser_clone);
     }
     // copy winner if he made a good advance
     if (eps_gt(descending->cost(), advancing->cost()))
     {
-	*descending = *advancing;
+        *descending = *advancing;
     }
     descending->Degenerate(hi_level - lo_level);
     if (lo_level != hi_level)   modified.insert(descending);
@@ -210,23 +210,23 @@ void Liga_t::playLevel(size_t lo_level)
     // better than whatever left in the low division
     const double spoil_factor = 10.0;
     if ( advancing_best && eps_gt(lo_div->best()->cost(),
-		spoil_factor*adv_bad0) )
+                spoil_factor*adv_bad0) )
     {
-	PMOL lo_looser = lo_div->at(lo_div->find_looser());
-	*lo_looser = *advancing;
-	for (size_t nlast = hi_level; nlast != lo_level;)
-	    lo_looser->Pop(--nlast);
-	modified.insert(lo_looser);
+        PMOL lo_looser = lo_div->at(lo_div->find_looser());
+        *lo_looser = *advancing;
+        for (size_t nlast = hi_level; nlast != lo_level;)
+            lo_looser->Pop(--nlast);
+        modified.insert(lo_looser);
     }
     if (verbose[AD])
     {
-	cout << season;
-	cout << " A " <<
-	    lo_level << ' ' << adv_bad0 << ' ' <<
-	    hi_level << ' ' << advancing->cost() << "    ";
-	cout << " D " <<
-	    hi_level << ' ' << desc_bad0 << ' ' <<
-	    lo_level << ' ' << descending->cost() << '\n';
+        cout << season;
+        cout << " A " <<
+            lo_level << ' ' << adv_bad0 << ' ' <<
+            hi_level << ' ' << advancing->cost() << "    ";
+        cout << " D " <<
+            hi_level << ' ' << desc_bad0 << ' ' <<
+            lo_level << ' ' << descending->cost() << '\n';
     }
     recordFramesTrace(modified, lo_level);
     saveFramesTrace(modified, lo_level);
@@ -269,7 +269,7 @@ bool Liga_t::outOfTime() const
 
 void Liga_t::printFramesTrace() const
 {
-    if (!rp->trace)	return;
+    if (!rp->trace)     return;
     // needs clean up
     cout << "Trace - season level natoms cost id:\n";
     list<TraceId_t>::iterator tii = this->best_champ->trace.begin();
@@ -316,11 +316,11 @@ int Liga_t::divSize(int level)
     // start with the default value
     int sz = rp->ligasize;
     // ignore divisions below base_level
-    if (level < rp->base_level)	        sz = 0;
+    if (level < rp->base_level)         sz = 0;
     // it is enough to have one team at base_level
-    else if (level == rp->base_level)	sz = 1;
+    else if (level == rp->base_level)   sz = 1;
     // and also at levels 0 and 1
-    else if (level < 2)		        sz = 1;
+    else if (level < 2)                 sz = 1;
     return sz;
 }
 
@@ -330,17 +330,17 @@ void Liga_t::shareSeasonTrials()
     // copy level costs and fill rate to trials distributor
     for (size_t level = base_level; level != size(); ++level)
     {
-	Division_t* lvdiv = &(at(level));
-  	tdistributor->setLevelBadness(level, lvdiv->averageCost());
-	double fr = 1.0*lvdiv->size() / lvdiv->fullsize();
-	tdistributor->setLevelFillRate(level, fr);
+        Division_t* lvdiv = &(at(level));
+        tdistributor->setLevelBadness(level, lvdiv->averageCost());
+        double fr = 1.0*lvdiv->size() / lvdiv->fullsize();
+        tdistributor->setLevelFillRate(level, fr);
     }
     // share it
     tdistributor->share(rp->seasontrials);
     for (size_t level = base_level; level != size(); ++level)
     {
-	Division_t* lvdiv = &(at(level));
-	lvdiv->assignTrials(tdistributor->tshares[level]);
+        Division_t* lvdiv = &(at(level));
+        lvdiv->assignTrials(tdistributor->tshares[level]);
     }
     printTrialShares();
 }
@@ -383,7 +383,7 @@ void Liga_t::printWorldChamp() const
 void Liga_t::printBestChamp() const
 {
     bool dontprint = !verbose[BC] || (printed_best_champ && !finished());
-    if (dontprint)	return;
+    if (dontprint)      return;
     cout << this->season << " BC " <<
         this->best_champ->countAtoms() << ' ' << this->best_champ->cost() <<
         " dc " << this->best_champ->costDistance() <<
@@ -399,8 +399,8 @@ void Liga_t::printLevelAverages() const
     const_iterator lii = begin() + base_level;
     for (; lii != end() && !lii->empty(); ++lii, ++level)
     {
-	cout << season << " AV " << level << ' ' <<
-	    lii->averageCost() << '\n';
+        cout << season << " AV " << level << ' ' <<
+            lii->averageCost() << '\n';
     }
 }
 
@@ -410,8 +410,8 @@ void Liga_t::printTrialShares() const
     if (!verbose[TS])    return;
     for (size_t level = base_level; level < size(); ++level)
     {
-	cout << season << " TS " << level <<
-		' ' << tdistributor->tshares[level] << '\n';
+        cout << season << " TS " << level <<
+                ' ' << tdistributor->tshares[level] << '\n';
     }
 }
 
@@ -422,7 +422,7 @@ void Liga_t::saveOutStru()
     static valarray<double> bestMcost(DOUBLE_MAX, size());
     ++savecnt;
     bool dontsave = rp->outstru.empty() || this->empty() ||
-	(!this->finished() && (rp->saverate == 0 || savecnt < rp->saverate));
+        (!this->finished() && (rp->saverate == 0 || savecnt < rp->saverate));
     // get out if there is nothing to do
     if (dontsave)   return;
     // find the largest non-empty division
@@ -433,26 +433,26 @@ void Liga_t::saveOutStru()
     stop_save = (rp->saveall || save_div == rend()) ? rend() : save_div + 1;
     for (; save_div != stop_save; ++save_div)
     {
-	// intermediate division may become empty
-	if (save_div->empty())	continue;
-	PMOL level_champ = save_div->best();
-	size_t level = level_champ->countAtoms();
-	// do not save empty structure
-	if (level == 0)	break;
-	// save only if there is clear improvement
-	bool improved = eps_lt(level_champ->cost(), bestMcost[level]);
-	if (!improved)	continue;
-	// something to save here
-	savecnt = 0;
-	bestMcost[level] = level_champ->cost();
-	// construct file name
-	ostringstream fname;
+        // intermediate division may become empty
+        if (save_div->empty())  continue;
+        PMOL level_champ = save_div->best();
+        size_t level = level_champ->countAtoms();
+        // do not save empty structure
+        if (level == 0) break;
+        // save only if there is clear improvement
+        bool improved = eps_lt(level_champ->cost(), bestMcost[level]);
+        if (!improved)  continue;
+        // something to save here
+        savecnt = 0;
+        bestMcost[level] = level_champ->cost();
+        // construct file name
+        ostringstream fname;
         fname << rp->outstru;
-	if (rp->saveall)
+        if (rp->saveall)
         {
-	    fname << ".L" << level;
-	}
-	level_champ->WriteFile(fname.str().c_str());
+            fname << ".L" << level;
+        }
+        level_champ->WriteFile(fname.str().c_str());
     }
     this->saveScoopedStructures();
 }
@@ -461,13 +461,13 @@ void Liga_t::saveOutStru()
 void Liga_t::saveFrames()
 {
     static struct {
-	int cnt;
-	PMOL champ;
-	double level;
-	double cost;
+        int cnt;
+        PMOL champ;
+        double level;
+        double cost;
     } saved = {0, NULL, 0, DOUBLE_MAX};
     bool dontsave = rp->frames.empty() || rp->framesrate == 0 ||
-	(++saved.cnt < rp->framesrate && !finished()) || empty() ||
+        (++saved.cnt < rp->framesrate && !finished()) || empty() ||
         (world_champ == saved.champ &&
          world_champ->countAtoms() == saved.level &&
          eps_eq(world_champ->cost(), saved.cost));
@@ -491,7 +491,7 @@ void Liga_t::recordFramesTrace(set<PMOL>& modified, size_t lo_level)
     Division_t::iterator mii;
     for (mii = at(base_level).begin(); mii != at(base_level).end(); ++mii)
     {
-	(*mii)->trace.clear();
+        (*mii)->trace.clear();
     }
     set<PMOL>::iterator modii;
     for (modii = modified.begin(); modii != modified.end(); ++modii)
@@ -515,7 +515,7 @@ void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
     static queue<TraceId_t> qtrace(rp->framestrace);
     while (!qtrace.empty())
     {
-	TraceId_t tid = qtrace.front();
+        TraceId_t tid = qtrace.front();
         if (season != tid.season)   break;
         if (long(lo_level) != tid.level)  break;
         PMOL traced = NULL;
@@ -526,12 +526,12 @@ void Liga_t::saveFramesTrace(set<PMOL>& modified, size_t lo_level)
         }
         if (!traced)    break;
         // traced molecule has been found here
-	qtrace.pop();
-	int tno = rp->framestrace.size() - qtrace.size();
-	ostringstream oss;
-	oss << rp->frames << "." << tid.season << '.' << tno;
-	string fname = oss.str();
-	traced->WriteFile(fname.c_str());
+        qtrace.pop();
+        int tno = rp->framestrace.size() - qtrace.size();
+        ostringstream oss;
+        oss << rp->frames << "." << tid.season << '.' << tno;
+        string fname = oss.str();
+        traced->WriteFile(fname.c_str());
     }
 }
 
@@ -609,7 +609,7 @@ void Liga_t::printScoopedStructures() const
     namespace python = boost::python;
     bool dontprint = !verbose[SC] ||
         (this->printed_scooped_structures && !this->finished());
-    if (dontprint)	return;
+    if (dontprint)      return;
     int scsize = mscoop_cost_stru.get() ? python::len(*mscoop_cost_stru) : 0;
     for (int i = 0; i < scsize; ++i)
     {
@@ -677,7 +677,7 @@ void Liga_t::injectCompetitor(const Molecule* mol)
         Division_t& dv = this->at(level);
         if (dv.size() < 2)  continue;
         int tgt_idx = dv.find_looser();
-	PMOL tgt_mol = dv[tgt_idx];
+        PMOL tgt_mol = dv[tgt_idx];
         *tgt_mol = *injector;
     }
 }

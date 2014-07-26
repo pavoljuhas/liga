@@ -21,23 +21,23 @@ class Crystal : public Molecule
 {
     public:
 
-	// friends
-	friend class AtomCostCrystal;
+        // friends
+        friend class AtomCostCrystal;
 
-	// data
+        // data
 
-	// constructors
-	Crystal();
-	Crystal(const Crystal&);
+        // constructors
+        Crystal();
+        Crystal(const Crystal&);
 
         // operators
-	virtual Crystal& operator=(const Molecule&);
-	Crystal& operator=(const Crystal&);
+        virtual Crystal& operator=(const Molecule&);
+        Crystal& operator=(const Crystal&);
         virtual Molecule* copy() const;     // create a copy
 
-	// methods - class registration and type info
-	virtual StructureType type() const  { return CRYSTAL; }
-	virtual std::string typeStr() const { return "crystal"; }
+        // methods - class registration and type info
+        virtual StructureType type() const  { return CRYSTAL; }
+        virtual std::string typeStr() const { return "crystal"; }
 
         // methods
         virtual void setDistanceTable(const DistanceTable&);
@@ -51,17 +51,17 @@ class Crystal : public Molecule
         std::pair<double,double> getRExtent(double rlo, double rhi) const;
 
         virtual double cost() const;
-	virtual int countPairs() const;
+        virtual int countPairs() const;
         virtual void recalculate() const;
         virtual AtomCost* getAtomCostCalculator() const;
         virtual AtomCost* getAtomOverlapCalculator() const;
 
-	virtual void Shift(const R3::Vector& drc);
+        virtual void Shift(const R3::Vector& drc);
 
         virtual AtomPtr getNearestAtom(const R3::Vector& rc) const;
-	virtual void Clear();
+        virtual void Clear();
         virtual const std::pair<int*,int*>& Evolve(const int* est_triang);
-	virtual void Degenerate(int Npop, DegenerateFlags flags=NONE);
+        virtual void Degenerate(int Npop, DegenerateFlags flags=NONE);
 
     protected:
 
@@ -70,9 +70,9 @@ class Crystal : public Molecule
         mutable SymmetricMatrix<int> pmx_pair_counts;
 
         // methods
-	virtual void AddInternal(Atom_t* pa);  // add atom from the storage
-	virtual void addNewAtomPairs(Atom_t* pa);
-	virtual void removeAtomPairs(Atom_t* pa);
+        virtual void AddInternal(Atom_t* pa);  // add atom from the storage
+        virtual void addNewAtomPairs(Atom_t* pa);
+        virtual void removeAtomPairs(Atom_t* pa);
         virtual const TriangulationAnchor&
             getLineAnchor(const RandomWeighedGenerator& rwg);
         virtual const TriangulationAnchor&
@@ -85,10 +85,10 @@ class Crystal : public Molecule
 
     private:
 
-	// crystal specific data
+        // crystal specific data
         boost::shared_ptr<const Lattice> _lattice;
-	double _rmin;
-	double _rmax;
+        double _rmin;
+        double _rmax;
         mutable double _cost;
         mutable int _count_pairs;
         mutable bool _cost_data_cached;
@@ -108,4 +108,4 @@ class Crystal : public Molecule
 };
 
 
-#endif	// CRYSTAL_T_HPP_INCLUDED
+#endif  // CRYSTAL_T_HPP_INCLUDED

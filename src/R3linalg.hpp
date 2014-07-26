@@ -114,10 +114,10 @@ bool MatricesAlmostEqual(const M& A, const M& B, double precision)
 {
     for (int i = 0; i < Ndim; ++i)
     {
-	for (int j = 0; j < Ndim; ++j)
-	{
-	    if (fabs(A(i,j) - B(i,j)) > precision)  return false;
-	}
+        for (int j = 0; j < Ndim; ++j)
+        {
+            if (fabs(A(i,j) - B(i,j)) > precision)  return false;
+        }
     }
     return true;
 }
@@ -128,12 +128,12 @@ bool VectorsAlmostEqual(const V& u, const V& v, double precision)
 {
     for (int i = 0; i < Ndim; ++i)
     {
-	if (fabs(u[i] - v[i]) > precision)  return false;
+        if (fabs(u[i] - v[i]) > precision)  return false;
     }
     return true;
 }
 
 
-}	// End of namespace R3
+}       // End of namespace R3
 
-#endif	// R3LINALG_HPP_INCLUDED
+#endif  // R3LINALG_HPP_INCLUDED

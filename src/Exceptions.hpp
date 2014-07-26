@@ -18,8 +18,8 @@ class IOError : public std::runtime_error
 {
     public:
 
-	IOError(const std::string msg="") : std::runtime_error(msg)
-	{ }
+        IOError(const std::string msg="") : std::runtime_error(msg)
+        { }
 };
 
 
@@ -27,8 +27,8 @@ class TriangulationError : public std::runtime_error
 {
     public:
 
-	TriangulationError(const std::string msg="") : std::runtime_error(msg)
-	{ }
+        TriangulationError(const std::string msg="") : std::runtime_error(msg)
+        { }
 };
 
 
@@ -36,8 +36,8 @@ class InvalidDistanceTable : public std::runtime_error
 {
     public:
 
-	InvalidDistanceTable(const std::string msg="") : std::runtime_error(msg)
-	{ }
+        InvalidDistanceTable(const std::string msg="") : std::runtime_error(msg)
+        { }
 };
 
 
@@ -45,8 +45,8 @@ class InvalidMolecule : public std::runtime_error
 {
     public:
 
-	InvalidMolecule(const std::string msg="") : std::runtime_error(msg)
-	{ }
+        InvalidMolecule(const std::string msg="") : std::runtime_error(msg)
+        { }
 };
 
-#endif	// EXCEPTIONS_HPP_INCLUDED
+#endif  // EXCEPTIONS_HPP_INCLUDED

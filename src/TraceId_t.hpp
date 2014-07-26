@@ -30,4 +30,4 @@ struct TraceId_t
     long mol_id;                // unique identifier of affected molecule
 };
 
-#endif	// TRACEID_T_HPP_INCLUDED
+#endif  // TRACEID_T_HPP_INCLUDED

@@ -41,39 +41,39 @@ int main(int argc, char *argv[])
     RunPar_t rp;
     auto_ptr<Liga_t> liga;
     // Catch exceptions
-    try	{
-	// process arguments
-	rp.processArguments(argc, argv);
-	liga.reset(new Liga_t(&rp));
-	// watch for HUP
-	signal(SIGHUP, SIGHUP_handler);
-	liga->useStopFlag(&SIGHUP_received);
-	// main loop
-	liga->prepare();
-	while (!liga->finished())    liga->playSeason();
-	liga->printSummary();
+    try {
+        // process arguments
+        rp.processArguments(argc, argv);
+        liga.reset(new Liga_t(&rp));
+        // watch for HUP
+        signal(SIGHUP, SIGHUP_handler);
+        liga->useStopFlag(&SIGHUP_received);
+        // main loop
+        liga->prepare();
+        while (!liga->finished())    liga->playSeason();
+        liga->printSummary();
     }
     catch (IOError(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     catch (ParseArgsError(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     catch (runtime_error(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     catch (invalid_argument(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     // figure out exit code
     int exit_code;
-    if (SIGHUP_received)	    exit_code = SIGHUP + 128;
+    if (SIGHUP_received)            exit_code = SIGHUP + 128;
     else if (liga->solutionFound()) exit_code = EXIT_SUCCESS;
-    else			    exit_code = EXIT_FAILURE;
+    else                            exit_code = EXIT_FAILURE;
     // all done here
     return exit_code;
 }

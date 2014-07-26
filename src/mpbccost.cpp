@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
 {
     RunParCost rp;
     // Catch exceptions
-    try	{
-	rp.processArguments(argc, argv);
+    try {
+        rp.processArguments(argc, argv);
         BOOST_FOREACH (string stru, rp.strufiles)
         {
             rp.mol->ReadFile(stru);
@@ -120,20 +120,20 @@ int main(int argc, char *argv[])
         }
     }
     catch (IOError(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     catch (ParseArgsError(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     catch (runtime_error(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     catch (invalid_argument(e)) {
-	cerr << e.what() << endl;
-	return EXIT_INPUT_ERROR;
+        cerr << e.what() << endl;
+        return EXIT_INPUT_ERROR;
     }
     return EXIT_SUCCESS;
 }

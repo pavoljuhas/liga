@@ -4,7 +4,7 @@
 * Comments: subversion information definitions
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -25,4 +25,4 @@ const string& getId();
 
 }   // namespace NS_VERSION
 
-#endif	// VERSION_HPP_INCLUDED
+#endif  // VERSION_HPP_INCLUDED

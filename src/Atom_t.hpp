@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -31,37 +31,37 @@ class Atom_t
         friend class Crystal;
 
         // constructors
-	Atom_t(const std::string& elsmbl, double rx, double ry, double rz);
+        Atom_t(const std::string& elsmbl, double rx, double ry, double rz);
         template <class V> Atom_t(const std::string& elsmbl, const V& rxyz);
         template <class V> Atom_t(Atom_t* asrc, const V& rxyz);
 
         // data
         std::string element;
         R3::Vector r;
-	bool fixed;
-	triangulation_type ttp;
+        bool fixed;
+        triangulation_type ttp;
         double radius;
 
         // methods
-	const double& Badness() const;
-	double FreeBadness() const;
-	void IncBadness(const double& db);
-	void DecBadness(const double& db);
-	void ResetBadness(double b=0.0);
-	const double& Overlap() const;
-	double FreeOverlap() const;
-	void IncOverlap(const double& doverlap);
-	void DecOverlap(const double& doverlap);
-	void ResetOverlap(double overlap=0.0);
+        const double& Badness() const;
+        double FreeBadness() const;
+        void IncBadness(const double& db);
+        void DecBadness(const double& db);
+        void ResetBadness(double b=0.0);
+        const double& Overlap() const;
+        double FreeOverlap() const;
+        void IncOverlap(const double& doverlap);
+        void DecOverlap(const double& doverlap);
+        void ResetOverlap(double overlap=0.0);
         double costShare(double pairsperatom);
 
 
     private:
 
         // data
-	double _badness;
-	double _overlap;
-	mutable int pmxidx;     // pair matrix index
+        double _badness;
+        double _overlap;
+        mutable int pmxidx;     // pair matrix index
         Atom_t* mstorage_ptr;
 
         // methods
@@ -99,4 +99,4 @@ Atom_t::Atom_t(Atom_t* asrc, const V& rxyz) :
 
 
 
-#endif	// ATOM_T_HPP_INCLUDED
+#endif  // ATOM_T_HPP_INCLUDED

@@ -238,8 +238,8 @@ void Crystal::Shift(const R3::Vector& drc)
     this->Molecule::Shift(drc);
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	Atom_t* pa = seq.ptr();
-  	pa->r = this->ucvCartesianAdjusted(pa->r);
+        Atom_t* pa = seq.ptr();
+        pa->r = this->ucvCartesianAdjusted(pa->r);
     }
 }
 
@@ -307,14 +307,14 @@ void Crystal::addNewAtomPairs(Atom_t* pa)
     assert(atoms.size() == pcnt.size());
     for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
     {
-	double paircost = ptcs[seq.idx()];
-	int idx0 = pa->pmxidx;
-	int idx1 = seq.ptr()->pmxidx;
+        double paircost = ptcs[seq.idx()];
+        int idx0 = pa->pmxidx;
+        int idx1 = seq.ptr()->pmxidx;
         assert(idx0 != idx1);
-	this->pmx_partial_costs(idx0, idx1) = paircost;
-	double paircosthalf = paircost / 2.0;
-	seq.ptr()->IncBadness(paircosthalf);
-	pa->IncBadness(paircosthalf);
+        this->pmx_partial_costs(idx0, idx1) = paircost;
+        double paircosthalf = paircost / 2.0;
+        seq.ptr()->IncBadness(paircosthalf);
+        pa->IncBadness(paircosthalf);
         int paircount = pcnt[seq.idx()];
         this->pmx_pair_counts(idx0, idx1) = paircount;
     }
@@ -356,14 +356,14 @@ void Crystal::removeAtomPairs(Atom_t* pa)
     // remove associated pair costs and pair counts
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	int idx0 = pa->pmxidx;
-	int idx1 = seq.ptr()->pmxidx;
-	// remove pair costs
-	double paircost = pmx_partial_costs(idx0, idx1);
-	double paircosthalf = paircost/2.0;
-	pa->DecBadness(paircosthalf);
-	seq.ptr()->DecBadness(paircosthalf);
-	this->DecBadness(paircost);
+        int idx0 = pa->pmxidx;
+        int idx1 = seq.ptr()->pmxidx;
+        // remove pair costs
+        double paircost = pmx_partial_costs(idx0, idx1);
+        double paircosthalf = paircost/2.0;
+        pa->DecBadness(paircosthalf);
+        seq.ptr()->DecBadness(paircosthalf);
+        this->DecBadness(paircost);
         // remove pair counts
         this->_count_pairs -= this->pmx_pair_counts(idx0, idx1);
     }

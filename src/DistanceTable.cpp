@@ -77,7 +77,7 @@ DistanceTable::find_nearest(const double& dfind) const
 {
     const_iterator ii = lower_bound(begin(), end(), dfind);
     bool shiftleft = (ii == end() && !empty()) ||
-	    (ii != begin() && (dfind - *(ii-1)) < (*ii - dfind));
+            (ii != begin() && (dfind - *(ii-1)) < (*ii - dfind));
     if (shiftleft)  --ii;
     return ii;
 }
@@ -134,7 +134,7 @@ int DistanceTable::countUnique() const
     const_iterator ihi = (ilo == end()) ? ilo : ilo + 1;
     for (; ihi != end(); ++ilo, ++ihi)
     {
-	if ( (*ihi - *ilo) > mresolution )   ++mcount_unique;
+        if ( (*ihi - *ilo) > mresolution )   ++mcount_unique;
     }
     return mcount_unique;
 }
@@ -146,10 +146,10 @@ vector<double> DistanceTable::unique() const
     dtu.reserve(this->countUnique());
     for (const_iterator di = begin(); di != end(); ++di)
     {
-	if (dtu.empty() || (*di - dtu.back()) > mresolution)
-	{
+        if (dtu.empty() || (*di - dtu.back()) > mresolution)
+        {
             dtu.push_back(*di);
-	}
+        }
     }
     return dtu;
 }

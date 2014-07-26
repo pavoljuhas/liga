@@ -27,13 +27,13 @@ class AtomOverlap : public AtomCost
 {
     public:
 
-	// constructor
-	AtomOverlap(const Molecule* m);
+        // constructor
+        AtomOverlap(const Molecule* m);
 
-	// public methods - overloaded
+        // public methods - overloaded
         virtual void resetFor(const Molecule* clust);
-	double eval(const Atom_t& a, int flags=NONE);
-	virtual double eval(const Atom_t* pa, int flags=NONE);
+        double eval(const Atom_t& a, int flags=NONE);
+        virtual double eval(const Atom_t* pa, int flags=NONE);
 
 };  // class AtomOverlap
 

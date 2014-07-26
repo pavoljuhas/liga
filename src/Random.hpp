@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -159,11 +159,11 @@ void RandomWeighedGenerator::setWeights(Iter first, Iter last)
     std::vector<double>::iterator wii = this->_weight.begin();
     for (Iter ii = first; ii != last; ++ii, ++wii)
     {
-	if (*ii < 0.0)
-	{
+        if (*ii < 0.0)
+        {
             const char* emsg = "setWeights(): negative choice probability";
-	    throw std::out_of_range(emsg);
-	}
+            throw std::out_of_range(emsg);
+        }
         *wii = *ii;
     }
     this->_cumul_weight.resize(this->_weight.size());
@@ -180,4 +180,4 @@ inline size_t RandomWeighedGenerator::numChoices() const
 
 }   // namespace NS_LIGA
 
-#endif	// RANDOM_HPP_INCLUDED
+#endif  // RANDOM_HPP_INCLUDED

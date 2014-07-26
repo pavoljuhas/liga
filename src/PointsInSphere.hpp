@@ -29,7 +29,7 @@
 *
 *     PointsInSphere sph(Rmin, Rmax, a, b, c, alpha, beta, gamma)
 *     for (sph.rewind(); !sph.finished(); sph.next())
-*     { 
+*     {
 *         // lattice indices are in sph.m(), sph.n(), sph.o() or sph.mno()
 *         // sph.r() is distance from origin,
 *         // where sph.Rmin() < sph.r() < sph.Rmax()
@@ -37,8 +37,8 @@
 *
 *     ReflectionsInQminQmax ref(Qmin, Qmax, a, b, c, alpha, beta, gamma)
 *     for (ReflectionsInQminQmax ref(Qmin, Qmax, a, b, c, alpha, beta, gamma);
-*	   !ref.finished(); ref.next() )
-*     { 
+*          !ref.finished(); ref.next() )
+*     {
 *         // Miller indices are in ref.h(), ref.k(), ref.l() or ref.hkl()
 *         // ref.Q() is magnitude of Q vector
 *         // ref.d() is lattice plane spacing
@@ -53,7 +53,7 @@
 #ifndef POINTSINSPHERE_HPP_INCLUDED
 #define POINTSINSPHERE_HPP_INCLUDED
 
-// ensure math constants get defined for MSVC 
+// ensure math constants get defined for MSVC
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -82,7 +82,7 @@ class LatticeParameters
         void update();
         // return a reciprocal of this lattice
         LatticeParameters reciprocal() const;
-        
+
     private:
 
         // methods
@@ -90,7 +90,7 @@ class LatticeParameters
         static double _sind(double x);
 };
 
-}	// namespace NS_POINTSINSPHERE
+}       // namespace NS_POINTSINSPHERE
 
 
 class PointsInSphere
@@ -212,10 +212,10 @@ class ReflectionsInQminQmax
 template <class L>
 ReflectionsInQminQmax::ReflectionsInQminQmax(
         double _qmin, double _qmax, const L& lat) :
-	    latpar(lat.a(), lat.b(), lat.c(),
+            latpar(lat.a(), lat.b(), lat.c(),
                     lat.alpha(), lat.beta(), lat.gamma()),
-	    sph(_qmin*M_1_PI/2.0, _qmax*M_1_PI/2.0, latpar.reciprocal()),
-	    _Qmin(_qmin), _Qmax(_qmax)
+            sph(_qmin*M_1_PI/2.0, _qmax*M_1_PI/2.0, latpar.reciprocal()),
+            _Qmin(_qmin), _Qmax(_qmax)
 { }
 
 
@@ -249,8 +249,8 @@ class ReflectionsInDmaxDmin : public ReflectionsInQminQmax
 template <class L>
 ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(
         double dmax, double dmin, const L& lat) :
-	    ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin, lat),
-	    _Dmax(dmax), _Dmin(dmin)
+            ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin, lat),
+            _Dmax(dmax), _Dmin(dmin)
 { }
 
-#endif	// POINTSINSPHERE_HPP_INCLUDED
+#endif  // POINTSINSPHERE_HPP_INCLUDED

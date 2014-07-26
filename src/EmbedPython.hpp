@@ -12,4 +12,4 @@
 void initializePython();
 
 
-#endif	// EMBEDPYTHON_HPP_INCLUDED
+#endif  // EMBEDPYTHON_HPP_INCLUDED

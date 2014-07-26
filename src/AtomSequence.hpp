@@ -4,7 +4,7 @@
 * Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -21,20 +21,20 @@ class AtomSequence
     public:
 
         // constructors
-	AtomSequence(const Molecule* pm);
-	AtomSequence(std::vector<Atom_t*>& atoms);
+        AtomSequence(const Molecule* pm);
+        AtomSequence(std::vector<Atom_t*>& atoms);
 
         // methods
-	inline Atom_t* ptr()	{ return *ii; }
-	inline Atom_t& ref()   	{ return **ii; }
-	inline void rewind()   	{ ii = first; }
-	inline void next()	{ ++ii; }
-	inline bool finished()	{ return ii == last; }
+        inline Atom_t* ptr()    { return *ii; }
+        inline Atom_t& ref()    { return **ii; }
+        inline void rewind()    { ii = first; }
+        inline void next()      { ++ii; }
+        inline bool finished()  { return ii == last; }
 
     private:
 
         // data
-	Molecule* mol;
+        Molecule* mol;
         std::vector<Atom_t*>::iterator ii, first, last;
 };
 
@@ -43,18 +43,18 @@ class AtomSequenceIndex : public AtomSequence
     public:
 
         // constructors
-	AtomSequenceIndex(const Molecule* pm);
-	AtomSequenceIndex(std::vector<Atom_t*>& atoms);
+        AtomSequenceIndex(const Molecule* pm);
+        AtomSequenceIndex(std::vector<Atom_t*>& atoms);
 
         // methods
-	inline int idx()	{ return index; }
-	inline void next()	{ AtomSequence::next(); ++index; }
-	inline void rewind()   	{ AtomSequence::rewind(); index = 0; }
+        inline int idx()        { return index; }
+        inline void next()      { AtomSequence::next(); ++index; }
+        inline void rewind()    { AtomSequence::rewind(); index = 0; }
 
     private:
 
         // data
-	int index;
+        int index;
 };
 
-#endif	// ATOMSEQUENCE_INCLUDED
+#endif  // ATOMSEQUENCE_INCLUDED

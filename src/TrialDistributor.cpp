@@ -1,10 +1,10 @@
 /***********************************************************************
 * Short Title: declaration of TrialDistributor and related classes
 *
-* Comments: 
+* Comments:
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 
@@ -28,9 +28,9 @@ TrialDistributor* TrialDistributor::create(RunPar_t* rp)
     const string& tstp = rp->trialsharing;
     if (!isType(tstp))
     {
-	ostringstream emsg;
-	emsg << "TrialDistributor '" << tstp << "' not defined.";
-	throw runtime_error(emsg.str());
+        ostringstream emsg;
+        emsg << "TrialDistributor '" << tstp << "' not defined.";
+        throw runtime_error(emsg.str());
     }
     TrialDistributor* td = create(distributorsRegistry()[tstp]);
     // copy data from rp
@@ -44,13 +44,13 @@ TrialDistributor* TrialDistributor::create(DistributorType tp)
 {
     switch (tp)
     {
-	case EQUAL:	return new TrialDistributorEqual();
-	case SIZE:	return new TrialDistributorSize();
-	case SUCCESS:	return new TrialDistributorSuccess();
-	default:
-	    ostringstream emsg;
-	    emsg << "Unhandled value of DistributorType " << tp;
-	    throw invalid_argument(emsg.str());
+        case EQUAL:     return new TrialDistributorEqual();
+        case SIZE:      return new TrialDistributorSize();
+        case SUCCESS:   return new TrialDistributorSuccess();
+        default:
+            ostringstream emsg;
+            emsg << "Unhandled value of DistributorType " << tp;
+            throw invalid_argument(emsg.str());
     }
     return NULL;
 }
@@ -61,7 +61,7 @@ list<string> TrialDistributor::getTypes()
     map<string,DistributorType>::iterator ii = distributorsRegistry().begin();
     for (; ii != distributorsRegistry().end(); ++ii)
     {
-	rv.push_back(ii->first);
+        rv.push_back(ii->first);
     }
     return rv;
 }
@@ -83,7 +83,7 @@ void TrialDistributor::setLevelBadness(size_t lv, double bd)
 {
     BadnessHistory& hist = lvbadlog[lv];
     hist.push_back(bd);
-    if (hist.size() > histsize)	    hist.pop_front();
+    if (hist.size() > histsize)     hist.pop_front();
 }
 
 void TrialDistributor::setLevelFillRate(size_t lv, double fr)
@@ -134,7 +134,7 @@ void TrialDistributorSize::share(int seasontrials)
 {
     tshares = 0.0;
     if (base_level >= top_level)    return;
-    for (int lv = base_level; lv < top_level; ++lv)	tshares[lv] = lv;
+    for (int lv = base_level; lv < top_level; ++lv)     tshares[lv] = lv;
     tshares[top_level] = 0.0;
     tshares *= seasontrials/tshares.sum();
 }
@@ -154,30 +154,30 @@ void TrialDistributorSuccess::share(int seasontrials)
     valarray<double> scwt(0.0, size());
     for (int lv = base_level; lv <= top_level; ++lv)
     {
-	BadnessHistory& hist = lvbadlog[lv];
-	double tothwt = 0.0;
-	int hwt = histsize - 1;
-	for (int i = hist.size() - 1;  i > 0 && hwt > 0.0;  --i, --hwt)
-	{
-	    double improvement = (hist[i] < hist[i-1]) ?
-		(hist[i-1] - hist[i])/tolcost : 0;
-	    scwt[lv] += hwt * improvement;
-	    tothwt += hwt;
-	}
-	if (tothwt > 0.0)   scwt[lv] /= tothwt;
+        BadnessHistory& hist = lvbadlog[lv];
+        double tothwt = 0.0;
+        int hwt = histsize - 1;
+        for (int i = hist.size() - 1;  i > 0 && hwt > 0.0;  --i, --hwt)
+        {
+            double improvement = (hist[i] < hist[i-1]) ?
+                (hist[i-1] - hist[i])/tolcost : 0;
+            scwt[lv] += hwt * improvement;
+            tothwt += hwt;
+        }
+        if (tothwt > 0.0)   scwt[lv] /= tothwt;
     }
     // split half of success weight to the levels below
     // for the last level move all success weitht to the former level
     for (int lo = 0, hi = 1; hi <= top_level; ++lo, ++hi)
     {
-	double scshift = (hi < top_level) ? scwt[hi]/2 : scwt[hi];
-	scwt[lo] += scshift;
-	scwt[hi] -= scshift;
+        double scshift = (hi < top_level) ? scwt[hi]/2 : scwt[hi];
+        scwt[lo] += scshift;
+        scwt[hi] -= scshift;
     }
     // calculate tshares
     // get size share weights
     valarray<double> szwt(0.0, size());
-    for (int lv = base_level; lv < top_level; ++lv)	szwt[lv] = lv;
+    for (int lv = base_level; lv < top_level; ++lv)     szwt[lv] = lv;
     szwt /= szwt.sum();
     // average success and size shares
     tshares = scwt + szwt;

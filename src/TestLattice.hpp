@@ -122,9 +122,9 @@ class TestLattice : public CxxTest::TestSuite
             TS_ASSERT(MatricesAlmostEqual(base_check,
                         lattice->base(), precision) );
             R3::Matrix recbase_check;
-            recbase_check = 0.5,   -0.5,	0.5,
+            recbase_check = 0.5,   -0.5,        0.5,
                           0.5,    0.5,   -0.5,
-                          -0.5,	0.5,	0.5;
+                          -0.5, 0.5,    0.5;
             TS_ASSERT(MatricesAlmostEqual(recbase_check,
                         lattice->recbase(), precision) );
             lattice->setLatPar( lattice->a(), lattice->b(), lattice->c(),

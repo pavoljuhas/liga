@@ -1,11 +1,11 @@
 /***********************************************************************
 * Short Title: functions for obtaining subversion information
 *
-* Comments: subversion information definitions. 
+* Comments: subversion information definitions.
 *     DO NOT edit Version.cpp, change Version.tpl instead.
 *
 * $Id$
-* 
+*
 * <license text>
 ***********************************************************************/
 

@@ -98,7 +98,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     atoms.resize(M.atoms.size());
     for (size_t i = 0; i != M.atoms.size(); ++i)
     {
-	atoms[i] = mapatomptr[M.atoms[i]];
+        atoms[i] = mapatomptr[M.atoms[i]];
         assert(atoms[i] != NULL);
     }
     // translate pointers to the unassigned atoms in the bucket
@@ -106,7 +106,7 @@ Molecule& Molecule::operator=(const Molecule& M)
     for (size_t i = 0; i != M.atoms_bucket.size(); ++i)
     {
         assert(mapatomptr.count(M.atoms_bucket[i]));
-	atoms_bucket[i] = mapatomptr[M.atoms_bucket[i]];
+        atoms_bucket[i] = mapatomptr[M.atoms_bucket[i]];
         assert(atoms_bucket[i] != NULL);
     }
     pmx_used_distances = M.pmx_used_distances;
@@ -206,31 +206,31 @@ void Molecule::recalculate() const
 {
     if (countAtoms() > getMaxAtomCount())
     {
-	ostringstream emsg;
-	emsg << "E: molecule too large in recalculate()";
-	throw InvalidMolecule(emsg.str());
+        ostringstream emsg;
+        emsg << "E: molecule too large in recalculate()";
+        throw InvalidMolecule(emsg.str());
     }
     // reset molecule
     this->ResetBadness();
     // reset all atoms
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	seq.ptr()->ResetBadness();
+        seq.ptr()->ResetBadness();
     }
     // create array of all badness contributions with atom index
     for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
     {
-	AtomSequenceIndex seq1 = seq0;
-	for (seq1.next(); !seq1.finished(); seq1.next())
-	{
-	    int i0 = seq0.ptr()->pmxidx;
-	    int i1 = seq1.ptr()->pmxidx;
-	    const double& paircost = pmx_partial_costs(i0,i1);
+        AtomSequenceIndex seq1 = seq0;
+        for (seq1.next(); !seq1.finished(); seq1.next())
+        {
+            int i0 = seq0.ptr()->pmxidx;
+            int i1 = seq1.ptr()->pmxidx;
+            const double& paircost = pmx_partial_costs(i0,i1);
             this->IncBadness(paircost);
             double paircosthalf = paircost / 2.0;
- 	    seq0.ptr()->IncBadness(paircosthalf);
- 	    seq1.ptr()->IncBadness(paircosthalf);
-	}
+            seq0.ptr()->IncBadness(paircosthalf);
+            seq1.ptr()->IncBadness(paircosthalf);
+        }
     }
     this->recalculateOverlap();
 }
@@ -298,11 +298,11 @@ void Molecule::reassignPairs()
     PairMatrixElement pme;
     for (AtomSequenceIndex seq0(this); !seq0.finished(); seq0.next())
     {
-	AtomSequenceIndex seq1 = seq0;
+        AtomSequenceIndex seq1 = seq0;
         for (seq1.next(); !seq1.finished(); seq1.next())
         {
             pme.i0 = seq0.ptr()->pmxidx;
-	    pme.i1 = seq1.ptr()->pmxidx;
+            pme.i1 = seq1.ptr()->pmxidx;
             pme.d01 = R3::distance(seq0.ptr()->r, seq1.ptr()->r);
             pmx_elements.push_back(pme);
             assert(pmx_used_distances(pme.i0, pme.i1) >= 0.0);
@@ -593,8 +593,8 @@ void Molecule::Shift(const R3::Vector& drc)
 {
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	Atom_t* pa = seq.ptr();
-	pa->r += drc;
+        Atom_t* pa = seq.ptr();
+        pa->r += drc;
     }
 }
 
@@ -604,7 +604,7 @@ void Molecule::Center()
     R3::Vector avg_rc(0.0, 0.0, 0.0);
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	Atom_t* pa = seq.ptr();
+        Atom_t* pa = seq.ptr();
         avg_rc += pa->r;
     }
     avg_rc /= countAtoms();
@@ -634,9 +634,9 @@ void Molecule::Pop(const int aidx)
 {
     if (aidx < 0 || aidx >= countAtoms())
     {
-	ostringstream emsg;
-	emsg << "Molecule::Pop(const int) invalid index " << aidx << '.';
-	throw range_error(emsg.str());
+        ostringstream emsg;
+        emsg << "Molecule::Pop(const int) invalid index " << aidx << '.';
+        throw range_error(emsg.str());
     }
     Atom_t* pa = atoms[aidx];
     // Pop should never get called on fixed atom
@@ -704,9 +704,9 @@ void Molecule::Fix(const int cidx)
 {
     if (cidx < 0 || cidx >= countAtoms())
     {
-	ostringstream emsg;
-	emsg << "Molecule::Fix(const int) invalid index " << cidx << '.';
-	throw range_error(emsg.str());
+        ostringstream emsg;
+        emsg << "Molecule::Fix(const int) invalid index " << cidx << '.';
+        throw range_error(emsg.str());
     }
     atoms[cidx]->fixed = true;
 }
@@ -727,13 +727,13 @@ int Molecule::NFixed() const
 
 
 void Molecule::filter_good_atoms(AtomArray& vta,
-	double evolve_range, double hi_abad)
+        double evolve_range, double hi_abad)
 {
     if (countAtoms() == getMaxAtomCount())
     {
-	ostringstream emsg;
-	emsg << "E: Molecule too large in filter_good_atoms()";
-	throw InvalidMolecule(emsg.str());
+        ostringstream emsg;
+        emsg << "E: Molecule too large in filter_good_atoms()";
+        throw InvalidMolecule(emsg.str());
     }
     typedef AtomArray::iterator VAit;
     VAit gai;
@@ -741,14 +741,14 @@ void Molecule::filter_good_atoms(AtomArray& vta,
     gai = vta.begin();
     if ( !atom_filters.empty() )
     {
-	for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
-	{
-	    if (check_atom_filters(&(*tai)))
-	    {
-		*(gai++) = *tai;
-	    }
-	}
-	vta.erase(gai, vta.end());
+        for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
+        {
+            if (check_atom_filters(&(*tai)))
+            {
+                *(gai++) = *tai;
+            }
+        }
+        vta.erase(gai, vta.end());
     }
     // obtain badness of every test atom, do lazy evaluation when badness
     // is higher than (minimum + evolve_range)
@@ -757,15 +757,15 @@ void Molecule::filter_good_atoms(AtomArray& vta,
     atomcost->setCutoffRange(evolve_range);
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
-	tai->IncBadness(atomcost->eval(*tai));
+        tai->IncBadness(atomcost->eval(*tai));
     }
     // atom cost cutoff is available here,
     // let us keep only good atoms
     gai = vta.begin();
     for (VAit tai = vta.begin(); tai != vta.end(); ++tai)
     {
-	if (tai->Badness() > atomcost->cutoff())    continue;
-	*(gai++) = *tai;
+        if (tai->Badness() > atomcost->cutoff())    continue;
+        *(gai++) = *tai;
     }
     vta.erase(gai, vta.end());
 }
@@ -796,7 +796,7 @@ bool Molecule::check_atom_filters(Atom_t* pa)
     for (; isgood && pafi != atom_filters.end(); ++pafi)
     {
         AtomFilter_t* filter = *pafi;
-	isgood = filter->Check(pa, this);
+        isgood = filter->Check(pa, this);
     }
     return isgood;
 }
@@ -929,9 +929,9 @@ void Molecule::RelaxAtom(const int cidx)
 {
     if (cidx < 0 || cidx >= countAtoms())
     {
-	ostringstream emsg;
-	emsg << "Molecule::RelaxAtom(const int) invalid index " << cidx << '.';
-	throw range_error(emsg.str());
+        ostringstream emsg;
+        emsg << "Molecule::RelaxAtom(const int) invalid index " << cidx << '.';
+        throw range_error(emsg.str());
     }
     // RelaxAtom should never get called on a fixed atom
     Atom_t* pa = atoms[cidx];
@@ -1046,13 +1046,13 @@ void Molecule::addNewAtomPairs(Atom_t* pa)
     assert(atoms.size() == ptcs.size());
     for (AtomSequenceIndex seq(this); !seq.finished(); seq.next())
     {
-	double pairbadness = ptcs[seq.idx()];
-	int idx0 = pa->pmxidx;
-	int idx1 = seq.ptr()->pmxidx;
-	pmx_partial_costs(idx0,idx1) = pairbadness;
-	double badnesshalf = pairbadness / 2.0;
-	seq.ptr()->IncBadness(badnesshalf);
-	pa->IncBadness(badnesshalf);
+        double pairbadness = ptcs[seq.idx()];
+        int idx0 = pa->pmxidx;
+        int idx1 = seq.ptr()->pmxidx;
+        pmx_partial_costs(idx0,idx1) = pairbadness;
+        double badnesshalf = pairbadness / 2.0;
+        seq.ptr()->IncBadness(badnesshalf);
+        pa->IncBadness(badnesshalf);
     }
     this->IncBadness(atomcost->totalCost());
     if (isNearZeroRoundOff(this->Badness()))  this->ResetBadness();
@@ -1089,22 +1089,22 @@ void Molecule::removeAtomPairs(Atom_t* pa)
     // remove associated pair costs
     for (AtomSequence seq(this); !seq.finished(); seq.next())
     {
-	if (pa == seq.ptr())	continue;
-	int idx0 = pa->pmxidx;
-	int idx1 = seq.ptr()->pmxidx;
-	// remove pair costs
-	double pairbadness = pmx_partial_costs(idx0,idx1);
-	double badnesshalf = pairbadness/2.0;
-	pa->DecBadness(badnesshalf);
-	seq.ptr()->DecBadness(badnesshalf);
-	this->DecBadness(pairbadness);
+        if (pa == seq.ptr())    continue;
+        int idx0 = pa->pmxidx;
+        int idx1 = seq.ptr()->pmxidx;
+        // remove pair costs
+        double pairbadness = pmx_partial_costs(idx0,idx1);
+        double badnesshalf = pairbadness/2.0;
+        pa->DecBadness(badnesshalf);
+        seq.ptr()->DecBadness(badnesshalf);
+        this->DecBadness(pairbadness);
     }
     // return any associated used distances
     if (!getDistReuse())
     {
         for (AtomSequence seq(this); !seq.finished(); seq.next())
         {
-            if (pa == seq.ptr())	continue;
+            if (pa == seq.ptr())        continue;
             // return any used distances
             int idx0 = pa->pmxidx;
             int idx1 = seq.ptr()->pmxidx;
@@ -1138,14 +1138,14 @@ int Molecule::push_good_distances(
     if (countAtoms() == getMaxAtomCount())
     {
         ostringstream emsg;
-	emsg << "E: molecule too large for finding a new position";
-	throw InvalidMolecule(emsg.str());
+        emsg << "E: molecule too large for finding a new position";
+        throw InvalidMolecule(emsg.str());
     }
     else if (countAtoms() < 1)
     {
         ostringstream emsg;
-	emsg << "E: empty molecule, no way to push_good_distances()";
-	throw InvalidMolecule(emsg.str());
+        emsg << "E: empty molecule, no way to push_good_distances()";
+        throw InvalidMolecule(emsg.str());
     }
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
@@ -1153,49 +1153,49 @@ int Molecule::push_good_distances(
         const TriangulationAnchor& anch = this->getLineAnchor(rwg);
         R3::Vector direction(0.0, 0.0, 0.0);
         if (anch.count > 1)     direction = anch.B1 - anch.B0;
-	// normalize direction if defined
-	bool lattice_direction;
-	double nm_direction = R3::norm(direction);
-	if (nm_direction > eps_distance)
-	{
-	    direction /= nm_direction;
-	    lattice_direction = true;
-	}
-	// otherwise orient along the z-axis
-	else
-	{
+        // normalize direction if defined
+        bool lattice_direction;
+        double nm_direction = R3::norm(direction);
+        if (nm_direction > eps_distance)
+        {
+            direction /= nm_direction;
+            lattice_direction = true;
+        }
+        // otherwise orient along the z-axis
+        else
+        {
             direction = 0.0, 0.0, 1.0;
-	    lattice_direction = false;
-	}
-	// pick free distance
+            lattice_direction = false;
+        }
+        // pick free distance
         const DistanceTable& dtbl = *this->_distance_table;
-	int didx = randomInt(dtbl.size());
-	double radius = dtbl[didx];
-	// add front atom
+        int didx = randomInt(dtbl.size());
+        double radius = dtbl[didx];
+        // add front atom
         R3::Vector nr;
         nr = anch.B0 + direction*radius;
-	Atom_t ad1front(pickAtomFromBucket(), nr);
-	ad1front.ttp = LINEAR;
-	vta.push_back(ad1front);
-	++push_count;
-	// check opposite direction when it makes sense
-	// this accounts for extra trial
-	if (lattice_direction)
-	{
-	    ++nt;
+        Atom_t ad1front(pickAtomFromBucket(), nr);
+        ad1front.ttp = LINEAR;
+        vta.push_back(ad1front);
+        ++push_count;
+        // check opposite direction when it makes sense
+        // this accounts for extra trial
+        if (lattice_direction)
+        {
+            ++nt;
             nr = anch.B0 - direction*radius;
-	    Atom_t ad1back(pickAtomFromBucket(), nr);
-	    ad1back.ttp = LINEAR;
-	    vta.push_back(ad1back);
-	    ++push_count;
-	}
+            Atom_t ad1back(pickAtomFromBucket(), nr);
+            ad1back.ttp = LINEAR;
+            vta.push_back(ad1back);
+            ++push_count;
+        }
     }
     return push_count;
 }
 
 
 int Molecule::push_good_triangles(
-	AtomArray& vta,
+        AtomArray& vta,
         const RandomWeighedGenerator& rwg,
         int ntrials)
 {
@@ -1205,82 +1205,82 @@ int Molecule::push_good_triangles(
     if (countAtoms() == getMaxAtomCount())
     {
         ostringstream emsg;
-	emsg << "E: molecule too large for finding a new position";
-	throw InvalidMolecule(emsg.str());
+        emsg << "E: molecule too large for finding a new position";
+        throw InvalidMolecule(emsg.str());
     }
     int push_count = 0;
     for (int nt = 0; nt < ntrials; ++nt)
     {
         const TriangulationAnchor& anch = getPlaneAnchor(rwg);
         const DistanceTable& dtbl = *this->_distance_table;
-	// pick 2 vertex distances
+        // pick 2 vertex distances
         const PickType& didx = getDistReuse() ?
             randomPickWithRepeat(2, dtbl.size()) :
             randomPickFew(2, dtbl.size());
-	double r02 = dtbl[didx[0]];
-	double r12 = dtbl[didx[1]];
-	double r01 = R3::distance(anch.B0, anch.B1);
-	// is triangle base reasonably large?
-	if (r01 < eps_distance)    continue;
-	// get and store both possible values of xlong
-	double xl0 = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
-	double xlong[2] = { xl0, r01-xl0 };
-	// get and store both possible values of xperp
-	double xp2 = r02*r02 - xlong[0]*xlong[0];
-	double xp = sqrt(fabs(xp2));
-	if (xp < eps_distance)  xp = 0.0;
-	else if (xp2 < 0.0)  continue;
-	double xperp[2] = { -xp, xp };
-	// find direction along triangle base:
+        double r02 = dtbl[didx[0]];
+        double r12 = dtbl[didx[1]];
+        double r01 = R3::distance(anch.B0, anch.B1);
+        // is triangle base reasonably large?
+        if (r01 < eps_distance)    continue;
+        // get and store both possible values of xlong
+        double xl0 = (r02*r02 + r01*r01 - r12*r12) / (2.0*r01);
+        double xlong[2] = { xl0, r01-xl0 };
+        // get and store both possible values of xperp
+        double xp2 = r02*r02 - xlong[0]*xlong[0];
+        double xp = sqrt(fabs(xp2));
+        if (xp < eps_distance)  xp = 0.0;
+        else if (xp2 < 0.0)  continue;
+        double xperp[2] = { -xp, xp };
+        // find direction along triangle base:
         R3::Vector longdir;
         longdir = (anch.B1 - anch.B0)/r01;
-	// generate direction perpendicular to longdir
+        // generate direction perpendicular to longdir
         R3::Vector perpdir(0.0, 0.0, 0.0);
-	if (anch.count > 2)
-	{
+        if (anch.count > 2)
+        {
             perpdir = anch.B2 - anch.B0;
-	    perpdir -= longdir*R3::dot(longdir, perpdir);
-	}
-	// normalize perpdir if defined
-	bool lattice_plane;
-	double nm_perpdir = R3::norm(perpdir);
-	if (nm_perpdir > eps_distance)
-	{
-	    perpdir /= nm_perpdir;
-	    lattice_plane = true;
-	}
-	// otherwise generate direction in cartesian plane
-	// perpendicular to the smallest component of longdir
-	else
-	{
+            perpdir -= longdir*R3::dot(longdir, perpdir);
+        }
+        // normalize perpdir if defined
+        bool lattice_plane;
+        double nm_perpdir = R3::norm(perpdir);
+        if (nm_perpdir > eps_distance)
+        {
+            perpdir /= nm_perpdir;
+            lattice_plane = true;
+        }
+        // otherwise generate direction in cartesian plane
+        // perpendicular to the smallest component of longdir
+        else
+        {
             R3::Vector uv(0.0, 0.0, 0.0);
             R3::Vector ald = fabs(longdir);
-	    int ijk = minIndex(ald);
-	    uv[ijk] = 1.0;
-	    perpdir = R3::cross(longdir, uv);
-	    perpdir /= R3::norm(perpdir);
-	    lattice_plane = false;
-	}
-	// allocate vallarays for positions of a0 and vertex P
+            int ijk = minIndex(ald);
+            uv[ijk] = 1.0;
+            perpdir = R3::cross(longdir, uv);
+            perpdir /= R3::norm(perpdir);
+            lattice_plane = false;
+        }
+        // allocate vallarays for positions of a0 and vertex P
         R3::Vector P;
-	// if vertex search has already failed above, nt would increase by 1
-	// here we want nt to count number of added vertices
-	--nt;
-	// loops over all 4 vertices in case of lattice_plane
-	for (double* pxl = xlong; pxl != xlong+2; ++pxl)
-	{
-	    for (double* pxp = xperp; pxp != xperp+2; ++pxp)
-	    {
-		++nt;
-		P = anch.B0 + (*pxl)*longdir + (*pxp)*perpdir;
-		Atom_t ad2(pickAtomFromBucket(), P);
-		ad2.ttp = PLANAR;
-		vta.push_back(ad2);
-		++push_count;
-		if (!lattice_plane)  break;
-	    }
-	    if (!lattice_plane)  break;
-	}
+        // if vertex search has already failed above, nt would increase by 1
+        // here we want nt to count number of added vertices
+        --nt;
+        // loops over all 4 vertices in case of lattice_plane
+        for (double* pxl = xlong; pxl != xlong+2; ++pxl)
+        {
+            for (double* pxp = xperp; pxp != xperp+2; ++pxp)
+            {
+                ++nt;
+                P = anch.B0 + (*pxl)*longdir + (*pxp)*perpdir;
+                Atom_t ad2(pickAtomFromBucket(), P);
+                ad2.ttp = PLANAR;
+                vta.push_back(ad2);
+                ++push_count;
+                if (!lattice_plane)  break;
+            }
+            if (!lattice_plane)  break;
+        }
     }
     return push_count;
 }
@@ -1296,108 +1296,108 @@ int Molecule::push_good_pyramids(
     if (countAtoms() == getMaxAtomCount())
     {
         ostringstream emsg;
-	emsg << "E: molecule too large for finding a new position";
-	throw InvalidMolecule(emsg.str());
+        emsg << "E: molecule too large for finding a new position";
+        throw InvalidMolecule(emsg.str());
     }
     int push_count = 0;
     for (int nt = 0; nt < ntrials;)
     {
-	// pick 3 base atoms
+        // pick 3 base atoms
         const TriangulationAnchor& anch = getPyramidAnchor(rwg);
         const DistanceTable& dtbl = *this->_distance_table;
-	// pick 3 vertex distances
-	PickType didx = getDistReuse() ?
+        // pick 3 vertex distances
+        PickType didx = getDistReuse() ?
             randomPickWithRepeat(3, dtbl.size()) :
             randomPickFew(3, dtbl.size());
-	// loop over all permutations of selected distances
-	sort(didx.begin(), didx.end());
-	do
-	{
-	    ++nt;
-	    double r03 = dtbl[didx[0]];
-	    double r13 = dtbl[didx[1]];
-	    double r23 = dtbl[didx[2]];
-	    // uvi is a unit vector in B0B1 direction
+        // loop over all permutations of selected distances
+        sort(didx.begin(), didx.end());
+        do
+        {
+            ++nt;
+            double r03 = dtbl[didx[0]];
+            double r13 = dtbl[didx[1]];
+            double r23 = dtbl[didx[2]];
+            // uvi is a unit vector in B0B1 direction
             R3::Vector uvi;
             uvi = anch.B1 - anch.B0;
-	    double r01 = R3::norm(uvi);
-	    if (r01 < eps_distance)    continue;
-	    uvi /= r01;
-	    // v02 is B0B2 vector
+            double r01 = R3::norm(uvi);
+            if (r01 < eps_distance)    continue;
+            uvi /= r01;
+            // v02 is B0B2 vector
             R3::Vector v02;
             v02 = anch.B2 - anch.B0;
-	    // uvj lies in B0B1B2 plane and is perpendicular to uvi
+            // uvj lies in B0B1B2 plane and is perpendicular to uvi
             R3::Vector uvj = v02;
-	    uvj -= uvi*R3::dot(uvi, uvj);
-	    double nm_uvj = R3::norm(uvj);
-	    if (nm_uvj < eps_distance)  continue;
-	    uvj /= nm_uvj;
-	    // uvk is a unit vector perpendicular to B0B1B2 plane
+            uvj -= uvi*R3::dot(uvi, uvj);
+            double nm_uvj = R3::norm(uvj);
+            if (nm_uvj < eps_distance)  continue;
+            uvj /= nm_uvj;
+            // uvk is a unit vector perpendicular to B0B1B2 plane
             R3::Vector uvk = R3::cross(uvi, uvj);
-	    double xP1 = -0.5/(r01)*(r01*r01 + r03*r03 - r13*r13);
-	    // Pn are coordinates in pyramid coordinate system
+            double xP1 = -0.5/(r01)*(r01*r01 + r03*r03 - r13*r13);
+            // Pn are coordinates in pyramid coordinate system
             R3::Vector P1(xP1, 0.0, 0.0);
-	    // vT is translation from pyramid to normal system
+            // vT is translation from pyramid to normal system
             R3::Vector vT;
             vT = anch.B0 - xP1*uvi;
-	    // obtain coordinates of P3
+            // obtain coordinates of P3
             R3::Vector P3 = P1;
-	    P3[0] += R3::dot(uvi, v02);
-	    P3[1] += R3::dot(uvj, v02);
-	    P3[2] = 0.0;
-	    double xP3 = P3[0];
-	    double yP3 = P3[1];
-	    // find pyramid vertices
+            P3[0] += R3::dot(uvi, v02);
+            P3[1] += R3::dot(uvj, v02);
+            P3[2] = 0.0;
+            double xP3 = P3[0];
+            double yP3 = P3[1];
+            // find pyramid vertices
             R3::Vector P4;
-	    double h2 = r03*r03 - xP1*xP1;
-	    // does P4 belong to B0B1 line?
-	    if (fabs(h2) < eps_distance)
-	    {
-		// is vertex on B0B1
-		if (fabs(R3::norm(P3) - r03) > eps_distance)   continue;
-		P4 = vT;
-		Atom_t ad3(pickAtomFromBucket(), P4);
-		ad3.ttp = SPATIAL;
-		vta.push_back(ad3);
-		++push_count;
-		continue;
-	    }
-	    else if (h2 < 0)
-	    {
-		continue;
-	    }
-	    double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r23*r23);
-	    double z2P4 = h2 - yP4*yP4;
-	    // does P4 belong to B0B1B2 plane?
-	    if (fabs(z2P4) < eps_distance)
-	    {
-		P4 = yP4*uvj + vT;
-		Atom_t ad3(pickAtomFromBucket(), P4);
-		ad3.ttp = SPATIAL;
-		vta.push_back(ad3);
-		++push_count;
-		continue;
-	    }
-	    else if (z2P4 < 0)
-	    {
-		continue;
-	    }
-	    // here we can construct 2 pyramids
-	    double zP4 = sqrt(z2P4);
-	    // top one
-	    P4 = yP4*uvj + zP4*uvk + vT;
-	    Atom_t ad3top(pickAtomFromBucket(), P4);
-	    ad3top.ttp = SPATIAL;
-	    vta.push_back(ad3top);
-	    ++push_count;
-	    // and bottom one, which makes an extra trial
-	    ++nt;
-	    P4 = yP4*uvj - zP4*uvk + vT;
-	    Atom_t ad3bottom(pickAtomFromBucket(), P4);
-	    ad3bottom.ttp = SPATIAL;
-	    vta.push_back(ad3bottom);
-	    push_count++;
-	} while ( next_permutation(didx.begin(), didx.end()) );
+            double h2 = r03*r03 - xP1*xP1;
+            // does P4 belong to B0B1 line?
+            if (fabs(h2) < eps_distance)
+            {
+                // is vertex on B0B1
+                if (fabs(R3::norm(P3) - r03) > eps_distance)   continue;
+                P4 = vT;
+                Atom_t ad3(pickAtomFromBucket(), P4);
+                ad3.ttp = SPATIAL;
+                vta.push_back(ad3);
+                ++push_count;
+                continue;
+            }
+            else if (h2 < 0)
+            {
+                continue;
+            }
+            double yP4 = 0.5/(yP3)*(h2 + xP3*xP3 + yP3*yP3 - r23*r23);
+            double z2P4 = h2 - yP4*yP4;
+            // does P4 belong to B0B1B2 plane?
+            if (fabs(z2P4) < eps_distance)
+            {
+                P4 = yP4*uvj + vT;
+                Atom_t ad3(pickAtomFromBucket(), P4);
+                ad3.ttp = SPATIAL;
+                vta.push_back(ad3);
+                ++push_count;
+                continue;
+            }
+            else if (z2P4 < 0)
+            {
+                continue;
+            }
+            // here we can construct 2 pyramids
+            double zP4 = sqrt(z2P4);
+            // top one
+            P4 = yP4*uvj + zP4*uvk + vT;
+            Atom_t ad3top(pickAtomFromBucket(), P4);
+            ad3top.ttp = SPATIAL;
+            vta.push_back(ad3top);
+            ++push_count;
+            // and bottom one, which makes an extra trial
+            ++nt;
+            P4 = yP4*uvj - zP4*uvk + vT;
+            Atom_t ad3bottom(pickAtomFromBucket(), P4);
+            ad3bottom.ttp = SPATIAL;
+            vta.push_back(ad3bottom);
+            push_count++;
+        } while ( next_permutation(didx.begin(), didx.end()) );
     }
     return push_count;
 }
@@ -1468,12 +1468,12 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     // evolution is trivial for empty or 1-atom molecule
     switch (countAtoms())
     {
-	case 0:
-	    AddInternalAt(pickAtomFromBucket(), 0.0, 0.0, 0.0);
+        case 0:
+            AddInternalAt(pickAtomFromBucket(), 0.0, 0.0, 0.0);
             acc[LINEAR] = 1;
             tot[LINEAR] = 1;
-	    return acc_tot;
-	default:
+            return acc_tot;
+        default:
             // create random generator weighed with atom fitnesses
             // calculate array of atom fitnesses
             vector<double> vacost(countAtoms());
@@ -1487,9 +1487,9 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
             vafit = costToFitness(vacost);
             // finally create RandomWeighedGenerator
             RandomWeighedGenerator rwg(vafit.begin(), vafit.end());
-	    push_good_distances(vta, rwg, nlinear);
-	    push_good_triangles(vta, rwg, nplanar);
-	    push_good_pyramids(vta, rwg, nspatial);
+            push_good_distances(vta, rwg, nlinear);
+            push_good_triangles(vta, rwg, nplanar);
+            push_good_pyramids(vta, rwg, nspatial);
     }
     typedef AtomArray::iterator VAit;
     // count total triangulation attempts
@@ -1503,12 +1503,12 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
     // try to add as many atoms as possible
     while (true)
     {
-	filter_bucket_atoms(vta);
-	filter_good_atoms(vta, evolve_range, hi_abad);
+        filter_bucket_atoms(vta);
+        filter_good_atoms(vta, evolve_range, hi_abad);
         // finished when no test atoms left
-	if (vta.empty())   break;
-	// calculate fitness of test atoms
-	valarray<double> vtafit(vta.size());
+        if (vta.empty())   break;
+        // calculate fitness of test atoms
+        valarray<double> vtafit(vta.size());
         // calculate fitness as reciprocal value of badness
         // fill the vtafit array with badness
         double* pfit = &vtafit[0];
@@ -1521,32 +1521,32 @@ const pair<int*,int*>& Molecule::Evolve(const int* est_triang)
         double* ftnfirst = &(vtafit[0]);
         double* ftnlast = &(vtafit[vtafit.size()]);
         transform(ftnfirst, ftnlast, ftnfirst, convertCostToFitness);
-	// vtafit is ready here
-	int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
-	AddInternalAt(vta[idx].mstorage_ptr, vta[idx].r);
+        // vtafit is ready here
+        int idx = randomWeighedInt(vtafit.size(), &vtafit[0]);
+        AddInternalAt(vta[idx].mstorage_ptr, vta[idx].r);
         acc[vta[idx].ttp]++;
-	hi_abad = vta[idx].Badness() + evolve_range;
-	vta.erase(vta.begin()+idx);
+        hi_abad = vta[idx].Badness() + evolve_range;
+        vta.erase(vta.begin()+idx);
         if (true)
         {
             int worst_overlap_idx = max_element(atoms.begin(), atoms.end(),
                     comp_pAtom_FreeOverlap) - atoms.begin();
             this->MinimizeSiteOverlap(worst_overlap_idx);
         }
-	if (promoterelax)
-	{
-	    int worst_idx = max_element(atoms.begin(), atoms.end(),
-		    comp_pAtom_FreeBadness) - atoms.begin();
-            Atom_t* worst = atoms[worst_idx];
-	    if (eps_gt(worst->Badness(), 0.0) && !worst->fixed)
-	    {
-		RelaxAtom(worst_idx);
-	    }
-	}
-	if (full() || !promotejump)     break;
-	for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
+        if (promoterelax)
         {
-	    pai->ResetBadness();
+            int worst_idx = max_element(atoms.begin(), atoms.end(),
+                    comp_pAtom_FreeBadness) - atoms.begin();
+            Atom_t* worst = atoms[worst_idx];
+            if (eps_gt(worst->Badness(), 0.0) && !worst->fixed)
+            {
+                RelaxAtom(worst_idx);
+            }
+        }
+        if (full() || !promotejump)     break;
+        for (VAit pai = vta.begin(); pai != vta.end(); ++pai)
+        {
+            pai->ResetBadness();
         }
     }
     return acc_tot;
@@ -1564,11 +1564,11 @@ void Molecule::Degenerate(int Npop, DegenerateFlags flags)
     double ppa = this->pairsPerAtom();
     for (int i = 0; i != countAtoms(); ++i)
     {
-	Atom_t* pai = atoms[i];
-	if ( pai->fixed )  continue;
-	freebad[Nfree] = pai->costShare(ppa);
-	freeidx[Nfree] = i;
-	Nfree++;
+        Atom_t* pai = atoms[i];
+        if ( pai->fixed )  continue;
+        freebad[Nfree] = pai->costShare(ppa);
+        freeidx[Nfree] = i;
+        Nfree++;
     }
     if (Nfree == 0)  return;
     Npop = min(Nfree, Npop);
@@ -1578,7 +1578,7 @@ void Molecule::Degenerate(int Npop, DegenerateFlags flags)
     PickType::const_iterator ii;
     for (ii = idxidx.begin(); ii != idxidx.end(); ++ii)
     {
-	ipop.push_back(freeidx[*ii]);
+        ipop.push_back(freeidx[*ii]);
     }
     Pop(ipop);
     if (this->countAtoms() && flags != FAST)
@@ -1701,9 +1701,9 @@ int Molecule::getPairMatrixIndex()
     int idx;
     if (!free_pmx_slots.empty())
     {
-	set<int>::iterator firstfree = free_pmx_slots.begin();
-	idx = *firstfree;
-	free_pmx_slots.erase(firstfree);
+        set<int>::iterator firstfree = free_pmx_slots.begin();
+        idx = *firstfree;
+        free_pmx_slots.erase(firstfree);
     }
     else
     {
@@ -1742,15 +1742,15 @@ void Molecule::returnUsedDistances()
     // return used distances
     for (AtomSequence seq0(this); !seq0.finished(); seq0.next())
     {
-	AtomSequence seq1 = seq0;
-	for (seq1.next(); !seq1.finished(); seq1.next())
-	{
-	    int i0 = seq0.ptr()->pmxidx;
-	    int i1 = seq1.ptr()->pmxidx;
-	    double& udst = pmx_used_distances(i0, i1);
-	    if (udst > 0.0)	this->_distance_table->push_back(udst);
-	    udst = 0.0;
-	}
+        AtomSequence seq1 = seq0;
+        for (seq1.next(); !seq1.finished(); seq1.next())
+        {
+            int i0 = seq0.ptr()->pmxidx;
+            int i1 = seq1.ptr()->pmxidx;
+            double& udst = pmx_used_distances(i0, i1);
+            if (udst > 0.0)     this->_distance_table->push_back(udst);
+            udst = 0.0;
+        }
     }
     sort(this->_distance_table->begin(), this->_distance_table->end());
 }
@@ -1785,9 +1785,9 @@ void Molecule::WriteFile(const string& filename, string title)
     ofstream fid(filename.c_str(), ios_base::out|ios_base::ate);
     if (!fid)
     {
-	ostringstream emsg;
-	emsg << "WriteFile(): unable to write to '" << filename << "'";
-	throw IOError(emsg.str());
+        ostringstream emsg;
+        emsg << "WriteFile(): unable to write to '" << filename << "'";
+        throw IOError(emsg.str());
     }
     fid.close();
     // write via temporary file
@@ -1950,9 +1950,9 @@ void Molecule::checkAtomIndex(int idx)
 {
     if (idx < 0 || idx >= this->countAtoms())
     {
-	ostringstream emsg;
-	emsg << "Invalid atom index " << idx << ".";
-	throw range_error(emsg.str());
+        ostringstream emsg;
+        emsg << "Invalid atom index " << idx << ".";
+        throw range_error(emsg.str());
     }
 }
 
@@ -1962,18 +1962,18 @@ void Molecule::PrintBadness() const
     if (!countAtoms())  return;
     cout << "ABadness() =";
     double mab = (*max_element(atoms.begin(), atoms.end(),
-		    comp_pAtom_Badness)) -> Badness();
+                    comp_pAtom_Badness)) -> Badness();
     bool marked = false;
     vector<Atom_t*>::const_iterator pai;
     for (pai = atoms.begin(); pai != atoms.end(); ++pai)
     {
-	cout << ' ';
-	if (!marked && (*pai)->Badness() == mab)
-	{
-	    cout << '+';
-	    marked = true;
-	}
-	cout << (*pai)->Badness();
+        cout << ' ';
+        if (!marked && (*pai)->Badness() == mab)
+        {
+            cout << '+';
+            marked = true;
+        }
+        cout << (*pai)->Badness();
     }
     cout << endl;
 }
@@ -1994,13 +1994,13 @@ void Molecule::PrintFitness()
     bool marked = false;
     for (pd = &vafit[0]; pd != &vafit[vafit.size()]; ++pd)
     {
-	cout << ' ';
-	if (!marked && *pd == mab)
-	{
-	    cout << '+';
-	    marked = true;
-	}
-	cout << *pd;
+        cout << ' ';
+        if (!marked && *pd == mab)
+        {
+            cout << '+';
+            marked = true;
+        }
+        cout << *pd;
     }
     cout << endl;
 }
@@ -2073,12 +2073,12 @@ void Molecule::rxaCheckEval(const Atom_t* pa,
 bool operator==(const Molecule& m0, const Molecule& m1)
 {
     if (&m0 == &m1)
-	return true;
+        return true;
     if (m0.getMaxAtomCount() != m1.getMaxAtomCount())
-	return false;
+        return false;
     AtomSequence seq0(&m0), seq1(&m1);
     for (; !seq0.finished() && !seq1.finished() && *seq0.ptr() == *seq1.ptr();
-	    seq0.next(), seq1.next() )
+            seq0.next(), seq1.next() )
     { }
     return seq0.finished() && seq1.finished();
 }

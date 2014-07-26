@@ -20,7 +20,7 @@ class DistanceTable : public std::vector<double>
     public:
 
         // friends
-	friend std::istream& operator>>(std::istream&, DistanceTable&);
+        friend std::istream& operator>>(std::istream&, DistanceTable&);
 
         // constructors
         DistanceTable();
@@ -62,4 +62,4 @@ class DistanceTable : public std::vector<double>
 // non-member operators
 std::istream& operator>>(std::istream&, DistanceTable&);
 
-#endif	// DISTANCETABLE_HPP_INCLUDED
+#endif  // DISTANCETABLE_HPP_INCLUDED

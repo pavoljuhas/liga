@@ -24,29 +24,29 @@ class AtomCostCrystal : public AtomCost
 {
     public:
 
-	// constructor
-	AtomCostCrystal(const Crystal* m);
+        // constructor
+        AtomCostCrystal(const Crystal* m);
 
-	// destructor
-	virtual ~AtomCostCrystal() { }
+        // destructor
+        virtual ~AtomCostCrystal() { }
 
-	// public methods - overloaded
+        // public methods - overloaded
         virtual void resetFor(const Molecule* clust);
         double eval(const Atom_t& a, int flags=NONE);
-	virtual double eval(const Atom_t* pa, int flags=NONE);
-	int totalPairCount() const;
-	const std::vector<int>& pairCounts() const;
+        virtual double eval(const Atom_t* pa, int flags=NONE);
+        int totalPairCount() const;
+        const std::vector<int>& pairCounts() const;
 
         // public methods - specific
         std::pair<double,int> pairCostCount(const R3::Vector& cv);
 
     protected:
 
-	// data - results
+        // data - results
         int total_pair_count;
         std::vector<int> pair_counts;
 
-	// data - arguments
+        // data - arguments
         const Crystal* arg_cluster;
         R3::Vector arg_rcuc;    // cartesian positions offset to unit cell
         const Atom_t* crst_atom;
@@ -60,7 +60,7 @@ class AtomCostCrystal : public AtomCost
         // methods
         virtual const std::pair<double,double>&
             pairDistanceDifference(const double& d) const;
-	void resizeArrays();
+        void resizeArrays();
 
     private:
 
@@ -68,4 +68,4 @@ class AtomCostCrystal : public AtomCost
 
 };  // class AtomCostCrystal
 
-#endif	// ATOMCOSTCRYSTAL_HPP_INCLUDED
+#endif  // ATOMCOSTCRYSTAL_HPP_INCLUDED

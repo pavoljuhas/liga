@@ -83,9 +83,9 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
     R3::Vector rcv;
     for (AtomSequenceIndex seq(arg_cluster); !seq.finished(); seq.next())
     {
-	// assertion checks
-	assert(ptcii < this->partial_costs.end());
-	assert(pcntii < this->pair_counts.end());
+        // assertion checks
+        assert(ptcii < this->partial_costs.end());
+        assert(pcntii < this->pair_counts.end());
         // calculation
         this->crst_atom = seq.ptr();
         rcv = this->arg_atom->r - this->crst_atom->r;
@@ -103,7 +103,7 @@ double AtomCostCrystal::eval(const Atom_t* pa, int flags)
         this->arg_atom->Badness() + this->total_cost < this->lowest_cost;
     if (islowestcost)
     {
-	this->lowest_cost = this->arg_atom->Badness() + this->total_cost;
+        this->lowest_cost = this->arg_atom->Badness() + this->total_cost;
         this->cutoff_cost =
             min(this->cutoff_cost, this->lowest_cost + this->cutoff_range);
     }
