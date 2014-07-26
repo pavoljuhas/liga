@@ -9,6 +9,7 @@
 #ifndef EXCEPTIONS_HPP_INCLUDED
 #define EXCEPTIONS_HPP_INCLUDED
 
+#include <string>
 #include <stdexcept>
 
 
