@@ -49,6 +49,7 @@ conf = Configure(env, custom_tests={
 # boost_python
 configure_boost_library('boost_python')
 configure_boost_library('boost_filesystem')
+configure_boost_library('boost_system')
 
 env = conf.Finish()
 
