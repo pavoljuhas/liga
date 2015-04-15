@@ -12,7 +12,7 @@
 *
 ************************************************************************
 *
-* classes PointsInSphere, ReflectionsInQminQmax, ReflectionsInDmaxDmin
+* classes PointsInSphere
 *
 * Comments: sequencers for lattice points insided 3D sphere
 *
@@ -275,122 +275,6 @@ void PointsInSphere::init()
     do0dn = ca2r*c2r/b2r;
     // 1D reciprocal along c axis
     c1r = 1.0/latpar.c;
-}
-
-////////////////////////////////////////////////////////////////////////
-// ReflectionsInQminQmax
-////////////////////////////////////////////////////////////////////////
-
-// constructors
-
-ReflectionsInQminQmax::ReflectionsInQminQmax(double qmin, double qmax,
-        const LatticeParameters& _latpar) :
-            _Qmin(qmin), _Qmax(qmax),
-            latpar(_latpar),
-            sph(qmin*M_1_PI/2.0, qmax*M_1_PI/2.0, latpar.reciprocal())
-{ }
-
-ReflectionsInQminQmax::ReflectionsInQminQmax(double qmin, double qmax,
-        double _a, double _b, double _c,
-        double _alpha, double _beta, double _gamma ) :
-            _Qmin(qmin), _Qmax(qmax),
-            latpar(_a, _b, _c, _alpha, _beta, _gamma),
-            sph(qmin*M_1_PI/2.0, qmax*M_1_PI/2.0, latpar.reciprocal())
-{ }
-
-// public methods - loop control
-
-void ReflectionsInQminQmax::rewind()
-{
-    this->sph.rewind();
-}
-
-void ReflectionsInQminQmax::next()
-{
-    this->sph.next();
-}
-
-bool ReflectionsInQminQmax::finished() const
-{
-    return this->sph.finished();
-}
-
-
-// public methods - data access
-
-const double& ReflectionsInQminQmax::Qmin() const
-{
-    return this->_Qmin;
-}
-
-const double& ReflectionsInQminQmax::Qmax() const
-{
-    return this->_Qmax;
-}
-
-const int* ReflectionsInQminQmax::hkl() const
-{
-    return this->sph.mno();
-}
-
-const int& ReflectionsInQminQmax::h() const
-{
-    return this->sph.m();
-}
-
-const int& ReflectionsInQminQmax::k() const
-{
-    return this->sph.n();
-}
-
-const int& ReflectionsInQminQmax::l() const
-{
-    return this->sph.o();
-}
-
-double ReflectionsInQminQmax::Q() const
-{
-    return 2.0*M_PI*sph.r();
-}
-
-double ReflectionsInQminQmax::d() const
-{
-    return 1.0/sph.r();
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// ReflectionsInDmaxDmin
-////////////////////////////////////////////////////////////////////////
-
-
-// constructors
-
-ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(double dmax, double dmin,
-        const LatticeParameters& _latpar) :
-            ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin, _latpar),
-            _Dmin(dmin), _Dmax(dmax)
-{ }
-
-ReflectionsInDmaxDmin::ReflectionsInDmaxDmin(double dmax, double dmin,
-        double _a, double _b, double _c,
-        double _alpha, double _beta, double _gamma) :
-            ReflectionsInQminQmax(2.0*M_PI/dmax, 2.0*M_PI/dmin,
-                    _a, _b, _c, _alpha, _beta, _gamma),
-            _Dmin(dmin), _Dmax(dmax)
-{ }
-
-
-// public methods - data access
-
-const double& ReflectionsInDmaxDmin::Dmin() const
-{
-    return this->_Dmin;
-}
-
-const double& ReflectionsInDmaxDmin::Dmax() const
-{
-    return this->_Dmax;
 }
 
 // End of file
