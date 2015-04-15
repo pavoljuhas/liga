@@ -28,7 +28,6 @@ class TestAtomOverlap : public CxxTest::TestSuite
 {
     private:
 
-        double double_eps;
         DistanceTable dst;
         Molecule mnotouch;
         Molecule moverlap;

@@ -22,7 +22,6 @@ class TestRandom : public CxxTest::TestSuite
     private:
 
         RandomWeighedGenerator rwg;
-        static const double precision = 1.0e-12;
 
     public:
 

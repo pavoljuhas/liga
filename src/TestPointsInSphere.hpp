@@ -57,12 +57,6 @@ bool operator==(const vidxgroup &x, const vidxgroup &y)
     return eq;
 }
 
-ostream& operator<<(ostream &s, const vidxgroup &x)
-{
-    return s << "<" << x.vijk[0] << ";" << int(x.vijk[1])
-        << ',' << int(x.vijk[2]) << ',' << int(x.vijk[3]) << '>';
-}
-
 }   // namespace
 
 ////////////////////////////////////////////////////////////////////////
