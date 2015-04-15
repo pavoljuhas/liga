@@ -2,30 +2,14 @@ import os
 
 Import('env')
 
-version_sources = ['Version.tpl']
-svnentries = env.File('.svn/entries').srcnode()
-srcdir = os.path.dirname(os.path.dirname(str(svnentries)))
-env['svnrev'] = (os.path.isfile(str(svnentries)) and
-        os.popen('svnversion -c %s' % srcdir).read().strip().split(':')[-1])
-
 def build_VersionCode(target, source, env):
+    import string
     import re
-    flds = {
-        'LastChangedAuthor' : 'unknown',
-        'LastChangedRev' : '0',
-        'LastChangedDate' : '2007-12-12 00:00:00Z',
-    }
-    if env['svnrev']:
-        flds['LastChangedRev'] = env['svnrev'].rstrip('S')
-        cmd = 'TZ=0 svn info -r %s .' % env['svnrev'].rstrip('MS')
-        svninfo = os.popen(cmd).read()
-        mx = re.search('^Last Changed Author: (.*)', svninfo, re.M)
-        if mx:  flds['LastChangedAuthor'] = mx.group(1)
-        mx = re.search('^Last Changed Date: (\S+ \S+)', svninfo, re.M)
-        if mx:  flds['LastChangedDate'] = mx.group(1) + "Z"
-    versiontemplate = open(str(source[0])).read()
-    versioncode = versiontemplate % flds
-    open(str(target[0]), 'w').write(versioncode)
+    from mpbcligabuildutils import gitinfo
+    tplcode = source[0].get_contents()
+    versiontemplate = string.Template(tplcode)
+    versioncode = versiontemplate.safe_substitute(gitinfo())
+    open(target[0].path, 'w').write(versioncode)
     return None
 
 env.Append(BUILDERS={'BuildVersionCode' :
@@ -33,8 +17,16 @@ env.Append(BUILDERS={'BuildVersionCode' :
 
 # Targets --------------------------------------------------------------------
 
-ver = env.BuildVersionCode(['Version.cpp'], version_sources)
-if os.path.isfile(str(svnentries)):  env.Depends(ver, svnentries)
-env['lib_sources'] += [ver]
+vcpp = File('Version.cpp')
+
+# Construct Version.cpp only if it does not exist
+if not os.path.isfile(str(vcpp.srcnode())):
+    from mpbcligabuildutils import gitinfo
+    vtpl = File('Version.tpl')
+    ginfo = gitinfo()
+    vcpp, = env.BuildVersionCode(['Version.cpp'], vtpl)
+    env.Depends(vcpp, env.Value(ginfo['version'] + ginfo['commit']))
+
+env['lib_sources'] += [vcpp]
 
 # vim: ft=python

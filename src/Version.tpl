@@ -7,33 +7,25 @@
 * <license text>
 ***********************************************************************/
 
-#include <sstream>
 #include "Version.hpp"
 
 namespace NS_VERSION {
 
-int getRevisionNumber()
+const string& getVersion()
 {
-    static int rev = 0;
-    if (!rev)   istringstream (getRevision()) >> rev;
-    return rev;
-}
-
-const string& getRevision()
-{
-    static const string srev = "%(LastChangedRev)s";
+    static const string srev = "${version}";
     return srev;
 }
 
 const string& getDate()
 {
-    static const string sdate = "%(LastChangedDate)s";
+    static const string sdate = "${date}";
     return sdate;
 }
 
 const string& getAuthor()
 {
-    static const string sauthor = "%(LastChangedAuthor)s";
+    static const string sauthor = "${author}";
     return sauthor;
 }
 
@@ -42,9 +34,7 @@ const string& getId()
     static string sid;
     if (sid.empty())
     {
-        ostringstream idstrm;
-        idstrm << getRevision() << ' ' << getDate() << ' ' << getAuthor();
-        sid = idstrm.str();
+        sid = getVersion() + ' ' + getDate() + ' ' + getAuthor();
     }
     return sid;
 }

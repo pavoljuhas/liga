@@ -81,8 +81,6 @@ env.Default(env['binaries'])
 # install-bin
 def get_target_path(f):
     fb, fe = os.path.splitext(os.path.basename(str(f)))
-    if env['svnrev']:
-        fb = fb.replace('mpbcliga', 'mpbcliga-' + env['svnrev'])
     if env['build'] == 'fast':
         fb += '-fast'
     tgt = os.path.join(env['bindir'], fb + fe)
