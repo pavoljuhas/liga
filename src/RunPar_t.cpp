@@ -599,7 +599,7 @@ string RunPar_t::version_string(string quote)
     ostringstream oss;
     oss << quote << this->getAppName() << ' ' <<
         NS_VERSION::getId() << '\n' <<
-        quote << "compiler version " << __VERSION__;
+        quote << "Compiled with " << __VERSION__ << '.';
     return oss.str();
 }
 
