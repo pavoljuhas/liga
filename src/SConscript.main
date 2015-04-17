@@ -80,9 +80,11 @@ env.Default(env['binaries'])
 
 # install-bin
 def get_target_path(f):
+    from mpbcligabuildutils import gitinfo
     fb, fe = os.path.splitext(os.path.basename(str(f)))
-    if env['build'] == 'fast':
-        fb += '-fast'
+    fb = fb.replace('mpbcliga', 'mpbcliga-' + gitinfo()['version'])
+    if env['build'] == 'debug':
+        fb += '-debug'
     tgt = os.path.join(env['bindir'], fb + fe)
     return tgt
 bin_targets = map(get_target_path, env['binaries'])
