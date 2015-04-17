@@ -21,7 +21,7 @@ def gitinfo():
     if proc.wait():  return gitinfo()
     proc = Popen(['git', 'log', '-1', '--format=%H%n%ai%n%at%n%an'], **kw)
     glog = proc.stdout.read()
-    rv['version'] = '.post'.join(desc.strip().split('-', 1)).lstrip('v')
+    rv['version'] = '.post'.join(desc.strip().split('-')[:2]).lstrip('v')
     rv['commit'], rv['date'], rv['timestamp'], rv['author'] = [
             s.strip() for s in glog.strip().split('\n')]
     rv['timestamp'] = int(rv['timestamp'])

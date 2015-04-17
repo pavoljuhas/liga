@@ -17,6 +17,12 @@ const string& getVersion()
     return srev;
 }
 
+const string& getCommit()
+{
+    static const string srev = "${commit}";
+    return srev;
+}
+
 const string& getDate()
 {
     static const string sdate = "${date}";
@@ -34,7 +40,8 @@ const string& getId()
     static string sid;
     if (sid.empty())
     {
-        sid = getVersion() + ' ' + getDate() + ' ' + getAuthor();
+        sid = getVersion() + ' ' + getCommit().substr(0, 7) + ' ' +
+            getDate() + ' ' + getAuthor();
     }
     return sid;
 }

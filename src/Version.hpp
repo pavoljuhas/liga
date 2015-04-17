@@ -16,6 +16,7 @@ namespace NS_VERSION {
 using namespace std;
 
 const string& getVersion();
+const string& getCommit();
 const string& getDate();
 const string& getAuthor();
 const string& getId();
