@@ -35,6 +35,7 @@ tdcpp = env_test.BuildHeader_hpp(['tests_dir.cpp'],
 
 alltests = env_test.CxxTest('alltests',
         test_sources + env_test['lib_objects'] + tdcpp)
+Alias('alltests', alltests)
 
 # unittest
 

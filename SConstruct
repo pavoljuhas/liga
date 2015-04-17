@@ -7,6 +7,7 @@ Targets:
 mpbcliga            the Liga structure solver program
 mpbccost            program for calculating cost of a given structure
 install             install mpbcliga and mpbccost under prefix/bin
+alltests            build the unit test program "alltests"
 test                execute functional and unit tests for mpbcliga
 
 Build configuration variables:
