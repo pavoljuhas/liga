@@ -1253,7 +1253,7 @@ int Molecule::push_good_triangles(
         {
             R3::Vector uv(0.0, 0.0, 0.0);
             R3::Vector ald = fabs(longdir);
-            int ijk = minIndex(ald);
+            int ijk = minIndex(ald)[0];
             uv[ijk] = 1.0;
             perpdir = R3::cross(longdir, uv);
             perpdir /= R3::norm(perpdir);

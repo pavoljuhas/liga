@@ -10,8 +10,7 @@
 #ifndef R3LINALG_HPP_INCLUDED
 #define R3LINALG_HPP_INCLUDED
 
-#include <blitz/tinyvec-et.h>
-#include <blitz/tinymat.h>
+#include <blitz/array.h>
 
 #include "Counter.hpp"
 
@@ -25,7 +24,6 @@ namespace R3 {
 
 const int Ndim = 3;
 using blitz::all;
-using blitz::product;
 
 // types
 
@@ -37,6 +35,7 @@ typedef blitz::TinyVector<double,Ndim> Vector;
 double determinant(const Matrix& A);
 Matrix inverse(const Matrix& A);
 Matrix transpose(const Matrix& A);
+const Matrix& product(const Matrix&, const Matrix&);
 
 template <class V> double norm(const V&);
 template <class V> double distance(const V& u, const V& v);

@@ -65,4 +65,19 @@ R3::Matrix R3::transpose(const R3::Matrix& A)
 }
 
 
+const R3::Matrix& R3::product(const R3::Matrix& A, const R3::Matrix& B)
+{
+    static R3::Matrix C;
+    C = 0.0;
+    for (int i = 0; i < R3::Ndim; ++i) {
+        for (int j = 0; j < R3::Ndim; ++j) {
+            double& cij = C(i, j);
+            for (int k = 0; k < R3::Ndim; ++k) {
+                C(i, j) += A(i, k) * B(k, j);
+            }
+        }
+    }
+    return C;
+}
+
 // End of file
