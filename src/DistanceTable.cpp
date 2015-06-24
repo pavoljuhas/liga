@@ -117,6 +117,12 @@ void DistanceTable::clearESDs()
 }
 
 
+bool DistanceTable::hasESDs() const
+{
+    return !mesd.empty();
+}
+
+
 int DistanceTable::estNumAtoms() const
 {
     double xn = ( 1.0 + sqrt(1.0 + 8.0*this->size()) )/2.0;

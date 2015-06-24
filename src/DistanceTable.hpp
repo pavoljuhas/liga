@@ -34,6 +34,7 @@ class DistanceTable : public std::vector<double>
         const double& getesd(const double& d) const;
         void setESDs(const std::vector<double>& esds);
         void clearESDs();
+        bool hasESDs() const;
         int estNumAtoms() const;
         int countUnique() const;
         std::vector<double> unique() const;
