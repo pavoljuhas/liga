@@ -75,8 +75,7 @@ Molecule* Crystal::copy() const
 
 void Crystal::setDistanceTable(const DistanceTable& dtbl)
 {
-    vector<double> dtbl_unique = dtbl.unique();
-    this->_full_distance_table.reset(new DistanceTable(dtbl_unique));
+    this->_full_distance_table.reset(new DistanceTable(dtbl.unique()));
     this->cropDistanceTable();
     this->uncacheCostData();
     this->CheckIntegrity();

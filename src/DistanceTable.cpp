@@ -144,17 +144,21 @@ int DistanceTable::countUnique() const
 }
 
 
-vector<double> DistanceTable::unique() const
+DistanceTable DistanceTable::unique() const
 {
-    vector<double> dtu;
+    DistanceTable dtu;
     dtu.reserve(this->countUnique());
+    vector<double> uesds;
+    uesds.reserve(this->countUnique());
     for (const_iterator di = begin(); di != end(); ++di)
     {
         if (dtu.empty() || (*di - dtu.back()) > mresolution)
         {
             dtu.push_back(*di);
+            uesds.push_back(this->getesd(*di));
         }
     }
+    if (this->hasESDs())  dtu.setESDs(uesds);
     return dtu;
 }
 

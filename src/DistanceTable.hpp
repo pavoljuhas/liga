@@ -37,7 +37,7 @@ class DistanceTable : public std::vector<double>
         bool hasESDs() const;
         int estNumAtoms() const;
         int countUnique() const;
-        std::vector<double> unique() const;
+        DistanceTable unique() const;
         double getResolution() const;
         void setResolution(double res);
         double maxDistance() const;
