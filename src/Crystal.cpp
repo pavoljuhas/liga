@@ -488,14 +488,20 @@ void Crystal::uncacheCostData() const
 
 void Crystal::cropDistanceTable()
 {
+    boost::shared_ptr<DistanceTable> cropped(new DistanceTable);
     DistanceTable::const_iterator lo, hi;
     lo = this->_full_distance_table->begin();
     hi = upper_bound(this->_full_distance_table->begin(),
             this->_full_distance_table->end(), this->getRmax());
-    vector<double> vcropped(lo, hi);
-    // Do not call Molecule::setDistanceTable,
-    // it may change the chemical formula.
-    this->_distance_table.reset(new DistanceTable(vcropped));
+    cropped->reserve(hi - lo);
+    vector<double> cesds;
+    for (DistanceTable::const_iterator xi = lo; xi != hi; ++xi)
+    {
+        cropped->push_back(*xi);
+        cesds.push_back(this->_full_distance_table->getesd(*xi));
+    }
+    if (this->_full_distance_table->hasESDs())  cropped->setESDs(cesds);
+    this->_distance_table = cropped;
 }
 
 
