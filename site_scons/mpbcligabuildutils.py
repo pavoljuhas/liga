@@ -21,16 +21,21 @@ def gitinfo():
     if proc.wait():  return gitinfo()
     proc = Popen(['git', 'log', '-1', '--format=%H%n%ai%n%at%n%an'], **kw)
     glog = proc.stdout.read()
-    rv['version'] = '.post'.join(desc.strip().split('-')[:2]).lstrip('v')
+    words = desc.strip().split('-')
+    vtag = words[0].lstrip('v')
+    vnum = int((words[1:2] or ['0'])[0])
     rv['commit'], rv['date'], rv['timestamp'], rv['author'] = [
             s.strip() for s in glog.strip().split('\n')]
     rv['timestamp'] = int(rv['timestamp'])
-    pattern = r'(?m)^(\d+)\.(\d+)([ab]\d*)?(?:\.post(\d+))?'
-    mx = re.search(pattern, rv['version'])
+    mx = re.match(r'^(\d+)\.(\d+)(?:\.(\d+))?((?:[ab]|rc)\d*)?', vtag)
     rv['major'] = int(mx.group(1))
     rv['minor'] = int(mx.group(2))
-    rv['prerelease'] = mx.group(3)
-    rv['number'] = mx.group(4) and int(mx.group(4)) or 0
+    rv['micro'] = int(mx.group(3) or 0)
+    rv['prerelease'] = mx.group(4)
+    rv['patchnumber'] = vnum
+    rv['version'] = vtag
+    if vnum:
+        rv['version'] += '.post' + str(vnum)
     _cached_gitinfo = rv
     return gitinfo()
 
