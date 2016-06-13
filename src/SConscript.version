@@ -4,7 +4,6 @@ Import('env')
 
 def build_VersionCode(target, source, env):
     import string
-    import re
     from mpbcligabuildutils import gitinfo
     tplcode = source[0].get_contents()
     versiontemplate = string.Template(tplcode)
