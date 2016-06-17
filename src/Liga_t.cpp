@@ -633,7 +633,7 @@ void Liga_t::saveScoopedStructures() const
         path fname(rp->outstru);
         ostringstream tail;
         tail << "-SC" << setfill('0') << setw(2) << scidx << extension(fname);
-        path fnamesc = change_extension(fname, tail.str());
+        path fnamesc = fname.stem().concat(tail.str());
         // write cost value to structure title
         double sccost = python::extract<double>((*mscoop_cost_stru)[i][0]);
         python::object scstru = (*mscoop_cost_stru)[i][1];
