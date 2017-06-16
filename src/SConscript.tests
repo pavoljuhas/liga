@@ -11,12 +11,18 @@ env_test['CXXTEST_SUFFIX'] = '.hpp'
 
 def srcincluded(f):
     fl = str(f).lower()
-    rv = (env_test.get('tests') is None or
-          any(t.lower() in fl for t in Split(env_test['tests'])))
+    rv = True
+    if env_test.get('tests'):
+        tpatterns = Split(env_test['tests'].lower().replace(',', ' '))
+        rv = any(tp in fl for tp in tpatterns)
     return rv
 
 # alltests -- the unit test driver source files
-test_sources = filter(srcincluded, Glob('Test*.hpp'))
+test_sources = filter(srcincluded, GlobSources('Test*.hpp'))
+if not test_sources:
+    ts = env_test.get('tests', '')
+    print("Cannot find any test matching 'tests={}'.".format(ts))
+    Exit(1)
 
 # special builder for tests_dir.hpp
 def build_header(target, source, env):
