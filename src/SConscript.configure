@@ -1,5 +1,7 @@
 Import('env', 'pyoutput')
 
+pyversion = pyoutput('import sys; print("%i.%i" % sys.version_info[:2])')
+
 # Helper functions -----------------------------------------------------------
 
 def configure_boost_library(libname):
@@ -14,7 +16,6 @@ def configure_boost_library(libname):
     boostlibtags = mttags
     # check more tags for boost_python
     if libname == 'boost_python':
-        pyversion = pyoutput('import sys; print("%i.%i" % sys.version_info[:2])')
         major, minor = pyversion.split('.')
         pytags = [major + minor, major, '']
         boostlibtags = [(pt + mt) for mt in mttags for pt in pytags]
@@ -30,6 +31,12 @@ def configure_boost_library(libname):
 # Start configuration --------------------------------------------------------
 
 conf = Configure(env)
+
+# python shared library
+pylibname = 'python' + pyversion
+if not conf.CheckLib(pylibname, language='C++'):
+    print('This program requires %r shared library' % pylibname)
+    Exit(1)
 
 # boost_python
 configure_boost_library('boost_python')

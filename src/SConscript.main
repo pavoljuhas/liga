@@ -1,6 +1,6 @@
 import os
 
-Import('env', 'pyconfigvar', 'GlobSources')
+Import('env', 'GlobSources')
 
 # Build environment configuration --------------------------------------------
 
@@ -27,7 +27,6 @@ pythonconfig = os.path.join(pybindir, 'python3-config')
 # Declare external libraries.
 env.ParseConfig(pythonconfig + " --includes")
 env.ParseConfig(pythonconfig + " --ldflags")
-env.MergeFlags(pyconfigvar('BLDLIBRARY'))
 env.ParseConfig("gsl-config --cflags --libs")
 
 fast_linkflags = ['-s']

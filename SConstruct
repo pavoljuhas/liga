@@ -30,11 +30,6 @@ def pyoutput(cmd):
     out = proc.communicate()[0]
     return out.rstrip()
 
-def pyconfigvar(name):
-    cmd = ('from distutils.sysconfig import get_config_var\n'
-           'print(get_config_var(%r))\n') % name
-    return pyoutput(cmd)
-
 # copy system environment variables related to compilation
 DefaultEnvironment(ENV=subdictionary(os.environ, '''
     PATH PYTHONPATH
@@ -78,7 +73,7 @@ btags = [env['build'], platform.machine()]
 if env['profile']:  btags.append('profile')
 builddir = env.Dir('build/' + '-'.join(btags))
 
-Export('env', 'pyconfigvar', 'pyoutput')
+Export('env', 'pyoutput')
 
 def GlobSources(pattern):
     """Same as Glob but also require that source node is a valid file.
