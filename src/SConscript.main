@@ -1,6 +1,6 @@
 import os
 
-Import('env', 'GlobSources')
+Import('env', 'pyconfigvar', 'GlobSources')
 
 # Build environment configuration --------------------------------------------
 
@@ -27,6 +27,7 @@ pythonconfig = os.path.join(pybindir, 'python3-config')
 # Declare external libraries.
 env.ParseConfig(pythonconfig + " --includes")
 env.ParseConfig(pythonconfig + " --ldflags")
+env.MergeFlags(pyconfigvar('BLDLIBRARY'))
 env.ParseConfig("gsl-config --cflags --libs")
 
 fast_linkflags = ['-s']
@@ -45,6 +46,7 @@ if env['PLATFORM'] == 'darwin':
 # configure version specific options.
 if not (GetOption('clean') or env.GetOption('help')):
     SConscript('SConscript.configure')
+    Import('env')
 
 # Compiler specific options
 if icpc:
