@@ -46,8 +46,9 @@ struct vidxgroup
 
 bool operator<(const vidxgroup &x, const vidxgroup &y)
 {
-    return (x.vijk[0] < y.vijk[0] - eps) ||
-            lexicographical_compare(x.vijk+1, x.vijk+4, y.vijk+1, y.vijk+4);
+    if (x.vijk[0] < y.vijk[0] - eps)  return true;
+    if (x.vijk[0] > y.vijk[0] + eps)  return false;
+    return lexicographical_compare(x.vijk+1, x.vijk+4, y.vijk+1, y.vijk+4);
 }
 
 bool operator==(const vidxgroup &x, const vidxgroup &y)
@@ -121,7 +122,7 @@ class TestPointsInSphere : public CxxTest::TestSuite
         }
 
 
-        void test_Orthorombic()
+        void test_Orthorhombic()
         {
             latpar->a = 1.0; latpar->b = 2.0; latpar->c = 3.0;
             latpar->alpha = latpar->beta = latpar->gamma = 90.0;
