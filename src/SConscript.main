@@ -37,9 +37,6 @@ env.PrependUnique(CXXFLAGS='-std=c++98', delete_existing=1)
 
 # Platform specific intricacies.
 if env['PLATFORM'] == 'darwin':
-    fixmacflags = lambda x: (str(x) not in ('-u', '_PyMac_Error'))
-    env.Replace(CCFLAGS=[f for f in env['CCFLAGS'] if fixmacflags(f)])
-    env.Replace(LIBS=[f for f in env['LIBS'] if fixmacflags(f)])
     fast_linkflags[:] = []
 
 # configure version specific options.
